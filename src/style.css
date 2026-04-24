@@ -1,0 +1,54 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── CSS Variables (dynamic theme) ─────────────────────────────
+   ค่าเริ่มต้น — จะถูกเขียนทับโดย useAreaConfig เมื่อโหลดจาก DB
+   ─────────────────────────────────────────────────────────────── */
+:root {
+  --color-primary:       #2563eb;
+  --color-primary-dark:  #1d4ed8;
+  --color-primary-light: rgba(37,99,235,0.1);
+  --color-primary-ring:  rgba(37,99,235,0.3);
+  --color-secondary:     #4f46e5;
+}
+
+/* ── Brand utility classes (ใช้แทน bg-blue-600 ในส่วนที่ต้องเปลี่ยนสีได้) */
+@layer utilities {
+  .bg-primary         { background-color: var(--color-primary) !important; }
+  .bg-primary-dark    { background-color: var(--color-primary-dark) !important; }
+  .bg-primary-light   { background-color: var(--color-primary-light) !important; }
+  .text-primary       { color: var(--color-primary) !important; }
+  .border-primary     { border-color: var(--color-primary) !important; }
+  .ring-primary       { --tw-ring-color: var(--color-primary-ring) !important; }
+  .shadow-primary     { --tw-shadow-color: var(--color-primary-light) !important; }
+
+  .hover\:bg-primary-dark:hover { background-color: var(--color-primary-dark) !important; }
+  .hover\:text-primary:hover    { color: var(--color-primary) !important; }
+  .hover\:bg-primary-light:hover { background-color: var(--color-primary-light) !important; }
+
+  /* Gradient stripe ด้านบน */
+  .gradient-primary {
+    background: linear-gradient(to right, var(--color-primary-dark), var(--color-secondary), var(--color-primary-dark));
+  }
+
+  /* Focus ring */
+  .focus-primary:focus {
+    outline: none;
+    box-shadow: 0 0 0 4px var(--color-primary-ring);
+    border-color: var(--color-primary);
+  }
+}
+
+/* ── Typography ─────────────────────────────────────────────── */
+body {
+  font-family: 'Sarabun', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+.font-sarabun { font-family: 'Sarabun', sans-serif; }
+
+/* ── SweetAlert2 ────────────────────────────────────────────── */
+.swal2-popup {
+  border-radius: 2rem !important;
+  font-family: 'Sarabun', sans-serif !important;
+}
