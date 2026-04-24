@@ -151,14 +151,16 @@ function resetToDefault() {
 
     <div v-else class="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
 
-      <!-- Tabs -->
-      <div class="flex overflow-x-auto border-b border-slate-100 bg-slate-50">
+      <!-- Tabs — flex-wrap บนมือถือ, scroll บน desktop -->
+      <div class="flex flex-wrap border-b border-slate-100 bg-slate-50">
         <button v-for="tab in tabs" :key="tab.key" @click="activeTab = tab.key"
-          :class="['flex items-center gap-2 px-5 py-3.5 text-sm font-bold whitespace-nowrap transition-all border-b-2',
+          :class="['flex items-center gap-1.5 px-4 py-3 text-sm font-bold transition-all border-b-2',
             activeTab === tab.key
-              ? 'border-blue-600 text-blue-700 bg-white'
+              ? 'border-primary text-primary bg-white'
               : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-white']">
-          {{ tab.icon }} {{ tab.label }}
+          <span>{{ tab.icon }}</span>
+          <span class="hidden sm:inline">{{ tab.label }}</span>
+          <span class="sm:hidden text-xs">{{ tab.label.length > 6 ? tab.label.slice(0,6)+'…' : tab.label }}</span>
         </button>
       </div>
 
@@ -202,6 +204,20 @@ function resetToDefault() {
                 class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400"/>
               <p class="text-xs text-slate-400 mt-1">ใช้ตรวจสอบ email ของผู้แทนโรงเรียน</p>
             </div>
+
+            <!-- Tagline -->
+            <div class="md:col-span-2">
+              <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">
+                แท็กไลน์ใต้ชื่อ
+                <span class="normal-case font-normal text-slate-400 ml-1">— กำหนดได้เอง</span>
+              </label>
+              <input v-model="config.tagline" type="text"
+                placeholder="เช่น  สพป.นครราชสีมา เขต 2  หรือ  พัฒนาการศึกษาสู่ความเป็นเลิศ"
+                class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400"/>
+              <p class="text-xs text-slate-400 mt-1">
+                แสดงใต้ชื่อหน่วยงานใน Navbar — หากว่างเว้นจะใช้ <span class="font-mono bg-slate-100 px-1 rounded">ประเภท + จังหวัด + เลขเขต</span> อัตโนมัติ
+              </p>
+            </div>
           </div>
 
           <!-- Preview -->
@@ -216,9 +232,14 @@ function resetToDefault() {
               </div>
               <div>
                 <p class="text-sm font-extrabold text-slate-800">{{ config.area_name || 'ชื่อกลุ่มนิเทศฯ' }}</p>
-                <p class="text-[10px] text-slate-400">{{ config.area_type }}{{ config.province ? ' ' + config.province : '' }}{{ config.area_number ? ' ' + config.area_number : '' }}</p>
+                <p class="text-[10px] text-slate-400">
+                  {{ config.tagline || (`${config.area_type || ''}${config.province ? ' '+config.province : ''}${config.area_number ? ' '+config.area_number : ''}`) || 'สำนักงานเขตพื้นที่การศึกษา' }}
+                </p>
               </div>
             </div>
+            <p class="text-[10px] mt-2" :class="config.tagline ? 'text-emerald-600 font-bold' : 'text-slate-400'">
+              {{ config.tagline ? '✅ ใช้ tagline ที่กำหนดเอง' : '⚙️ ใช้ค่าอัตโนมัติ (ประเภท + จังหวัด + เลขเขต)' }}
+            </p>
           </div>
         </div>
 

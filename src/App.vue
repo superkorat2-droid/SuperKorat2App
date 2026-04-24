@@ -17,10 +17,13 @@ const { config, fetchConfig } = useAreaConfig()
 
 const areaName  = computed(() => config.value?.area_name      || 'กลุ่มนิเทศ ติดตามและประเมินผล')
 const areaShort = computed(() => {
-  const t = config.value?.area_type    || ''
-  const p = config.value?.province     || ''
-  const n = config.value?.area_number  || ''
-  return (t || p || n) ? `${t}${p}${n ? ' ' + n : ''}` : 'สำนักงานเขตพื้นที่การศึกษา'
+  // ถ้ามี tagline ที่กำหนดเอง ใช้เลย
+  if (config.value?.tagline) return config.value.tagline
+  // fallback: ประกอบจากฟิลด์ area_type + province + area_number
+  const t = config.value?.area_type   || ''
+  const p = config.value?.province    || ''
+  const n = config.value?.area_number || ''
+  return (t || p || n) ? `${t}${p ? ' ' + p : ''}${n ? ' ' + n : ''}` : 'สำนักงานเขตพื้นที่การศึกษา'
 })
 const contactPhone = computed(() => config.value?.contact_phone || '0X-XXXX-XXXX')
 const contactEmail = computed(() => config.value?.contact_email || 'nithet@obec.go.th')
