@@ -18,9 +18,27 @@ import AdminBannersView       from '../views/admin/AdminBannersView.vue'
 import AdminNewsView          from '../views/admin/AdminNewsView.vue'
 import AdminDocumentsView     from '../views/admin/AdminDocumentsView.vue'
 import AdminStorageView       from '../views/admin/AdminStorageView.vue'
+import AdminHomeSectionsView  from '../views/admin/AdminHomeSectionsView.vue'
+import AdminSchoolsView       from '../views/admin/AdminSchoolsView.vue'
+import AdminStudentsView      from '../views/admin/AdminStudentsView.vue'
+import AdminEnrollmentView    from '../views/admin/AdminEnrollmentView.vue'
+
+// ─── School portal (nested layout) ───────────────────────────────────────
+import SchoolLayout           from '../views/school/SchoolLayout.vue'
+import SchoolLoginView        from '../views/school/SchoolLoginView.vue'
+import SchoolHomeView         from '../views/school/SchoolHomeView.vue'
+import SchoolProfileView      from '../views/school/SchoolProfileView.vue'
+import SchoolDmcView          from '../views/school/SchoolDmcView.vue'
+
+// ─── Public school directory ──────────────────────────────────────────────
+import PublicSchoolsView      from '../views/PublicSchoolsView.vue'
 
 // ─── Reusable placeholder ─────────────────────────────────────────────────
 import PlaceholderView  from '../views/PlaceholderView.vue'
+
+// ─── News public pages ───────────────────────────────────────────────────
+import NewsView         from '../views/NewsView.vue'
+import NewsDetailView   from '../views/NewsDetailView.vue'
 
 // ─── Service pages (มีหน้าจริง) ──────────────────────────────────────────
 import DownloadView     from '../views/DownloadView.vue'
@@ -44,7 +62,10 @@ const routes = [
       { path: '',         name: 'dashboard',      component: AdminHomeView,         meta: { title: 'แดชบอร์ด' } },
       { path: 'users',    name: 'adminUsers',     component: AdminUsersView,        meta: { title: 'จัดการผู้ใช้', icon: '👥' } },
       { path: 'settings', name: 'adminSettings',  component: AdminAreaSettingsView, meta: { title: 'ตั้งค่าเขต', icon: '⚙️' } },
-      { path: 'schools',  name: 'adminSchools',   component: AdminPlaceholderView,  meta: { title: 'ทำเนียบโรงเรียน', icon: '🏫' } },
+      { path: 'schools',     name: 'adminSchools',     component: AdminSchoolsView,     meta: { title: 'ทำเนียบโรงเรียน', icon: '🏫' } },
+      { path: 'students',    name: 'adminStudents',    component: AdminStudentsView,    meta: { title: 'ข้อมูลนักเรียน', icon: '👨‍🎓' } },
+      { path: 'enrollment',  name: 'adminEnrollment',  component: AdminEnrollmentView,  meta: { title: 'สถิติย้อนหลัง', icon: '📊' } },
+      { path: 'home-sections', name: 'adminHomeSections', component: AdminHomeSectionsView, meta: { title: 'จัดการ Section หน้าแรก' } },
       { path: 'banners',  name: 'adminBanners',   component: AdminBannersView,      meta: { title: 'แบนเนอร์', icon: '🖼️' } },
       { path: 'news',     name: 'adminNews',      component: AdminNewsView,          meta: { title: 'จัดการข่าวสาร', icon: '📰' } },
       { path: 'pages',    name: 'adminPages',     component: AdminPlaceholderView,  meta: { title: 'หน้าเนื้อหา (CMS)', icon: '📄' } },
@@ -131,6 +152,25 @@ const routes = [
     }
   },
 
+  // ── School portal ─────────────────────────────────────────────────────
+  { path: '/school/login', redirect: '/login' },
+  {
+    path: '/school',
+    component: SchoolLayout,
+    children: [
+      { path: '',        name: 'schoolHome',    component: SchoolHomeView    },
+      { path: 'profile', name: 'schoolProfile', component: SchoolProfileView },
+      { path: 'dmc',     name: 'schoolDmc',     component: SchoolDmcView     },
+    ]
+  },
+
+  // ── ทำเนียบโรงเรียน (สาธารณะ) ─────────────────────────────────────────
+  { path: '/schools', name: 'schools', component: PublicSchoolsView },
+
+  // ── ข่าวสาร ──────────────────────────────────────────────────────────
+  { path: '/news',      name: 'news',      component: NewsView       },
+  { path: '/news/:id',  name: 'newsDetail',component: NewsDetailView },
+
   // ── บริการ ────────────────────────────────────────────────────────────
   { path: '/download',  name: 'download',  component: DownloadView  },
   { path: '/url-short', name: 'urlShort',  component: UrlShortView  },
@@ -154,13 +194,25 @@ const router = createRouter({
 
 router.beforeEach(async (to, from, next) => {
   const { data: { session } } = await supabase.auth.getSession()
+
   if (to.meta.requiresAuth && !session) {
     next({ name: 'login' })
-  } else if (to.name === 'login' && session) {
-    next({ name: 'dashboard' })
-  } else {
-    next()
+    return
   }
+
+  // ถ้าล็อกอินแล้วพยายามเข้า /login ให้ redirect ตาม role
+  if (to.name === 'login' && session) {
+    const { data: profile } = await supabase
+      .from('profiles').select('role').eq('id', session.user.id).single()
+    if (profile?.role === 'school') {
+      next({ name: 'schoolHome' })
+    } else {
+      next({ name: 'dashboard' })
+    }
+    return
+  }
+
+  next()
 })
 
 export default router

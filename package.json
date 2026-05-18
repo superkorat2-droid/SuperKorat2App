@@ -6,7 +6,12 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "sb:start": "supabase start",
+    "sb:stop": "supabase stop",
+    "sb:reset": "supabase db reset",
+    "sb:status": "supabase status",
+    "sb:studio": "start http://127.0.0.1:54323"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.4",
@@ -14,7 +19,8 @@
     "pinia": "^2.2.4",
     "sweetalert2": "^11.10.6",
     "vue": "^3.5.12",
-    "vue-router": "^4.4.5"
+    "vue-router": "^4.4.5",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.1.4",

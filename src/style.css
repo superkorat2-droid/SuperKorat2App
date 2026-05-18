@@ -3,52 +3,87 @@
 @tailwind utilities;
 
 /* ── CSS Variables (dynamic theme) ─────────────────────────────
-   ค่าเริ่มต้น — จะถูกเขียนทับโดย useAreaConfig เมื่อโหลดจาก DB
+   ค่าเริ่มต้น Navy + Gold — เขียนทับโดย useAreaConfig จาก DB
    ─────────────────────────────────────────────────────────────── */
 :root {
-  --color-primary:       #2563eb;
-  --color-primary-dark:  #1d4ed8;
-  --color-primary-light: rgba(37,99,235,0.1);
-  --color-primary-ring:  rgba(37,99,235,0.3);
-  --color-secondary:     #4f46e5;
+  --color-primary:        #1e3a5f;
+  --color-primary-dark:   #152d4a;
+  --color-primary-light:  rgba(30,58,95,0.08);
+  --color-primary-ring:   rgba(30,58,95,0.20);
+  --color-secondary:      #b8922a;
+  --color-secondary-light: rgba(184,146,42,0.12);
 }
 
-/* ── Brand utility classes (ใช้แทน bg-blue-600 ในส่วนที่ต้องเปลี่ยนสีได้) */
+/* ── Brand utility classes ──────────────────────────────────── */
 @layer utilities {
-  .bg-primary         { background-color: var(--color-primary) !important; }
-  .bg-primary-dark    { background-color: var(--color-primary-dark) !important; }
-  .bg-primary-light   { background-color: var(--color-primary-light) !important; }
-  .text-primary       { color: var(--color-primary) !important; }
-  .border-primary     { border-color: var(--color-primary) !important; }
-  .ring-primary       { --tw-ring-color: var(--color-primary-ring) !important; }
-  .shadow-primary     { --tw-shadow-color: var(--color-primary-light) !important; }
+  .bg-primary              { background-color: var(--color-primary) !important; }
+  .bg-primary-dark         { background-color: var(--color-primary-dark) !important; }
+  .bg-primary-light        { background-color: var(--color-primary-light) !important; }
+  .bg-secondary            { background-color: var(--color-secondary) !important; }
+  .bg-secondary-light      { background-color: var(--color-secondary-light) !important; }
 
-  .hover\:bg-primary-dark:hover { background-color: var(--color-primary-dark) !important; }
-  .hover\:text-primary:hover    { color: var(--color-primary) !important; }
-  .hover\:bg-primary-light:hover { background-color: var(--color-primary-light) !important; }
+  .text-primary            { color: var(--color-primary) !important; }
+  .text-secondary          { color: var(--color-secondary) !important; }
 
-  /* Gradient stripe ด้านบน */
+  .border-primary          { border-color: var(--color-primary) !important; }
+  .border-secondary        { border-color: var(--color-secondary) !important; }
+
+  .ring-primary            { --tw-ring-color: var(--color-primary-ring) !important; }
+
+  .hover\:bg-primary:hover        { background-color: var(--color-primary) !important; }
+  .hover\:bg-primary-dark:hover   { background-color: var(--color-primary-dark) !important; }
+  .hover\:bg-primary-light:hover  { background-color: var(--color-primary-light) !important; }
+  .hover\:text-primary:hover      { color: var(--color-primary) !important; }
+  .hover\:border-primary:hover    { border-color: var(--color-primary) !important; }
+
+  /* gradient solid (ไม่ใช้ multi-color ดูหรูกว่า) */
   .gradient-primary {
-    background: linear-gradient(to right, var(--color-primary-dark), var(--color-secondary), var(--color-primary-dark));
+    background: linear-gradient(135deg, var(--color-primary-dark) 0%, var(--color-primary) 100%);
   }
 
-  /* Focus ring */
+  /* accent line — เส้นทองใต้ heading */
+  .accent-line::after {
+    content: '';
+    display: block;
+    width: 2.5rem;
+    height: 2px;
+    background-color: var(--color-secondary);
+    margin-top: 0.75rem;
+  }
+  .accent-line-center::after {
+    content: '';
+    display: block;
+    width: 2.5rem;
+    height: 2px;
+    background-color: var(--color-secondary);
+    margin: 0.75rem auto 0;
+  }
+
+  /* focus ring */
   .focus-primary:focus {
     outline: none;
-    box-shadow: 0 0 0 4px var(--color-primary-ring);
+    box-shadow: 0 0 0 3px var(--color-primary-ring);
     border-color: var(--color-primary);
   }
 }
 
-/* ── Typography ─────────────────────────────────────────────── */
+/* ── Typography base ─────────────────────────────────────────── */
 body {
   font-family: 'Sarabun', sans-serif;
   -webkit-font-smoothing: antialiased;
+  color: #0f172a;
 }
 .font-sarabun { font-family: 'Sarabun', sans-serif; }
 
-/* ── SweetAlert2 ────────────────────────────────────────────── */
+/* ── SweetAlert2 ─────────────────────────────────────────────── */
 .swal2-popup {
-  border-radius: 2rem !important;
+  border-radius: 1rem !important;
   font-family: 'Sarabun', sans-serif !important;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.12) !important;
 }
+
+/* ── Scrollbar minimal ───────────────────────────────────────── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }

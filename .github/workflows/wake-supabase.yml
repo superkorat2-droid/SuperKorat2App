@@ -1,0 +1,54 @@
+name: Wake Supabase
+
+on:
+  schedule:
+    # รันทุกวัน 07:00 น. (UTC+7) = 00:00 UTC
+    - cron: '0 0 * * *'
+  workflow_dispatch:      # รันมือได้จาก GitHub Actions tab
+
+jobs:
+  wake:
+    name: Unpause & Ping Supabase
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Restore project (ปลุก DB ถ้า pause อยู่)
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            -X POST \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ACCESS_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            "https://api.supabase.com/v1/projects/${{ secrets.SUPABASE_PROJECT_REF }}/restore")
+
+          echo "Restore status: $STATUS"
+
+          if [ "$STATUS" = "201" ]; then
+            echo "✅ Project restored — รอ DB พร้อม..."
+            sleep 30
+          elif [ "$STATUS" = "409" ]; then
+            echo "ℹ️ Project ทำงานปกติอยู่แล้ว"
+          else
+            echo "⚠️ Unexpected status: $STATUS"
+          fi
+
+      - name: Ping API (กัน auto-pause)
+        run: |
+          HTTP=$(curl -s -o /dev/null -w "%{http_code}" \
+            "${{ secrets.SUPABASE_URL }}/rest/v1/" \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}")
+
+          echo "Ping status: $HTTP"
+
+          if [ "$HTTP" = "200" ] || [ "$HTTP" = "404" ]; then
+            echo "✅ Supabase ตอบสนองปกติ"
+          else
+            echo "❌ Supabase ไม่ตอบสนอง (status: $HTTP)"
+            exit 1
+          fi
+
+      - name: Health check summary
+        run: |
+          echo "Project: ${{ secrets.SUPABASE_PROJECT_REF }}"
+          echo "URL    : ${{ secrets.SUPABASE_URL }}"
+          echo "Time   : $(TZ='Asia/Bangkok' date '+%Y-%m-%d %H:%M:%S %Z')"

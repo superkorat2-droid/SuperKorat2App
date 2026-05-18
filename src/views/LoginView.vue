@@ -15,13 +15,30 @@ const loading  = ref(false)
 const handleLogin = async () => {
   try {
     loading.value = true
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data: authData, error } = await supabase.auth.signInWithPassword({
       email: email.value,
       password: password.value,
     })
     if (error) throw error
-    Swal.fire({ icon:'success', title:'เข้าสู่ระบบสำเร็จ', text:'ยินดีต้อนรับกลับเข้าสู่ระบบ', showConfirmButton:false, timer:1500 })
-    router.push({ name: 'dashboard' })
+
+    // ดึง profile เพื่อเช็ค role
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role, is_approved')
+      .eq('id', authData.user.id)
+      .single()
+
+    if (profile?.role === 'school') {
+      if (!profile.is_approved) {
+        await supabase.auth.signOut()
+        throw new Error('บัญชีนี้ยังไม่ได้รับการอนุมัติ')
+      }
+      Swal.fire({ icon:'success', title:'เข้าสู่ระบบสำเร็จ', showConfirmButton:false, timer:1200 })
+      router.push({ name: 'schoolHome' })
+    } else {
+      Swal.fire({ icon:'success', title:'เข้าสู่ระบบสำเร็จ', text:'ยินดีต้อนรับกลับเข้าสู่ระบบ', showConfirmButton:false, timer:1500 })
+      router.push({ name: 'dashboard' })
+    }
   } catch (e) {
     Swal.fire({ icon:'error', title:'เข้าสู่ระบบไม่สำเร็จ',
       text: e.message === 'Invalid login credentials' ? 'อีเมลหรือรหัสผ่านไม่ถูกต้อง' : e.message,

@@ -12,15 +12,48 @@ const config  = ref(null)
 const loading = ref(false)
 const loaded  = ref(false)
 
+// ── Preset themes ──────────────────────────────────────────────
+export const THEME_PRESETS = [
+  {
+    id:        'navy',
+    name:      'Executive Navy',
+    desc:      'น้ำเงินเข้ม + ทอง — ราชการ น่าเชื่อถือ',
+    primary:   '#1e3a5f',
+    secondary: '#b8922a',
+  },
+  {
+    id:        'slate',
+    name:      'Slate & Sky',
+    desc:      'เทาเข้ม + ฟ้า — โมเดิร์น สะอาด',
+    primary:   '#1e293b',
+    secondary: '#0369a1',
+  },
+  {
+    id:        'indigo',
+    name:      'Royal Indigo',
+    desc:      'คราม + ม่วง — สง่างาม โดดเด่น',
+    primary:   '#312e81',
+    secondary: '#7c3aed',
+  },
+]
+
+// ── Default sections config ────────────────────────────────────
+export const DEFAULT_HOME_SECTIONS = [
+  { key: 'news',     label: 'ข่าวสาร',      title: 'ข่าวสารและประชาสัมพันธ์',             visible: true, bg: '#ffffff', order: 1 },
+  { key: 'services', label: 'บริการออนไลน์', title: 'บริการออนไลน์',                       visible: true, bg: '#f8fafc', order: 2 },
+  { key: 'cta',      label: 'CTA Banner',    title: 'ระบบกลุ่มนิเทศ ติดตามและประเมินผล',  visible: true, bg: '#ffffff', order: 3 },
+]
+
 // ── Default theme ──────────────────────────────────────────────
 const DEFAULTS = {
-  primary_color:   '#2563eb',
-  secondary_color: '#4f46e5',
+  primary_color:   '#1e3a5f',
+  secondary_color: '#b8922a',
   area_name:       'กลุ่มนิเทศ ติดตามและประเมินผลการจัดการศึกษา',
   area_name_short: 'กลุ่มนิเทศฯ',
   area_type:       'สพป.',
   province:        '',
   area_number:     '',
+  tagline:         '',
   contact_phone:   '',
   contact_email:   '',
   facebook_url:    '',
@@ -28,29 +61,13 @@ const DEFAULTS = {
   youtube_url:     '',
   website_url:     '',
   logo_url:        '',
-}
-
-// ── Apply CSS variables to :root ───────────────────────────────
-function applyTheme(cfg) {
-  if (!cfg) return
-  const root = document.documentElement
-
-  const primary   = cfg.primary_color   || DEFAULTS.primary_color
-  const secondary = cfg.secondary_color || DEFAULTS.secondary_color
-
-  root.style.setProperty('--color-primary',   primary)
-  root.style.setProperty('--color-secondary', secondary)
-
-  // Generate shade variants (darken/lighten by mixing with black/white)
-  root.style.setProperty('--color-primary-dark',  darken(primary,  20))
-  root.style.setProperty('--color-primary-light', lighten(primary, 90))
-  root.style.setProperty('--color-primary-ring',  lighten(primary, 70))
+  home_sections:   DEFAULT_HOME_SECTIONS,
 }
 
 // ── Helper: hex → RGB ──────────────────────────────────────────
 function hexToRgb(hex) {
   const r = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
-  return r ? [parseInt(r[1],16), parseInt(r[2],16), parseInt(r[3],16)] : [37,99,235]
+  return r ? [parseInt(r[1],16), parseInt(r[2],16), parseInt(r[3],16)] : [30,58,95]
 }
 
 function darken(hex, pct) {
@@ -59,24 +76,39 @@ function darken(hex, pct) {
   return `rgb(${Math.round(r*f)},${Math.round(g*f)},${Math.round(b*f)})`
 }
 
-function lighten(hex, pct) {
+function alphaOf(hex, alpha) {
   const [r,g,b] = hexToRgb(hex)
-  const f = pct/100
-  return `rgba(${r},${g},${b},${1 - f})`
+  return `rgba(${r},${g},${b},${alpha})`
+}
+
+// ── Apply CSS variables to :root ───────────────────────────────
+export function applyTheme(cfg) {
+  if (!cfg) return
+  const root = document.documentElement
+
+  const primary   = cfg.primary_color   || DEFAULTS.primary_color
+  const secondary = cfg.secondary_color || DEFAULTS.secondary_color
+
+  root.style.setProperty('--color-primary',          primary)
+  root.style.setProperty('--color-primary-dark',     darken(primary, 25))
+  root.style.setProperty('--color-primary-light',    alphaOf(primary, 0.08))
+  root.style.setProperty('--color-primary-ring',     alphaOf(primary, 0.22))
+  root.style.setProperty('--color-secondary',        secondary)
+  root.style.setProperty('--color-secondary-light',  alphaOf(secondary, 0.12))
 }
 
 // ── Composable ─────────────────────────────────────────────────
 export function useAreaConfig() {
 
   const fetchConfig = async (force = false) => {
-    if (loaded.value && !force) return   // cache hit
+    if (loaded.value && !force) return
     loading.value = true
     try {
       const { data, error } = await supabase.rpc('get_area_config')
       if (error) throw error
       config.value = { ...DEFAULTS, ...data }
     } catch {
-      config.value = { ...DEFAULTS }    // fallback to defaults
+      config.value = { ...DEFAULTS }
     } finally {
       applyTheme(config.value)
       loading.value = false
@@ -93,17 +125,15 @@ export function useAreaConfig() {
       .single()
     if (!error) {
       config.value = { ...config.value, ...patch }
-      applyTheme(config.value)           // preview ทันทีหลัง save
+      applyTheme(config.value)
     }
     return { data, error }
   }
 
-  // preview สีโดยยังไม่ save (สำหรับ color picker)
   const previewTheme = (primary, secondary) => {
     applyTheme({ primary_color: primary, secondary_color: secondary })
   }
 
-  // reset กลับค่าใน DB
   const resetTheme = () => applyTheme(config.value)
 
   return {

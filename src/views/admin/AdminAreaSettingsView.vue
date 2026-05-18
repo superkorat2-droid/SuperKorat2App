@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { supabase } from '../../supabase'
-import { useAreaConfig } from '../../composables/useAreaConfig'
+import { useAreaConfig, THEME_PRESETS } from '../../composables/useAreaConfig'
 import ImageCropperModal from '../../components/ImageCropperModal.vue'
 import StorageBrowser    from '../../components/StorageBrowser.vue'
 import Swal from 'sweetalert2'
@@ -111,6 +111,17 @@ function onStorageSelect({ url }) {
   Swal.fire({ icon: 'success', title: 'เลือกโลโก้แล้ว', text: 'กด "บันทึกการตั้งค่า" เพื่อใช้งาน', confirmButtonColor: '#3b82f6' })
 }
 
+function applyPreset(preset) {
+  config.value.primary_color   = preset.primary
+  config.value.secondary_color = preset.secondary
+  previewTheme(preset.primary, preset.secondary)
+}
+
+function isPresetActive(preset) {
+  return config.value.primary_color === preset.primary &&
+         config.value.secondary_color === preset.secondary
+}
+
 function resetToDefault() {
   Swal.fire({
     title: 'รีเซ็ตค่าตั้งต้น?', icon: 'warning',
@@ -118,9 +129,9 @@ function resetToDefault() {
     confirmButtonText: 'รีเซ็ต', cancelButtonText: 'ยกเลิก'
   }).then(res => {
     if (res.isConfirmed) {
-      config.value.primary_color   = '#2563eb'
-      config.value.secondary_color = '#4f46e5'
-      previewTheme('#2563eb', '#4f46e5')
+      config.value.primary_color   = '#1e3a5f'
+      config.value.secondary_color = '#b8922a'
+      previewTheme('#1e3a5f', '#b8922a')
     }
   })
 }
@@ -245,6 +256,49 @@ function resetToDefault() {
 
         <!-- ── Tab: โลโก้และสี ───────────────────────────────── -->
         <div v-if="activeTab === 'brand'" class="space-y-6">
+
+          <!-- Preset themes -->
+          <div>
+            <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-3">
+              ธีมสำเร็จรูป
+              <span class="normal-case font-normal text-slate-400 ml-1">— คลิกเพื่อนำไปใช้ทันที</span>
+            </label>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <button
+                v-for="preset in THEME_PRESETS"
+                :key="preset.id"
+                @click="applyPreset(preset)"
+                :class="[
+                  'relative flex items-center gap-4 p-4 rounded-2xl border-2 text-left transition-all',
+                  isPresetActive(preset)
+                    ? 'border-primary bg-primary-light shadow-md'
+                    : 'border-slate-100 bg-white hover:border-slate-300 hover:shadow-sm'
+                ]">
+                <!-- Color swatches -->
+                <div class="flex flex-col gap-1.5 flex-shrink-0">
+                  <div class="w-7 h-7 rounded-lg shadow-sm" :style="`background:${preset.primary}`"></div>
+                  <div class="w-7 h-7 rounded-lg shadow-sm" :style="`background:${preset.secondary}`"></div>
+                </div>
+                <!-- Text -->
+                <div class="flex-1 min-w-0">
+                  <p class="font-bold text-sm text-slate-800 truncate">{{ preset.name }}</p>
+                  <p class="text-xs text-slate-400 leading-snug mt-0.5">{{ preset.desc }}</p>
+                </div>
+                <!-- Active badge -->
+                <span v-if="isPresetActive(preset)"
+                  class="absolute top-2.5 right-2.5 w-5 h-5 rounded-full flex items-center justify-center"
+                  style="background-color: var(--color-primary)">
+                  <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/>
+                  </svg>
+                </span>
+              </button>
+            </div>
+            <p class="text-xs text-slate-400 mt-2">กด "บันทึกการตั้งค่า" เพื่อใช้ธีมที่เลือกถาวร</p>
+          </div>
+
+          <div class="border-t border-slate-100"></div>
+
           <!-- Logo upload section -->
           <div>
             <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-3">โลโก้เขตพื้นที่</label>
