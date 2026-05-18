@@ -40,8 +40,9 @@ jobs:
 
           echo "Ping status: $HTTP"
 
-          if [ "$HTTP" = "200" ] || [ "$HTTP" = "404" ]; then
-            echo "✅ Supabase ตอบสนองปกติ"
+          # 200/404 = ปกติ, 401 = server ตอบแล้ว แค่ anon ไม่มีสิทธิ์ (RLS) = ปกติเช่นกัน
+          if [ "$HTTP" = "200" ] || [ "$HTTP" = "404" ] || [ "$HTTP" = "401" ]; then
+            echo "✅ Supabase ตอบสนองปกติ (HTTP $HTTP)"
           else
             echo "❌ Supabase ไม่ตอบสนอง (status: $HTTP)"
             exit 1
