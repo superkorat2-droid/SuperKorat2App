@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run:*)",
+      "Bash(git -C \"D:/VueJS/vue_gas_supabase\" status --short)",
+      "Bash(git -C \"D:/VueJS/vue_gas_supabase\" diff --stat)",
+      "Bash(git -C \"D:/VueJS/vue_gas_supabase\" add src/pages/admin/StudentsPage.vue src/pages/public/StudentHealthPage.vue src/pages/public/StudentsDashboardPage.vue src/components/public/TheNavbar.vue src/router/index.js)",
+      "Bash(git -C D:/VueJS/vue_gas_supabase commit -m ':*)",
+      "Bash(git -C \"D:/VueJS/vue_gas_supabase\" add src/pages/admin/StudentsPage.vue src/pages/public/StudentsDashboardPage.vue src/components/public/TheNavbar.vue)",
+      "Bash(git -C \"D:/VueJS/vue_gas_supabase\" add src/pages/admin/StudentsPage.vue src/pages/public/StudentsDashboardPage.vue)",
+      "Bash(git -C \"D:/VueJS/vue_gas_supabase\" add src/pages/admin/StudentsPage.vue)",
+      "Bash(git add:*)",
+      "Bash(git commit -m ':*)",
+      "Bash(git push:*)",
+      "Bash(git commit -m ' *)",
+      "Bash(cd \"C:\\\\Users\\\\Lenovo\\\\AppData\\\\Roaming\\\\Claude\\\\local-agent-mode-sessions\\\\skills-plugin\\\\da2314a7-98e2-44f0-a88c-61a4e42055ad\\\\47826aac-c462-4219-aaf4-2457df30922d\\\\skills\\\\xlsx\")",
+      "Bash(python3 -c ' *)",
+      "Bash(python3 -c \"import sys; data=sys.stdin.buffer.read\\(\\); print\\(data.decode\\('utf-8', errors='replace'\\)\\)\")",
+      "Bash(node scripts/import-schools.mjs)",
+      "Bash(npm install *)",
+      "Read(//c/Users/Lenovo/AppData/Roaming/Claude/local-agent-mode-sessions/skills-plugin/da2314a7-98e2-44f0-a603-0bbc77115bd8/47826aac-c462-4219-aaf4-2457df30922d/skills/xlsx/**)",
+      "Bash(python -c ' *)",
+      "Bash(python -c \"import sys; data=sys.stdin.buffer.read\\(\\); print\\(data.decode\\('utf-8', errors='replace'\\)\\)\")"
+    ]
+  }
+}

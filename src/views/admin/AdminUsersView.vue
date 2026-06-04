@@ -31,7 +31,7 @@ async function fetchUsers() {
   loading.value = true
   const { data } = await supabase
     .from('profiles')
-    .select('id, full_name, email, role, position, phone, school_name, is_approved, is_active, created_at, last_login_at')
+    .select('id, full_name, email, role, position, phone, school_name, is_approved, is_active, can_publish_supervision, created_at, last_login_at')
     .order('created_at', { ascending: false })
   users.value  = data || []
   loading.value = false
@@ -62,13 +62,14 @@ async function saveUser() {
   saving.value = true
   if (editUser.value.id) {
     const { error } = await supabase.from('profiles').update({
-      full_name: editUser.value.full_name,
-      role:      editUser.value.role,
-      position:  editUser.value.position,
-      phone:     editUser.value.phone,
-      school_name: editUser.value.school_name,
-      is_approved: editUser.value.is_approved,
-      is_active:   editUser.value.is_active,
+      full_name:                editUser.value.full_name,
+      role:                     editUser.value.role,
+      position:                 editUser.value.position,
+      phone:                    editUser.value.phone,
+      school_name:              editUser.value.school_name,
+      is_approved:              editUser.value.is_approved,
+      is_active:                editUser.value.is_active,
+      can_publish_supervision:  editUser.value.can_publish_supervision || false,
     }).eq('id', editUser.value.id)
     if (error) { Swal.fire({ icon:'error', title:'ผิดพลาด', text: error.message }); saving.value = false; return }
   }
@@ -108,7 +109,7 @@ function formatDate(iso) {
     <!-- Header -->
     <div class="flex items-center justify-between flex-wrap gap-3">
       <div>
-        <h1 class="text-2xl font-extrabold text-slate-900">👥 จัดการผู้ใช้</h1>
+        <h1 class="text-2xl font-extrabold text-slate-900 flex items-center gap-2"><SvgIcon name="users" class="w-6 h-6 text-primary"/> จัดการผู้ใช้</h1>
         <p class="text-slate-500 text-sm mt-0.5">ผู้ใช้ทั้งหมด {{ users.length }} คน · รออนุมัติ {{ pendingUsers.length }} คน</p>
       </div>
       <button @click="openEdit()"
@@ -261,6 +262,16 @@ function formatDate(iso) {
               <label class="flex items-center gap-2 cursor-pointer">
                 <input v-model="editUser.is_active" type="checkbox" class="w-4 h-4 accent-blue-600"/>
                 <span class="text-sm font-medium text-slate-700">เปิดใช้งาน</span>
+              </label>
+            </div>
+            <!-- Supervision publish permission -->
+            <div class="pt-2 border-t border-slate-100">
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input v-model="editUser.can_publish_supervision" type="checkbox" class="w-4 h-4 accent-indigo-600"/>
+                <div>
+                  <p class="text-sm font-medium text-slate-700">อนุญาตสร้างและเผยแพร่แบบนิเทศ</p>
+                  <p class="text-xs text-slate-400">เปิดให้ staff สามารถเผยแพร่แบบนิเทศได้เอง</p>
+                </div>
               </label>
             </div>
           </div>

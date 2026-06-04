@@ -28,6 +28,17 @@ INSERT INTO auth.users (
   '{"full_name": "ผู้ดูแลระบบ"}'::jsonb
 ) ON CONFLICT (id) DO NOTHING;
 
+-- ── 1b. Fix NULL columns ที่ทำให้ GoTrue auth 500 ─────────────
+UPDATE auth.users SET
+  confirmation_token      = COALESCE(confirmation_token, ''),
+  email_change            = COALESCE(email_change, ''),
+  recovery_token          = COALESCE(recovery_token, ''),
+  email_change_token_new  = COALESCE(email_change_token_new, ''),
+  email_change_token_current = COALESCE(email_change_token_current, ''),
+  reauthentication_token  = COALESCE(reauthentication_token, ''),
+  phone_change            = COALESCE(phone_change, ''),
+  phone                   = COALESCE(phone, '');
+
 -- ── 2. upsert profile → super_admin ──────────────────────────
 INSERT INTO public.profiles (
   id, email, full_name, role, is_admin, is_approved, is_active, created_at

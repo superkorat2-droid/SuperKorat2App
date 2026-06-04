@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { supabase } from '../supabase'
 
@@ -119,8 +119,12 @@ function toEmbedUrl(url, type) {
   }
 }
 
-onMounted(async () => {
-  const id = route.params.id
+async function loadNews(id) {
+  loading.value = true
+  news.value = null
+  related.value = []
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+
   const { data } = await supabase
     .from('news')
     .select('*')
@@ -131,10 +135,8 @@ onMounted(async () => {
   if (!data) { router.push('/news'); return }
   news.value = data
 
-  // นับยอดอ่าน (fire-and-forget — ไม่รอผล)
   supabase.rpc('increment_news_view', { news_id: id }).then()
 
-  // related news (same category, excluding current)
   const { data: rel } = await supabase
     .from('news')
     .select('id, title, cover_url, published_at, category, view_count')
@@ -144,16 +146,18 @@ onMounted(async () => {
     .order('published_at', { ascending: false })
     .limit(3)
   related.value = rel || []
-
   loading.value = false
-})
+}
+
+onMounted(() => loadNews(route.params.id))
+watch(() => route.params.id, id => { if (id) loadNews(id) })
 
 onMounted(() => window.addEventListener('message', onHtmlMessage))
 onUnmounted(() => window.removeEventListener('message', onHtmlMessage))
 </script>
 
 <template>
-  <div class="font-sarabun bg-slate-50 min-h-screen">
+  <div class="font-sarabun bg-slate-50 dark:bg-slate-950 dark:text-slate-100 min-h-screen transition-colors duration-300">
 
     <!-- Loading -->
     <div v-if="loading" class="max-w-3xl mx-auto px-4 py-16 space-y-4 animate-pulse">
@@ -164,55 +168,61 @@ onUnmounted(() => window.removeEventListener('message', onHtmlMessage))
 
     <template v-else-if="news">
 
-      <!-- ── Cover image (respect show_cover) ────────────────────── -->
-      <div v-if="news.cover_url && (news.show_cover ?? true)"
-        class="w-full bg-slate-900 flex justify-center">
-        <img :src="news.cover_url"
-          class="w-full h-auto block"
-          style="max-height: 72vh; object-fit: contain;"/>
-      </div>
-
-      <!-- ── Content area ─────────────────────────────────────────── -->
-      <div class="max-w-3xl mx-auto px-4 py-8">
-
-        <!-- Back -->
-        <button @click="router.push('/news')"
-          class="flex items-center gap-1.5 text-sm text-slate-400 hover:text-primary transition-colors mb-6">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/>
-          </svg>
-          กลับไปหน้าข่าว
-        </button>
-
-        <!-- Meta badges -->
-        <div class="flex flex-wrap items-center gap-2 mb-4">
-          <span :class="['text-xs font-bold px-3 py-1 rounded-full', catMeta[news.category]?.bg, catMeta[news.category]?.text]">
+      <!-- ── Top bar: back + category + date (sticky) ─────────────── -->
+      <div class="sticky top-0 z-20 bg-white/90 dark:bg-slate-900/90 backdrop-blur border-b border-slate-100 dark:border-slate-800 shadow-sm">
+        <div class="max-w-3xl mx-auto px-4 h-12 flex items-center gap-3">
+          <button @click="router.push('/news')"
+            class="flex items-center gap-1.5 text-sm font-bold text-slate-500 hover:text-primary transition-colors flex-shrink-0">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/>
+            </svg>
+            กลับ
+          </button>
+          <div class="w-px h-4 bg-slate-200 flex-shrink-0"></div>
+          <span :class="['text-xs font-bold px-2.5 py-0.5 rounded-full flex-shrink-0',
+            catMeta[news.category]?.bg, catMeta[news.category]?.text]">
             {{ catMeta[news.category]?.label || news.category }}
           </span>
           <span v-if="news.is_pinned"
-            class="flex items-center gap-1 text-xs font-bold px-2.5 py-1 bg-amber-100 text-amber-700 rounded-full">
+            class="flex items-center gap-1 text-xs font-bold px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full flex-shrink-0">
             <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
               <path d="M16 12V4h1a1 1 0 000-2H7a1 1 0 000 2h1v8l-2 2v2h5v5l1 1 1-1v-5h5v-2l-2-2z"/>
             </svg>
             ปักหมุด
           </span>
-          <div class="flex items-center gap-3 ml-auto text-xs text-slate-400">
-            <!-- View count -->
+          <div class="flex items-center gap-3 ml-auto text-xs text-slate-400 flex-shrink-0">
             <span class="flex items-center gap-1">
               <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
               </svg>
               {{ (news.view_count || 0).toLocaleString() }} ครั้ง
             </span>
-            <span>{{ fmtDate(news.published_at) }}</span>
+            <span class="hidden sm:block">{{ fmtDate(news.published_at) }}</span>
           </div>
         </div>
+      </div>
 
-        <!-- Title (respect show_title) -->
-        <h1 v-if="news.show_title ?? true"
-          class="text-2xl md:text-3xl font-extrabold text-slate-900 leading-tight mb-4">
-          {{ news.title }}
-        </h1>
+      <!-- ── Title (เหนือภาพเสมอ) ────────────────────────────────── -->
+      <div class="max-w-3xl mx-auto px-4 pt-8 pb-4">
+        <div v-if="news.show_title ?? true" class="flex items-start gap-2.5">
+          <span class="flex-shrink-0 text-lg leading-snug">📌</span>
+          <h1 class="text-lg md:text-2xl font-extrabold text-slate-900 dark:text-slate-50 leading-snug">
+            {{ news.title }}
+          </h1>
+        </div>
+        <p class="text-xs text-slate-400 dark:text-slate-500 mt-2 pl-8">{{ fmtDate(news.published_at) }}</p>
+      </div>
+
+      <!-- ── Cover image ───────────────────────────────────────────── -->
+      <div v-if="news.cover_url && (news.show_cover ?? true)"
+        class="w-full bg-slate-100">
+        <img :src="news.cover_url"
+          class="w-full h-auto block mx-auto"
+          style="max-height: 70vh; object-fit: contain;"/>
+      </div>
+
+      <!-- ── Content area ─────────────────────────────────────────── -->
+      <div class="max-w-3xl mx-auto px-4 py-8">
 
         <!-- Excerpt -->
         <p v-if="news.excerpt"
@@ -222,7 +232,7 @@ onUnmounted(() => window.removeEventListener('message', onHtmlMessage))
 
         <!-- Content (plain text) -->
         <div v-if="news.content"
-          class="prose prose-slate max-w-none text-slate-700 leading-relaxed whitespace-pre-wrap text-sm md:text-base">
+          class="prose prose-slate max-w-none text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap text-sm md:text-base">
           {{ news.content }}
         </div>
 
@@ -256,7 +266,7 @@ onUnmounted(() => window.removeEventListener('message', onHtmlMessage))
 
         <!-- ── File / Link attachment ───────────────────────────────── -->
         <div v-if="news.file_url"
-          class="mt-8 p-4 bg-primary-light border border-primary/20 rounded-2xl flex items-center gap-4">
+          class="mt-8 p-4 bg-primary-light dark:bg-slate-800 border border-primary/20 dark:border-slate-700 rounded-2xl flex items-center gap-4">
           <!-- Icon -->
           <div class="w-10 h-10 rounded-xl bg-primary flex items-center justify-center flex-shrink-0">
             <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
@@ -293,7 +303,7 @@ onUnmounted(() => window.removeEventListener('message', onHtmlMessage))
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div v-for="r in related" :key="r.id"
               @click="router.push(`/news/${r.id}`)"
-              class="group bg-white rounded-xl border border-slate-100 overflow-hidden cursor-pointer hover:shadow-md transition-all">
+              class="group bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 overflow-hidden cursor-pointer hover:shadow-md transition-all">
               <div class="h-28 bg-slate-100 overflow-hidden">
                 <img v-if="r.cover_url" :src="r.cover_url"
                   class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"/>
@@ -304,7 +314,7 @@ onUnmounted(() => window.removeEventListener('message', onHtmlMessage))
                 </div>
               </div>
               <div class="p-3">
-                <p class="text-xs font-bold text-slate-700 line-clamp-2 group-hover:text-primary transition-colors">
+                <p class="text-xs font-bold text-slate-700 dark:text-slate-200 line-clamp-2 group-hover:text-primary transition-colors">
                   {{ r.title }}
                 </p>
                 <div class="flex items-center justify-between mt-1">

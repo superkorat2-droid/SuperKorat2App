@@ -8,38 +8,99 @@ const { config, fetchConfig, updateConfig } = useAreaConfig()
 const sections = ref([])
 const saving   = ref(false)
 
+// ── Gradient types ────────────────────────────────────────────────
+const BG_TYPES = [
+  { value: 'solid',       label: 'สีเดียว',       preview: (c1)     => `${c1}` },
+  { value: 'gradient-tb', label: '↓ บน→ล่าง',     preview: (c1, c2) => `linear-gradient(to bottom, ${c1}, ${c2})` },
+  { value: 'gradient-bt', label: '↑ ล่าง→บน',     preview: (c1, c2) => `linear-gradient(to top, ${c1}, ${c2})` },
+  { value: 'gradient-lr', label: '→ ซ้าย→ขวา',    preview: (c1, c2) => `linear-gradient(to right, ${c1}, ${c2})` },
+  { value: 'radial',      label: '◎ เรืองกลาง',   preview: (c1, c2) => `radial-gradient(ellipse at center, ${c1}, ${c2})` },
+  { value: 'radial-in',  label: '◉ สี2กลาง-สี1ขอบ', preview: (c1, c2) => `radial-gradient(ellipse at center, ${c2} 0%, ${c1} 100%)` },
+]
+
+function getBgStyle(sec) {
+  const c1 = sec.bg  || '#ffffff'
+  const c2 = sec.bg2 || '#f1f5f9'
+  const t  = BG_TYPES.find(t => t.value === (sec.bg_type || 'solid'))
+  if (!t || sec.bg_type === 'solid') return { backgroundColor: c1 }
+  return { background: t.preview(c1, c2) }
+}
+
 // ── BG Color presets ──────────────────────────────────────────────
 const BG_PRESETS = [
+  // Light (solid)
   { label: 'ขาว',        value: '#ffffff' },
   { label: 'Slate 50',   value: '#f8fafc' },
   { label: 'Slate 100',  value: '#f1f5f9' },
-  { label: 'Slate 200',  value: '#e2e8f0' },
   { label: 'Blue 50',    value: '#eff6ff' },
-  { label: 'Amber 50',   value: '#fffbeb' },
+  { label: 'Indigo 50',  value: '#eef2ff' },
+  { label: 'Purple 50',  value: '#faf5ff' },
   { label: 'Emerald 50', value: '#ecfdf5' },
+  { label: 'Amber 50',   value: '#fffbeb' },
+  // Deep (gradient-friendly)
+  { label: 'Blue 900',   value: '#1e3a8a' },
+  { label: 'Blue 700',   value: '#1d4ed8' },
+  { label: 'Blue 500',   value: '#3b82f6' },
+  { label: 'Indigo 800', value: '#3730a3' },
+  { label: 'Indigo 600', value: '#4f46e5' },
+  { label: 'Purple 800', value: '#6b21a8' },
+  { label: 'Purple 600', value: '#9333ea' },
+  { label: 'Teal 700',   value: '#0f766e' },
+  { label: 'Teal 500',   value: '#14b8a6' },
+  { label: 'Emerald 700',value: '#047857' },
+  { label: 'Rose 700',   value: '#be123c' },
+  { label: 'Slate 800',  value: '#1e293b' },
+  { label: 'Slate 900',  value: '#0f172a' },
+]
+
+// ── Gradient quick presets ─────────────────────────────────────────
+const GRADIENT_PRESETS = [
+  { label: 'Ocean Blue',   bg: '#1e3a8a', bg2: '#3b82f6', bg_type: 'gradient-lr' },
+  { label: 'Royal Indigo', bg: '#3730a3', bg2: '#6366f1', bg_type: 'gradient-lr' },
+  { label: 'Violet Night', bg: '#4c1d95', bg2: '#7c3aed', bg_type: 'gradient-tb' },
+  { label: 'Teal Ocean',   bg: '#0f766e', bg2: '#2dd4bf', bg_type: 'gradient-lr' },
+  { label: 'Forest',       bg: '#14532d', bg2: '#22c55e', bg_type: 'gradient-tb' },
+  { label: 'Sunset',       bg: '#9a3412', bg2: '#f97316', bg_type: 'gradient-lr' },
+  { label: 'Midnight',     bg: '#0f172a', bg2: '#1e3a8a', bg_type: 'gradient-tb' },
+  { label: 'Light Blue',   bg: '#eff6ff', bg2: '#dbeafe', bg_type: 'gradient-tb' },
+  { label: 'Light Purple', bg: '#faf5ff', bg2: '#ede9fe', bg_type: 'gradient-tb' },
 ]
 
 // ── Section icons ─────────────────────────────────────────────────
 const SECTION_ICONS = {
-  news:     'M12 7.5h1.5m-1.5 3h1.5m-7.5 3h7.5m-7.5 3h7.5m3-9h3.375c.621 0 1.125.504 1.125 1.125V18a2.25 2.25 0 01-2.25 2.25M16.5 7.5V18a2.25 2.25 0 002.25 2.25M16.5 7.5V4.875c0-.621-.504-1.125-1.125-1.125H4.125C3.504 3.75 3 4.254 3 4.875V18a2.25 2.25 0 002.25 2.25h13.5',
-  services: 'M13.5 16.875h3.375m0 0h3.375m-3.375 0V13.5m0 3.375v3.375M6 10.5h2.25a2.25 2.25 0 002.25-2.25V6a2.25 2.25 0 00-2.25-2.25H6A2.25 2.25 0 003.75 6v2.25A2.25 2.25 0 006 10.5zm0 9.75h2.25A2.25 2.25 0 0010.5 18v-2.25a2.25 2.25 0 00-2.25-2.25H6a2.25 2.25 0 00-2.25 2.25V18A2.25 2.25 0 006 20.25zm9.75-9.75H18a2.25 2.25 0 002.25-2.25V6A2.25 2.25 0 0018 3.75h-2.25A2.25 2.25 0 0013.5 6v2.25a2.25 2.25 0 002.25 2.25z',
-  cta:      'M12 18v-5.25m0 0a6.01 6.01 0 001.5-.189m-1.5.189a6.01 6.01 0 01-1.5-.189m3.75 7.478a12.06 12.06 0 01-4.5 0m3.75 2.383a14.406 14.406 0 01-3 0M14.25 18v-.192c0-.983.658-1.823 1.508-2.316a7.5 7.5 0 10-7.517 0c.85.493 1.509 1.333 1.509 2.316V18',
+  news:            'M12 7.5h1.5m-1.5 3h1.5m-7.5 3h7.5m-7.5 3h7.5m3-9h3.375c.621 0 1.125.504 1.125 1.125V18a2.25 2.25 0 01-2.25 2.25M16.5 7.5V18a2.25 2.25 0 002.25 2.25M16.5 7.5V4.875c0-.621-.504-1.125-1.125-1.125H4.125C3.504 3.75 3 4.254 3 4.875V18a2.25 2.25 0 002.25 2.25h13.5',
+  supervision_list:'M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25zM6.75 12h.008v.008H6.75V12zm0 3h.008v.008H6.75V15zm0 3h.008v.008H6.75V18z',
+  services:        'M13.5 16.875h3.375m0 0h3.375m-3.375 0V13.5m0 3.375v3.375M6 10.5h2.25a2.25 2.25 0 002.25-2.25V6a2.25 2.25 0 00-2.25-2.25H6A2.25 2.25 0 003.75 6v2.25A2.25 2.25 0 006 10.5zm0 9.75h2.25A2.25 2.25 0 0010.5 18v-2.25a2.25 2.25 0 00-2.25-2.25H6a2.25 2.25 0 00-2.25 2.25V18A2.25 2.25 0 006 20.25zm9.75-9.75H18a2.25 2.25 0 002.25-2.25V6A2.25 2.25 0 0018 3.75h-2.25A2.25 2.25 0 0013.5 6v2.25a2.25 2.25 0 002.25 2.25z',
+  cta:             'M12 18v-5.25m0 0a6.01 6.01 0 001.5-.189m-1.5.189a6.01 6.01 0 01-1.5-.189m3.75 7.478a12.06 12.06 0 01-4.5 0m3.75 2.383a14.406 14.406 0 01-3 0M14.25 18v-.192c0-.983.658-1.823 1.508-2.316a7.5 7.5 0 10-7.517 0c.85.493 1.509 1.333 1.509 2.316V18',
 }
 
 const SECTION_DESC = {
-  news:     'การ์ดข่าวสาร 8 รายการล่าสุด',
-  services: 'สถิติเขต + เมนูบริการออนไลน์',
-  cta:      'แบนเนอร์เชิญชวน + ลิงค์หลัก',
+  news:            'การ์ดข่าวสาร 8 รายการล่าสุด',
+  supervision_list:'รายการแบบนิเทศ/สอบถามที่เปิดรับ + ดูสถานะโรงเรียน',
+  services:        'สถิติเขต + เมนูบริการออนไลน์',
+  cta:             'แบนเนอร์เชิญชวน + ลิงค์หลัก',
 }
 
 onMounted(async () => {
   await fetchConfig()
   const raw = config.value?.home_sections
-  if (Array.isArray(raw) && raw.length > 0) {
-    sections.value = raw.map(s => ({ ...s })).sort((a, b) => a.order - b.order)
-  } else {
+  if (!Array.isArray(raw) || raw.length === 0) {
     sections.value = DEFAULT_HOME_SECTIONS.map(s => ({ ...s }))
+    return
   }
+  // merge: เพิ่ม section ใหม่จาก DEFAULT ที่ยังไม่มีใน stored config
+  const storedKeys = new Set(raw.map(s => s.key))
+  const maxOrder   = Math.max(...raw.map(s => s.order || 0))
+  const merged = [
+    ...raw.map(s => {
+      const def = DEFAULT_HOME_SECTIONS.find(d => d.key === s.key)
+      return { subtitle: def?.subtitle ?? '', ...s }  // backfill subtitle
+    }),
+    ...DEFAULT_HOME_SECTIONS
+      .filter(s => !storedKeys.has(s.key))
+      .map((s, i) => ({ ...s, order: maxOrder + i + 1 })),
+  ]
+  sections.value = merged.sort((a, b) => a.order - b.order)
 })
 
 // ── Reorder ───────────────────────────────────────────────────────
@@ -171,22 +232,40 @@ function isDark(hex) {
           </div>
         </div>
 
-        <!-- Section title input -->
-        <div class="px-4 pb-2">
-          <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">ชื่อที่แสดงในหน้าแรก</p>
-          <input v-model="sec.title" type="text"
-            :placeholder="sec.key === 'news' ? 'เช่น ข่าวสารและประชาสัมพันธ์' : sec.key === 'services' ? 'เช่น บริการออนไลน์' : 'เช่น ระบบกลุ่มนิเทศ ติดตามและประเมินผล'"
-            class="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-primary transition-colors bg-slate-50 focus:bg-white"/>
+        <!-- Section subtitle + title input -->
+        <div class="px-4 pb-2 space-y-2">
+          <div>
+            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">ข้อความเล็กด้านบน (ภาษาอังกฤษ)</p>
+            <input v-model="sec.subtitle" type="text"
+              :placeholder="sec.key === 'news' ? 'Latest News' : sec.key === 'services' ? 'E-Service Center' : ''"
+              class="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-primary transition-colors bg-slate-50 focus:bg-white"/>
+          </div>
+          <div>
+            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">ชื่อหลัก (ภาษาไทย)</p>
+            <input v-model="sec.title" type="text"
+              :placeholder="sec.key === 'news' ? 'เช่น ข่าวสารและประชาสัมพันธ์' : sec.key === 'services' ? 'เช่น บริการออนไลน์' : 'เช่น ระบบกลุ่มนิเทศ ติดตามและประเมินผล'"
+              class="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-primary transition-colors bg-slate-50 focus:bg-white"/>
+          </div>
+        </div>
+
+        <!-- Gradient quick presets -->
+        <div class="px-4 pb-3">
+          <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Gradient สำเร็จรูป</p>
+          <div class="flex flex-wrap gap-1.5">
+            <button v-for="gp in GRADIENT_PRESETS" :key="gp.label"
+              @click="sec.bg = gp.bg; sec.bg2 = gp.bg2; sec.bg_type = gp.bg_type"
+              :title="gp.label"
+              class="w-8 h-8 rounded-lg border-2 border-white shadow-sm hover:scale-110 transition-transform flex-shrink-0 overflow-hidden"
+              :style="`background: linear-gradient(to right, ${gp.bg}, ${gp.bg2})`"/>
+          </div>
         </div>
 
         <!-- BG Color picker -->
-        <div class="px-4 pb-4">
-          <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">สีพื้นหลัง Section</p>
+        <div class="px-4 pb-3">
+          <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">สีพื้นหลัง (สี 1)</p>
           <div class="flex flex-wrap items-center gap-2">
-            <!-- Preset circles -->
             <button v-for="preset in BG_PRESETS" :key="preset.value"
-              @click="sec.bg = preset.value"
-              :title="preset.label"
+              @click="sec.bg = preset.value" :title="preset.label"
               :class="['w-8 h-8 rounded-full border-2 transition-all hover:scale-110 shadow-sm',
                 sec.bg === preset.value ? 'border-primary scale-110 shadow-md' : 'border-slate-200']"
               :style="{ backgroundColor: preset.value }">
@@ -196,11 +275,7 @@ function isDark(hex) {
                 <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/>
               </svg>
             </button>
-
-            <!-- Divider -->
             <div class="w-px h-6 bg-slate-200"></div>
-
-            <!-- Custom color picker -->
             <label class="relative cursor-pointer group" title="เลือกสีกำหนดเอง">
               <div class="w-8 h-8 rounded-full border-2 border-dashed border-slate-300 group-hover:border-primary transition-colors flex items-center justify-center overflow-hidden"
                 :style="{ backgroundColor: BG_PRESETS.some(p => p.value === sec.bg) ? 'transparent' : sec.bg }">
@@ -212,12 +287,58 @@ function isDark(hex) {
               <input type="color" :value="sec.bg" @input="sec.bg = $event.target.value"
                 class="absolute inset-0 opacity-0 cursor-pointer w-full h-full"/>
             </label>
-
-            <!-- Current BG preview badge -->
-            <div class="flex items-center gap-1.5 ml-2">
+            <div class="flex items-center gap-1.5 ml-1">
               <div class="w-5 h-5 rounded border border-slate-200 shadow-sm" :style="{ backgroundColor: sec.bg }"></div>
               <span class="text-xs font-mono text-slate-500">{{ sec.bg }}</span>
             </div>
+          </div>
+        </div>
+
+        <!-- Gradient type selector -->
+        <div class="px-4 pb-3">
+          <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">รูปแบบ Gradient</p>
+          <div class="flex flex-wrap gap-2">
+            <button v-for="t in BG_TYPES" :key="t.value"
+              @click="sec.bg_type = t.value"
+              :class="['px-3 py-1.5 rounded-xl text-xs font-bold border-2 transition-all',
+                (sec.bg_type || 'solid') === t.value
+                  ? 'border-primary bg-primary text-white'
+                  : 'border-slate-200 text-slate-600 hover:border-primary/50']">
+              {{ t.label }}
+            </button>
+          </div>
+        </div>
+
+        <!-- สี 2 (ปลายทาง) — แสดงเมื่อเลือก gradient -->
+        <div v-if="sec.bg_type && sec.bg_type !== 'solid'" class="px-4 pb-4">
+          <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">สีปลายทาง (สี 2)</p>
+          <div class="flex flex-wrap items-center gap-2">
+            <button v-for="preset in BG_PRESETS" :key="preset.value"
+              @click="sec.bg2 = preset.value" :title="preset.label"
+              :class="['w-8 h-8 rounded-full border-2 transition-all hover:scale-110 shadow-sm',
+                sec.bg2 === preset.value ? 'border-primary scale-110 shadow-md' : 'border-slate-200']"
+              :style="{ backgroundColor: preset.value }">
+              <svg v-if="sec.bg2 === preset.value" class="w-4 h-4 mx-auto"
+                :class="isDark(preset.value) ? 'text-white' : 'text-primary'"
+                fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/>
+              </svg>
+            </button>
+            <div class="w-px h-6 bg-slate-200"></div>
+            <label class="relative cursor-pointer group" title="เลือกสีกำหนดเอง">
+              <div class="w-8 h-8 rounded-full border-2 border-dashed border-slate-300 group-hover:border-primary transition-colors flex items-center justify-center overflow-hidden"
+                :style="{ backgroundColor: BG_PRESETS.some(p => p.value === sec.bg2) ? 'transparent' : (sec.bg2 || '#f1f5f9') }">
+                <svg v-if="!sec.bg2 || BG_PRESETS.some(p => p.value === sec.bg2)"
+                  class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
+                </svg>
+              </div>
+              <input type="color" :value="sec.bg2 || '#f1f5f9'" @input="sec.bg2 = $event.target.value"
+                class="absolute inset-0 opacity-0 cursor-pointer w-full h-full"/>
+            </label>
+            <!-- Live preview gradient strip -->
+            <div class="flex-1 min-w-[80px] h-5 rounded-lg border border-slate-200 shadow-sm"
+              :style="getBgStyle(sec)"></div>
           </div>
         </div>
       </div>
@@ -238,7 +359,7 @@ function isDark(hex) {
         <template v-for="(sec, i) in sections" :key="sec.key">
           <div :class="['flex items-center gap-2 px-3 py-2 text-xs font-bold rounded-xl border transition-all',
             sec.visible ? 'border-transparent' : 'opacity-40 border-dashed border-slate-300']"
-            :style="{ backgroundColor: sec.bg || '#ffffff' }">
+            :style="getBgStyle(sec)">
             <span class="text-slate-400 font-bold w-4">{{ i + 1 }}</span>
             <svg class="w-3.5 h-3.5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
               <path stroke-linecap="round" stroke-linejoin="round" :d="SECTION_ICONS[sec.key] || SECTION_ICONS.news"/>

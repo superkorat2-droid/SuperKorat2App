@@ -39,9 +39,10 @@ export const THEME_PRESETS = [
 
 // ── Default sections config ────────────────────────────────────
 export const DEFAULT_HOME_SECTIONS = [
-  { key: 'news',     label: 'ข่าวสาร',      title: 'ข่าวสารและประชาสัมพันธ์',             visible: true, bg: '#ffffff', order: 1 },
-  { key: 'services', label: 'บริการออนไลน์', title: 'บริการออนไลน์',                       visible: true, bg: '#f8fafc', order: 2 },
-  { key: 'cta',      label: 'CTA Banner',    title: 'ระบบกลุ่มนิเทศ ติดตามและประเมินผล',  visible: true, bg: '#ffffff', order: 3 },
+  { key: 'news',            label: 'ข่าวสาร',       subtitle: 'Latest News',      title: 'ข่าวสารและประชาสัมพันธ์',            visible: true, bg: '#ffffff', bg2: '#f1f5f9', bg_type: 'solid', order: 1 },
+  { key: 'supervision_list',label: 'แบบนิเทศ',      subtitle: 'Supervision',      title: 'แบบนิเทศและแบบสอบถาม',               visible: false,bg: '#f8fafc', bg2: '#e0e7ff', bg_type: 'solid', order: 2 },
+  { key: 'services',        label: 'บริการออนไลน์', subtitle: 'E-Service Center', title: 'บริการออนไลน์',                      visible: true, bg: '#f8fafc', bg2: '#e2e8f0', bg_type: 'solid', order: 3 },
+  { key: 'cta',             label: 'CTA Banner',     subtitle: '',                 title: 'ระบบกลุ่มนิเทศ ติดตามและประเมินผล', visible: true, bg: '#ffffff', bg2: '#f1f5f9', bg_type: 'solid', order: 4 },
 ]
 
 // ── Default theme ──────────────────────────────────────────────
@@ -60,8 +61,35 @@ const DEFAULTS = {
   line_url:        '',
   youtube_url:     '',
   website_url:     '',
-  logo_url:        '',
-  home_sections:   DEFAULT_HOME_SECTIONS,
+  logo_url:                '',
+  default_school_password: 'Korat2@2569',
+  banner_aspect_ratio:     '21:9',
+  schools_page_title:      'ทำเนียบสถานศึกษา',
+  schools_page_subtitle:   '',
+  home_sections:           DEFAULT_HOME_SECTIONS,
+  services: [
+    { key:'nitet',    label:'กลุ่มนิเทศติดตามฯ',   icon:'eye',       type:'internal', url:'/nithet',    visible:true, order:1 },
+    { key:'download', label:'ดาวน์โหลดเอกสาร',     icon:'download',  type:'internal', url:'/download',  visible:true, order:2 },
+    { key:'qrcode',   label:'สร้าง QR Code',        icon:'qrcode',    type:'internal', url:'/qrcode',    visible:true, order:3 },
+    { key:'urlshort', label:'ย่อลิงค์',             icon:'link',      type:'internal', url:'/url-short', visible:true, order:4 },
+    { key:'sar',      label:'ระบบ SAR Online',       icon:'chart-bar', type:'external', url:'',           visible:true, order:5 },
+    { key:'media',    label:'คลังสื่อนวัตกรรม',     icon:'beaker',    type:'external', url:'',           visible:true, order:6 },
+    { key:'training', label:'ลงทะเบียนอบรม',        icon:'clipboard', type:'external', url:'',           visible:true, order:7 },
+    { key:'contact',  label:'ติดต่อเรา',             icon:'phone',     type:'internal', url:'/contact',   visible:true, order:8 },
+  ],
+  personnel_groups: [
+    { key: 'nitet',     label: 'กลุ่มนิเทศ ติดตามและประเมินผลการจัดการศึกษา', visible: true, order: 1 },
+    { key: 'promote',   label: 'กลุ่มส่งเสริมการจัดการศึกษา',                 visible: true, order: 2 },
+    { key: 'personnel', label: 'กลุ่มบริหารงานบุคคล',                         visible: true, order: 3 },
+    { key: 'budget',    label: 'กลุ่มบริหารงบประมาณ',                         visible: true, order: 4 },
+    { key: 'general',   label: 'กลุ่มอำนวยการ',                               visible: true, order: 5 },
+  ],
+  nav_groups: [
+    { key: 'general', label: 'ข้อมูลทั่วไป',   visible: true,  order: 1 },
+    { key: 'work',    label: 'งานนิเทศติดตาม', visible: true,  order: 2 },
+    { key: 'service', label: 'บริการ',          visible: true,  order: 3 },
+    { key: 'other',   label: 'อื่นๆ',           visible: false, order: 4 },
+  ],
 }
 
 // ── Helper: hex → RGB ──────────────────────────────────────────

@@ -1,18 +1,33 @@
 <script setup>
 import { onMounted, ref, computed } from 'vue'
-import { useRouter, RouterLink, RouterView } from 'vue-router'
+import { useRouter, useRoute, RouterLink, RouterView } from 'vue-router'
 import { supabase } from './supabase'
 import { useAreaConfig } from './composables/useAreaConfig'
+import { useNavPages } from './composables/useNavPages'
+import { useTheme } from './composables/useTheme'
+import { iconPath, isIconKey } from './composables/useIcons.js'
 import Swal from 'sweetalert2'
 
-const router = useRouter()
-const session = ref(null)
+const { isDark, toggle: toggleTheme } = useTheme()
+
+const router    = useRouter()
+const route     = useRoute()
+
+// ซ่อน navbar+footer เฉพาะ school portal (/school และ /school/...) ไม่รวม /schools
+const isSchoolRoute = computed(() =>
+  route.path === '/school' || route.path.startsWith('/school/')
+)
+const session   = ref(null)
+const userRole  = ref('')
+const isAdmin      = computed(() => ['super_admin','admin'].includes(userRole.value))
+const isSchoolUser = computed(() => userRole.value === 'school')
 const mobileOpen = ref(false)
 const openDropdown = ref(null)
 const mobileExpanded = ref(null)
 let closeTimer = null
 
 const { config, fetchConfig } = useAreaConfig()
+const { fetchNavPages, getNavGroups, pageRoute, isExternal } = useNavPages()
 
 const areaName = computed(() => config.value?.area_name || 'กลุ่มนิเทศ ติดตามและประเมินผล')
 const areaShort = computed(() => {
@@ -25,44 +40,44 @@ const areaShort = computed(() => {
 const contactPhone = computed(() => config.value?.contact_phone || '')
 const contactEmail = computed(() => config.value?.contact_email || '')
 
-const navItems = [
+// navItems ผสม: หน้าแรก + DB groups + ลิงค์คงที่
+const staticBefore = [
   { key: 'home', label: 'หน้าแรก', to: '/' },
-  {
-    key: 'general', label: 'ข้อมูลทั่วไป',
-    children: [
-      { label: 'วิสัยทัศน์และพันธกิจ', to: '/vision',    icon: '👁️', desc: 'วิสัยทัศน์ พันธกิจ เป้าประสงค์' },
-      { label: 'โครงสร้างการบริหาร',    to: '/org',       icon: '🏢', desc: 'แผนผังการบริหารงานภายในกลุ่ม' },
-      { label: 'ทำเนียบบุคลากร',        to: '/personnel', icon: '👥', desc: 'รายชื่อศึกษานิเทศก์ทั้งหมด' },
-      { label: 'ข้อมูลสารสนเทศ',        to: '/site-info', icon: '📊', desc: 'สถิติโรงเรียน ครู นักเรียน' },
-    ]
-  },
-  {
-    key: 'work', label: 'งานนิเทศติดตาม',
-    children: [
-      { label: 'พัฒนาหลักสูตรการศึกษา',    to: '/curriculum',      icon: '📖', desc: 'หลักสูตรแกนกลาง ท้องถิ่น ปฐมวัย' },
-      { label: 'นิเทศการศึกษา',             to: '/supervision-edu', icon: '🔍', desc: 'แผนนิเทศ 8 กลุ่มสาระ Active Learning' },
-      { label: 'วัดและประเมินผล',           to: '/evaluation',      icon: '📊', desc: 'RT NT O-NET PISA ระบบรายงาน' },
-      { label: 'ประกันคุณภาพการศึกษา',      to: '/quality',         icon: '⭐', desc: 'IQA EQA มาตรฐานการศึกษา' },
-      { label: 'วิจัย สื่อ และเทคโนโลยี',  to: '/research',        icon: '🔬', desc: 'คลังวิจัย DLTV DLIT วิทยฐานะ PA' },
-      { label: 'ส่งเสริมพัฒนาการบริหาร',   to: '/secretariat',     icon: '📋', desc: 'ก.ต.ป.น. โครงการพิเศษ รายงานประจำปี' },
-    ]
-  },
-  {
-    key: 'service', label: 'บริการ',
-    children: [
-      { label: 'ดาวน์โหลดเอกสาร', to: '/download',  icon: '⬇️', desc: 'แบบฟอร์ม คู่มือ เอกสารราชการ' },
-      { label: 'ย่อลิงค์',         to: '/url-short', icon: '🔗', desc: 'ย่อ URL ยาวให้สั้นและแชร์ง่าย' },
-      { label: 'สร้าง QR Code',   to: '/qrcode',    icon: '📱', desc: 'สร้าง QR Code จากข้อความหรือลิงค์' },
-    ]
-  },
+]
+const staticAfter = [
   { key: 'contact', label: 'ติดต่อสอบถาม', to: '/contact' },
 ]
+const navItems = computed(() => {
+  const dbGroups = getNavGroups(config.value?.nav_groups).map(g => ({
+    key: g.key,
+    label: g.label,
+    children: g.items.map(p => ({
+      label:    p.title,
+      to:       pageRoute(p),
+      icon:     p.nav_icon || '📄',
+      desc:     '',
+      external: isExternal(p),
+    })),
+  }))
+  return [...staticBefore, ...dbGroups, ...staticAfter]
+})
+
+async function loadUserRole(userId) {
+  if (!userId) { userRole.value = ''; return }
+  const { data } = await supabase.from('profiles').select('role').eq('id', userId).single()
+  userRole.value = data?.role || ''
+}
 
 onMounted(async () => {
   fetchConfig()
+  fetchNavPages()
   const { data: { session: s } } = await supabase.auth.getSession()
   session.value = s
-  supabase.auth.onAuthStateChange((_e, _s) => { session.value = _s })
+  loadUserRole(s?.user?.id)
+  supabase.auth.onAuthStateChange((_e, _s) => {
+    session.value = _s
+    loadUserRole(_s?.user?.id)
+  })
 })
 
 function showDropdown(key) { clearTimeout(closeTimer); openDropdown.value = key }
@@ -85,13 +100,14 @@ const handleLogout = async () => {
 </script>
 
 <template>
-  <div class="min-h-screen flex flex-col bg-slate-50 font-sarabun">
+  <div class="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 font-sarabun transition-colors duration-300">
 
-    <!-- ── Top accent line (3px primary) ─────────────────────────── -->
+    <!-- ── Top accent line + Navbar (hidden in school portal) ──────── -->
+    <template v-if="!isSchoolRoute">
     <div class="fixed top-0 inset-x-0 z-50 h-[3px] bg-primary"></div>
 
     <!-- ── Navbar ─────────────────────────────────────────────────── -->
-    <nav class="fixed top-[3px] inset-x-0 z-40 bg-white border-b border-slate-200/80">
+    <nav class="fixed top-[3px] inset-x-0 z-40 bg-white dark:bg-slate-900 border-b border-slate-200/80 dark:border-slate-700/80 transition-colors duration-300">
       <div class="max-w-7xl mx-auto px-4 sm:px-6">
         <div class="flex items-center justify-between h-16">
 
@@ -108,8 +124,8 @@ const handleLogout = async () => {
               </svg>
             </div>
             <div class="leading-tight min-w-0">
-              <p class="text-[13px] font-bold text-slate-900 truncate max-w-[130px] sm:max-w-[260px] lg:max-w-none tracking-tight">{{ areaName }}</p>
-              <p class="text-[10px] text-slate-400 truncate max-w-[130px] sm:max-w-[260px] lg:max-w-none mt-0.5">{{ areaShort }}</p>
+              <p class="text-[13px] font-bold text-slate-900 dark:text-slate-100 truncate max-w-[130px] sm:max-w-[260px] lg:max-w-none tracking-tight">{{ areaName }}</p>
+              <p class="text-[10px] text-slate-400 dark:text-slate-500 truncate max-w-[130px] sm:max-w-[260px] lg:max-w-none mt-0.5">{{ areaShort }}</p>
             </div>
           </RouterLink>
 
@@ -119,7 +135,7 @@ const handleLogout = async () => {
 
               <!-- Simple link -->
               <RouterLink v-if="item.to && !item.children" :to="item.to"
-                class="relative px-3 py-2 text-[13px] font-medium text-slate-600 hover:text-primary transition-colors whitespace-nowrap group">
+                class="relative px-3 py-2 text-[13px] font-medium text-slate-600 dark:text-slate-300 hover:text-primary transition-colors whitespace-nowrap group">
                 {{ item.label }}
                 <span class="absolute inset-x-3 bottom-0 h-[2px] bg-primary scale-x-0 group-hover:scale-x-100 transition-transform origin-left rounded-full"></span>
               </RouterLink>
@@ -130,7 +146,7 @@ const handleLogout = async () => {
                 @mouseleave="scheduleHide()">
                 <button :class="[
                   'relative flex items-center gap-1 px-3 py-2 text-[13px] font-medium transition-colors whitespace-nowrap group',
-                  openDropdown === item.key ? 'text-primary' : 'text-slate-600 hover:text-primary'
+                  openDropdown === item.key ? 'text-primary' : 'text-slate-600 dark:text-slate-300 hover:text-primary'
                 ]">
                   {{ item.label }}
                   <svg class="w-3 h-3 mt-0.5 flex-shrink-0 transition-transform duration-200"
@@ -152,20 +168,43 @@ const handleLogout = async () => {
                   leave-to-class="opacity-0">
                   <div v-if="openDropdown === item.key"
                     :class="[
-                      'absolute top-[calc(100%+8px)] left-0 z-50 bg-white border border-slate-200 rounded-xl shadow-lg shadow-slate-200/60 py-1.5 origin-top-left',
+                      'absolute top-[calc(100%+8px)] left-0 z-50 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-lg shadow-slate-200/60 py-1.5 origin-top-left',
                       item.key === 'work' ? 'w-72' : 'w-60'
                     ]"
                     @mouseenter="showDropdown(item.key)"
                     @mouseleave="scheduleHide()">
-                    <RouterLink v-for="child in item.children" :key="child.to"
-                      :to="child.to"
-                      @click="openDropdown = null"
-                      class="flex items-start gap-3 px-4 py-2.5 hover:bg-primary-light transition-colors group/c mx-1.5 rounded-lg">
-                      <div class="flex-1 min-w-0">
-                        <p class="text-[13px] font-semibold text-slate-700 group-hover/c:text-primary transition-colors">{{ child.label }}</p>
-                        <p class="text-[11px] text-slate-400 mt-0.5 leading-snug">{{ child.desc }}</p>
-                      </div>
-                    </RouterLink>
+                    <template v-for="child in item.children" :key="child.to">
+                      <!-- External link -->
+                      <a v-if="child.external"
+                        :href="child.to" target="_blank" rel="noopener"
+                        @click="openDropdown = null"
+                        class="flex items-center gap-3 px-4 py-2.5 hover:bg-primary-light dark:hover:bg-slate-700 transition-colors group/c mx-1.5 rounded-lg">
+                        <div class="w-7 h-7 flex-shrink-0 flex items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-700 group-hover/c:bg-primary/10 transition-colors">
+                          <svg v-if="isIconKey(child.icon)" class="w-4 h-4 text-slate-500 dark:text-slate-400 group-hover/c:text-primary transition-colors" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" :d="iconPath(child.icon)"/>
+                          </svg>
+                          <span v-else class="text-sm">{{ child.icon }}</span>
+                        </div>
+                        <p class="text-[13px] font-semibold text-slate-700 dark:text-slate-200 group-hover/c:text-primary transition-colors flex items-center gap-1">
+                          {{ child.label }}
+                          <svg class="w-3 h-3 text-slate-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"/>
+                          </svg>
+                        </p>
+                      </a>
+                      <!-- Internal link -->
+                      <RouterLink v-else :to="child.to" @click="openDropdown = null"
+                        class="flex items-center gap-3 px-4 py-2.5 hover:bg-primary-light dark:hover:bg-slate-700 transition-colors group/c mx-1.5 rounded-lg">
+                        <!-- icon -->
+                        <div class="w-7 h-7 flex-shrink-0 flex items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-700 group-hover/c:bg-primary/10 transition-colors">
+                          <svg v-if="isIconKey(child.icon)" class="w-4 h-4 text-slate-500 dark:text-slate-400 group-hover/c:text-primary transition-colors" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" :d="iconPath(child.icon)"/>
+                          </svg>
+                          <span v-else class="text-sm">{{ child.icon }}</span>
+                        </div>
+                        <p class="text-[13px] font-semibold text-slate-700 dark:text-slate-200 group-hover/c:text-primary transition-colors">{{ child.label }}</p>
+                      </RouterLink>
+                    </template>
                   </div>
                 </Transition>
               </div>
@@ -174,17 +213,60 @@ const handleLogout = async () => {
 
           <!-- Right: auth + hamburger -->
           <div class="flex items-center gap-2 ml-2">
-            <div class="hidden lg:flex items-center gap-1.5">
+
+            <!-- Dark mode toggle -->
+            <button @click="toggleTheme"
+              class="w-8 h-8 flex items-center justify-center rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              :title="isDark ? 'เปลี่ยนเป็นโหมดสว่าง' : 'เปลี่ยนเป็นโหมดมืด'">
+              <!-- Sun (dark mode active) -->
+              <svg v-if="isDark" style="width:17px;height:17px" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z"/>
+              </svg>
+              <!-- Moon (light mode active) -->
+              <svg v-else style="width:17px;height:17px" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z"/>
+              </svg>
+            </button>
+
+            <div class="hidden lg:flex items-center gap-1">
               <template v-if="session">
-                <RouterLink to="/dashboard"
-                  class="text-[13px] font-medium text-slate-600 hover:text-primary px-3 py-2 transition-colors">
-                  แผงควบคุม
-                </RouterLink>
-                <button @click="handleLogout"
-                  class="text-[13px] font-medium text-slate-400 hover:text-red-500 px-3 py-2 transition-colors">
-                  ออกจากระบบ
+
+                <!-- ── School user: ไม่มี admin icons ── -->
+                <template v-if="isSchoolUser">
+                  <RouterLink to="/school" title="ระบบโรงเรียนของฉัน"
+                    class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[13px] font-semibold bg-primary text-white hover:opacity-90 transition-all shadow-sm">
+                    <svg style="width:15px;height:15px" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0012 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75z"/>
+                    </svg>
+                    ระบบโรงเรียน
+                  </RouterLink>
+                </template>
+
+                <!-- ── Staff/Admin: admin icons ── -->
+                <template v-else>
+                  <RouterLink v-if="isAdmin" to="/dashboard/settings" title="ตั้งค่าเขตพื้นที่"
+                    class="w-9 h-9 flex items-center justify-center rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                    <svg style="width:18px;height:18px" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281z M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                  </RouterLink>
+                  <RouterLink to="/dashboard/profile" title="โปรไฟล์ของฉัน"
+                    class="w-9 h-9 flex items-center justify-center rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                    <svg style="width:18px;height:18px" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M17.982 18.725A7.488 7.488 0 0012 15.75a7.488 7.488 0 00-5.982 2.975m11.963 0a9 9 0 10-11.963 0m11.963 0A8.966 8.966 0 0112 21a8.966 8.966 0 01-5.982-2.275M15 9.75a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                  </RouterLink>
+                </template>
+
+                <!-- ออกจากระบบ (ทุก role) -->
+                <button @click="handleLogout" title="ออกจากระบบ"
+                  class="w-9 h-9 flex items-center justify-center rounded-xl text-slate-400 dark:text-slate-500 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/30 transition-colors">
+                  <svg style="width:17px;height:17px" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9"/>
+                  </svg>
                 </button>
               </template>
+
               <RouterLink v-else to="/login"
                 class="flex items-center gap-1.5 border border-primary text-primary text-[13px] font-semibold px-4 py-2 rounded-lg hover:bg-primary hover:text-white transition-all">
                 <svg style="width:14px;height:14px" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
@@ -214,7 +296,7 @@ const handleLogout = async () => {
         leave-active-class="transition duration-150"
         leave-from-class="opacity-100"
         leave-to-class="opacity-0">
-        <div v-if="mobileOpen" class="lg:hidden border-t border-slate-100 bg-white max-h-[80vh] overflow-y-auto">
+        <div v-if="mobileOpen" class="lg:hidden border-t border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-900 max-h-[80vh] overflow-y-auto">
           <div class="px-3 py-3 space-y-px">
             <template v-for="item in navItems" :key="item.key">
               <RouterLink v-if="item.to && !item.children" :to="item.to"
@@ -236,11 +318,17 @@ const handleLogout = async () => {
                   </svg>
                 </button>
                 <div v-if="mobileExpanded === item.key" class="ml-4 pl-3 border-l border-slate-200 mt-1 mb-1 space-y-px">
-                  <RouterLink v-for="child in item.children" :key="child.to" :to="child.to"
-                    @click="mobileOpen = false"
-                    class="flex items-center px-3 py-2 rounded-lg text-[13px] text-slate-600 hover:bg-primary-light hover:text-primary transition-all">
-                    {{ child.label }}
-                  </RouterLink>
+                  <template v-for="child in item.children" :key="child.to">
+                    <a v-if="child.external" :href="child.to" target="_blank" rel="noopener"
+                      @click="mobileOpen = false"
+                      class="flex items-center px-3 py-2 rounded-lg text-[13px] text-slate-600 hover:bg-primary-light hover:text-primary transition-all">
+                      {{ child.label }} <span class="ml-1 text-[10px] text-slate-400">↗</span>
+                    </a>
+                    <RouterLink v-else :to="child.to" @click="mobileOpen = false"
+                      class="flex items-center px-3 py-2 rounded-lg text-[13px] text-slate-600 hover:bg-primary-light hover:text-primary transition-all">
+                      {{ child.label }}
+                    </RouterLink>
+                  </template>
                 </div>
               </div>
             </template>
@@ -248,7 +336,16 @@ const handleLogout = async () => {
             <!-- Auth -->
             <div class="pt-2 mt-1 border-t border-slate-100 space-y-px">
               <template v-if="session">
-                <RouterLink to="/dashboard" @click="mobileOpen = false"
+                <!-- School user: ไประบบโรงเรียน -->
+                <RouterLink v-if="isSchoolUser" to="/school" @click="mobileOpen = false"
+                  class="flex items-center gap-2 px-4 py-2.5 rounded-lg text-[13px] font-medium bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all">
+                  <svg style="width:15px;height:15px" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0012 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75z"/>
+                  </svg>
+                  ระบบโรงเรียน
+                </RouterLink>
+                <!-- Staff/Admin: ไปแดชบอร์ด -->
+                <RouterLink v-else to="/dashboard" @click="mobileOpen = false"
                   class="flex items-center px-4 py-2.5 rounded-lg text-[13px] font-medium text-slate-700 hover:bg-primary-light hover:text-primary transition-all">
                   แผงควบคุม
                 </RouterLink>
@@ -269,24 +366,25 @@ const handleLogout = async () => {
 
     <!-- Spacer: 3px + 64px nav -->
     <div class="h-[67px] flex-shrink-0"></div>
+    </template><!-- end v-if="!isSchoolRoute" -->
 
     <!-- Main content -->
     <main class="flex-grow">
-      <RouterView v-slot="{ Component }">
-        <Transition mode="out-in"
+      <RouterView v-slot="{ Component, route }">
+        <Transition
           enter-active-class="transition duration-200"
           enter-from-class="opacity-0 translate-y-1"
           enter-to-class="opacity-100 translate-y-0"
-          leave-active-class="transition duration-150"
+          leave-active-class="transition duration-100"
           leave-from-class="opacity-100"
           leave-to-class="opacity-0">
-          <component :is="Component" />
+          <component :is="Component" :key="route.path" />
         </Transition>
       </RouterView>
     </main>
 
-    <!-- ── Footer ─────────────────────────────────────────────────── -->
-    <footer class="bg-white border-t border-slate-200 mt-16">
+    <!-- ── Footer (hidden in school portal) ─────────────────────────── -->
+    <footer v-if="!isSchoolRoute" class="bg-white border-t border-slate-200 mt-16">
       <div class="max-w-7xl mx-auto px-6 py-10">
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
           <!-- Brand -->

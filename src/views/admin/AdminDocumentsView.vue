@@ -178,7 +178,7 @@ function formatDate(iso) {
     <!-- Header -->
     <div class="flex flex-wrap items-center justify-between gap-3">
       <div>
-        <h1 class="text-2xl font-extrabold text-slate-800">📂 เอกสารและดาวน์โหลด</h1>
+        <h1 class="text-2xl font-extrabold text-slate-800 flex items-center gap-2"><SvgIcon name="folder" class="w-6 h-6 text-primary"/> เอกสารและดาวน์โหลด</h1>
         <p class="text-sm text-slate-500 mt-0.5">จัดการแบบฟอร์ม รายงาน และไฟล์สำหรับดาวน์โหลด</p>
       </div>
       <button @click="openAdd"

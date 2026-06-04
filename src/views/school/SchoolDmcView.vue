@@ -3,17 +3,104 @@ import { ref, computed, onMounted } from 'vue'
 import { supabase } from '../../supabase'
 import { read, utils } from 'xlsx'
 import Swal from 'sweetalert2'
+import { parseDmcFile } from '../../composables/useDmcParser'
 
 const props = defineProps({
   school:  { type: Object, default: null },
   profile: { type: Object, default: null },
 })
 
-const activeTab     = ref('students')
+const activeTab = ref('dmc')   // 'dmc' | 'students' | 'history'
+
+// ── DMC Period Upload (new system) ────────────────────────────────────────
+const activePeriod    = ref(null)
+const myUpload        = ref(null)   // latest upload for active period
+const dmcFile         = ref(null)
+const dmcParsed       = ref(null)   // summary after parse
+const dmcParsing      = ref(false)
+const dmcSaving       = ref(false)
+const dmcDragging     = ref(false)
+
+async function loadActivePeriod() {
+  if (!props.school?.id) return
+  const { data: periods } = await supabase
+    .from('dmc_periods').select('*').eq('is_active', true)
+    .order('created_at', { ascending: false }).limit(1)
+  activePeriod.value = periods?.[0] || null
+
+  if (activePeriod.value) {
+    const { data: up } = await supabase
+      .from('dmc_school_uploads').select('*')
+      .eq('period_id', activePeriod.value.id)
+      .eq('school_id', props.school.id)
+      .maybeSingle()
+    myUpload.value = up
+  }
+}
+
+function onDmcDrop(e) {
+  dmcDragging.value = false
+  const file = e.dataTransfer?.files?.[0] || e.target?.files?.[0]
+  if (file) handleDmcFile(file)
+}
+
+async function handleDmcFile(file) {
+  if (!file.name.match(/\.(xlsx|xls)$/i)) {
+    Swal.fire({ icon: 'warning', title: 'กรุณาใช้ไฟล์ Excel (.xlsx/.xls)' }); return
+  }
+  dmcFile.value    = file
+  dmcParsed.value  = null
+  dmcParsing.value = true
+  try {
+    dmcParsed.value = await parseDmcFile(file)
+  } catch (err) {
+    Swal.fire({ icon: 'error', title: 'อ่านไฟล์ไม่ได้', text: err.message })
+    dmcFile.value = null
+  }
+  dmcParsing.value = false
+}
+
+async function saveDmcUpload() {
+  if (!dmcParsed.value || !activePeriod.value || !props.school?.id) return
+  dmcSaving.value = true
+  const payload = {
+    period_id:   activePeriod.value.id,
+    school_id:   props.school.id,
+    total:       dmcParsed.value.total,
+    summary:     dmcParsed.value,
+    uploaded_by: props.profile?.id || null,
+    uploaded_at: new Date().toISOString(),
+  }
+  const { error } = await supabase.from('dmc_school_uploads')
+    .upsert(payload, { onConflict: 'period_id,school_id' })
+  dmcSaving.value = false
+  if (error) { Swal.fire({ icon: 'error', title: 'บันทึกไม่สำเร็จ', text: error.message }); return }
+  await loadActivePeriod()
+  dmcFile.value   = null
+  dmcParsed.value = null
+  Swal.fire({ icon: 'success', title: 'บันทึกสำเร็จ', showConfirmButton: false, timer: 1500 })
+}
+
+function clearDmcFile() { dmcFile.value = null; dmcParsed.value = null }
+
+function formatDmcDate(d) {
+  if (!d) return '—'
+  return new Date(d).toLocaleDateString('th-TH', { year:'numeric', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' })
+}
+
+const bmiTotal = computed(() => {
+  if (!dmcParsed.value?.bmi) return 0
+  const b = dmcParsed.value.bmi
+  return b.underweight + b.normal + b.overweight + b.obese
+})
+
+// Existing tabs state
+const previousActiveTab = activeTab.value
 const academicYear  = ref('2568')
 const term          = ref('1')
 
-const YEAR_OPTIONS = ['2568', '2567', '2566', '2565', '2564']
+const currentThaiYear = new Date().getFullYear() + 543
+const YEAR_OPTIONS = Array.from({ length: 8 }, (_, i) => String(currentThaiYear + 1 - i))
 const TERM_OPTIONS = [
   { value: '1', label: 'ภาคเรียนที่ 1' },
   { value: '2', label: 'ภาคเรียนที่ 2' },
@@ -283,17 +370,40 @@ async function deleteStat(id, year, trm) {
   await fetchS2History()
 }
 
-// bar chart helpers
-const s2MaxTotal = computed(() => Math.max(...s2History.value.map(h => h.total_students), 1))
+// ── DMC History (ระบบใหม่) ────────────────────────────────────────────────
+const dmcHistory    = ref([])
+const dmcHistLoading = ref(false)
+const expandedHistory = ref(null)  // period_id ที่ขยาย
 
-function barPct(val) { return Math.round((val / s2MaxTotal.value) * 100) }
+async function loadDmcHistory() {
+  if (!props.school?.id) return
+  dmcHistLoading.value = true
+  const { data } = await supabase
+    .from('dmc_school_uploads')
+    .select('*, dmc_periods(id, title, academic_year, semester, is_archived, archived_at)')
+    .eq('school_id', props.school.id)
+    .order('uploaded_at', { ascending: false })
+  dmcHistory.value    = data || []
+  dmcHistLoading.value = false
+}
+
+function toggleHistory(id) {
+  expandedHistory.value = expandedHistory.value === id ? null : id
+}
 
 function fmtDate(d) {
   if (!d) return ''
-  return new Date(d).toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' })
+  return new Date(d).toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
 }
 
-onMounted(() => Promise.all([fetchS1History(), fetchS2History()]))
+function bmiPct(summary, key) {
+  const total = (summary?.bmi?.underweight||0) + (summary?.bmi?.normal||0)
+    + (summary?.bmi?.overweight||0) + (summary?.bmi?.obese||0)
+  if (!total) return '0'
+  return ((summary?.bmi?.[key]||0) / total * 100).toFixed(1)
+}
+
+onMounted(() => Promise.all([loadActivePeriod(), loadDmcHistory()]))
 </script>
 
 <template>
@@ -306,13 +416,13 @@ onMounted(() => Promise.all([fetchS1History(), fetchS2History()]))
 
     <!-- Tabs -->
     <div class="flex bg-slate-100 rounded-2xl p-1">
-      <button @click="activeTab='students'"
+      <button @click="activeTab='dmc'"
         :class="['flex-1 py-2.5 text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2',
-          activeTab==='students' ? 'bg-white text-primary shadow-sm' : 'text-slate-500 hover:text-slate-700']">
+          activeTab==='dmc' ? 'bg-white text-primary shadow-sm' : 'text-slate-500 hover:text-slate-700']">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197"/>
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/>
         </svg>
-        นักเรียนปัจจุบัน
+        อัปโหลด DMC
       </button>
       <button @click="activeTab='stats'"
         :class="['flex-1 py-2.5 text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2',
@@ -323,6 +433,138 @@ onMounted(() => Promise.all([fetchS1History(), fetchS2History()]))
         สถิติย้อนหลัง
       </button>
     </div>
+
+    <!-- ─────────────── DMC Upload Tab ─────────────── -->
+    <template v-if="activeTab === 'dmc'">
+
+      <!-- No active period -->
+      <div v-if="!activePeriod"
+        class="text-center py-12 bg-slate-50 rounded-2xl border border-slate-200">
+        <svg class="w-12 h-12 mx-auto mb-3 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <p class="font-bold text-slate-600">ยังไม่มีรอบการเก็บข้อมูลที่เปิดอยู่</p>
+        <p class="text-sm text-slate-400 mt-1">รอ admin เปิดรอบการอัปโหลดข้อมูลนักเรียน</p>
+      </div>
+
+      <!-- Active period -->
+      <template v-else>
+        <!-- Period info -->
+        <div class="bg-primary/5 border border-primary/20 rounded-2xl p-4">
+          <div class="flex items-center justify-between flex-wrap gap-2">
+            <div>
+              <p class="font-extrabold text-primary">{{ activePeriod.title }}</p>
+              <p class="text-xs text-slate-500 mt-0.5">ปีการศึกษา {{ activePeriod.academic_year }} ภาคเรียน {{ activePeriod.semester }}</p>
+              <p v-if="activePeriod.deadline" class="text-xs text-slate-400">กำหนดส่ง: {{ formatDmcDate(activePeriod.deadline) }}</p>
+            </div>
+            <span v-if="myUpload" class="text-xs bg-emerald-100 text-emerald-700 font-bold px-3 py-1.5 rounded-full">
+              ✓ ส่งแล้ว {{ formatDmcDate(myUpload.uploaded_at) }}
+            </span>
+            <span v-else class="text-xs bg-amber-100 text-amber-700 font-bold px-3 py-1.5 rounded-full">
+              รอส่ง
+            </span>
+          </div>
+        </div>
+
+        <!-- File upload zone -->
+        <div v-if="!dmcParsed"
+          @dragenter.prevent="dmcDragging=true"
+          @dragleave.prevent="dmcDragging=false"
+          @dragover.prevent
+          @drop.prevent="onDmcDrop"
+          :class="['border-2 border-dashed rounded-2xl p-10 text-center transition-all cursor-pointer',
+            dmcDragging ? 'border-primary bg-primary/5' : 'border-slate-300 hover:border-primary hover:bg-primary/5']"
+          @click="$refs.dmcInput.click()">
+          <input ref="dmcInput" type="file" accept=".xlsx,.xls" class="sr-only"
+            @change="handleDmcFile($event.target.files[0])"/>
+          <svg v-if="!dmcParsing" class="w-12 h-12 mx-auto mb-3 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/>
+          </svg>
+          <div v-if="dmcParsing" class="w-10 h-10 border-4 border-primary/30 border-t-primary rounded-full animate-spin mx-auto mb-3"/>
+          <p class="font-bold text-slate-600">{{ dmcParsing ? 'กำลังวิเคราะห์ไฟล์...' : 'ลากไฟล์ Excel มาวาง หรือคลิกเพื่อเลือก' }}</p>
+          <p class="text-sm text-slate-400 mt-1">รองรับไฟล์ DMC .xlsx / .xls</p>
+        </div>
+
+        <!-- Preview summary -->
+        <template v-if="dmcParsed">
+          <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+            <div class="px-5 py-4 border-b border-slate-50 flex items-center justify-between">
+              <div>
+                <p class="font-extrabold text-slate-800">ตรวจสอบข้อมูลก่อนบันทึก</p>
+                <p class="text-xs text-slate-400 mt-0.5">{{ dmcFile?.name }}</p>
+              </div>
+              <button @click="clearDmcFile" class="text-xs text-slate-400 hover:text-red-500 transition-colors">เลือกไฟล์ใหม่</button>
+            </div>
+            <div class="p-5 space-y-4">
+              <!-- Stats grid -->
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div class="text-center bg-primary/5 rounded-xl p-3">
+                  <p class="text-2xl font-extrabold text-primary">{{ dmcParsed.total.toLocaleString() }}</p>
+                  <p class="text-xs text-slate-500 mt-0.5">นักเรียนทั้งหมด</p>
+                </div>
+                <div class="text-center bg-blue-50 rounded-xl p-3">
+                  <p class="text-2xl font-extrabold text-blue-600">{{ dmcParsed.gender.male.toLocaleString() }}</p>
+                  <p class="text-xs text-slate-500 mt-0.5">ชาย</p>
+                </div>
+                <div class="text-center bg-pink-50 rounded-xl p-3">
+                  <p class="text-2xl font-extrabold text-pink-500">{{ dmcParsed.gender.female.toLocaleString() }}</p>
+                  <p class="text-xs text-slate-500 mt-0.5">หญิง</p>
+                </div>
+                <div :class="['text-center rounded-xl p-3', Number(dmcParsed.disadvantaged.pct) > 50 ? 'bg-red-50' : 'bg-amber-50']">
+                  <p :class="['text-2xl font-extrabold', Number(dmcParsed.disadvantaged.pct) > 50 ? 'text-red-600' : 'text-amber-600']">
+                    {{ dmcParsed.disadvantaged.pct }}%
+                  </p>
+                  <p class="text-xs text-slate-500 mt-0.5">ยากจน</p>
+                </div>
+              </div>
+
+              <!-- Grade breakdown -->
+              <div class="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                <div v-for="(data, grade) in dmcParsed.by_grade" :key="grade"
+                  class="text-center bg-slate-50 rounded-xl p-2">
+                  <p class="text-xs font-bold text-slate-600">{{ grade }}</p>
+                  <p class="text-lg font-extrabold text-slate-800">{{ data.total }}</p>
+                  <p class="text-[10px] text-slate-400">ช {{ data.male }} ญ {{ data.female }}</p>
+                </div>
+              </div>
+
+              <!-- BMI -->
+              <div class="grid grid-cols-4 gap-2 text-center text-xs">
+                <div class="bg-orange-50 rounded-xl p-2">
+                  <p class="font-bold text-orange-600 text-lg">{{ dmcParsed.bmi.underweight }}</p>
+                  <p class="text-slate-500">ต่ำกว่าเกณฑ์</p>
+                </div>
+                <div class="bg-emerald-50 rounded-xl p-2">
+                  <p class="font-bold text-emerald-600 text-lg">{{ dmcParsed.bmi.normal }}</p>
+                  <p class="text-slate-500">ปกติ</p>
+                </div>
+                <div class="bg-amber-50 rounded-xl p-2">
+                  <p class="font-bold text-amber-600 text-lg">{{ dmcParsed.bmi.overweight }}</p>
+                  <p class="text-slate-500">น้ำหนักเกิน</p>
+                </div>
+                <div class="bg-red-50 rounded-xl p-2">
+                  <p class="font-bold text-red-600 text-lg">{{ dmcParsed.bmi.obese }}</p>
+                  <p class="text-slate-500">อ้วน</p>
+                </div>
+              </div>
+            </div>
+            <div class="px-5 py-4 border-t border-slate-50 flex gap-3 justify-end">
+              <button @click="clearDmcFile" class="px-4 py-2.5 text-sm font-bold text-slate-600 bg-slate-100 rounded-xl hover:bg-slate-200">
+                ยกเลิก
+              </button>
+              <button @click="saveDmcUpload" :disabled="dmcSaving"
+                class="flex items-center gap-2 px-6 py-2.5 text-sm font-bold bg-primary text-white rounded-xl hover:-translate-y-0.5 shadow-md transition-all disabled:opacity-50">
+                <svg v-if="dmcSaving" class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                </svg>
+                {{ dmcSaving ? 'กำลังบันทึก...' : myUpload ? 'อัปเดตข้อมูล' : 'บันทึกข้อมูล' }}
+              </button>
+            </div>
+          </div>
+        </template>
+      </template>
+    </template>
+    <!-- ─────────────── End DMC Tab ─────────────── -->
 
     <!-- ── ปีการศึกษา + ภาคเรียน (shared) ────────────── -->
     <div class="grid grid-cols-2 gap-4">
@@ -343,9 +585,9 @@ onMounted(() => Promise.all([fetchS1History(), fetchS2History()]))
     </div>
 
     <!-- ════════════════════════════════════════════════ -->
-    <!-- TAB 1: นักเรียนปัจจุบัน                         -->
+    <!-- TAB เก่า: ซ่อนไว้ (ไม่ลบเพื่อ backward compat) -->
     <!-- ════════════════════════════════════════════════ -->
-    <template v-if="activeTab==='students'">
+    <template v-if="false && activeTab==='__hidden_students__'">
 
       <!-- Upload card -->
       <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-4">
@@ -452,19 +694,142 @@ onMounted(() => Promise.all([fetchS1History(), fetchS2History()]))
     </template>
 
     <!-- ════════════════════════════════════════════════ -->
-    <!-- TAB 2: สถิติย้อนหลัง                            -->
+    <!-- TAB 2: สถิติย้อนหลัง (ระบบใหม่ dmc_school_uploads) -->
     <!-- ════════════════════════════════════════════════ -->
-    <template v-else>
+    <template v-if="activeTab === 'stats'">
 
-      <!-- Count date -->
-      <div>
-        <label class="block text-xs font-bold text-slate-600 mb-1.5">วันที่นับนักเรียน (เช่น 10 มิ.ย.)</label>
-        <input v-model="countDate" type="date"
-          class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-primary bg-white"/>
+      <!-- Loading -->
+      <div v-if="dmcHistLoading" class="flex justify-center py-12">
+        <div class="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin"/>
       </div>
 
-      <!-- Upload card -->
-      <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-4">
+      <!-- Empty -->
+      <div v-else-if="dmcHistory.length === 0"
+        class="text-center py-14 bg-slate-50 rounded-2xl border border-slate-200">
+        <svg class="w-12 h-12 mx-auto mb-3 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75z M9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625z M16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"/>
+        </svg>
+        <p class="font-bold text-slate-500">ยังไม่มีประวัติการส่ง DMC</p>
+        <p class="text-sm text-slate-400 mt-1">อัปโหลดข้อมูลในแท็บ "อัปโหลด DMC" เพื่อเริ่มต้น</p>
+      </div>
+
+      <!-- History list -->
+      <div v-else class="space-y-3">
+        <p class="text-xs text-slate-500 font-bold uppercase tracking-wider">ประวัติการส่งข้อมูล DMC ({{ dmcHistory.length }} รอบ)</p>
+
+        <div v-for="h in dmcHistory" :key="h.id"
+          class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+
+          <!-- Header row -->
+          <div class="flex items-center gap-4 px-5 py-4 cursor-pointer hover:bg-slate-50 transition-colors"
+            @click="toggleHistory(h.id)">
+            <div class="flex-1 min-w-0">
+              <div class="flex flex-wrap items-center gap-2 mb-0.5">
+                <span class="text-xs font-bold bg-primary/10 text-primary px-2.5 py-0.5 rounded-full">
+                  {{ h.dmc_periods?.title || 'รอบไม่ทราบชื่อ' }}
+                </span>
+                <span v-if="h.dmc_periods?.is_archived"
+                  class="text-xs bg-indigo-100 text-indigo-600 font-bold px-2 py-0.5 rounded-full">
+                  📦 เก็บถาวร
+                </span>
+              </div>
+              <p class="text-sm font-bold text-slate-800">{{ h.total.toLocaleString() }} คน</p>
+              <p class="text-xs text-slate-400">อัปโหลด {{ fmtDate(h.uploaded_at) }}</p>
+            </div>
+
+            <!-- Quick stats -->
+            <div class="hidden sm:flex gap-4 text-center text-xs flex-shrink-0">
+              <div>
+                <p class="font-bold text-blue-600">{{ h.summary?.gender?.male || 0 }}</p>
+                <p class="text-slate-400">ชาย</p>
+              </div>
+              <div>
+                <p class="font-bold text-pink-500">{{ h.summary?.gender?.female || 0 }}</p>
+                <p class="text-slate-400">หญิง</p>
+              </div>
+              <div>
+                <p :class="['font-bold', Number(h.summary?.disadvantaged?.pct||0) > 50 ? 'text-red-500' : 'text-amber-600']">
+                  {{ h.summary?.disadvantaged?.pct || '0' }}%
+                </p>
+                <p class="text-slate-400">ยากจน</p>
+              </div>
+            </div>
+
+            <!-- Expand icon -->
+            <svg :class="['w-4 h-4 text-slate-400 transition-transform flex-shrink-0',
+              expandedHistory === h.id ? 'rotate-180' : '']"
+              fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/>
+            </svg>
+          </div>
+
+          <!-- Expanded detail -->
+          <Transition
+            enter-active-class="transition duration-200 ease-out"
+            enter-from-class="opacity-0 -translate-y-2"
+            enter-to-class="opacity-100 translate-y-0"
+            leave-active-class="transition duration-150"
+            leave-to-class="opacity-0">
+            <div v-if="expandedHistory === h.id" class="border-t border-slate-100 px-5 py-4 bg-slate-50 space-y-4">
+
+              <!-- Grade breakdown -->
+              <div v-if="h.summary?.by_grade && Object.keys(h.summary.by_grade).length">
+                <p class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">แยกตามชั้น</p>
+                <div class="flex flex-wrap gap-2">
+                  <div v-for="(g, grade) in h.summary.by_grade" :key="grade"
+                    class="text-center bg-white rounded-xl px-3 py-2 border border-slate-200">
+                    <p class="text-xs font-bold text-slate-600">{{ grade }}</p>
+                    <p class="text-base font-extrabold text-primary">{{ g.total }}</p>
+                    <p class="text-[10px] text-slate-400">ช {{ g.male }} ญ {{ g.female }}</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- BMI -->
+              <div v-if="h.summary?.bmi">
+                <p class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">ภาวะโภชนาการ (BMI)</p>
+                <div class="grid grid-cols-4 gap-2 text-center text-xs">
+                  <div class="bg-orange-50 rounded-xl p-2">
+                    <p class="font-bold text-orange-600 text-base">{{ h.summary.bmi.underweight }}</p>
+                    <p class="text-slate-500">ต่ำเกณฑ์</p>
+                    <p class="text-slate-400">{{ bmiPct(h.summary,'underweight') }}%</p>
+                  </div>
+                  <div class="bg-emerald-50 rounded-xl p-2">
+                    <p class="font-bold text-emerald-600 text-base">{{ h.summary.bmi.normal }}</p>
+                    <p class="text-slate-500">ปกติ</p>
+                    <p class="text-slate-400">{{ bmiPct(h.summary,'normal') }}%</p>
+                  </div>
+                  <div class="bg-amber-50 rounded-xl p-2">
+                    <p class="font-bold text-amber-600 text-base">{{ h.summary.bmi.overweight }}</p>
+                    <p class="text-slate-500">น้ำหนักเกิน</p>
+                    <p class="text-slate-400">{{ bmiPct(h.summary,'overweight') }}%</p>
+                  </div>
+                  <div class="bg-red-50 rounded-xl p-2">
+                    <p class="font-bold text-red-600 text-base">{{ h.summary.bmi.obese }}</p>
+                    <p class="text-slate-500">อ้วน</p>
+                    <p class="text-slate-400">{{ bmiPct(h.summary,'obese') }}%</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Disadvantaged -->
+              <div v-if="h.summary?.disadvantaged?.count > 0">
+                <p class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">ความด้อยโอกาส</p>
+                <p class="text-sm">
+                  เด็กยากจน
+                  <span :class="['font-bold', Number(h.summary.disadvantaged.pct) > 50 ? 'text-red-600' : 'text-amber-600']">
+                    {{ h.summary.disadvantaged.count.toLocaleString() }} คน ({{ h.summary.disadvantaged.pct }}%)
+                  </span>
+                </p>
+              </div>
+
+            </div>
+          </Transition>
+        </div>
+      </div>
+
+      <!-- Hidden legacy section placeholder -->
+      <div class="hidden">
         <h2 class="font-extrabold text-slate-800 text-sm">อัปโหลดไฟล์ (เก็บเฉพาะสถิติ ไม่บันทึกรายชื่อ)</h2>
 
         <label class="flex flex-col items-center justify-center gap-3 border-2 border-dashed border-slate-200
@@ -536,14 +901,10 @@ onMounted(() => Promise.all([fetchS1History(), fetchS2History()]))
         </div>
       </div>
 
-      <!-- Stats history + bar chart -->
-      <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-        <div class="px-5 py-4 border-b border-slate-50">
-          <h2 class="font-extrabold text-slate-800 text-sm">สถิติย้อนหลัง</h2>
-        </div>
-        <div v-if="s2Loading" class="p-8 text-center text-slate-400 text-sm">กำลังโหลด...</div>
-        <div v-else-if="!s2History.length" class="p-8 text-center text-slate-400 text-sm">ยังไม่มีสถิติ</div>
-        <div v-else class="p-5 space-y-4">
+      <!-- legacy hidden -->
+      <div class="hidden">
+        <h2>สถิติย้อนหลัง (เก่า)</h2>
+        <div class="p-5 space-y-4">
           <!-- Bar chart -->
           <div class="space-y-3">
             <div v-for="h in s2History" :key="h.id" class="space-y-1">

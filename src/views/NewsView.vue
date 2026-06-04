@@ -98,7 +98,7 @@ const catMeta = {
 </script>
 
 <template>
-  <div class="font-sarabun bg-slate-50 min-h-screen">
+  <div class="font-sarabun bg-slate-50 dark:bg-slate-950 dark:text-slate-100 min-h-screen transition-colors duration-300">
 
     <!-- ── Hero bar ──────────────────────────────────────────────── -->
     <div class="gradient-primary py-10 md:py-14">

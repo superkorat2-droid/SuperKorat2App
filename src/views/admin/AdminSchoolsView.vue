@@ -1,7 +1,15 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { supabase } from '../../supabase'
+import { supabaseAdmin } from '../../supabaseAdmin'
+import { useAreaConfig } from '../../composables/useAreaConfig'
 import Swal from 'sweetalert2'
+
+const { config, fetchConfig } = useAreaConfig()
+
+const defaultPassword = computed(() =>
+  config.value?.default_school_password || 'Korat2@2569'
+)
 
 const schools  = ref([])
 const loading  = ref(true)
@@ -9,7 +17,7 @@ const searchQ  = ref('')
 const filterDistrict = ref('all')
 const filterGroup    = ref('all')
 
-onMounted(fetchSchools)
+onMounted(() => { fetchConfig(); fetchSchools() })
 
 async function fetchSchools() {
   loading.value = true
@@ -50,7 +58,7 @@ const filtered = computed(() => {
 async function resetPassword(school) {
   const result = await Swal.fire({
     title: 'รีเซ็ตรหัสผ่าน?',
-    html: `<span class="text-sm">โรงเรียน: <b>${school.name}</b><br>รหัสผ่านจะถูกเปลี่ยนเป็น <b>Korat2@2569</b></span>`,
+    html: `<span class="text-sm">โรงเรียน: <b>${school.name}</b><br>รหัสผ่านจะถูกเปลี่ยนเป็น <b>${defaultPassword.value}</b></span>`,
     icon: 'question',
     showCancelButton: true,
     confirmButtonText: 'รีเซ็ต',
@@ -59,16 +67,44 @@ async function resetPassword(school) {
   })
   if (!result.isConfirmed) return
 
-  // find auth user by email, then update password
-  const { data: { users }, error: listErr } = await supabase.auth.admin.listUsers()
-  const user = users?.find(u => u.email === school.email)
-  if (!user) { Swal.fire({ icon: 'error', title: 'ไม่พบ user', text: school.email }); return }
+  if (!supabaseAdmin) {
+    Swal.fire({ icon: 'error', title: 'ไม่พบ Service Key', text: 'กรุณาตั้งค่า VITE_SUPABASE_SERVICE_KEY ใน .env.local' })
+    return
+  }
 
-  const { error } = await supabase.auth.admin.updateUserById(user.id, { password: 'Korat2@2569' })
+  // ค้นหา user จาก email
+  const { data: { users } } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 })
+  let user = users?.find(u => u.email?.toLowerCase() === school.email?.toLowerCase())
+
+  // ถ้ายังไม่มี account → สร้างใหม่
+  if (!user) {
+    const { data: created, error: createErr } = await supabaseAdmin.auth.admin.createUser({
+      email:            school.email,
+      password:         defaultPassword.value,
+      email_confirm:    true,
+      user_metadata:    { full_name: school.name },
+    })
+    if (createErr) { Swal.fire({ icon: 'error', title: 'สร้าง account ไม่สำเร็จ', text: createErr.message }); return }
+    user = created.user
+    // สร้าง profile
+    await supabase.from('profiles').upsert({
+      id:         user.id,
+      email:      school.email,
+      full_name:  school.name,
+      role:       'school',
+      school_id:  school.id,
+      is_approved:true,
+      is_active:  true,
+    }, { onConflict: 'id' })
+    Swal.fire({ icon: 'success', title: 'สร้าง account และรีเซ็ตสำเร็จ', html: `Email: <b>${school.email}</b><br>Password: <b>${defaultPassword.value}</b>`, showConfirmButton: true })
+    return
+  }
+
+  const { error } = await supabaseAdmin.auth.admin.updateUserById(user.id, { password: defaultPassword.value })
   if (error) {
     Swal.fire({ icon: 'error', title: 'ไม่สำเร็จ', text: error.message })
   } else {
-    Swal.fire({ icon: 'success', title: 'รีเซ็ตสำเร็จ', showConfirmButton: false, timer: 1200 })
+    Swal.fire({ icon: 'success', title: 'รีเซ็ตสำเร็จ', html: `Password: <b>${defaultPassword.value}</b>`, showConfirmButton: false, timer: 2000 })
   }
 }
 
@@ -83,6 +119,49 @@ function exportCSV() {
 }
 
 const withWebsite = computed(() => schools.value.filter(s => s.website_url).length)
+
+// ─── Edit modal ───────────────────────────────────────────────────────────────
+const editSchool  = ref(null)
+const editSaving  = ref(false)
+
+function openEdit(school) {
+  editSchool.value = { ...school }
+}
+function closeEdit() { editSchool.value = null }
+
+async function saveEdit() {
+  if (!editSchool.value) return
+  editSaving.value = true
+  const { id, ...fields } = editSchool.value
+  const payload = {
+    name:         fields.name?.trim(),
+    subdistrict:  fields.subdistrict?.trim() || null,
+    district:     fields.district?.trim() || null,
+    school_group: fields.school_group?.trim() || null,
+    email:        fields.email?.trim() || null,
+    phone:        fields.phone?.trim() || null,
+    website_url:  fields.website_url?.trim() || null,
+    distance_km:  fields.distance_km ? Number(fields.distance_km) : null,
+    lat:          fields.lat ? Number(fields.lat) : null,
+    lng:          fields.lng ? Number(fields.lng) : null,
+    school_code:  fields.school_code?.trim() || null,
+  }
+  const { error } = await supabase.from('schools').update(payload).eq('id', id)
+  editSaving.value = false
+  if (error) {
+    Swal.fire({ icon: 'error', title: 'บันทึกไม่สำเร็จ', text: error.message })
+  } else {
+    closeEdit()
+    fetchSchools()
+    Swal.fire({ icon: 'success', title: 'บันทึกแล้ว', showConfirmButton: false, timer: 1200 })
+  }
+}
+
+// เปิด Google Maps เพื่อคัดลอกพิกัด
+function openMapsForGps(school) {
+  const name = encodeURIComponent(school.name || '')
+  window.open(`https://www.google.com/maps/search/${name}`, '_blank', 'noopener')
+}
 </script>
 
 <template>
@@ -151,6 +230,7 @@ const withWebsite = computed(() => schools.value.filter(s => s.website_url).leng
               <th class="px-4 py-3 text-left text-xs font-bold text-slate-500 whitespace-nowrap">กลุ่ม</th>
               <th class="px-4 py-3 text-left text-xs font-bold text-slate-500">อีเมล</th>
               <th class="px-4 py-3 text-left text-xs font-bold text-slate-500">เว็บไซต์</th>
+              <th class="px-4 py-3 text-center text-xs font-bold text-slate-500 whitespace-nowrap">แก้ไข</th>
               <th class="px-4 py-3 text-center text-xs font-bold text-slate-500 whitespace-nowrap">รีเซ็ต Pass</th>
             </tr>
           </thead>
@@ -169,6 +249,12 @@ const withWebsite = computed(() => schools.value.filter(s => s.website_url).leng
                 <span v-else class="text-xs text-slate-300 italic">ยังไม่มี</span>
               </td>
               <td class="px-4 py-3 text-center">
+                <button @click="openEdit(s)"
+                  class="px-2.5 py-1 text-[11px] font-bold text-primary border border-primary/30 rounded-lg hover:bg-primary/10 transition-colors">
+                  แก้ไข
+                </button>
+              </td>
+              <td class="px-4 py-3 text-center">
                 <button @click="resetPassword(s)"
                   class="px-2.5 py-1 text-[11px] font-bold text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition-colors">
                   รีเซ็ต
@@ -180,8 +266,144 @@ const withWebsite = computed(() => schools.value.filter(s => s.website_url).leng
       </div>
     </div>
   </div>
+
+  <!-- ── Edit Modal ───────────────────────────────────────────────── -->
+  <Teleport to="body">
+    <Transition name="fade">
+      <div v-if="editSchool"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 font-sarabun"
+        @click.self="closeEdit">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
+
+          <!-- Header -->
+          <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+            <div>
+              <h2 class="font-extrabold text-slate-800">แก้ไขข้อมูลโรงเรียน</h2>
+              <p class="text-xs text-slate-400 mt-0.5 font-mono">{{ editSchool.dmc_code }}</p>
+            </div>
+            <button @click="closeEdit" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 text-slate-400">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </button>
+          </div>
+
+          <!-- Body -->
+          <div class="flex-1 overflow-y-auto px-6 py-5 space-y-5">
+
+            <!-- ชื่อ + รหัส -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div class="sm:col-span-2">
+                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">ชื่อโรงเรียน <span class="text-red-500">*</span></label>
+                <input v-model="editSchool.name" type="text"
+                  class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-primary"/>
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">รหัส DMC</label>
+                <input v-model="editSchool.dmc_code" type="text" disabled
+                  class="w-full px-3 py-2.5 border border-slate-100 bg-slate-50 rounded-xl text-sm font-mono text-slate-400"/>
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">รหัสสถานศึกษา</label>
+                <input v-model="editSchool.school_code" type="text"
+                  class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-primary"/>
+              </div>
+            </div>
+
+            <!-- ที่อยู่ -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">ตำบล</label>
+                <input v-model="editSchool.subdistrict" type="text"
+                  class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-primary"/>
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">อำเภอ</label>
+                <input v-model="editSchool.district" type="text"
+                  class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-primary"/>
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">ศูนย์เครือข่าย</label>
+                <input v-model="editSchool.school_group" type="text"
+                  class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-primary"/>
+              </div>
+            </div>
+
+            <!-- ติดต่อ -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">อีเมล</label>
+                <input v-model="editSchool.email" type="email"
+                  class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-primary"/>
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">เบอร์โทรศัพท์</label>
+                <input v-model="editSchool.phone" type="text" placeholder="0XX-XXX-XXXX"
+                  class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-primary"/>
+              </div>
+              <div class="sm:col-span-2">
+                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">เว็บไซต์</label>
+                <input v-model="editSchool.website_url" type="url" placeholder="https://..."
+                  class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-primary"/>
+              </div>
+            </div>
+
+            <!-- GPS + ระยะทาง -->
+            <div class="bg-slate-50 rounded-2xl p-4 space-y-3">
+              <div class="flex items-center justify-between">
+                <p class="text-xs font-bold text-slate-600 uppercase tracking-wider">พิกัด GPS</p>
+                <button @click="openMapsForGps(editSchool)" type="button"
+                  class="flex items-center gap-1.5 text-xs text-emerald-600 font-bold hover:underline">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z"/>
+                  </svg>
+                  ค้นหาใน Google Maps
+                </button>
+              </div>
+              <div class="grid grid-cols-3 gap-3">
+                <div>
+                  <label class="block text-xs text-slate-500 mb-1">Latitude</label>
+                  <input v-model="editSchool.lat" type="number" step="0.000001" placeholder="15.123456"
+                    class="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-mono focus:outline-none focus:border-primary"/>
+                </div>
+                <div>
+                  <label class="block text-xs text-slate-500 mb-1">Longitude</label>
+                  <input v-model="editSchool.lng" type="number" step="0.000001" placeholder="102.123456"
+                    class="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-mono focus:outline-none focus:border-primary"/>
+                </div>
+                <div>
+                  <label class="block text-xs text-slate-500 mb-1">ระยะทาง (กม.)</label>
+                  <input v-model="editSchool.distance_km" type="number" step="0.1" placeholder="0.0"
+                    class="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-primary"/>
+                </div>
+              </div>
+              <p class="text-[10px] text-slate-400">กดปุ่ม "ค้นหาใน Google Maps" → คลิกขวาที่ตำแหน่งโรงเรียน → คัดลอกพิกัด</p>
+            </div>
+          </div>
+
+          <!-- Footer -->
+          <div class="px-6 py-4 border-t border-slate-100 flex gap-3 justify-end">
+            <button @click="closeEdit" class="px-5 py-2.5 text-sm font-bold text-slate-600 bg-slate-100 rounded-xl hover:bg-slate-200 transition-colors">
+              ยกเลิก
+            </button>
+            <button @click="saveEdit" :disabled="editSaving"
+              class="flex items-center gap-2 px-6 py-2.5 text-sm font-bold bg-primary text-white rounded-xl hover:-translate-y-0.5 shadow-md transition-all disabled:opacity-50">
+              <svg v-if="editSaving" class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+              </svg>
+              {{ editSaving ? 'กำลังบันทึก...' : 'บันทึก' }}
+            </button>
+          </div>
+
+        </div>
+      </div>
+    </Transition>
+  </Teleport>
+
 </template>
 
 <style scoped>
 .font-sarabun { font-family: 'Sarabun', sans-serif; }
+.fade-enter-active, .fade-leave-active { transition: opacity 0.2s ease; }
+.fade-enter-from, .fade-leave-to { opacity: 0; }
 </style>

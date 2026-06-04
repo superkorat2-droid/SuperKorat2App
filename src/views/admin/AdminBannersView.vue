@@ -2,8 +2,24 @@
 import { ref, computed, onMounted } from 'vue'
 import { supabase } from '../../supabase'
 import Swal from 'sweetalert2'
-import StorageBrowser  from '../../components/StorageBrowser.vue'
+import StorageBrowser    from '../../components/StorageBrowser.vue'
 import ImageCropperModal from '../../components/ImageCropperModal.vue'
+import { useAreaConfig } from '../../composables/useAreaConfig'
+
+const { config, fetchConfig } = useAreaConfig()
+
+// ── Banner ratio config ──────────────────────────────────────────
+const BANNER_RATIOS = [
+  { value: '21:9', label: '21:9 — Cinematic (แนะนำ)', size: '1920×823px หรือ 1200×514px', ratio: 21/9 },
+  { value: '16:9', label: '16:9 — มาตรฐาน',           size: '1920×1080px หรือ 1280×720px', ratio: 16/9 },
+  { value: '3:1',  label: '3:1  — เว็บราชการ',        size: '1500×500px หรือ 1200×400px',  ratio: 3/1 },
+  { value: '4:1',  label: '4:1  — แบนเนอร์บาง',       size: '1200×300px หรือ 1600×400px',  ratio: 4/1 },
+]
+
+const currentRatioInfo = computed(() =>
+  BANNER_RATIOS.find(r => r.value === (config.value?.banner_aspect_ratio || '21:9'))
+  ?? BANNER_RATIOS[0]
+)
 
 // ── State ────────────────────────────────────────────────────────
 const banners      = ref([])
@@ -47,7 +63,7 @@ async function fetchBanners() {
   if (!error) banners.value = data || []
   loading.value = false
 }
-onMounted(fetchBanners)
+onMounted(() => { fetchConfig(); fetchBanners() })
 
 // ── Filters / Stats ──────────────────────────────────────────────
 const filterTabs = [
@@ -219,8 +235,8 @@ async function onVideoFileSelected(e) {
   if (!file) return
   e.target.value = ''   // reset so same file can be re-selected
 
-  // ── Validate size (max 80 MB)
-  const MAX_MB = 80
+  // ── Validate size (max 50 MB — storage bucket limit)
+  const MAX_MB = 50
   if (file.size > MAX_MB * 1024 * 1024) {
     videoUploadError.value = `ไฟล์ใหญ่เกิน ${MAX_MB} MB (ไฟล์นี้ ${(file.size/1024/1024).toFixed(1)} MB) — กรุณาบีบอัดก่อน`
     return
@@ -588,6 +604,19 @@ const LINK_OPTIONS = [
                 </div>
               </div>
 
+              <!-- ─ Size recommendation ─ -->
+              <div v-if="form.banner_type === 'image'"
+                class="flex items-start gap-2.5 bg-blue-50 border border-blue-200 rounded-xl px-4 py-3">
+                <svg class="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z"/>
+                </svg>
+                <div class="text-xs">
+                  <p class="font-bold text-blue-700">ขนาดแนะนำ ({{ currentRatioInfo.value }})</p>
+                  <p class="text-blue-600 mt-0.5">{{ currentRatioInfo.size }} · ไม่เกิน 5 MB · JPG หรือ PNG</p>
+                  <p class="text-blue-500 mt-0.5">เปลี่ยนสัดส่วนแบนเนอร์ได้ที่ ตั้งค่าเขต → ข้อมูลเขตพื้นที่</p>
+                </div>
+              </div>
+
               <!-- ─ Section 2: แหล่งสื่อ ─ -->
               <div class="space-y-3">
                 <label class="section-label">
@@ -699,7 +728,7 @@ const LINK_OPTIONS = [
                     </div>
                     <div class="flex items-center gap-1.5">
                       <span class="w-1.5 h-1.5 rounded-full bg-violet-400 flex-shrink-0"></span>
-                      <span><strong>ขนาดไฟล์:</strong> ไม่เกิน 30 MB</span>
+                      <span><strong>ขนาดไฟล์:</strong> ไม่เกิน 50 MB</span>
                     </div>
                     <div class="flex items-center gap-1.5">
                       <span class="w-1.5 h-1.5 rounded-full bg-violet-400 flex-shrink-0"></span>
@@ -860,8 +889,8 @@ const LINK_OPTIONS = [
     <!-- ── Image Cropper ────────────────────────────────────────── -->
     <ImageCropperModal
       :show="showCropper"
-      :aspect-ratio="16/9"
-      title="ครอบรูปแบนเนอร์ (16:9)"
+      :aspect-ratio="currentRatioInfo.ratio"
+      :title="`ครอบรูปแบนเนอร์ (${currentRatioInfo.value}) — แนะนำ ${currentRatioInfo.size}`"
       @close="showCropper = false"
       @cropped="onCropped"/>
 
