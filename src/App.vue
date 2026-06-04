@@ -422,7 +422,7 @@ const handleLogout = async () => {
                 {{ contactEmail }}
               </a>
             </div>
-            <p class="text-xs text-slate-400">© 2568 {{ config?.area_name_short || 'กลุ่มนิเทศฯ' }} · Developed by Kruwinai</p>
+            <p class="text-xs text-slate-400">© 2026 Developed by Winai · Educational Supervisor</p>
           </div>
         </div>
       </div>
