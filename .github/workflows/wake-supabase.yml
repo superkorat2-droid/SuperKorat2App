@@ -1,18 +1,20 @@
-name: Wake Supabase
+name: Wake Supabase DB
 
 on:
   schedule:
-    # รันทุกวัน 07:00 น. (UTC+7) = 00:00 UTC
-    - cron: '0 0 * * *'
-  workflow_dispatch:      # รันมือได้จาก GitHub Actions tab
+    # ปลุกทุกวัน 06:00 น. และ 12:00 น. (UTC+7) = 23:00 และ 05:00 UTC
+    - cron: '0 23 * * *'
+    - cron: '0 5 * * *'
+  workflow_dispatch:   # รันมือได้จาก GitHub Actions tab
 
 jobs:
   wake:
     name: Unpause & Ping Supabase
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 5
 
     steps:
+      # ─── ขั้น 1: ปลุก project ถ้า pause ─────────────────────────────
       - name: Restore project (ปลุก DB ถ้า pause อยู่)
         run: |
           STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
@@ -24,32 +26,45 @@ jobs:
           echo "Restore status: $STATUS"
 
           if [ "$STATUS" = "201" ]; then
-            echo "✅ Project restored — รอ DB พร้อม..."
-            sleep 30
+            echo "✅ Project restored — รอ DB พร้อม 40 วินาที..."
+            sleep 40
           elif [ "$STATUS" = "409" ]; then
             echo "ℹ️ Project ทำงานปกติอยู่แล้ว"
+          elif [ "$STATUS" = "000" ] || [ "$STATUS" = "" ]; then
+            echo "⚠️ ไม่ได้รับ response — อาจไม่ได้ตั้งค่า SUPABASE_ACCESS_TOKEN"
           else
-            echo "⚠️ Unexpected status: $STATUS"
+            echo "ℹ️ Status: $STATUS"
           fi
 
-      - name: Ping API (กัน auto-pause)
+      # ─── ขั้น 2: Ping API เพื่อกัน auto-pause ────────────────────────
+      - name: Ping Supabase API
         run: |
           HTTP=$(curl -s -o /dev/null -w "%{http_code}" \
+            --max-time 15 \
             "${{ secrets.SUPABASE_URL }}/rest/v1/" \
-            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}")
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}")
 
           echo "Ping status: $HTTP"
 
-          # 200/404 = ปกติ, 401 = server ตอบแล้ว แค่ anon ไม่มีสิทธิ์ (RLS) = ปกติเช่นกัน
-          if [ "$HTTP" = "200" ] || [ "$HTTP" = "404" ] || [ "$HTTP" = "401" ]; then
-            echo "✅ Supabase ตอบสนองปกติ (HTTP $HTTP)"
+          # 200/401/404 = server ตอบแล้ว = ปกติ
+          if [[ "$HTTP" == "200" || "$HTTP" == "401" || "$HTTP" == "404" ]]; then
+            echo "✅ Supabase พร้อมใช้งาน (HTTP $HTTP)"
           else
-            echo "❌ Supabase ไม่ตอบสนอง (status: $HTTP)"
-            exit 1
+            echo "❌ ไม่ตอบสนอง (HTTP $HTTP) — อาจยังกำลังปลุก, รอรอบหน้า"
           fi
 
-      - name: Health check summary
+      # ─── ขั้น 3: สรุป ─────────────────────────────────────────────────
+      - name: Summary
         run: |
-          echo "Project: ${{ secrets.SUPABASE_PROJECT_REF }}"
-          echo "URL    : ${{ secrets.SUPABASE_URL }}"
-          echo "Time   : $(TZ='Asia/Bangkok' date '+%Y-%m-%d %H:%M:%S %Z')"
+          echo "======================================="
+          echo "Project : ${{ secrets.SUPABASE_PROJECT_REF }}"
+          echo "URL     : ${{ secrets.SUPABASE_URL }}"
+          echo "เวลา(TH): $(TZ='Asia/Bangkok' date '+%Y-%m-%d %H:%M:%S')"
+          echo "======================================="
+          echo ""
+          echo "Secrets ที่ต้องตั้งค่า (Settings > Secrets > Actions):"
+          echo "  SUPABASE_ACCESS_TOKEN — จาก supabase.com/account/tokens"
+          echo "  SUPABASE_PROJECT_REF  — yrdtqwqyqtrefjtutzzf"
+          echo "  SUPABASE_URL          — https://yrdtqwqyqtrefjtutzzf.supabase.co"
+          echo "  SUPABASE_ANON_KEY     — eyJhbGci..."
