@@ -52,6 +52,11 @@ function youtubeEmbed(url) {
   const id = extractYoutubeId(url)
   return `https://www.youtube.com/embed/${id}?autoplay=1&mute=1&loop=1&playlist=${id}&controls=0`
 }
+// path สำหรับ router-link จาก link_url ภายใน (รองรับทั้ง "#/page" และ "/page")
+function bannerInternalPath(url) {
+  if (!url) return '/'
+  return url.startsWith('#') ? url.slice(1) : url
+}
 
 const fetchBanners = async () => {
   try {
@@ -292,66 +297,76 @@ const stats = [
     <section class="w-full">
 
       <!-- แบนเนอร์จาก DB — full width, configurable ratio -->
-      <div v-if="!loadingBanners && banners.length > 0"
-        class="relative overflow-hidden shadow-xl w-full bg-slate-900 group"
-        :style="bannerAspectStyle">
-        <div v-for="(slide, i) in banners" :key="slide.id"
-          class="absolute inset-0 transition-all duration-1000"
-          :class="i === currentSlide ? 'opacity-100' : 'opacity-0'">
-          <!-- image -->
-          <img v-if="slide.banner_type === 'image' || !slide.banner_type"
-            :src="slide.image_url" class="w-full h-full object-cover"/>
-          <!-- video file — autoplay muted loop (ดีที่สุด) -->
-          <video v-else-if="slide.banner_type === 'video'"
-            :src="slide.image_url" class="w-full h-full object-cover"
-            autoplay muted loop playsinline/>
-          <!-- youtube — แสดง thumbnail + play overlay (ไม่มีโฆษณา ไม่มีปัญหา autoplay) -->
-          <template v-else-if="slide.banner_type === 'youtube'">
-            <img :src="youtubeThumbnailFull(slide.image_url)"
-              class="w-full h-full object-cover"
-              @error="$event.target.src = youtubeThumbnailSD(slide.image_url)"/>
-            <!-- play button overlay — คลิกเปิด YouTube ในแท็บใหม่ -->
-            <a :href="youtubeWatchUrl(slide.image_url)" target="_blank" rel="noopener"
-              class="absolute inset-0 flex items-center justify-center group/play">
-              <div class="w-16 h-16 md:w-20 md:h-20 rounded-full bg-black/60 flex items-center justify-center
-                          backdrop-blur-sm border-2 border-white/40
-                          group-hover/play:bg-red-600 group-hover/play:border-red-500
-                          transition-all duration-300 shadow-2xl">
-                <svg class="w-7 h-7 md:w-9 md:h-9 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M8 5v14l11-7z"/>
-                </svg>
+      <div v-if="!loadingBanners && banners.length > 0" class="w-full">
+        <div class="relative overflow-hidden shadow-xl w-full bg-slate-900"
+          :style="bannerAspectStyle">
+          <div v-for="(slide, i) in banners" :key="slide.id"
+            class="absolute inset-0 transition-all duration-1000"
+            :class="i === currentSlide ? 'opacity-100 z-10' : 'opacity-0 pointer-events-none'">
+            <!-- image -->
+            <img v-if="slide.banner_type === 'image' || !slide.banner_type"
+              :src="slide.image_url" class="w-full h-full object-cover"/>
+            <!-- video file — autoplay muted loop (ดีที่สุด) -->
+            <video v-else-if="slide.banner_type === 'video'"
+              :src="slide.image_url" class="w-full h-full object-cover"
+              autoplay muted loop playsinline/>
+            <!-- youtube — แสดง thumbnail + play overlay (ไม่มีโฆษณา ไม่มีปัญหา autoplay) -->
+            <template v-else-if="slide.banner_type === 'youtube'">
+              <img :src="youtubeThumbnailFull(slide.image_url)"
+                class="w-full h-full object-cover"
+                @error="$event.target.src = youtubeThumbnailSD(slide.image_url)"/>
+              <!-- play button overlay — คลิกเปิด YouTube ในแท็บใหม่ -->
+              <a :href="youtubeWatchUrl(slide.image_url)" target="_blank" rel="noopener"
+                class="absolute inset-0 flex items-center justify-center group/play">
+                <div class="w-16 h-16 md:w-20 md:h-20 rounded-full bg-black/60 flex items-center justify-center
+                            backdrop-blur-sm border-2 border-white/40
+                            group-hover/play:bg-red-600 group-hover/play:border-red-500
+                            transition-all duration-300 shadow-2xl">
+                  <svg class="w-7 h-7 md:w-9 md:h-9 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M8 5v14l11-7z"/>
+                  </svg>
+                </div>
+              </a>
+            </template>
+            <div v-if="slide.title" class="absolute inset-0 bg-gradient-to-t from-black/65 via-transparent to-transparent flex items-end pointer-events-none">
+              <div class="p-8 md:p-14">
+                <h2 class="text-2xl md:text-5xl font-extrabold text-white drop-shadow-xl">{{ slide.title }}</h2>
+                <p v-if="slide.subtitle" class="text-white/75 mt-2 text-sm md:text-lg">{{ slide.subtitle }}</p>
               </div>
-            </a>
-          </template>
-          <div v-if="slide.title" class="absolute inset-0 bg-gradient-to-t from-black/65 via-transparent to-transparent flex items-end">
-            <div class="p-8 md:p-14">
-              <h2 class="text-2xl md:text-5xl font-extrabold text-white drop-shadow-xl">{{ slide.title }}</h2>
-              <p v-if="slide.subtitle" class="text-white/75 mt-2 text-sm md:text-lg">{{ slide.subtitle }}</p>
             </div>
+            <!-- คลิกแบนเนอร์เพื่อเปิดลิงค์ (image/video เท่านั้น — youtube มี play button ของตัวเอง) -->
+            <component v-if="slide.banner_type !== 'youtube' && slide.link_type && slide.link_type !== 'none' && slide.link_url"
+              :is="slide.link_type === 'external' ? 'a' : 'router-link'"
+              :href="slide.link_type === 'external' ? slide.link_url : undefined"
+              :to="slide.link_type === 'internal' ? bannerInternalPath(slide.link_url) : undefined"
+              :target="slide.link_type === 'external' ? '_blank' : undefined"
+              :rel="slide.link_type === 'external' ? 'noopener' : undefined"
+              class="absolute inset-0 cursor-pointer" :aria-label="slide.title || 'banner link'"/>
           </div>
+          <!-- TV vignette — gradient ขอบทั้ง 4 ด้าน -->
+          <div class="absolute inset-0 pointer-events-none"
+            style="background: radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.55) 100%)"></div>
         </div>
-        <!-- TV vignette — gradient ขอบทั้ง 4 ด้าน -->
-        <div class="absolute inset-0 pointer-events-none"
-          style="background: radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.55) 100%)"></div>
 
-        <template v-if="banners.length > 1">
+        <!-- ตัวเลื่อนสไลด์ — อยู่ใต้แบนเนอร์ ไม่บังคลิก -->
+        <div v-if="banners.length > 1" class="flex items-center justify-center gap-3 py-3 bg-slate-50 dark:bg-slate-950">
           <button @click="prevSlide"
-            class="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/25 hover:bg-primary text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+            class="w-7 h-7 rounded-full border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-400 hover:text-primary hover:border-primary transition-colors">
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3">
               <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
             </svg>
           </button>
+          <div class="flex gap-1.5">
+            <button v-for="(_, i) in banners" :key="i" @click="currentSlide = i"
+              :class="['rounded-full transition-all', i === currentSlide ? 'bg-primary w-5 h-1.5' : 'bg-slate-300 dark:bg-slate-600 w-1.5 h-1.5 hover:bg-slate-400']"/>
+          </div>
           <button @click="nextSlide"
-            class="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/25 hover:bg-primary text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+            class="w-7 h-7 rounded-full border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-400 hover:text-primary hover:border-primary transition-colors">
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3">
               <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
             </svg>
           </button>
-          <div class="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5">
-            <button v-for="(_, i) in banners" :key="i" @click="currentSlide = i"
-              :class="['rounded-full transition-all', i === currentSlide ? 'bg-white w-6 h-2' : 'bg-white/45 w-2 h-2']"/>
-          </div>
-        </template>
+        </div>
       </div>
 
       <!-- Fallback Hero -->
