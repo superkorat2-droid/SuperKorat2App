@@ -4,6 +4,7 @@ import { supabase } from '../../supabase'
 import Swal from 'sweetalert2'
 import StorageBrowser    from '../../components/StorageBrowser.vue'
 import ImageCropperModal from '../../components/ImageCropperModal.vue'
+import { useExternalUpload, externalUploadEnabled, deleteUploadedFile } from '../../composables/useExternalUpload'
 
 // ── Categories ───────────────────────────────────────────────────
 const CATEGORIES = [
@@ -170,17 +171,23 @@ ${code}
 }
 
 // ── Cover upload from ImageCropperModal ───────────────────────────
+const { uploadImage: uploadCoverExternal } = useExternalUpload()
+
 async function onCoverCropped({ blob }) {
   coverUploading.value = true
   coverUploadErr.value = ''
   try {
-    const fileName = `news/cover_${Date.now()}.png`
-    const { error } = await supabase.storage
-      .from('images')
-      .upload(fileName, blob, { contentType: 'image/png', upsert: false })
-    if (error) throw error
-    const { data: { publicUrl } } = supabase.storage.from('images').getPublicUrl(fileName)
-    form.value.cover_url = publicUrl
+    if (externalUploadEnabled) {
+      form.value.cover_url = await uploadCoverExternal(blob, 'news')
+    } else {
+      const fileName = `news/cover_${Date.now()}.png`
+      const { error } = await supabase.storage
+        .from('images')
+        .upload(fileName, blob, { contentType: 'image/png', upsert: false })
+      if (error) throw error
+      const { data: { publicUrl } } = supabase.storage.from('images').getPublicUrl(fileName)
+      form.value.cover_url = publicUrl
+    }
     showCropper.value = false
   } catch (e) {
     coverUploadErr.value = e.message || 'อัปโหลดรูปปกไม่สำเร็จ'
@@ -249,6 +256,7 @@ async function deleteNews(n) {
   })
   if (!res.isConfirmed) return
   await supabase.from('news').delete().eq('id', n.id)
+  await deleteUploadedFile(n.cover_url)
   newsList.value = newsList.value.filter(x => x.id !== n.id)
   Swal.fire({ icon: 'success', title: 'ลบแล้ว', showConfirmButton: false, timer: 800 })
 }

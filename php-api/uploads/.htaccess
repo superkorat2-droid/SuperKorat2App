@@ -1,0 +1,10 @@
+# ป้องกันการรันสคริปต์ในโฟลเดอร์นี้ — กัน RCE หากมีไฟล์สคริปต์แอบถูกอัปโหลดมา
+<FilesMatch "\.(php|phtml|php\d|pht|phar|cgi|pl)$">
+  <IfModule mod_authz_core.c>
+    Require all denied
+  </IfModule>
+  <IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+  </IfModule>
+</FilesMatch>

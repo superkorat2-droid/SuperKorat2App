@@ -5,6 +5,7 @@ import Swal from 'sweetalert2'
 import StorageBrowser    from '../../components/StorageBrowser.vue'
 import ImageCropperModal from '../../components/ImageCropperModal.vue'
 import { useAreaConfig } from '../../composables/useAreaConfig'
+import { useExternalUpload, externalUploadEnabled, deleteUploadedFile } from '../../composables/useExternalUpload'
 
 const { config, fetchConfig } = useAreaConfig()
 
@@ -197,6 +198,7 @@ async function deleteBanner(b) {
   })
   if (!res.isConfirmed) return
   await supabase.from('banners').delete().eq('id', b.id)
+  await deleteUploadedFile(b.image_url)
   banners.value = banners.value.filter(x => x.id !== b.id)
   Swal.fire({ icon: 'success', title: 'ลบแล้ว', showConfirmButton: false, timer: 800 })
 }
@@ -230,6 +232,8 @@ function triggerVideoUpload() {
   videoFileInput.value?.click()
 }
 
+const { uploadFile: uploadVideoExternal } = useExternalUpload()
+
 async function onVideoFileSelected(e) {
   const file = e.target.files?.[0]
   if (!file) return
@@ -252,36 +256,41 @@ async function onVideoFileSelected(e) {
   videoUploadProgress.value = 0
 
   try {
-    const { data: { session } } = await supabase.auth.getSession()
-    const token      = session?.access_token
-    const baseUrl    = import.meta.env.VITE_SUPABASE_URL
-    const ext        = file.name.split('.').pop() || 'mp4'
-    const fileName   = `banner-video-${Date.now()}.${ext}`
-    const uploadUrl  = `${baseUrl}/storage/v1/object/banners/${fileName}`
-
-    await new Promise((resolve, reject) => {
-      const xhr = new XMLHttpRequest()
-      xhr.open('POST', uploadUrl)
-      xhr.setRequestHeader('Authorization', `Bearer ${token}`)
-      xhr.setRequestHeader('Content-Type', file.type || 'video/mp4')
-      xhr.setRequestHeader('x-upsert', 'false')
-
-      xhr.upload.addEventListener('progress', ev => {
-        if (ev.lengthComputable)
-          videoUploadProgress.value = Math.round((ev.loaded / ev.total) * 100)
+    if (externalUploadEnabled) {
+      form.value.image_url = await uploadVideoExternal(file, 'banners', p => {
+        videoUploadProgress.value = p
       })
-      xhr.addEventListener('load', () => {
-        if (xhr.status >= 200 && xhr.status < 300) resolve()
-        else reject(new Error(`Upload failed (${xhr.status}): ${xhr.responseText}`))
+    } else {
+      const { data: { session } } = await supabase.auth.getSession()
+      const token      = session?.access_token
+      const baseUrl    = import.meta.env.VITE_SUPABASE_URL
+      const ext        = file.name.split('.').pop() || 'mp4'
+      const fileName   = `banner-video-${Date.now()}.${ext}`
+      const uploadUrl  = `${baseUrl}/storage/v1/object/banners/${fileName}`
+
+      await new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest()
+        xhr.open('POST', uploadUrl)
+        xhr.setRequestHeader('Authorization', `Bearer ${token}`)
+        xhr.setRequestHeader('Content-Type', file.type || 'video/mp4')
+        xhr.setRequestHeader('x-upsert', 'false')
+
+        xhr.upload.addEventListener('progress', ev => {
+          if (ev.lengthComputable)
+            videoUploadProgress.value = Math.round((ev.loaded / ev.total) * 100)
+        })
+        xhr.addEventListener('load', () => {
+          if (xhr.status >= 200 && xhr.status < 300) resolve()
+          else reject(new Error(`Upload failed (${xhr.status}): ${xhr.responseText}`))
+        })
+        xhr.addEventListener('error', () => reject(new Error('Network error')))
+        xhr.send(file)
       })
-      xhr.addEventListener('error', () => reject(new Error('Network error')))
-      xhr.send(file)
-    })
 
-    // Get public URL
-    const { data: urlData } = supabase.storage.from('banners').getPublicUrl(fileName)
-    form.value.image_url = urlData.publicUrl
-
+      // Get public URL
+      const { data: urlData } = supabase.storage.from('banners').getPublicUrl(fileName)
+      form.value.image_url = urlData.publicUrl
+    }
   } catch (err) {
     videoUploadError.value = err.message
   } finally {
@@ -294,17 +303,25 @@ function onStorageSelect({ url }) {
   form.value.image_url = url
   showStorage.value = false
 }
+
+const { uploadImage: uploadCoverExternal } = useExternalUpload()
+
 async function onCropped({ blob }) {
   showCropper.value = false
   uploading.value = true
-  const name = `banner-${Date.now()}.png`
-  const { data, error } = await supabase.storage
-    .from('banners').upload(name, blob, { contentType: 'image/png', upsert: false })
-  if (error) {
+  try {
+    if (externalUploadEnabled) {
+      form.value.image_url = await uploadCoverExternal(blob, 'banners')
+    } else {
+      const name = `banner-${Date.now()}.jpg`
+      const { data, error } = await supabase.storage
+        .from('banners').upload(name, blob, { contentType: 'image/jpeg', upsert: false })
+      if (error) throw error
+      const { data: urlData } = supabase.storage.from('banners').getPublicUrl(data.path)
+      form.value.image_url = urlData.publicUrl
+    }
+  } catch (error) {
     Swal.fire({ icon: 'error', title: 'อัปโหลดไม่สำเร็จ', text: error.message })
-  } else {
-    const { data: urlData } = supabase.storage.from('banners').getPublicUrl(data.path)
-    form.value.image_url = urlData.publicUrl
   }
   uploading.value = false
 }
@@ -891,6 +908,10 @@ const LINK_OPTIONS = [
       :show="showCropper"
       :aspect-ratio="currentRatioInfo.ratio"
       :title="`ครอบรูปแบนเนอร์ (${currentRatioInfo.value}) — แนะนำ ${currentRatioInfo.size}`"
+      :output-max-width="1920"
+      :output-max-height="1920"
+      output-type="image/jpeg"
+      :output-quality="0.85"
       @close="showCropper = false"
       @cropped="onCropped"/>
 

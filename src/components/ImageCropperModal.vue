@@ -14,9 +14,13 @@ import Cropper from 'cropperjs'
 import 'cropperjs/dist/cropper.css'
 
 const props = defineProps({
-  show:        { type: Boolean, default: false },
-  aspectRatio: { type: Number,  default: 1 },
-  title:       { type: String,  default: 'ครอบรูปภาพ' },
+  show:           { type: Boolean, default: false },
+  aspectRatio:    { type: Number,  default: 1 },
+  title:          { type: String,  default: 'ครอบรูปภาพ' },
+  outputMaxWidth: { type: Number,  default: 1024 },
+  outputMaxHeight:{ type: Number,  default: 1024 },
+  outputType:     { type: String,  default: 'image/png' },
+  outputQuality:  { type: Number,  default: 0.95 },
 })
 const emit = defineEmits(['close', 'cropped'])
 
@@ -101,16 +105,16 @@ function doCrop() {
   if (!cropper.value) return
   cropping.value = true
   const canvas = cropper.value.getCroppedCanvas({
-    maxWidth:  1024,
-    maxHeight: 1024,
+    maxWidth:  props.outputMaxWidth,
+    maxHeight: props.outputMaxHeight,
     imageSmoothingEnabled: true,
     imageSmoothingQuality: 'high',
   })
   canvas.toBlob((blob) => {
-    const dataUrl = canvas.toDataURL('image/png')
+    const dataUrl = canvas.toDataURL(props.outputType, props.outputQuality)
     emit('cropped', { blob, dataUrl })
     cropping.value = false
-  }, 'image/png', 0.95)
+  }, props.outputType, props.outputQuality)
 }
 
 function close() {

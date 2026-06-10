@@ -328,9 +328,9 @@ const stats = [
                 </div>
               </a>
             </template>
-            <div v-if="slide.title" class="absolute inset-0 bg-gradient-to-t from-black/65 via-transparent to-transparent flex items-end pointer-events-none">
+            <div v-if="slide.title" class="absolute inset-0 bg-gradient-to-t from-black/65 via-transparent to-transparent flex items-end justify-center text-center pointer-events-none">
               <div class="p-8 md:p-14">
-                <h2 class="text-2xl md:text-5xl font-extrabold text-white drop-shadow-xl">{{ slide.title }}</h2>
+                <h2 class="text-xl md:text-4xl font-extrabold text-white drop-shadow-xl">{{ slide.title }}</h2>
                 <p v-if="slide.subtitle" class="text-white/75 mt-2 text-sm md:text-lg">{{ slide.subtitle }}</p>
               </div>
             </div>

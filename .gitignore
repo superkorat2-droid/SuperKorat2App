@@ -38,3 +38,8 @@ supabase/.branches/
 supabase/.temp/
 # ข้อมูล production dump — มี hash/token อย่า push
 supabase/seed_prod.sql
+
+# PHP upload API — secret config + ไฟล์ที่อัปโหลดจริง (อยู่บน host แยก ไม่ใช่ในเครื่อง)
+php-api/config.php
+php-api/uploads/*
+!php-api/uploads/.htaccess
