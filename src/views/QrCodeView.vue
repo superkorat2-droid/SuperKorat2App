@@ -1,5 +1,9 @@
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, watch, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
+import QRCode from 'qrcode'
+
+const route = useRoute()
 
 const inputText  = ref('')
 const fgColor    = ref('#1e3a8a')
@@ -23,16 +27,18 @@ const presets = [
   { label: 'Google Form', value: 'https://forms.gle/example', icon: '📋' },
 ]
 
-function buildUrl() {
-  const fg = fgColor.value.replace('#', '')
-  const bg = bgColor.value.replace('#', '')
-  const data = encodeURIComponent(inputText.value)
-  return `https://api.qrserver.com/v1/create-qr-code/?size=${size.value}x${size.value}&data=${data}&color=${fg}&bgcolor=${bg}&ecc=${errorLevel.value}&margin=10`
+async function buildDataUrl() {
+  return QRCode.toDataURL(inputText.value, {
+    width: size.value,
+    margin: 2,
+    errorCorrectionLevel: errorLevel.value,
+    color: { dark: fgColor.value, light: bgColor.value },
+  })
 }
 
-function generate() {
+async function generate() {
   if (!inputText.value.trim()) return
-  qrSrc.value = buildUrl()
+  qrSrc.value = await buildDataUrl()
   generated.value = true
 }
 
@@ -42,12 +48,18 @@ function downloadQR() {
   const a = document.createElement('a')
   a.href = qrSrc.value
   a.download = `qrcode-${Date.now()}.png`
-  a.target = '_blank'
   a.click()
 }
 
-watch([fgColor, bgColor, size, errorLevel], () => {
-  if (generated.value) qrSrc.value = buildUrl()
+watch([fgColor, bgColor, size, errorLevel], async () => {
+  if (generated.value) qrSrc.value = await buildDataUrl()
+})
+
+onMounted(() => {
+  if (route.query.text) {
+    inputText.value = String(route.query.text)
+    generate()
+  }
 })
 </script>
 

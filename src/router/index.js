@@ -75,7 +75,9 @@ import NewsDetailView   from '../views/NewsDetailView.vue'
 import DownloadView     from '../views/DownloadView.vue'
 import UrlShortView     from '../views/UrlShortView.vue'
 import QrCodeView       from '../views/QrCodeView.vue'
+import ShortRedirectView from '../views/ShortRedirectView.vue'
 import ContactView      from '../views/ContactView.vue'
+import AdminShortUrlsView from '../views/admin/AdminShortUrlsView.vue'
 
 const routes = [
   // ── หน้าหลัก ──────────────────────────────────────────────────────────
@@ -117,7 +119,7 @@ const routes = [
       { path: 'documents',name: 'adminDocuments', component: AdminDocumentsView,    meta: { title: 'เอกสารและดาวน์โหลด', icon: '📂' } },
       { path: 'works',    name: 'adminWorks',     component: AdminPlaceholderView,  meta: { title: 'ผลงานและนวัตกรรม', icon: '🏆' } },
       { path: 'works-approve', name: 'adminWorksApprove', component: AdminPlaceholderView, meta: { title: 'อนุมัติผลงาน', icon: '✅' } },
-      { path: 'short-urls', name: 'adminShortUrls', component: AdminPlaceholderView, meta: { title: 'จัดการ URL ย่อ', icon: '🔗' } },
+      { path: 'short-urls', name: 'adminShortUrls', component: AdminShortUrlsView, meta: { title: 'จัดการ URL ย่อ', icon: '🔗' } },
       { path: 'storage',  name: 'adminStorage',   component: AdminStorageView,      meta: { title: 'จัดการไฟล์ Storage', icon: '🗄️' } },
       { path: 'profile',  name: 'adminProfile',   component: AdminProfileView,      meta: { title: 'โปรไฟล์ของฉัน', icon: '👤' } },
     ]
@@ -230,6 +232,7 @@ const routes = [
   { path: '/download',  name: 'download',  component: DownloadView  },
   { path: '/url-short', name: 'urlShort',  component: UrlShortView  },
   { path: '/qrcode',    name: 'qrcode',    component: QrCodeView    },
+  { path: '/s/:slug',   name: 'shortRedirect', component: ShortRedirectView },
 
   // ── ติดต่อ ────────────────────────────────────────────────────────────
   { path: '/contact',   name: 'contact',   component: ContactView   },
