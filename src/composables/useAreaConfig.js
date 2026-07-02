@@ -39,10 +39,11 @@ export const THEME_PRESETS = [
 
 // ── Default sections config ────────────────────────────────────
 export const DEFAULT_HOME_SECTIONS = [
-  { key: 'news',            label: 'ข่าวสาร',       subtitle: 'Latest News',      title: 'ข่าวสารและประชาสัมพันธ์',            visible: true, bg: '#ffffff', bg2: '#f1f5f9', bg_type: 'solid', order: 1 },
-  { key: 'supervision_list',label: 'แบบนิเทศ',      subtitle: 'Supervision',      title: 'แบบนิเทศและแบบสอบถาม',               visible: false,bg: '#f8fafc', bg2: '#e0e7ff', bg_type: 'solid', order: 2 },
-  { key: 'services',        label: 'บริการออนไลน์', subtitle: 'E-Service Center', title: 'บริการออนไลน์',                      visible: true, bg: '#f8fafc', bg2: '#e2e8f0', bg_type: 'solid', order: 3 },
-  { key: 'cta',             label: 'CTA Banner',     subtitle: '',                 title: 'ระบบกลุ่มนิเทศ ติดตามและประเมินผล', visible: true, bg: '#ffffff', bg2: '#f1f5f9', bg_type: 'solid', order: 4 },
+  { key: 'news',            label: 'ข่าวสาร',        subtitle: 'Latest News',      title: 'ข่าวสารและประชาสัมพันธ์',            visible: true,  bg: '#ffffff', bg2: '#f1f5f9', bg_type: 'solid', order: 1 },
+  { key: 'education_news',  label: 'ข่าวการศึกษา',   subtitle: 'Education News',   title: 'ข่าวการศึกษาจาก Google News',        visible: true,  bg: '#f8fafc', bg2: '#e0e7ff', bg_type: 'solid', order: 2 },
+  { key: 'supervision_list',label: 'แบบนิเทศ',       subtitle: 'Supervision',      title: 'แบบนิเทศและแบบสอบถาม',               visible: false, bg: '#f8fafc', bg2: '#e0e7ff', bg_type: 'solid', order: 3 },
+  { key: 'services',        label: 'บริการออนไลน์',  subtitle: 'E-Service Center', title: 'บริการออนไลน์',                      visible: true,  bg: '#f8fafc', bg2: '#e2e8f0', bg_type: 'solid', order: 4 },
+  { key: 'cta',             label: 'CTA Banner',      subtitle: '',                 title: 'ระบบกลุ่มนิเทศ ติดตามและประเมินผล', visible: true,  bg: '#ffffff', bg2: '#f1f5f9', bg_type: 'solid', order: 5 },
 ]
 
 // ── Default theme ──────────────────────────────────────────────

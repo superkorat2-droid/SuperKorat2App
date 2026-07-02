@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { supabase } from '../supabase'
 import { useAreaConfig, DEFAULT_HOME_SECTIONS } from '../composables/useAreaConfig'
 import { ICON_MAP } from '../composables/useIcons.js'
+import { useEducationNews } from '../composables/useEducationNews'
 
 const router = useRouter()
 
@@ -91,6 +92,11 @@ const needsSupervisionSection = computed(() =>
   orderedSections.value.some(s => s.key === 'supervision_list' && s.visible)
 )
 
+const { news: educationNews, loading: loadingEduNews, error: eduNewsError, fetchNews: fetchEduNews } = useEducationNews()
+const needsEduNewsSection = computed(() =>
+  orderedSections.value.some(s => s.key === 'education_news' && s.visible)
+)
+
 async function fetchSupervisionForms() {
   loadingSupervision.value = true
   const { data } = await supabase.rpc('get_supervision_list_public')
@@ -134,6 +140,7 @@ onMounted(async () => {
   if (banners.value.length > 1)
     slideInterval = setInterval(nextSlide, 7000)
   if (needsSupervisionSection.value) fetchSupervisionForms()
+  if (needsEduNewsSection.value) fetchEduNews()
 
   // รีโหลดแบบนิเทศเมื่อ tab กลับมา (หลังแก้ไขในหน้า admin)
   document.addEventListener('visibilitychange', () => {
@@ -698,6 +705,72 @@ const stats = [
                   </div>
                 </Transition>
               </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ══ EDUCATION NEWS (Google RSS) ══ -->
+        <section v-else-if="sec.key === 'education_news'" :style="getBgStyle(sec)" class="py-10 md:py-12">
+          <div class="max-w-7xl mx-auto px-4">
+            <!-- Header -->
+            <div class="flex items-end justify-between mb-6">
+              <div>
+                <span class="text-secondary font-bold uppercase text-xs tracking-[0.18em] block mb-1">{{ sec.subtitle || 'Education News' }}</span>
+                <h2 class="text-2xl md:text-3xl font-extrabold text-slate-900 accent-line">{{ sec.title || 'ข่าวการศึกษา' }}</h2>
+              </div>
+              <a href="#/education-news" class="hidden sm:flex items-center gap-1.5 text-sm font-bold text-primary hover:gap-3 transition-all">
+                ดูทั้งหมด
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/>
+                </svg>
+              </a>
+            </div>
+            <!-- Loading skeleton -->
+            <div v-if="loadingEduNews" class="space-y-2">
+              <div v-for="i in 5" :key="i" class="h-12 bg-slate-100 rounded-xl animate-pulse"/>
+            </div>
+            <!-- Error -->
+            <div v-else-if="eduNewsError"
+              class="text-center py-8 text-slate-400 text-sm bg-white rounded-2xl border border-slate-100">
+              ไม่สามารถโหลดข่าวได้ในขณะนี้
+            </div>
+            <!-- Empty -->
+            <div v-else-if="educationNews.length === 0"
+              class="text-center py-8 text-slate-400 text-sm bg-white rounded-2xl border border-slate-100">
+              ยังไม่มีข้อมูลข่าว
+            </div>
+            <!-- Link list (max 8) -->
+            <ul v-else class="divide-y divide-slate-100 bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+              <li v-for="item in educationNews.slice(0, 8)" :key="item.link"
+                class="group flex items-start gap-3 px-4 py-3 hover:bg-primary/5 transition-colors">
+                <span class="mt-2.5 w-1.5 h-1.5 rounded-full bg-primary/40 flex-shrink-0 group-hover:bg-primary transition-colors"/>
+                <div class="flex-1 min-w-0">
+                  <a :href="item.link" target="_blank" rel="noopener noreferrer"
+                    class="text-sm font-semibold text-slate-800 hover:text-primary transition-colors line-clamp-1 leading-snug">
+                    {{ item.title }}
+                  </a>
+                  <p class="text-xs text-slate-400 mt-0.5 truncate">
+                    <span v-if="item.source">{{ item.source }}</span>
+                    <span v-if="item.source && item.pubDate"> · </span>
+                    {{ fmtDate(item.pubDate) }}
+                  </p>
+                </div>
+                <svg class="w-3 h-3 text-slate-300 group-hover:text-primary flex-shrink-0 mt-1.5 transition-colors"
+                  fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round"
+                    d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"/>
+                </svg>
+              </li>
+            </ul>
+            <!-- Mobile CTA -->
+            <div class="text-center mt-5 sm:hidden">
+              <a href="#/education-news"
+                class="inline-flex items-center gap-2 px-6 py-2.5 border border-primary text-primary font-bold rounded-2xl text-sm hover:bg-primary hover:text-white transition-all">
+                ดูข่าวทั้งหมด
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/>
+                </svg>
+              </a>
             </div>
           </div>
         </section>

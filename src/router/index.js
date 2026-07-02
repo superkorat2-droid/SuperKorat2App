@@ -68,8 +68,9 @@ import PublicSchoolsView      from '../views/PublicSchoolsView.vue'
 import PlaceholderView  from '../views/PlaceholderView.vue'
 
 // ─── News public pages ───────────────────────────────────────────────────
-import NewsView         from '../views/NewsView.vue'
-import NewsDetailView   from '../views/NewsDetailView.vue'
+import NewsView              from '../views/NewsView.vue'
+import NewsDetailView        from '../views/NewsDetailView.vue'
+import EducationNewsView     from '../views/EducationNewsView.vue'
 
 // ─── Service pages (มีหน้าจริง) ──────────────────────────────────────────
 import DownloadView     from '../views/DownloadView.vue'
@@ -225,8 +226,9 @@ const routes = [
   { path: '/supervision/:token', name: 'supervisionFill', component: SupervisionFillView },
 
   // ── ข่าวสาร ──────────────────────────────────────────────────────────
-  { path: '/news',      name: 'news',      component: NewsView       },
-  { path: '/news/:id',  name: 'newsDetail',component: NewsDetailView },
+  { path: '/news',            name: 'news',          component: NewsView          },
+  { path: '/news/:id',        name: 'newsDetail',    component: NewsDetailView    },
+  { path: '/education-news',  name: 'educationNews', component: EducationNewsView },
 
   // ── บริการ ────────────────────────────────────────────────────────────
   { path: '/download',  name: 'download',  component: DownloadView  },

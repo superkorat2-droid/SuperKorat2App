@@ -45,6 +45,16 @@ export default defineConfig({
       },
     }),
   ],
+  server: {
+    proxy: {
+      '/rss-proxy': {
+        target: 'https://news.google.com',
+        changeOrigin: true,
+        secure: true,
+        rewrite: () => '/rss/search?q=%E0%B8%82%E0%B9%88%E0%B8%B2%E0%B8%A7%E0%B8%81%E0%B8%B2%E0%B8%A3%E0%B8%A8%E0%B8%B6%E0%B8%81%E0%B8%A9%E0%B8%B2&hl=th&gl=TH&ceid=TH:th',
+      },
+    },
+  },
   build: {
     chunkSizeWarningLimit: 2000,
     rollupOptions: {
