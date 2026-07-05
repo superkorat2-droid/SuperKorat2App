@@ -94,7 +94,11 @@ watch(() => route.params.slug, s => { if (s) load(s) })
       </div>
 
       <!-- Blocks -->
-      <div class="max-w-3xl mx-auto px-4 py-10 space-y-6">
+      <div :class="[
+        'mx-auto px-4 py-10 space-y-6',
+        page.layout === 'wide'   ? 'max-w-7xl' :
+        page.layout === 'medium' ? 'max-w-5xl' : 'max-w-3xl'
+      ]">
         <template v-for="block in (page.blocks || [])" :key="block.id">
 
           <!-- HEADING -->

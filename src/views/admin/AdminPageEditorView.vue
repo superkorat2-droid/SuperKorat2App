@@ -11,9 +11,16 @@ const router = useRouter()
 
 const page    = ref(null)
 const blocks  = ref([])
+const layout  = ref('narrow')
 const saving  = ref(false)
 const loading = ref(true)
 const myProfile = ref(null)
+
+const LAYOUT_OPTIONS = [
+  { value: 'narrow', label: 'แคบ (768px)',  class: 'max-w-3xl' },
+  { value: 'medium', label: 'กลาง (1024px)', class: 'max-w-5xl' },
+  { value: 'wide',   label: 'กว้าง (1280px)', class: 'max-w-7xl' },
+]
 
 // permission: admin เต็ม, supervisor ต้องอยู่ใน assigned_users
 const canEdit = computed(() => {
@@ -51,8 +58,9 @@ onMounted(async () => {
     supabase.from('pages').select('*').eq('id', route.params.id).single(),
   ])
   if (!data) { router.push('/dashboard/pages'); return }
-  page.value   = data
-  blocks.value = Array.isArray(data.blocks) ? data.blocks : []
+  page.value    = data
+  blocks.value  = Array.isArray(data.blocks) ? data.blocks : []
+  layout.value  = data.layout || 'narrow'
 
   if (user) {
     const { data: profile } = await supabase.from('profiles').select('id, role').eq('id', user.id).single()
@@ -78,7 +86,7 @@ function moveDown(idx) {
 async function save(publish = null) {
   if (!canEdit.value) return Swal.fire({ icon: 'error', title: 'ไม่มีสิทธิ์', text: 'คุณไม่ได้รับมอบหมายให้ดูแลหน้านี้' })
   saving.value = true
-  const payload = { blocks: blocks.value }
+  const payload = { blocks: blocks.value, layout: layout.value }
   if (publish !== null) payload.is_published = publish
   const { error } = await supabase.from('pages').update(payload).eq('id', page.value.id)
   saving.value = false
@@ -180,6 +188,11 @@ async function onImageCropped({ blob }) {
             page.is_published ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700']">
             {{ page.is_published ? '✅ เผยแพร่' : '⏸ ฉบับร่าง' }}
           </span>
+          <!-- Layout selector -->
+          <select v-if="canEdit" v-model="layout"
+            class="px-2 py-1.5 border border-slate-200 rounded-xl text-xs bg-white text-slate-600 font-bold">
+            <option v-for="o in LAYOUT_OPTIONS" :key="o.value" :value="o.value">📐 {{ o.label }}</option>
+          </select>
           <button @click="save()" :disabled="saving"
             class="px-4 py-2 bg-slate-100 text-slate-700 font-bold text-sm rounded-xl hover:bg-slate-200 transition-colors disabled:opacity-50">
             {{ saving ? '...' : '💾 บันทึก' }}
