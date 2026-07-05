@@ -3,6 +3,8 @@ import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { supabase } from '../../supabase'
 import Swal from 'sweetalert2'
+import ImageCropperModal from '../../components/ImageCropperModal.vue'
+import { useExternalUpload, externalUploadEnabled } from '../../composables/useExternalUpload'
 
 const route  = useRoute()
 const router = useRouter()
@@ -99,6 +101,44 @@ function detectEmbedType(url) {
 }
 
 const EMBED_LABELS = { youtube:'YouTube', drive:'Google Drive', slides:'Slides', canva:'Canva', iframe:'Iframe' }
+
+// ── Image block upload ────────────────────────────────────────────
+const showCropper   = ref(false)
+const cropTargetIdx = ref(null)
+const imgUploading  = ref(false)
+const imgUploadErr  = ref('')
+
+const { uploadImage: uploadImgExternal } = useExternalUpload()
+
+function openImgCropper(idx) {
+  cropTargetIdx.value = idx
+  imgUploadErr.value  = ''
+  showCropper.value   = true
+}
+
+async function onImageCropped({ blob }) {
+  imgUploading.value = true
+  imgUploadErr.value = ''
+  try {
+    let url
+    if (externalUploadEnabled) {
+      url = await uploadImgExternal(blob, 'pages')
+    } else {
+      const fileName = `pages/img_${Date.now()}.png`
+      const { error } = await supabase.storage
+        .from('images')
+        .upload(fileName, blob, { contentType: 'image/png', upsert: false })
+      if (error) throw error
+      const { data: { publicUrl } } = supabase.storage.from('images').getPublicUrl(fileName)
+      url = publicUrl
+    }
+    blocks.value[cropTargetIdx.value].url = url
+    showCropper.value = false
+  } catch (e) {
+    imgUploadErr.value = e.message || 'อัปโหลดรูปไม่สำเร็จ'
+  }
+  imgUploading.value = false
+}
 </script>
 
 <template>
@@ -230,8 +270,18 @@ const EMBED_LABELS = { youtube:'YouTube', drive:'Google Drive', slides:'Slides',
 
             <!-- IMAGE -->
             <template v-else-if="block.type === 'image'">
-              <input v-model="block.url" type="url" placeholder="URL รูปภาพ..."
-                class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-primary font-mono mb-2"/>
+              <div class="flex gap-2 mb-2">
+                <button @click="openImgCropper(idx)" :disabled="imgUploading && cropTargetIdx===idx"
+                  class="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white text-xs font-bold rounded-xl hover:bg-primary-dark transition-colors disabled:opacity-50 flex-shrink-0">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/>
+                  </svg>
+                  {{ imgUploading && cropTargetIdx===idx ? 'กำลังอัปโหลด...' : 'อัปโหลดรูป' }}
+                </button>
+                <input v-model="block.url" type="url" placeholder="หรือวาง URL รูปภาพ..."
+                  class="flex-1 px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-primary font-mono"/>
+              </div>
+              <p v-if="imgUploadErr && cropTargetIdx===idx" class="text-xs text-red-500 mb-2">{{ imgUploadErr }}</p>
               <div class="flex gap-2 mb-2">
                 <input v-model="block.caption" type="text" placeholder="คำบรรยายใต้ภาพ (optional)"
                   class="flex-1 px-3 py-1.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-primary"/>
@@ -292,6 +342,19 @@ const EMBED_LABELS = { youtube:'YouTube', drive:'Google Drive', slides:'Slides',
         </button>
       </div>
     </template>
+
+    <!-- Image Cropper -->
+    <Teleport to="body">
+      <ImageCropperModal
+        :show="showCropper"
+        :aspect-ratio="NaN"
+        title="อัปโหลดรูปภาพ"
+        :output-max-width="1600"
+        :output-max-height="1200"
+        @close="showCropper = false"
+        @cropped="onImageCropped"
+      />
+    </Teleport>
   </div>
 </template>
 
