@@ -39,7 +39,7 @@ function parseItems(xml, max = 25) {
 export function useEducationNews() {
   const proxyUrl = import.meta.env.DEV
     ? '/rss-proxy'
-    : `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/rss-proxy`
+    : import.meta.env.VITE_NEWS_RSS_URL
 
   async function fetchNews(force = false) {
     if (!force && _cacheTs && Date.now() - _cacheTs < CACHE_TTL) return
