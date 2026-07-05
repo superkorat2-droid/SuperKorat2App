@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { supabase } from '../supabase'
 import { iconPath, isIconKey } from '../composables/useIcons.js'
@@ -41,7 +41,25 @@ async function load(slug) {
   loading.value = false
 }
 
-onMounted(() => load(route.params.slug))
+// ── HTML block auto-height ────────────────────────────────────────
+const iframeHeights = ref({})
+
+function htmlWithHeightScript(html, id) {
+  const s = `<script>(function(){function r(){var h=Math.max(document.documentElement.scrollHeight,document.body.scrollHeight);window.parent.postMessage({type:'iframeHeight',id:'${id}',height:h},'*')}window.addEventListener('load',r);try{new ResizeObserver(r).observe(document.body)}catch(e){}})()<\/script>`
+  return html.includes('</body>') ? html.replace('</body>', s + '</body>') : html + s
+}
+
+function onIframeMsg(e) {
+  if (e.data?.type === 'iframeHeight' && e.data.id) {
+    iframeHeights.value[e.data.id] = e.data.height
+  }
+}
+
+onMounted(() => {
+  load(route.params.slug)
+  window.addEventListener('message', onIframeMsg)
+})
+onUnmounted(() => window.removeEventListener('message', onIframeMsg))
 watch(() => route.params.slug, s => { if (s) load(s) })
 </script>
 
@@ -110,18 +128,18 @@ watch(() => route.params.slug, s => { if (s) load(s) })
               allow="autoplay; encrypted-media" loading="lazy"/>
           </div>
 
-          <!-- HTML: full document → iframe isolate | snippet → v-html -->
+          <!-- HTML: full document → auto-height iframe | snippet → v-html -->
           <template v-else-if="block.type === 'html' && block.code">
             <div v-if="/<!DOCTYPE|<html/i.test(block.code)" class="rounded-2xl overflow-hidden w-full">
               <iframe
-                :srcdoc="block.code"
+                :srcdoc="htmlWithHeightScript(block.code, block.id)"
                 sandbox="allow-scripts allow-same-origin"
-                class="w-full border-0 rounded-2xl"
-                style="min-height:500px; height:80vh; max-height:900px"
-                scrolling="yes"
+                class="w-full border-0 block"
+                :style="`height:${iframeHeights[block.id] || 200}px`"
+                scrolling="no"
               />
             </div>
-            <div v-else class="rounded-2xl overflow-hidden" v-html="block.code"/>
+            <div v-else class="prose prose-slate dark:prose-invert max-w-none rounded-2xl overflow-hidden" v-html="block.code"/>
           </template>
 
           <!-- DIVIDER -->
