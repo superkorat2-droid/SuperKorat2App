@@ -67,6 +67,51 @@
   }
 }
 
+/* ── Navbar brand title: ย่อสเกลตามพื้นที่จริง ไม่ตัดบรรทัด ──────────
+   .brand-fit-container ทำหน้าที่ container query เฉพาะ mobile/tablet
+   (ที่พื้นที่ถูกโลโก้/ปุ่มแย่งไป) — ค่า --fit-title/--fit-subtitle
+   คำนวณจาก JS ตามความยาวข้อความจริง (ดู fitFontSize ใน App.vue)
+   จอ lg ขึ้นไปพื้นที่เหลือเฟือแล้ว จึงใช้ขนาดคงที่แทน ─────────────── */
+@media (max-width: 1023.98px) {
+  .brand-fit-container { container-type: inline-size; }
+}
+.brand-title-shine { font-size: var(--fit-title, 16px); }
+.brand-subtitle-fit { font-size: var(--fit-subtitle, 12px); }
+@media (min-width: 1024px) {
+  .brand-title-shine { font-size: 18px; }
+  .brand-subtitle-fit { font-size: 12.5px; }
+}
+
+.brand-title-shine {
+  background-image: linear-gradient(90deg,
+    var(--color-primary) 0%,
+    var(--color-secondary) 28%,
+    var(--color-primary) 55%,
+    var(--color-secondary) 80%,
+    var(--color-primary) 100%);
+  background-size: 250% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  animation: brand-title-shine-move 7s linear infinite;
+}
+.dark .brand-title-shine {
+  background-image: linear-gradient(90deg,
+    color-mix(in srgb, var(--color-primary) 45%, white) 0%,
+    var(--color-secondary) 28%,
+    color-mix(in srgb, var(--color-primary) 45%, white) 55%,
+    var(--color-secondary) 80%,
+    color-mix(in srgb, var(--color-primary) 45%, white) 100%);
+}
+@keyframes brand-title-shine-move {
+  0%   { background-position: 0% center; }
+  100% { background-position: 250% center; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .brand-title-shine { animation: none; }
+}
+
 /* ── Typography base ─────────────────────────────────────────── */
 body {
   font-family: 'Sarabun', sans-serif;

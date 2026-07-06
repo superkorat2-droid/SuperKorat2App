@@ -40,6 +40,20 @@ const areaShort = computed(() => {
 const contactPhone = computed(() => config.value?.contact_phone || '')
 const contactEmail = computed(() => config.value?.contact_email || '')
 
+// ── ฟอนต์ชื่อระบบใน navbar: คำนวณตามความยาวข้อความจริง เพื่อไม่ให้ตัดบรรทัด ──
+// ใช้หน่วย cqw (container query width) แทน vw เพราะพื้นที่ว่างจริงถูกกินโดยโลโก้/ปุ่มต่างๆ
+// ไม่ใช่สัดส่วนคงที่ของ viewport — cqw จะอิงความกว้าง container ที่ layout คำนวณให้แล้ว
+function fitFontSize(text, { min, max, maxCqw, avgChar = 0.54 }) {
+  const len = Math.max((text || '').length, 8)
+  const cqw = Math.min(maxCqw, 100 / (len * avgChar))
+  return `clamp(${min}px, ${cqw.toFixed(2)}cqw, ${max}px)`
+}
+// สาเหตุจริงของวรรณยุกต์ไทยถูกตัด (เช่น ไม้โท ใน "พื้น") คือ overflow-hidden+line-height แน่นเกินไป
+// ตัด "ไม้" ด้านบนตัวอักษร ไม่ใช่ตัวฟอนต์เล็กเกินไป — แก้ที่ overflow-y/leading แทน (ดู template)
+// ตรงนี้ยก min ขึ้นเล็กน้อยเป็นตัวช่วยเสริมเฉยๆ ไม่บีบจนรัดเกิน
+const titleFontSize = computed(() => fitFontSize(areaName.value, { min: 8, max: 19, maxCqw: 6.5 }))
+const subtitleFontSize = computed(() => fitFontSize(areaShort.value, { min: 7, max: 13, maxCqw: 4.5 }))
+
 // navItems ผสม: หน้าแรก + DB groups + ลิงค์คงที่
 const staticBefore = [
   { key: 'home', label: 'หน้าแรก', to: '/' },
@@ -107,25 +121,26 @@ const handleLogout = async () => {
     <div class="fixed top-0 inset-x-0 z-50 h-[3px] bg-primary"></div>
 
     <!-- ── Navbar ─────────────────────────────────────────────────── -->
-    <nav class="fixed top-[3px] inset-x-0 z-40 bg-white dark:bg-slate-900 border-b border-slate-200/80 dark:border-slate-700/80 transition-colors duration-300">
+    <nav class="fixed top-[3px] inset-x-0 z-40 bg-white dark:bg-slate-900 border-b border-slate-200/80 dark:border-slate-700/80 shadow-sm shadow-slate-900/[0.03] transition-colors duration-300">
       <div class="max-w-7xl mx-auto px-4 sm:px-6">
-        <div class="flex items-center justify-between h-16">
+        <div class="flex items-center justify-between h-[58px] sm:h-[68px] lg:h-20">
 
           <!-- Logo -->
-          <RouterLink to="/" class="flex items-center gap-3 flex-shrink-0 mr-6 group">
+          <RouterLink to="/" class="flex items-center gap-2 sm:gap-3 min-w-0 flex-1 lg:flex-none mr-2 sm:mr-5 lg:mr-6 group">
             <div v-if="config?.logo_url"
-              class="w-9 h-9 rounded-lg overflow-hidden flex-shrink-0 border border-slate-200 group-hover:border-primary transition-colors">
+              class="w-9 h-9 sm:w-10 sm:h-10 lg:w-12 lg:h-12 rounded-lg overflow-hidden flex-shrink-0 border border-slate-200 group-hover:border-primary transition-colors">
               <img :src="config.logo_url" class="w-full h-full object-contain" alt="logo"/>
             </div>
             <div v-else
-              class="w-9 h-9 bg-primary rounded-lg flex items-center justify-center flex-shrink-0">
-              <svg class="w-4.5 h-4.5 text-white" style="width:18px;height:18px" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+              class="w-9 h-9 sm:w-10 sm:h-10 lg:w-12 lg:h-12 bg-primary rounded-lg flex items-center justify-center flex-shrink-0">
+              <svg class="text-white" style="width:18px;height:18px" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0012 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75z"/>
               </svg>
             </div>
-            <div class="leading-tight min-w-0">
-              <p class="text-[13px] font-bold text-slate-900 dark:text-slate-100 truncate max-w-[130px] sm:max-w-[260px] lg:max-w-none tracking-tight">{{ areaName }}</p>
-              <p class="text-[10px] text-slate-400 dark:text-slate-500 truncate max-w-[130px] sm:max-w-[260px] lg:max-w-none mt-0.5">{{ areaShort }}</p>
+            <div class="brand-fit-container leading-snug min-w-0 flex-1 lg:flex-none"
+              :style="{ '--fit-title': titleFontSize, '--fit-subtitle': subtitleFontSize }">
+              <p class="brand-title-shine font-extrabold whitespace-nowrap overflow-x-hidden overflow-y-visible text-ellipsis">{{ areaName }}</p>
+              <p class="brand-subtitle-fit text-slate-500 dark:text-slate-400 font-medium tracking-wide whitespace-nowrap overflow-x-hidden overflow-y-visible text-ellipsis mt-[3px]">{{ areaShort }}</p>
             </div>
           </RouterLink>
 
@@ -268,7 +283,7 @@ const handleLogout = async () => {
               </template>
 
               <RouterLink v-else to="/login"
-                class="flex items-center gap-1.5 border border-primary text-primary text-[13px] font-semibold px-4 py-2 rounded-lg hover:bg-primary hover:text-white transition-all">
+                class="flex items-center gap-1.5 border border-primary dark:border-slate-500 text-primary dark:text-slate-200 text-[13px] font-semibold px-4 py-2 rounded-lg hover:bg-primary-light dark:hover:bg-slate-700 hover:border-primary hover:shadow-sm transition-all">
                 <svg style="width:14px;height:14px" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9"/>
                 </svg>
@@ -364,8 +379,8 @@ const handleLogout = async () => {
       </Transition>
     </nav>
 
-    <!-- Spacer: 3px + 64px nav -->
-    <div class="h-[67px] flex-shrink-0"></div>
+    <!-- Spacer: 3px accent + nav height (must match nav's h-*) -->
+    <div class="h-[61px] sm:h-[71px] lg:h-[83px] flex-shrink-0"></div>
     </template><!-- end v-if="!isSchoolRoute" -->
 
     <!-- Main content -->
