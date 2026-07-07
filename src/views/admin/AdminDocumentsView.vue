@@ -3,6 +3,10 @@ import { ref, computed, onMounted } from 'vue'
 import { supabase } from '../../supabase'
 import Swal from 'sweetalert2'
 import StorageBrowser from '../../components/StorageBrowser.vue'
+import { useAreaConfig } from '../../composables/useAreaConfig'
+
+const { config, fetchConfig } = useAreaConfig()
+const deptOptions = computed(() => (config.value?.personnel_groups || []).map(g => g.label))
 
 // ── Constants ────────────────────────────────────────────────────
 const CATEGORIES = [
@@ -27,17 +31,20 @@ const activeCategory = ref('all')
 const searchQ        = ref('')
 
 const emptyForm = () => ({
-  id:           null,
-  category:     'form',
-  title:        '',
-  description:  '',
-  file_url:     '',
-  file_type:    'PDF',
-  file_size:    '',
-  is_published: true,
-  sort_order:   0,
+  id:             null,
+  category:       'form',
+  title:          '',
+  description:    '',
+  file_url:       '',
+  file_type:      'PDF',
+  file_size:      '',
+  is_published:   true,
+  sort_order:     0,
+  publisher_name: '',
+  publisher_dept: '',
 })
 const form = ref(emptyForm())
+const myProfile = ref(null)
 
 // ── Fetch ─────────────────────────────────────────────────────────
 async function fetchDocs() {
@@ -50,7 +57,13 @@ async function fetchDocs() {
   if (!error) docList.value = data || []
   loading.value = false
 }
-onMounted(fetchDocs)
+async function fetchMyProfile() {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return
+  const { data } = await supabase.from('profiles').select('full_name, department').eq('id', user.id).single()
+  myProfile.value = data || null
+}
+onMounted(() => { fetchDocs(); fetchConfig(); fetchMyProfile() })
 
 // ── Computed ──────────────────────────────────────────────────────
 const filtered = computed(() => {
@@ -74,6 +87,8 @@ const catCounts = computed(() => {
 function openAdd() {
   form.value = emptyForm()
   form.value.sort_order = docList.value.length
+  form.value.publisher_name = myProfile.value?.full_name || ''
+  form.value.publisher_dept = myProfile.value?.department || ''
   showModal.value = true
 }
 function openEdit(d) {
@@ -91,15 +106,17 @@ async function saveDoc() {
   saving.value = true
   const { data: { user } } = await supabase.auth.getUser()
   const payload = {
-    category:     form.value.category,
-    title:        form.value.title.trim(),
-    description:  form.value.description.trim(),
-    file_url:     form.value.file_url.trim(),
-    file_type:    form.value.file_type,
-    file_size:    form.value.file_size.trim(),
-    is_published: form.value.is_published,
-    sort_order:   Number(form.value.sort_order) || 0,
-    created_by:   user?.id || null,
+    category:       form.value.category,
+    title:          form.value.title.trim(),
+    description:    form.value.description.trim(),
+    file_url:       form.value.file_url.trim(),
+    file_type:      form.value.file_type,
+    file_size:      form.value.file_size.trim(),
+    is_published:   form.value.is_published,
+    sort_order:     Number(form.value.sort_order) || 0,
+    created_by:     user?.id || null,
+    publisher_name: form.value.publisher_name.trim(),
+    publisher_dept: form.value.publisher_dept.trim(),
   }
 
   let error
@@ -277,6 +294,9 @@ function formatDate(iso) {
                 <div class="min-w-0">
                   <p class="font-bold text-slate-800 truncate max-w-[180px] md:max-w-[280px]">{{ d.title }}</p>
                   <p v-if="d.description" class="text-xs text-slate-400 truncate max-w-[180px] md:max-w-[280px] mt-0.5">{{ d.description }}</p>
+                  <p v-if="d.publisher_name || d.publisher_dept" class="text-[11px] text-slate-400 truncate max-w-[180px] md:max-w-[280px] mt-0.5">
+                    👤 {{ [d.publisher_name, d.publisher_dept].filter(Boolean).join(' · ') }}
+                  </p>
                 </div>
               </div>
             </td>
@@ -370,6 +390,23 @@ function formatDate(iso) {
                 <label class="block text-xs font-bold text-slate-600 mb-1">คำอธิบาย</label>
                 <textarea v-model="form.description" rows="2" placeholder="รายละเอียดเพิ่มเติม..."
                   class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"/>
+              </div>
+
+              <!-- Publisher -->
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs font-bold text-slate-600 mb-1">ผู้เผยแพร่</label>
+                  <input v-model="form.publisher_name" type="text" placeholder="ชื่อผู้เผยแพร่ (ถ้ามี)"
+                    class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"/>
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-slate-600 mb-1">กลุ่มงาน</label>
+                  <input v-model="form.publisher_dept" type="text" list="doc-dept-options" placeholder="เลือกหรือพิมพ์กลุ่มงาน"
+                    class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"/>
+                  <datalist id="doc-dept-options">
+                    <option v-for="dep in deptOptions" :key="dep" :value="dep"/>
+                  </datalist>
+                </div>
               </div>
 
               <!-- File URL -->
