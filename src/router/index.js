@@ -17,6 +17,7 @@ import AdminProfileView       from '../views/admin/AdminProfileView.vue'
 import AdminBannersView       from '../views/admin/AdminBannersView.vue'
 import AdminNewsView          from '../views/admin/AdminNewsView.vue'
 import AdminDocumentsView     from '../views/admin/AdminDocumentsView.vue'
+import AdminContactMessagesView from '../views/admin/AdminContactMessagesView.vue'
 import AdminStorageView       from '../views/admin/AdminStorageView.vue'
 import AdminHomeSectionsView  from '../views/admin/AdminHomeSectionsView.vue'
 import AdminSchoolsView       from '../views/admin/AdminSchoolsView.vue'
@@ -118,6 +119,7 @@ const routes = [
       { path: 'pages',          name: 'adminPages',      component: AdminPagesView,      meta: { title: 'จัดการหน้าเนื้อหา', icon: '📄' } },
       { path: 'pages/:id/edit', name: 'adminPageEditor', component: AdminPageEditorView, meta: { title: 'แก้ไขเนื้อหา' } },
       { path: 'documents',name: 'adminDocuments', component: AdminDocumentsView,    meta: { title: 'เอกสารและดาวน์โหลด', icon: '📂' } },
+      { path: 'contact-messages', name: 'adminContactMessages', component: AdminContactMessagesView, meta: { title: 'ข้อความติดต่อ', icon: '📬' } },
       { path: 'works',    name: 'adminWorks',     component: AdminPlaceholderView,  meta: { title: 'ผลงานและนวัตกรรม', icon: '🏆' } },
       { path: 'works-approve', name: 'adminWorksApprove', component: AdminPlaceholderView, meta: { title: 'อนุมัติผลงาน', icon: '✅' } },
       { path: 'short-urls', name: 'adminShortUrls', component: AdminShortUrlsView, meta: { title: 'จัดการ URL ย่อ', icon: '🔗' } },
