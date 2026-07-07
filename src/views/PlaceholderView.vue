@@ -1,9 +1,19 @@
 <script setup>
+import { onMounted } from 'vue'
 import { useRoute } from 'vue-router'
+import { useAreaConfig } from '../composables/useAreaConfig'
+import { usePageHeader } from '../composables/usePageHeader'
+import PageHero from '../components/PageHero.vue'
+
 const route = useRoute()
-const title = route.meta.title || 'หน้านี้'
-const icon  = route.meta.icon  || '📄'
-const desc  = route.meta.desc  || 'หน้านี้อยู่ระหว่างการพัฒนา'
+const { fetchConfig } = useAreaConfig()
+onMounted(fetchConfig)
+
+const header = usePageHeader(route.name, {
+  icon:    route.meta.icon  || '📄',
+  title:   route.meta.title || 'หน้านี้',
+  subtitle: route.meta.desc  || 'หน้านี้อยู่ระหว่างการพัฒนา',
+})
 
 const contentTools = [
   { icon: '📄', label: 'PDF' },
@@ -16,18 +26,19 @@ const contentTools = [
 </script>
 
 <template>
-  <div class="font-sarabun min-h-[70vh] flex items-center justify-center py-20 px-4">
-    <div class="max-w-xl w-full">
+  <div class="font-sarabun min-h-[70vh]">
 
-      <!-- Icon + badge -->
-      <div class="text-center mb-8">
-        <div class="text-7xl mb-5">{{ icon }}</div>
-        <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-100 text-amber-700 text-xs font-bold rounded-full mb-4">
+    <PageHero :title="header.title" :subtitle="header.subtitle"
+      :mode="header.mode" :icon="header.icon"
+      :media-url="header.mediaUrl" :media-type="header.mediaType">
+      <template #extra>
+        <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/15 text-white text-xs font-bold rounded-full mt-4">
           🚧 กำลังพัฒนา
         </span>
-        <h1 class="text-3xl font-extrabold text-slate-900 mb-3">{{ title }}</h1>
-        <p class="text-slate-500 leading-relaxed">{{ desc }}</p>
-      </div>
+      </template>
+    </PageHero>
+
+    <div class="max-w-xl w-full mx-auto py-12 px-4">
 
       <!-- Content type tools preview -->
       <div class="bg-white rounded-3xl border border-slate-100 shadow-sm p-7">

@@ -2,8 +2,16 @@
 import { ref, watch, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import QRCode from 'qrcode'
+import { useAreaConfig } from '../composables/useAreaConfig'
+import { usePageHeader } from '../composables/usePageHeader'
+import PageHeaderPlain from '../components/PageHeaderPlain.vue'
 
 const route = useRoute()
+const { fetchConfig } = useAreaConfig()
+onMounted(fetchConfig)
+const header = usePageHeader('qrcode', {
+  icon: 'qrcode', title: 'สร้าง QR Code', subtitle: 'สร้าง QR Code จากข้อความหรือลิงค์ พร้อมปรับแต่งสี ขนาด และดาวน์โหลดได้ทันที',
+})
 
 const inputText  = ref('')
 const fgColor    = ref('#1e3a8a')
@@ -68,11 +76,10 @@ onMounted(() => {
     <div class="max-w-3xl mx-auto px-4">
 
       <!-- Header -->
-      <div class="text-center mb-10">
-        <div class="w-16 h-16 bg-emerald-100 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4">📱</div>
-        <p class="text-xs text-emerald-600 font-bold uppercase tracking-widest mb-1">QR Code Generator</p>
-        <h1 class="text-3xl font-extrabold text-slate-900">สร้าง QR Code</h1>
-        <p class="text-slate-500 mt-2 text-sm">สร้าง QR Code จากข้อความหรือลิงค์ พร้อมปรับแต่งสี ขนาด และดาวน์โหลดได้ทันที</p>
+      <div class="mb-10">
+        <PageHeaderPlain align="center" eyebrow="QR Code Generator" :title="header.title" :subtitle="header.subtitle"
+          :mode="header.mode" :icon="header.icon"
+          :media-url="header.mediaUrl" :media-type="header.mediaType"/>
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">

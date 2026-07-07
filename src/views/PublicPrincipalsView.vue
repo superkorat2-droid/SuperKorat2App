@@ -2,8 +2,11 @@
 import { ref, computed, onMounted } from 'vue'
 import { supabase } from '../supabase'
 import { useAreaConfig } from '../composables/useAreaConfig'
+import { usePageHeader } from '../composables/usePageHeader'
+import PageHero from '../components/PageHero.vue'
 
 const { config, fetchConfig } = useAreaConfig()
+const header = usePageHeader('principals', { icon: 'users', title: 'ทำเนียบผู้บริหารสถานศึกษา' })
 const principals = ref([])
 const loading    = ref(true)
 const searchQ    = ref('')
@@ -82,24 +85,14 @@ function initials(name) {
   <div class="font-sarabun bg-slate-50 dark:bg-slate-950 dark:text-slate-100 min-h-screen">
 
     <!-- ── Hero ───────────────────────────────────────────────────────────────── -->
-    <div class="relative overflow-hidden"
-      style="background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)">
-      <div class="absolute inset-0 opacity-10">
-        <svg width="100%" height="100%"><defs><pattern id="dp-p" width="24" height="24" patternUnits="userSpaceOnUse">
-          <circle cx="12" cy="12" r="1" fill="white"/>
-        </pattern></defs><rect width="100%" height="100%" fill="url(#dp-p)"/></svg>
-      </div>
-      <div class="relative max-w-5xl mx-auto px-4 py-12 md:py-14 text-center">
-        <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-white/15 backdrop-blur ring-2 ring-white/20 mb-5 shadow-lg">
-          <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/>
-          </svg>
-        </div>
-        <h1 class="text-2xl md:text-3xl font-extrabold text-white mb-2">ทำเนียบผู้บริหารสถานศึกษา</h1>
-        <p class="text-white/60 text-sm">{{ config?.area_name }} · {{ principals.length }} คน จาก {{ new Set(principals.map(p=>p.school_id)).size }} โรงเรียน</p>
-
-        <!-- Search -->
-        <div class="mt-6 max-w-lg mx-auto relative">
+    <PageHero
+      :title="header.title"
+      :subtitle="header.subtitle || `${config?.area_name} · ${principals.length} คน จาก ${new Set(principals.map(p=>p.school_id)).size} โรงเรียน`"
+      :mode="header.mode" :icon="header.icon"
+      :media-url="header.mediaUrl" :media-type="header.mediaType"
+      max-width="5xl">
+      <template #extra>
+        <div class="mt-6 max-w-lg mx-auto relative w-full">
           <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
             <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/>
           </svg>
@@ -107,8 +100,8 @@ function initials(name) {
             class="w-full pl-11 pr-4 py-3 rounded-2xl bg-white/15 border border-white/25
                    text-white placeholder-white/40 text-sm focus:outline-none focus:bg-white/25 focus:border-white/40 transition-all"/>
         </div>
-      </div>
-    </div>
+      </template>
+    </PageHero>
 
     <div class="max-w-7xl mx-auto px-4 py-6 space-y-5">
 

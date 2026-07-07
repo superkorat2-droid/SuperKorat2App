@@ -2,8 +2,11 @@
 import { ref, computed, onMounted } from 'vue'
 import { supabase } from '../supabase'
 import { useAreaConfig } from '../composables/useAreaConfig'
+import { usePageHeader } from '../composables/usePageHeader'
+import PageHero from '../components/PageHero.vue'
 
 const { config, fetchConfig } = useAreaConfig()
+const header = usePageHeader('newsletters', { icon: 'document', title: 'จดหมายข่าว / เอกสารเผยแพร่' })
 const items    = ref([])
 const loading  = ref(true)
 const searchQ  = ref('')
@@ -72,31 +75,22 @@ function monthLabel(m) { return m ? MONTHS[m-1] : '' }
   <div class="font-sarabun bg-slate-50 dark:bg-slate-950 min-h-screen">
 
     <!-- ── Hero ───────────────────────────────────────────────────────────────── -->
-    <div class="relative overflow-hidden"
-      style="background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)">
-      <div class="absolute inset-0 opacity-10">
-        <svg width="100%" height="100%"><defs><pattern id="dp-nl" width="24" height="24" patternUnits="userSpaceOnUse">
-          <circle cx="12" cy="12" r="1" fill="white"/>
-        </pattern></defs><rect width="100%" height="100%" fill="url(#dp-nl)"/></svg>
-      </div>
-      <div class="relative max-w-5xl mx-auto px-4 py-12 text-center">
-        <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-white/15 backdrop-blur ring-2 ring-white/20 mb-5 shadow-lg">
-          <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/>
-          </svg>
-        </div>
-        <h1 class="text-2xl md:text-3xl font-extrabold text-white mb-2">จดหมายข่าว / เอกสารเผยแพร่</h1>
-        <p class="text-white/60 text-sm">{{ config?.area_name }} · {{ items.length }} รายการ</p>
-        <!-- Search -->
-        <div class="mt-6 max-w-lg mx-auto relative">
+    <PageHero
+      :title="header.title"
+      :subtitle="header.subtitle || `${config?.area_name} · ${items.length} รายการ`"
+      :mode="header.mode" :icon="header.icon"
+      :media-url="header.mediaUrl" :media-type="header.mediaType"
+      max-width="5xl">
+      <template #extra>
+        <div class="mt-6 max-w-lg mx-auto relative w-full">
           <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
             <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/>
           </svg>
           <input v-model="searchQ" type="text" placeholder="ค้นหาชื่อเอกสาร โรงเรียน..."
             class="w-full pl-11 pr-4 py-3 rounded-2xl bg-white/15 border border-white/25 text-white placeholder-white/40 text-sm focus:outline-none focus:bg-white/25 focus:border-white/40 transition-all"/>
         </div>
-      </div>
-    </div>
+      </template>
+    </PageHero>
 
     <div class="max-w-7xl mx-auto px-4 py-6 space-y-5">
 

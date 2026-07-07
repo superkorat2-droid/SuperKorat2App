@@ -4,8 +4,16 @@ import { useRouter } from 'vue-router'
 import { supabase } from '../supabase'
 import QRCode from 'qrcode'
 import Swal from 'sweetalert2'
+import { useAreaConfig } from '../composables/useAreaConfig'
+import { usePageHeader } from '../composables/usePageHeader'
+import PageHeaderPlain from '../components/PageHeaderPlain.vue'
 
 const router = useRouter()
+const { fetchConfig } = useAreaConfig()
+onMounted(fetchConfig)
+const header = usePageHeader('urlShort', {
+  icon: 'link', title: 'ย่อลิงค์', subtitle: 'ย่อ URL ยาวให้สั้นและจำง่าย เหมาะสำหรับแชร์ใน LINE หรือ QR Code',
+})
 
 const checkingAuth = ref(true)
 const user          = ref(null)
@@ -139,11 +147,10 @@ onMounted(async () => {
     <div class="max-w-2xl mx-auto px-4">
 
       <!-- Header -->
-      <div class="text-center mb-10">
-        <div class="w-16 h-16 bg-indigo-100 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4">🔗</div>
-        <p class="text-xs text-indigo-600 font-bold uppercase tracking-widest mb-1">URL Shortener</p>
-        <h1 class="text-3xl font-extrabold text-slate-900">ย่อลิงค์</h1>
-        <p class="text-slate-500 mt-2 text-sm">ย่อ URL ยาวให้สั้นและจำง่าย เหมาะสำหรับแชร์ใน LINE หรือ QR Code</p>
+      <div class="mb-10">
+        <PageHeaderPlain align="center" eyebrow="URL Shortener" :title="header.title" :subtitle="header.subtitle"
+          :mode="header.mode" :icon="header.icon"
+          :media-url="header.mediaUrl" :media-type="header.mediaType"/>
       </div>
 
       <!-- ยังตรวจสอบสถานะ login -->

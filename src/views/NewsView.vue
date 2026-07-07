@@ -3,6 +3,8 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase } from '../supabase'
 import { useAreaConfig, DEFAULT_HOME_SECTIONS } from '../composables/useAreaConfig'
+import { usePageHeader } from '../composables/usePageHeader'
+import PageHero from '../components/PageHero.vue'
 
 const router = useRouter()
 const { config, fetchConfig } = useAreaConfig()
@@ -13,6 +15,7 @@ const newsSection = computed(() => {
   if (Array.isArray(sections)) return sections.find(s => s.key === 'news') || DEFAULT_HOME_SECTIONS[0]
   return DEFAULT_HOME_SECTIONS[0]
 })
+const header = usePageHeader('news', {})
 
 // ── Constants ────────────────────────────────────────────────────
 const CATEGORIES = [
@@ -101,16 +104,14 @@ const catMeta = {
   <div class="font-sarabun bg-slate-50 dark:bg-slate-950 dark:text-slate-100 min-h-screen transition-colors duration-300">
 
     <!-- ── Hero bar ──────────────────────────────────────────────── -->
-    <div class="gradient-primary py-10 md:py-14">
-      <div class="max-w-7xl mx-auto px-4">
-        <div class="w-8 h-0.5 bg-secondary mb-4"></div>
-        <h1 class="text-2xl md:text-3xl font-extrabold text-white mb-1">
-          {{ newsSection.title || 'ข่าวสารและประชาสัมพันธ์' }}
-        </h1>
-        <p class="text-white/60 text-sm">{{ config?.area_name || 'กลุ่มนิเทศ ติดตามและประเมินผลการจัดการศึกษา' }}</p>
-
-        <!-- Search bar -->
-        <div class="mt-6 max-w-lg relative">
+    <PageHero
+      :title="header.title || newsSection.title || 'ข่าวสารและประชาสัมพันธ์'"
+      :subtitle="header.subtitle || config?.area_name || 'กลุ่มนิเทศ ติดตามและประเมินผลการจัดการศึกษา'"
+      :mode="header.mode" :icon="header.icon"
+      :media-url="header.mediaUrl" :media-type="header.mediaType"
+      size="md" align="left" max-width="7xl">
+      <template #extra>
+        <div class="mt-6 max-w-lg relative w-full">
           <svg class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40"
             fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
             <path stroke-linecap="round" stroke-linejoin="round"
@@ -120,8 +121,8 @@ const catMeta = {
             class="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-white/15 border border-white/20
                    text-white placeholder-white/40 text-sm focus:outline-none focus:bg-white/25 transition-all"/>
         </div>
-      </div>
-    </div>
+      </template>
+    </PageHero>
 
     <div class="max-w-7xl mx-auto px-4 py-8">
 

@@ -1,11 +1,12 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
-import { ICON_MAP, ICON_LABELS, iconPath, isIconKey } from '../../composables/useIcons.js'
+import { iconPath, isIconKey } from '../../composables/useIcons.js'
 const setTimeout = window.setTimeout
 import { useRouter } from 'vue-router'
 import { supabase } from '../../supabase'
 import { useNavPages } from '../../composables/useNavPages'
 import { useAreaConfig } from '../../composables/useAreaConfig'
+import IconPicker from '../../components/IconPicker.vue'
 import Swal from 'sweetalert2'
 
 const router = useRouter()
@@ -423,31 +424,7 @@ function goEditor(p) { router.push(`/dashboard/pages/${p.id}/edit`) }
             </div>
             <div class="col-span-2">
               <label class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 block">Icon</label>
-              <!-- Preview + grid picker -->
-              <div class="border border-slate-200 rounded-xl overflow-hidden">
-                <!-- selected preview -->
-                <div class="flex items-center gap-3 px-3 py-2 bg-slate-50 border-b border-slate-200">
-                  <div class="w-8 h-8 flex items-center justify-center rounded-lg bg-white border border-slate-200">
-                    <svg v-if="isIconKey(form.nav_icon)" class="w-5 h-5 text-primary" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" :d="iconPath(form.nav_icon)"/>
-                    </svg>
-                    <span v-else class="text-lg">{{ form.nav_icon || '📄' }}</span>
-                  </div>
-                  <span class="text-sm text-slate-600 font-medium">{{ ICON_LABELS[form.nav_icon] || form.nav_icon || 'ยังไม่ได้เลือก' }}</span>
-                </div>
-                <!-- icon grid -->
-                <div class="grid grid-cols-9 gap-1 p-2 max-h-36 overflow-y-auto">
-                  <button v-for="(path, key) in ICON_MAP" :key="key" type="button"
-                    @click="form.nav_icon = key"
-                    :title="ICON_LABELS[key] || key"
-                    :class="['w-8 h-8 flex items-center justify-center rounded-lg transition-colors',
-                      form.nav_icon === key ? 'bg-primary text-white' : 'hover:bg-slate-100 text-slate-600']">
-                    <svg class="w-4.5 h-4.5" style="width:18px;height:18px" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" :d="path"/>
-                    </svg>
-                  </button>
-                </div>
-              </div>
+              <IconPicker v-model="form.nav_icon"/>
             </div>
             <div>
               <label class="text-xs font-bold text-slate-500 uppercase tracking-wider">ประเภท</label>

@@ -46,6 +46,10 @@ export const DEFAULT_HOME_SECTIONS = [
   { key: 'cta',             label: 'CTA Banner',      subtitle: '',                 title: 'ระบบกลุ่มนิเทศ ติดตามและประเมินผล', visible: true,  bg: '#ffffff', bg2: '#f1f5f9', bg_type: 'solid', order: 5 },
 ]
 
+// ── Default page headers (ว่างเปล่า = ทุกหน้าใช้ icon/title default ของไฟล์ตัวเอง) ──
+// entry: { key: routeName, mode: 'icon'|'media', icon, title, subtitle, media_url, media_type }
+export const DEFAULT_PAGE_HEADERS = []
+
 // ── Default theme ──────────────────────────────────────────────
 const DEFAULTS = {
   primary_color:   '#1e3a5f',
@@ -91,6 +95,7 @@ const DEFAULTS = {
     { key: 'service', label: 'บริการ',          visible: true,  order: 3 },
     { key: 'other',   label: 'อื่นๆ',           visible: false, order: 4 },
   ],
+  page_headers: DEFAULT_PAGE_HEADERS,
 }
 
 // ── Helper: hex → RGB ──────────────────────────────────────────

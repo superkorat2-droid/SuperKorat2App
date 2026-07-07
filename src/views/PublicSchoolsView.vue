@@ -2,8 +2,11 @@
 import { ref, computed, onMounted } from 'vue'
 import { supabase } from '../supabase'
 import { useAreaConfig } from '../composables/useAreaConfig'
+import { usePageHeader } from '../composables/usePageHeader'
+import PageHero from '../components/PageHero.vue'
 
 const { config, fetchConfig } = useAreaConfig()
+const header = usePageHeader('schools', { icon: 'school' })
 const schools  = ref([])
 const loading  = ref(true)
 const searchQ  = ref('')
@@ -91,36 +94,14 @@ function resetFilters() {
 <template>
   <div class="font-sarabun bg-slate-50 dark:bg-slate-950 dark:text-slate-100 min-h-screen transition-colors duration-300">
 
-    <!-- ── Hero (full-width, centered, matches DynamicPageView style) ── -->
-    <div class="relative overflow-hidden"
-      style="background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)">
-      <!-- dot pattern -->
-      <div class="absolute inset-0 opacity-10">
-        <svg width="100%" height="100%">
-          <defs><pattern id="dp-schools" width="24" height="24" patternUnits="userSpaceOnUse">
-            <circle cx="12" cy="12" r="1" fill="white"/>
-          </pattern></defs>
-          <rect width="100%" height="100%" fill="url(#dp-schools)"/>
-        </svg>
-      </div>
-
-      <div class="relative max-w-3xl mx-auto px-4 py-12 md:py-16 text-center">
-        <!-- icon -->
-        <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-white/15 backdrop-blur ring-2 ring-white/20 mb-5 shadow-lg">
-          <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0012 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75z"/>
-          </svg>
-        </div>
-
-        <h1 class="text-2xl md:text-3xl font-extrabold text-white leading-tight mb-2">
-          {{ config?.schools_page_title || 'ทำเนียบสถานศึกษา' }}
-        </h1>
-        <p class="text-white/60 text-sm mb-8">
-          {{ config?.schools_page_subtitle || config?.area_name || 'สพป.' }} · {{ schools.length }} โรงเรียน
-        </p>
-
-        <!-- Search -->
-        <div class="relative max-w-lg mx-auto">
+    <!-- ── Hero ── -->
+    <PageHero
+      :title="header.title || config?.schools_page_title || 'ทำเนียบสถานศึกษา'"
+      :subtitle="header.subtitle || `${config?.schools_page_subtitle || config?.area_name || 'สพป.'} · ${schools.length} โรงเรียน`"
+      :mode="header.mode" :icon="header.icon"
+      :media-url="header.mediaUrl" :media-type="header.mediaType">
+      <template #extra>
+        <div class="relative max-w-lg mx-auto mt-6 w-full">
           <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50"
             fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
             <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/>
@@ -130,8 +111,8 @@ function resetFilters() {
                    text-white placeholder-white/40 text-sm focus:outline-none focus:bg-white/25
                    focus:border-white/40 transition-all"/>
         </div>
-      </div>
-    </div>
+      </template>
+    </PageHero>
 
     <div class="max-w-7xl mx-auto px-4 py-6 space-y-5">
 

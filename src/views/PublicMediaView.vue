@@ -3,8 +3,11 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase } from '../supabase'
 import { useAreaConfig } from '../composables/useAreaConfig'
+import { usePageHeader } from '../composables/usePageHeader'
+import PageHero from '../components/PageHero.vue'
 
 const { config, fetchConfig } = useAreaConfig()
+const header = usePageHeader('media', { icon: 'folder', title: 'คลังสื่อการเรียนรู้' })
 const router = useRouter()
 
 const items      = ref([])
@@ -125,29 +128,22 @@ const isFiltered = computed(() =>
   <div class="font-sarabun bg-slate-50 dark:bg-slate-950 min-h-screen">
 
     <!-- Hero -->
-    <div class="relative overflow-hidden"
-      style="background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)">
-      <div class="absolute inset-0 opacity-10">
-        <svg width="100%" height="100%"><defs><pattern id="dp-m" width="24" height="24" patternUnits="userSpaceOnUse"><circle cx="12" cy="12" r="1" fill="white"/></pattern></defs><rect width="100%" height="100%" fill="url(#dp-m)"/></svg>
-      </div>
-      <div class="relative max-w-5xl mx-auto px-4 py-12 text-center">
-        <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-white/15 backdrop-blur ring-2 ring-white/20 mb-5 shadow-lg">
-          <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 9.776c.112-.017.227-.026.344-.026h15.812c.117 0 .232.009.344.026m-16.5 0a2.25 2.25 0 00-1.883 2.542l.857 6a2.25 2.25 0 002.227 1.932H19.05a2.25 2.25 0 002.227-1.932l.857-6a2.25 2.25 0 00-1.883-2.542m-16.5 0V6A2.25 2.25 0 016 3.75h3.879a1.5 1.5 0 011.06.44l2.122 2.12a1.5 1.5 0 001.06.44H18A2.25 2.25 0 0120.25 6v.776"/>
-          </svg>
-        </div>
-        <h1 class="text-2xl md:text-3xl font-extrabold text-white mb-2">คลังสื่อการเรียนรู้</h1>
-        <p class="text-white/60 text-sm mb-6">{{ config?.area_name }} · {{ totalCount.toLocaleString() }} รายการ</p>
-        <!-- Search -->
-        <div class="max-w-lg mx-auto relative">
+    <PageHero
+      :title="header.title"
+      :subtitle="header.subtitle || `${config?.area_name} · ${totalCount.toLocaleString()} รายการ`"
+      :mode="header.mode" :icon="header.icon"
+      :media-url="header.mediaUrl" :media-type="header.mediaType"
+      max-width="5xl">
+      <template #extra>
+        <div class="max-w-lg mx-auto relative mt-6 w-full">
           <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
             <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/>
           </svg>
           <input v-model="searchQ" type="text" placeholder="ค้นหาชื่อสื่อ..."
             class="w-full pl-11 pr-4 py-3 rounded-2xl bg-white/15 border border-white/25 text-white placeholder-white/40 text-sm focus:outline-none focus:bg-white/25 transition-all"/>
         </div>
-      </div>
-    </div>
+      </template>
+    </PageHero>
 
     <div class="max-w-7xl mx-auto px-4 py-6 space-y-5">
 

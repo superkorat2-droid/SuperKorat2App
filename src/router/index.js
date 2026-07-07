@@ -26,6 +26,7 @@ import AdminStudentsView      from '../views/admin/AdminStudentsView.vue'
 import AdminEnrollmentView    from '../views/admin/AdminEnrollmentView.vue'
 import AdminPagesView         from '../views/admin/AdminPagesView.vue'
 import AdminPageEditorView    from '../views/admin/AdminPageEditorView.vue'
+import AdminPageHeadersView   from '../views/admin/AdminPageHeadersView.vue'
 import AdminServicesView      from '../views/admin/AdminServicesView.vue'
 import AdminSupervisionView       from '../views/admin/AdminSupervisionView.vue'
 import AdminDmcPeriodsView        from '../views/admin/AdminDmcPeriodsView.vue'
@@ -118,6 +119,7 @@ const routes = [
       { path: 'news',     name: 'adminNews',      component: AdminNewsView,          meta: { title: 'จัดการข่าวสาร', icon: '📰' } },
       { path: 'pages',          name: 'adminPages',      component: AdminPagesView,      meta: { title: 'จัดการหน้าเนื้อหา', icon: '📄' } },
       { path: 'pages/:id/edit', name: 'adminPageEditor', component: AdminPageEditorView, meta: { title: 'แก้ไขเนื้อหา' } },
+      { path: 'page-headers',   name: 'adminPageHeaders', component: AdminPageHeadersView, meta: { title: 'จัดการหัวข้อหน้า', icon: '🖼️' } },
       { path: 'documents',name: 'adminDocuments', component: AdminDocumentsView,    meta: { title: 'เอกสารและดาวน์โหลด', icon: '📂' } },
       { path: 'contact-messages', name: 'adminContactMessages', component: AdminContactMessagesView, meta: { title: 'ข้อความติดต่อ', icon: '📬' } },
       { path: 'works',    name: 'adminWorks',     component: AdminPlaceholderView,  meta: { title: 'ผลงานและนวัตกรรม', icon: '🏆' } },

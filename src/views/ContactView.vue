@@ -2,8 +2,13 @@
 import { ref, computed, onMounted } from 'vue'
 import { supabase } from '../supabase'
 import { useAreaConfig } from '../composables/useAreaConfig'
+import { usePageHeader } from '../composables/usePageHeader'
+import PageHeaderPlain from '../components/PageHeaderPlain.vue'
 
 const { config, fetchConfig } = useAreaConfig()
+const header = usePageHeader('contact', {
+  title: 'ติดต่อสอบถาม', subtitle: 'กลุ่มนิเทศ ติดตามและประเมินผลการจัดการศึกษา ยินดีให้บริการและตอบข้อซักถามทุกช่องทาง',
+})
 
 const form = ref({ name: '', position: '', phone: '', email: '', subject: '', message: '' })
 const sent    = ref(false)
@@ -105,9 +110,9 @@ onMounted(() => { fetchConfig(); fetchSupervisors() })
 
       <!-- Header -->
       <div class="mb-10">
-        <p class="text-xs text-primary font-bold uppercase tracking-widest mb-1">Contact Us</p>
-        <h1 class="text-3xl font-extrabold text-slate-900 dark:text-slate-100">ติดต่อสอบถาม</h1>
-        <p class="text-slate-500 dark:text-slate-400 mt-2">กลุ่มนิเทศ ติดตามและประเมินผลการจัดการศึกษา ยินดีให้บริการและตอบข้อซักถามทุกช่องทาง</p>
+        <PageHeaderPlain eyebrow="Contact Us" :title="header.title" :subtitle="header.subtitle"
+          :mode="header.mode" :icon="header.icon"
+          :media-url="header.mediaUrl" :media-type="header.mediaType"/>
       </div>
 
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">

@@ -48,6 +48,7 @@ const ICON_MAP = {
   '/dashboard/supervision':  'supervision',
   '/dashboard/news':         'news',
   '/dashboard/pages':        'pages',
+  '/dashboard/page-headers': 'banners',
   '/dashboard/documents':    'documents',
   '/dashboard/contact-messages': 'mail',
   '/dashboard/works':        'works',
@@ -88,6 +89,7 @@ const allGroups = [
       { to: '/dashboard/services',  label: 'บริการออนไลน์',  roles: ['super_admin','admin'] },
       { to: '/dashboard/news',      label: 'ข่าวสาร',            roles: ['super_admin','admin','supervisor','staff'] },
       { to: '/dashboard/pages',     label: 'หน้าเนื้อหา',        roles: ['super_admin','admin','supervisor'] },
+      { to: '/dashboard/page-headers', label: 'หัวข้อหน้า (Header)', roles: ['super_admin','admin'] },
       { to: '/dashboard/documents',   label: 'เอกสาร/ดาวน์โหลด',  roles: ['super_admin','admin','supervisor','staff'] },
       { to: '/dashboard/contact-messages', label: 'ข้อความติดต่อ', roles: ['super_admin','admin','supervisor','staff'] },
     ]

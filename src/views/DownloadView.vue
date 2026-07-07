@@ -1,6 +1,14 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { supabase } from '../supabase'
+import { useAreaConfig } from '../composables/useAreaConfig'
+import { usePageHeader } from '../composables/usePageHeader'
+import PageHeaderPlain from '../components/PageHeaderPlain.vue'
+
+const { fetchConfig } = useAreaConfig()
+const header = usePageHeader('download', {
+  title: 'ดาวน์โหลดเอกสาร', subtitle: 'แบบฟอร์ม คู่มือ เอกสารราชการ และรายงานต่าง ๆ',
+})
 
 const categories = [
   { key: 'all',         label: 'ทั้งหมด',              icon: '📂' },
@@ -27,7 +35,7 @@ async function fetchFiles() {
   if (!error) files.value = data || []
   loading.value = false
 }
-onMounted(fetchFiles)
+onMounted(() => { fetchFiles(); fetchConfig() })
 
 const filtered = computed(() => {
   let list = files.value
@@ -74,9 +82,9 @@ function formatDate(iso) {
 
       <!-- Header -->
       <div class="mb-10">
-        <p class="text-xs text-primary font-bold uppercase tracking-widest mb-1">Downloads</p>
-        <h1 class="text-3xl font-extrabold text-slate-900 dark:text-slate-100">ดาวน์โหลดเอกสาร</h1>
-        <p class="text-slate-500 dark:text-slate-400 mt-2">แบบฟอร์ม คู่มือ เอกสารราชการ และรายงานต่าง ๆ</p>
+        <PageHeaderPlain eyebrow="Downloads" :title="header.title" :subtitle="header.subtitle"
+          :mode="header.mode" :icon="header.icon"
+          :media-url="header.mediaUrl" :media-type="header.mediaType"/>
       </div>
 
       <!-- Search + stats -->

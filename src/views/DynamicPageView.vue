@@ -2,7 +2,7 @@
 import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { supabase } from '../supabase'
-import { iconPath, isIconKey } from '../composables/useIcons.js'
+import PageHero from '../components/PageHero.vue'
 
 const route   = useRoute()
 const router  = useRouter()
@@ -74,24 +74,12 @@ watch(() => route.params.slug, s => { if (s) load(s) })
     </div>
 
     <template v-else-if="page">
-      <!-- Page header — gradient banner + icon + title กลางหน้า -->
-      <div class="relative overflow-hidden"
-        style="background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)">
-        <!-- dot pattern -->
-        <div class="absolute inset-0 opacity-10">
-          <svg width="100%" height="100%"><defs><pattern id="dp" width="24" height="24" patternUnits="userSpaceOnUse"><circle cx="12" cy="12" r="1" fill="white"/></pattern></defs><rect width="100%" height="100%" fill="url(#dp)"/></svg>
-        </div>
-        <div class="relative max-w-3xl mx-auto px-4 py-12 text-center">
-          <!-- SVG icon วงกลม -->
-          <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-white/15 backdrop-blur ring-2 ring-white/20 mb-5 shadow-lg">
-            <svg v-if="isIconKey(page.nav_icon)" class="w-7 h-7 text-white" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" :d="iconPath(page.nav_icon)"/>
-            </svg>
-            <span v-else class="text-2xl">{{ page.nav_icon || page.icon || '📄' }}</span>
-          </div>
-          <h1 class="text-2xl md:text-3xl font-extrabold text-white leading-tight">{{ page.title }}</h1>
-        </div>
-      </div>
+      <!-- Page header — icon/title default หรือรูป/วิดีโอ/GIF ถ้าตั้งค่าไว้ -->
+      <PageHero :title="page.title"
+        :mode="page.header_mode || 'icon'"
+        :icon="page.nav_icon || page.icon || '📄'"
+        :media-url="page.header_media_url"
+        :media-type="page.header_media_type"/>
 
       <!-- Blocks -->
       <div :class="[

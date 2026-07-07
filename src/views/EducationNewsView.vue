@@ -1,8 +1,15 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useEducationNews } from '../composables/useEducationNews'
+import { useAreaConfig } from '../composables/useAreaConfig'
+import { usePageHeader } from '../composables/usePageHeader'
+import PageHero from '../components/PageHero.vue'
 
 const { news, loading, error, fetchNews } = useEducationNews()
+const { fetchConfig } = useAreaConfig()
+const header = usePageHeader('educationNews', {
+  title: 'ข่าวการศึกษา', subtitle: 'ข่าวสารด้านการศึกษาจาก Google News',
+})
 
 const searchQ = ref('')
 
@@ -22,20 +29,19 @@ function fmtDate(d) {
   return date.toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' })
 }
 
-onMounted(() => { fetchNews() })
+onMounted(() => { fetchNews(); fetchConfig() })
 </script>
 
 <template>
   <div class="font-sarabun text-slate-800 bg-slate-50 min-h-screen">
 
     <!-- Hero -->
-    <section class="gradient-primary py-10 md:py-14">
-      <div class="max-w-7xl mx-auto px-4 text-white">
-        <p class="text-white/55 text-xs font-semibold uppercase tracking-[0.2em] mb-2">Education News</p>
-        <h1 class="text-2xl md:text-3xl font-extrabold mb-1">ข่าวการศึกษา</h1>
-        <p class="text-white/65 text-sm">ข่าวสารด้านการศึกษาจาก Google News</p>
-      </div>
-    </section>
+    <PageHero
+      eyebrow="Education News"
+      :title="header.title" :subtitle="header.subtitle"
+      :mode="header.mode" :icon="header.icon"
+      :media-url="header.mediaUrl" :media-type="header.mediaType"
+      size="md" align="left" max-width="7xl"/>
 
     <!-- Content -->
     <section class="py-10">

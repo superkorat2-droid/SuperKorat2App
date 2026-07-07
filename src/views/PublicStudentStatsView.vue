@@ -2,8 +2,11 @@
 import { ref, computed, onMounted } from 'vue'
 import { supabase } from '../supabase'
 import { useAreaConfig } from '../composables/useAreaConfig'
+import { usePageHeader } from '../composables/usePageHeader'
+import PageHero from '../components/PageHero.vue'
 
 const { config } = useAreaConfig()
+const header = usePageHeader('studentStats', { icon: 'students', title: 'สารสนเทศนักเรียน' })
 const loading = ref(true)
 const data    = ref(null)
 const error   = ref(null)
@@ -130,34 +133,26 @@ function formatDate(d) {
 
 <template>
   <div class="font-sarabun bg-slate-50 dark:bg-slate-950 min-h-screen">
-    <div class="relative overflow-hidden"
-      style="background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)">
-      <div class="absolute inset-0 opacity-10">
-        <svg width="100%" height="100%"><defs><pattern id="dp-stats" width="24" height="24" patternUnits="userSpaceOnUse"><circle cx="12" cy="12" r="1" fill="white"/></pattern></defs><rect width="100%" height="100%" fill="url(#dp-stats)"/></svg>
-      </div>
-      <div class="relative max-w-5xl mx-auto px-4 py-10 md:py-14">
-        <div class="flex flex-col md:flex-row items-start md:items-center gap-4">
-          <div class="w-14 h-14 rounded-2xl bg-white/15 backdrop-blur ring-2 ring-white/20 flex items-center justify-center flex-shrink-0 shadow-lg">
-            <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z"/></svg>
+    <PageHero
+      :title="header.title"
+      :subtitle="header.subtitle || config?.area_name"
+      :mode="header.mode" :icon="header.icon"
+      :media-url="header.mediaUrl" :media-type="header.mediaType"
+      align="left" max-width="5xl">
+      <template #extra>
+        <p v-if="period" class="text-white/50 text-xs mt-1">{{ period.title }} · เผยแพร่ {{ formatDate(period.archived_at) }}</p>
+        <div v-if="data && !loading" class="flex gap-3 flex-wrap mt-4">
+          <div class="bg-white/15 backdrop-blur rounded-2xl px-4 py-2.5 text-center">
+            <p class="text-2xl font-extrabold text-white">{{ allUploads.length }}</p>
+            <p class="text-white/60 text-xs">โรงเรียน</p>
           </div>
-          <div class="flex-1">
-            <h1 class="text-2xl md:text-3xl font-extrabold text-white mb-1">สารสนเทศนักเรียน</h1>
-            <p class="text-white/60 text-sm">{{ config?.area_name }}</p>
-            <p v-if="period" class="text-white/50 text-xs mt-0.5">{{ period.title }} · เผยแพร่ {{ formatDate(period.archived_at) }}</p>
-          </div>
-          <div v-if="data && !loading" class="flex gap-3 flex-wrap">
-            <div class="bg-white/15 backdrop-blur rounded-2xl px-4 py-2.5 text-center">
-              <p class="text-2xl font-extrabold text-white">{{ allUploads.length }}</p>
-              <p class="text-white/60 text-xs">โรงเรียน</p>
-            </div>
-            <div class="bg-white/15 backdrop-blur rounded-2xl px-4 py-2.5 text-center">
-              <p class="text-2xl font-extrabold text-white">{{ allUploads.reduce((s,u)=>s+u.total,0).toLocaleString() }}</p>
-              <p class="text-white/60 text-xs">นักเรียนทั้งเขต</p>
-            </div>
+          <div class="bg-white/15 backdrop-blur rounded-2xl px-4 py-2.5 text-center">
+            <p class="text-2xl font-extrabold text-white">{{ allUploads.reduce((s,u)=>s+u.total,0).toLocaleString() }}</p>
+            <p class="text-white/60 text-xs">นักเรียนทั้งเขต</p>
           </div>
         </div>
-      </div>
-    </div>
+      </template>
+    </PageHero>
 
     <div v-if="loading" class="flex justify-center py-24"><div class="w-10 h-10 border-4 border-primary/30 border-t-primary rounded-full animate-spin"/></div>
     <div v-else-if="error || !data" class="text-center py-24 text-slate-400">

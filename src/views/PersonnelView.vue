@@ -2,8 +2,13 @@
 import { ref, computed, onMounted } from 'vue'
 import { supabase } from '../supabase'
 import { useAreaConfig } from '../composables/useAreaConfig'
+import { usePageHeader } from '../composables/usePageHeader'
+import PageHero from '../components/PageHero.vue'
 
 const { config, fetchConfig } = useAreaConfig()
+const header = usePageHeader('personnel', {
+  icon: 'users', title: 'ทำเนียบบุคลากร', subtitle: 'บุคลากรกลุ่มนิเทศ ติดตามและประเมินผลการจัดการศึกษา',
+})
 const loading   = ref(true)
 const personnel = ref([])
 const selected  = ref(null)
@@ -121,21 +126,10 @@ function visibleContact(p) {
   <div class="font-sarabun min-h-screen transition-colors" style="background:radial-gradient(ellipse at top,#f0f4ff 0%,#f8fafc 60%)">
 
     <!-- Page header -->
-    <div class="relative overflow-hidden"
-      style="background:linear-gradient(135deg,var(--color-primary) 0%,var(--color-secondary) 100%)">
-      <div class="absolute inset-0 opacity-10">
-        <svg width="100%" height="100%"><defs><pattern id="pg" width="32" height="32" patternUnits="userSpaceOnUse"><circle cx="16" cy="16" r="1.5" fill="white"/></pattern></defs><rect width="100%" height="100%" fill="url(#pg)"/></svg>
-      </div>
-      <div class="relative max-w-6xl mx-auto px-4 py-10">
-        <div class="flex items-center gap-3 mb-1">
-          <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-            <SvgIcon name="users" class="w-5 h-5 text-white"/>
-          </div>
-          <h1 class="text-2xl md:text-3xl font-extrabold text-white">ทำเนียบบุคลากร</h1>
-        </div>
-        <p class="text-white/70 text-sm ml-13 pl-1">บุคลากรกลุ่มนิเทศ ติดตามและประเมินผลการจัดการศึกษา</p>
-      </div>
-    </div>
+    <PageHero :title="header.title" :subtitle="header.subtitle"
+      :mode="header.mode" :icon="header.icon"
+      :media-url="header.mediaUrl" :media-type="header.mediaType"
+      size="md" align="left" max-width="6xl"/>
 
     <div class="max-w-6xl mx-auto px-4 py-8">
 

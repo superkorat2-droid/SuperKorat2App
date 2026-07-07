@@ -4,7 +4,8 @@ import { useRoute, useRouter } from 'vue-router'
 import { supabase } from '../../supabase'
 import Swal from 'sweetalert2'
 import ImageCropperModal from '../../components/ImageCropperModal.vue'
-import { useExternalUpload, externalUploadEnabled } from '../../composables/useExternalUpload'
+import { useExternalUpload, externalUploadEnabled, deleteUploadedFile } from '../../composables/useExternalUpload'
+import IconPicker from '../../components/IconPicker.vue'
 
 const route  = useRoute()
 const router = useRouter()
@@ -15,6 +16,11 @@ const layout  = ref('narrow')
 const saving  = ref(false)
 const loading = ref(true)
 const myProfile = ref(null)
+
+// ── Page header — mode toggle (icon ใช้ page.nav_icon ตัวเดิม / media อัปโหลดใหม่) ──
+const headerMode      = ref('icon')
+const headerMediaUrl  = ref('')
+const headerMediaType = ref('')
 
 const LAYOUT_OPTIONS = [
   { value: 'narrow', label: 'แคบ (768px)',  class: 'max-w-3xl' },
@@ -61,6 +67,9 @@ onMounted(async () => {
   page.value    = data
   blocks.value  = Array.isArray(data.blocks) ? data.blocks : []
   layout.value  = data.layout || 'narrow'
+  headerMode.value      = data.header_mode || 'icon'
+  headerMediaUrl.value  = data.header_media_url  || ''
+  headerMediaType.value = data.header_media_type || ''
 
   if (user) {
     const { data: profile } = await supabase.from('profiles').select('id, role').eq('id', user.id).single()
@@ -86,7 +95,11 @@ function moveDown(idx) {
 async function save(publish = null) {
   if (!canEdit.value) return Swal.fire({ icon: 'error', title: 'ไม่มีสิทธิ์', text: 'คุณไม่ได้รับมอบหมายให้ดูแลหน้านี้' })
   saving.value = true
-  const payload = { blocks: blocks.value, layout: layout.value }
+  const payload = {
+    blocks: blocks.value, layout: layout.value,
+    nav_icon: page.value.nav_icon,
+    header_mode: headerMode.value, header_media_url: headerMediaUrl.value, header_media_type: headerMediaType.value,
+  }
   if (publish !== null) payload.is_published = publish
   const { error } = await supabase.from('pages').update(payload).eq('id', page.value.id)
   saving.value = false
@@ -116,7 +129,7 @@ const cropTargetIdx = ref(null)
 const imgUploading  = ref(false)
 const imgUploadErr  = ref('')
 
-const { uploadImage: uploadImgExternal } = useExternalUpload()
+const { uploadImage: uploadImgExternal, uploadFile: uploadRawExternal } = useExternalUpload()
 
 function openImgCropper(idx) {
   cropTargetIdx.value = idx
@@ -146,6 +159,83 @@ async function onImageCropped({ blob }) {
     imgUploadErr.value = e.message || 'อัปโหลดรูปไม่สำเร็จ'
   }
   imgUploading.value = false
+}
+
+// ── Header media upload (แยกจาก block image — ไม่ครอปสำหรับ gif/video เพื่อไม่ให้ animation หาย) ──
+const showHeaderCropper  = ref(false)
+const headerRawInput     = ref(null)
+const headerUploading    = ref(false)
+const headerUploadErr    = ref('')
+const headerRawProgress  = ref(0)
+
+async function onHeaderCropped({ blob }) {
+  showHeaderCropper.value = false
+  headerUploading.value = true
+  headerUploadErr.value = ''
+  try {
+    if (externalUploadEnabled) {
+      headerMediaUrl.value = await uploadImgExternal(blob, 'page-header')
+    } else {
+      const fileName = `pages/header_${Date.now()}.png`
+      const { error } = await supabase.storage.from('images').upload(fileName, blob, { contentType: 'image/png', upsert: false })
+      if (error) throw error
+      headerMediaUrl.value = supabase.storage.from('images').getPublicUrl(fileName).data.publicUrl
+    }
+    headerMediaType.value = 'image'
+  } catch (e) {
+    headerUploadErr.value = e.message || 'อัปโหลดรูปไม่สำเร็จ'
+  }
+  headerUploading.value = false
+}
+
+function triggerHeaderRawUpload() { headerRawInput.value?.click() }
+
+async function onHeaderRawFileSelected(e) {
+  const file = e.target.files?.[0]
+  e.target.value = ''
+  if (!file) return
+
+  const isVideo = file.type.startsWith('video/')
+  const isGif   = file.type === 'image/gif'
+  if (!isVideo && !isGif) { headerUploadErr.value = 'รองรับเฉพาะไฟล์ GIF หรือวิดีโอ (.mp4, .webm, .mov)'; return }
+  const MAX_MB = isVideo ? 50 : 5
+  if (file.size > MAX_MB * 1024 * 1024) { headerUploadErr.value = `ไฟล์ใหญ่เกิน ${MAX_MB} MB`; return }
+
+  headerUploadErr.value = ''
+  headerUploading.value = true
+  headerRawProgress.value = 0
+  try {
+    if (externalUploadEnabled) {
+      headerMediaUrl.value = await uploadRawExternal(file, 'page-header', p => { headerRawProgress.value = p })
+    } else {
+      const ext = file.name.split('.').pop() || (isVideo ? 'mp4' : 'gif')
+      const fileName = `pages/header_${Date.now()}.${ext}`
+      const { data: { session } } = await supabase.auth.getSession()
+      const baseUrl = import.meta.env.VITE_SUPABASE_URL
+      await new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest()
+        xhr.open('POST', `${baseUrl}/storage/v1/object/images/${fileName}`)
+        xhr.setRequestHeader('Authorization', `Bearer ${session?.access_token}`)
+        xhr.setRequestHeader('Content-Type', file.type)
+        xhr.upload.addEventListener('progress', ev => { if (ev.lengthComputable) headerRawProgress.value = Math.round((ev.loaded/ev.total)*100) })
+        xhr.addEventListener('load', () => xhr.status >= 200 && xhr.status < 300 ? resolve() : reject(new Error(`Upload failed (${xhr.status})`)))
+        xhr.addEventListener('error', () => reject(new Error('Network error')))
+        xhr.send(file)
+      })
+      headerMediaUrl.value = supabase.storage.from('images').getPublicUrl(fileName).data.publicUrl
+    }
+    headerMediaType.value = isVideo ? 'video' : 'gif'
+  } catch (e) {
+    headerUploadErr.value = e.message
+  } finally {
+    headerUploading.value = false
+  }
+}
+
+async function clearHeaderMedia() {
+  if (headerMediaUrl.value) await deleteUploadedFile(headerMediaUrl.value)
+  headerMediaUrl.value = ''
+  headerMediaType.value = ''
 }
 </script>
 
@@ -203,6 +293,54 @@ async function onImageCropped({ blob }) {
             {{ page.is_published ? '⏸ ยกเลิกเผยแพร่' : '🚀 เผยแพร่' }}
           </button>
         </div>
+      </div>
+
+      <!-- Header (ไอคอน SVG+ชื่อ หรือ รูป/วิดีโอ/GIF ตรงหัวหน้าเว็บ) -->
+      <div v-if="canEdit" class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 mb-5 space-y-3">
+        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Header หน้า</p>
+        <div class="flex gap-2">
+          <button @click="headerMode = 'icon'"
+            :class="['flex-1 py-2 text-sm font-bold rounded-xl border-2 transition-all',
+              headerMode === 'icon' ? 'border-primary bg-primary/5 text-primary' : 'border-slate-200 text-slate-500']">
+            ใช้ไอคอน (ค่าเริ่มต้น)
+          </button>
+          <button @click="headerMode = 'media'"
+            :class="['flex-1 py-2 text-sm font-bold rounded-xl border-2 transition-all',
+              headerMode === 'media' ? 'border-primary bg-primary/5 text-primary' : 'border-slate-200 text-slate-500']">
+            ใช้รูป/วิดีโอ/GIF
+          </button>
+        </div>
+
+        <IconPicker v-if="headerMode === 'icon'" v-model="page.nav_icon"/>
+
+        <div v-else class="space-y-3">
+          <div v-if="headerMediaUrl" class="rounded-xl overflow-hidden border border-slate-200 bg-slate-50 max-w-sm">
+            <video v-if="headerMediaType === 'video'" :src="headerMediaUrl" class="w-full max-h-48 object-cover" controls muted/>
+            <img v-else :src="headerMediaUrl" class="w-full max-h-48 object-cover"/>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <button @click="showHeaderCropper = true" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-colors">
+              🖼️ อัปโหลดรูป (ครอปได้)
+            </button>
+            <button @click="triggerHeaderRawUpload" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-colors">
+              🎬 อัปโหลดวิดีโอ/GIF (ไม่ครอป)
+            </button>
+            <button v-if="headerMediaUrl" @click="clearHeaderMedia" class="px-3 py-2 bg-red-50 text-red-500 text-xs font-bold rounded-xl hover:bg-red-100 transition-all">
+              ลบไฟล์นี้
+            </button>
+          </div>
+          <div v-if="headerUploading" class="space-y-1">
+            <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
+              <div class="h-full transition-all" :style="`width:${headerRawProgress}%; background: linear-gradient(90deg, var(--color-primary), var(--color-secondary))`"></div>
+            </div>
+          </div>
+          <p v-if="headerUploadErr" class="text-xs text-red-500 font-bold">{{ headerUploadErr }}</p>
+        </div>
+
+        <input ref="headerRawInput" type="file" accept="image/gif,video/mp4,video/webm,video/quicktime" class="hidden" @change="onHeaderRawFileSelected"/>
+        <ImageCropperModal :show="showHeaderCropper" :aspect-ratio="21/9" title="ครอบรูป Header (แนะนำ 21:9)"
+          :output-max-width="1920" :output-max-height="1920" output-type="image/jpeg" :output-quality="0.85"
+          @close="showHeaderCropper = false" @cropped="onHeaderCropped"/>
       </div>
 
       <!-- Add block toolbar (แสดงเฉพาะมีสิทธิ์) -->
