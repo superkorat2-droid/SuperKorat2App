@@ -80,6 +80,36 @@ const prevSlide = () => {
     currentSlide.value = (currentSlide.value - 1 + banners.value.length) % banners.value.length
 }
 
+// ── ปัดซ้าย/ขวาเปลี่ยนแบนเนอร์ (มือถือ) ────────────────────────────
+// swiping = true เฉพาะตอนลากจริง (ระยะทางแนวนอน > แนวตั้ง และเกิน threshold)
+// ใช้กันไม่ให้ลิงก์ทับแบนเนอร์ทำงานตอนปัด แต่แตะเฉยๆ (ไม่ลาก) ลิงก์ยังทำงานปกติ
+const touchStartX = ref(0)
+const touchStartY = ref(0)
+const swiping     = ref(false)
+let swipeResetTimer = null
+
+function onBannerTouchStart(e) {
+  touchStartX.value = e.touches[0].clientX
+  touchStartY.value = e.touches[0].clientY
+  swiping.value = false
+}
+function onBannerTouchMove(e) {
+  const dx = e.touches[0].clientX - touchStartX.value
+  const dy = e.touches[0].clientY - touchStartY.value
+  if (Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy)) swiping.value = true
+}
+function onBannerTouchEnd(e) {
+  if (!swiping.value) return
+  const dx = e.changedTouches[0].clientX - touchStartX.value
+  if (Math.abs(dx) > 40) { dx < 0 ? nextSlide() : prevSlide() }
+  // เผื่อ browser ยิง click ตามหลัง touchend ให้ onBannerLinkClick กันไว้อีกชั้น
+  clearTimeout(swipeResetTimer)
+  swipeResetTimer = setTimeout(() => { swiping.value = false }, 300)
+}
+function onBannerLinkClick(e) {
+  if (swiping.value) e.preventDefault()
+}
+
 // ── Supervision list (home section) ──────────────────────────────
 const supervisionForms   = ref([])
 const loadingSupervision = ref(false)
@@ -151,7 +181,10 @@ onMounted(async () => {
     }
   })
 })
-onUnmounted(() => { if (slideInterval) clearInterval(slideInterval) })
+onUnmounted(() => {
+  if (slideInterval) clearInterval(slideInterval)
+  clearTimeout(swipeResetTimer)
+})
 
 // ── Quick links ─────────────────────────────────────────────────
 const quickLinks = [
@@ -306,7 +339,10 @@ const stats = [
       <!-- แบนเนอร์จาก DB — full width, configurable ratio -->
       <div v-if="!loadingBanners && banners.length > 0" class="w-full">
         <div class="relative overflow-hidden shadow-xl w-full bg-slate-900"
-          :style="bannerAspectStyle">
+          :style="bannerAspectStyle"
+          @touchstart.passive="onBannerTouchStart"
+          @touchmove.passive="onBannerTouchMove"
+          @touchend="onBannerTouchEnd">
           <div v-for="(slide, i) in banners" :key="slide.id"
             class="absolute inset-0 transition-all duration-1000"
             :class="i === currentSlide ? 'opacity-100 z-10' : 'opacity-0 pointer-events-none'">
@@ -348,6 +384,7 @@ const stats = [
               :to="slide.link_type === 'internal' ? bannerInternalPath(slide.link_url) : undefined"
               :target="slide.link_type === 'external' ? '_blank' : undefined"
               :rel="slide.link_type === 'external' ? 'noopener' : undefined"
+              @click="onBannerLinkClick"
               class="absolute inset-0 cursor-pointer" :aria-label="slide.title || 'banner link'"/>
           </div>
           <!-- TV vignette — gradient ขอบทั้ง 4 ด้าน -->

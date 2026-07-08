@@ -128,7 +128,7 @@ const handleLogout = async () => {
           <!-- Logo -->
           <RouterLink to="/" class="flex items-center gap-2 sm:gap-3 min-w-0 flex-1 lg:flex-none mr-2 sm:mr-5 lg:mr-6 group">
             <div v-if="config?.logo_url"
-              class="w-9 h-9 sm:w-10 sm:h-10 lg:w-12 lg:h-12 rounded-lg overflow-hidden flex-shrink-0 border border-slate-200 group-hover:border-primary transition-colors">
+              class="w-9 h-9 sm:w-10 sm:h-10 lg:w-12 lg:h-12 rounded-lg overflow-hidden flex-shrink-0">
               <img :src="config.logo_url" class="w-full h-full object-contain" alt="logo"/>
             </div>
             <div v-else
