@@ -507,7 +507,7 @@ const stats = [
               </a>
             </div>
             <!-- Loading -->
-            <div v-if="loadingNews" class="grid grid-cols-2 md:grid-cols-4 gap-5">
+            <div v-if="loadingNews" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5">
               <div v-for="i in 8" :key="i" class="rounded-2xl overflow-hidden animate-pulse">
                 <div class="h-40 bg-slate-100"></div>
                 <div class="p-4 space-y-2 bg-white border border-t-0 border-slate-100">
@@ -521,7 +521,7 @@ const stats = [
               ยังไม่มีข่าวสาร
             </div>
             <!-- 8 cards — 4 col grid -->
-            <div v-else class="grid grid-cols-2 md:grid-cols-4 gap-5">
+            <div v-else class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5">
               <div v-for="n in latestNews" :key="n.id"
                 @click="router.push(`/news/${n.id}`)"
                 class="group bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300">

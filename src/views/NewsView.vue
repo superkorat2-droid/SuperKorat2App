@@ -142,7 +142,7 @@ const catMeta = {
       </div>
 
       <!-- ── Loading ───────────────────────────────────────────── -->
-      <div v-if="loading" class="grid grid-cols-2 md:grid-cols-4 gap-5">
+      <div v-if="loading" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5">
         <div v-for="i in 8" :key="i" class="bg-white rounded-2xl overflow-hidden animate-pulse">
           <div class="aspect-video bg-slate-200"></div>
           <div class="p-4 space-y-2">
@@ -212,7 +212,7 @@ const catMeta = {
         </div>
 
         <!-- All news grid — 4 columns -->
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-5">
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5">
           <div v-for="n in paginated.filter(x => page!==1 || !x.is_pinned)" :key="n.id"
             @click="router.push(`/news/${n.id}`)"
             class="group bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden
