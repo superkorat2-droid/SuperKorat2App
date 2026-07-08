@@ -116,7 +116,7 @@ function monthLabel(m) { return m ? MONTHS[m-1] : '' }
       </div>
 
       <!-- ── Loading ────────────────────────────────────────────────────────── -->
-      <div v-if="loading" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+      <div v-if="loading" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         <div v-for="i in 8" :key="i" class="bg-white rounded-2xl border border-slate-100 overflow-hidden animate-pulse">
           <div class="aspect-[3/4] bg-slate-100"/>
           <div class="p-3 space-y-2"><div class="h-3 bg-slate-100 rounded w-3/4"/><div class="h-2.5 bg-slate-100 rounded w-1/2"/></div>
@@ -135,7 +135,7 @@ function monthLabel(m) { return m ? MONTHS[m-1] : '' }
         <div v-for="n in filtered" :key="n.id"
           class="group bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm
                  hover:shadow-lg hover:-translate-y-1 transition-all duration-200 overflow-hidden cursor-pointer
-                 w-[calc(50%-8px)] sm:w-[calc(33.333%-11px)] lg:w-[calc(25%-12px)]"
+                 w-full sm:w-[calc(50%-8px)] md:w-[calc(33.333%-11px)] lg:w-[calc(25%-12px)]"
           @click="previewItem = n">
 
           <!-- Embed preview (pointer-events-none = looks like static thumbnail) -->
