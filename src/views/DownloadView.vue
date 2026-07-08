@@ -84,7 +84,7 @@ function formatDate(iso) {
       <div class="mb-10">
         <PageHeaderPlain eyebrow="Downloads" :title="header.title" :subtitle="header.subtitle"
           :mode="header.mode" :icon="header.icon"
-          :media-url="header.mediaUrl" :media-type="header.mediaType"/>
+          :media-url="header.mediaUrl" :media-type="header.mediaType" :aspect-ratio="header.aspectRatio"/>
       </div>
 
       <!-- Search + stats -->

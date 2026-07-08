@@ -79,7 +79,8 @@ watch(() => route.params.slug, s => { if (s) load(s) })
         :mode="page.header_mode || 'icon'"
         :icon="page.nav_icon || page.icon || '📄'"
         :media-url="page.header_media_url"
-        :media-type="page.header_media_type"/>
+        :media-type="page.header_media_type"
+        :aspect-ratio="page.header_aspect_ratio || '21:9'"/>
 
       <!-- Blocks -->
       <div :class="[

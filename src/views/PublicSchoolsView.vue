@@ -99,22 +99,20 @@ function resetFilters() {
       :title="header.title || config?.schools_page_title || 'ทำเนียบสถานศึกษา'"
       :subtitle="header.subtitle || `${config?.schools_page_subtitle || config?.area_name || 'สพป.'} · ${schools.length} โรงเรียน`"
       :mode="header.mode" :icon="header.icon"
-      :media-url="header.mediaUrl" :media-type="header.mediaType">
-      <template #extra>
-        <div class="relative max-w-lg mx-auto mt-6 w-full">
-          <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50"
-            fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/>
-          </svg>
-          <input v-model="searchQ" type="text" placeholder="ค้นหาชื่อโรงเรียน รหัส DMC ..."
-            class="w-full pl-11 pr-4 py-3 rounded-2xl bg-white/15 border border-white/25
-                   text-white placeholder-white/40 text-sm focus:outline-none focus:bg-white/25
-                   focus:border-white/40 transition-all"/>
-        </div>
-      </template>
-    </PageHero>
+      :media-url="header.mediaUrl" :media-type="header.mediaType" :aspect-ratio="header.aspectRatio"/>
 
     <div class="max-w-7xl mx-auto px-4 py-6 space-y-5">
+
+      <!-- ── Search (แยกจาก hero เสมอ ไม่ว่าจะใช้ไอคอนหรือรูป/วิดีโอ) ── -->
+      <div class="relative max-w-lg mx-auto">
+        <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"
+          fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/>
+        </svg>
+        <input v-model="searchQ" type="text" placeholder="ค้นหาชื่อโรงเรียน รหัส DMC ..."
+          class="w-full pl-11 pr-4 py-3 rounded-2xl border border-slate-200 dark:border-slate-700
+                 bg-white dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"/>
+      </div>
 
       <!-- ── Realtime stats ──────────────────────────────────────── -->
       <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">

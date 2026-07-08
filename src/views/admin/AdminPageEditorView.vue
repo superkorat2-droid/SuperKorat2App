@@ -18,9 +18,18 @@ const loading = ref(true)
 const myProfile = ref(null)
 
 // ── Page header — mode toggle (icon ใช้ page.nav_icon ตัวเดิม / media อัปโหลดใหม่) ──
-const headerMode      = ref('icon')
-const headerMediaUrl  = ref('')
-const headerMediaType = ref('')
+const headerMode        = ref('icon')
+const headerMediaUrl    = ref('')
+const headerMediaType   = ref('')
+const headerAspectRatio = ref('21:9')
+
+const ASPECT_RATIOS = [
+  { value: '21:9', label: '21:9 กว้างเตี้ย', ratio: 21/9 },
+  { value: '16:9', label: '16:9 มาตรฐาน',    ratio: 16/9 },
+  { value: '3:1',  label: '3:1 เว็บราชการ',   ratio: 3/1 },
+  { value: '4:1',  label: '4:1 บางมาก',       ratio: 4/1 },
+]
+const headerCropRatio = computed(() => ASPECT_RATIOS.find(r => r.value === headerAspectRatio.value)?.ratio || 21/9)
 
 const LAYOUT_OPTIONS = [
   { value: 'narrow', label: 'แคบ (768px)',  class: 'max-w-3xl' },
@@ -67,9 +76,10 @@ onMounted(async () => {
   page.value    = data
   blocks.value  = Array.isArray(data.blocks) ? data.blocks : []
   layout.value  = data.layout || 'narrow'
-  headerMode.value      = data.header_mode || 'icon'
-  headerMediaUrl.value  = data.header_media_url  || ''
-  headerMediaType.value = data.header_media_type || ''
+  headerMode.value        = data.header_mode || 'icon'
+  headerMediaUrl.value    = data.header_media_url  || ''
+  headerMediaType.value   = data.header_media_type || ''
+  headerAspectRatio.value = data.header_aspect_ratio || '21:9'
 
   if (user) {
     const { data: profile } = await supabase.from('profiles').select('id, role').eq('id', user.id).single()
@@ -99,6 +109,7 @@ async function save(publish = null) {
     blocks: blocks.value, layout: layout.value,
     nav_icon: page.value.nav_icon,
     header_mode: headerMode.value, header_media_url: headerMediaUrl.value, header_media_type: headerMediaType.value,
+    header_aspect_ratio: headerAspectRatio.value,
   }
   if (publish !== null) payload.is_published = publish
   const { error } = await supabase.from('pages').update(payload).eq('id', page.value.id)
@@ -314,9 +325,19 @@ async function clearHeaderMedia() {
         <IconPicker v-if="headerMode === 'icon'" v-model="page.nav_icon"/>
 
         <div v-else class="space-y-3">
-          <div v-if="headerMediaUrl" class="rounded-xl overflow-hidden border border-slate-200 bg-slate-50 max-w-sm">
-            <video v-if="headerMediaType === 'video'" :src="headerMediaUrl" class="w-full max-h-48 object-cover" controls muted/>
-            <img v-else :src="headerMediaUrl" class="w-full max-h-48 object-cover"/>
+          <div>
+            <label class="block text-xs font-bold text-slate-600 mb-1.5">สัดส่วนกรอบ</label>
+            <div class="flex flex-wrap gap-2">
+              <button v-for="r in ASPECT_RATIOS" :key="r.value" @click="headerAspectRatio = r.value"
+                :class="['px-3 py-1.5 text-xs font-bold rounded-xl border-2 transition-all',
+                  headerAspectRatio === r.value ? 'border-primary bg-primary/5 text-primary' : 'border-slate-200 text-slate-500']">
+                {{ r.label }}
+              </button>
+            </div>
+          </div>
+          <div v-if="headerMediaUrl" class="rounded-xl overflow-hidden border border-slate-200 bg-slate-50 max-w-md" :style="`aspect-ratio:${headerCropRatio}`">
+            <video v-if="headerMediaType === 'video'" :src="headerMediaUrl" class="w-full h-full object-cover" controls muted/>
+            <img v-else :src="headerMediaUrl" class="w-full h-full object-cover"/>
           </div>
           <div class="flex flex-wrap gap-2">
             <button @click="showHeaderCropper = true" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-colors">
@@ -338,7 +359,7 @@ async function clearHeaderMedia() {
         </div>
 
         <input ref="headerRawInput" type="file" accept="image/gif,video/mp4,video/webm,video/quicktime" class="hidden" @change="onHeaderRawFileSelected"/>
-        <ImageCropperModal :show="showHeaderCropper" :aspect-ratio="21/9" title="ครอบรูป Header (แนะนำ 21:9)"
+        <ImageCropperModal :show="showHeaderCropper" :aspect-ratio="headerCropRatio" title="ครอบรูป Header"
           :output-max-width="1920" :output-max-height="1920" output-type="image/jpeg" :output-quality="0.85"
           @close="showHeaderCropper = false" @cropped="onHeaderCropped"/>
       </div>

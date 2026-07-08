@@ -36,13 +36,22 @@ const KNOWN_ROUTES = [
 ]
 function routeLabel(key) { return KNOWN_ROUTES.find(r => r.key === key)?.label || key }
 
+// สัดส่วนกรอบรูป/วิดีโอ header (เหมือน pattern ที่ใช้กับแบนเนอร์)
+const ASPECT_RATIOS = [
+  { value: '21:9', label: '21:9 กว้างเตี้ย', ratio: 21/9 },
+  { value: '16:9', label: '16:9 มาตรฐาน',    ratio: 16/9 },
+  { value: '3:1',  label: '3:1 เว็บราชการ',   ratio: 3/1 },
+  { value: '4:1',  label: '4:1 บางมาก',       ratio: 4/1 },
+]
+function ratioNumber(value) { return ASPECT_RATIOS.find(r => r.value === value)?.ratio || 21/9 }
+
 const headers   = ref([])
 const saving    = ref(false)
 const addKey    = ref('')
 const availableRoutes = computed(() => KNOWN_ROUTES.filter(r => !headers.value.some(h => h.key === r.key)))
 
 function emptyHeader(key) {
-  return { key, mode: 'icon', icon: '', title: '', subtitle: '', media_url: '', media_type: '' }
+  return { key, mode: 'icon', icon: '', title: '', subtitle: '', media_url: '', media_type: '', aspect_ratio: '21:9' }
 }
 
 onMounted(async () => {
@@ -81,6 +90,8 @@ const activeIndex  = ref(-1)
 const rawUploadProgress = ref(0)
 const rawUploadError    = ref('')
 const uploadingRaw = ref(false)
+
+const cropperRatio = computed(() => ratioNumber(headers.value[activeIndex.value]?.aspect_ratio))
 
 function openCropper(i) { activeIndex.value = i; showCropper.value = true }
 function openStorage(i) { activeIndex.value = i; showStorage.value = true }
@@ -225,9 +236,22 @@ async function clearMedia(row) {
 
       <!-- Media mode -->
       <div v-else class="space-y-3">
-        <div v-if="row.media_url" class="rounded-xl overflow-hidden border border-slate-200 bg-slate-50 max-w-sm">
-          <video v-if="row.media_type === 'video'" :src="row.media_url" class="w-full max-h-48 object-cover" controls muted/>
-          <img v-else :src="row.media_url" class="w-full max-h-48 object-cover"/>
+        <!-- Aspect ratio picker -->
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1.5">สัดส่วนกรอบ</label>
+          <div class="flex flex-wrap gap-2">
+            <button v-for="r in ASPECT_RATIOS" :key="r.value" @click="row.aspect_ratio = r.value"
+              :class="['px-3 py-1.5 text-xs font-bold rounded-xl border-2 transition-all',
+                (row.aspect_ratio || '21:9') === r.value ? 'border-primary bg-primary/5 text-primary' : 'border-slate-200 text-slate-500']">
+              {{ r.label }}
+            </button>
+          </div>
+        </div>
+
+        <div v-if="row.media_url" class="rounded-xl overflow-hidden border border-slate-200 bg-slate-50 max-w-md"
+          :style="`aspect-ratio:${row.aspect_ratio ? ratioNumber(row.aspect_ratio) : 21/9}`">
+          <video v-if="row.media_type === 'video'" :src="row.media_url" class="w-full h-full object-cover" controls muted/>
+          <img v-else :src="row.media_url" class="w-full h-full object-cover"/>
         </div>
         <div class="flex flex-wrap gap-2">
           <button @click="openCropper(i)" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-colors">
@@ -296,8 +320,8 @@ async function clearMedia(row) {
     <!-- Image cropper -->
     <ImageCropperModal
       :show="showCropper"
-      :aspect-ratio="21/9"
-      title="ครอบรูป Header (แนะนำ 21:9)"
+      :aspect-ratio="cropperRatio"
+      title="ครอบรูป Header"
       :output-max-width="1920"
       :output-max-height="1920"
       output-type="image/jpeg"

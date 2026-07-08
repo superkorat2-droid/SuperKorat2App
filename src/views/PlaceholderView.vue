@@ -30,15 +30,16 @@ const contentTools = [
 
     <PageHero :title="header.title" :subtitle="header.subtitle"
       :mode="header.mode" :icon="header.icon"
-      :media-url="header.mediaUrl" :media-type="header.mediaType">
-      <template #extra>
-        <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/15 text-white text-xs font-bold rounded-full mt-4">
-          🚧 กำลังพัฒนา
-        </span>
-      </template>
-    </PageHero>
+      :media-url="header.mediaUrl" :media-type="header.mediaType" :aspect-ratio="header.aspectRatio"/>
 
     <div class="max-w-xl w-full mx-auto py-12 px-4">
+
+      <!-- สถานะ (แยกจาก hero เสมอ ไม่ว่าจะใช้ไอคอนหรือรูป/วิดีโอ) -->
+      <div class="text-center mb-6">
+        <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-100 text-amber-700 text-xs font-bold rounded-full">
+          🚧 กำลังพัฒนา
+        </span>
+      </div>
 
       <!-- Content type tools preview -->
       <div class="bg-white rounded-3xl border border-slate-100 shadow-sm p-7">

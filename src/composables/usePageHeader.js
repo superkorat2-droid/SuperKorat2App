@@ -12,8 +12,9 @@ export function usePageHeader(routeKey, defaults = {}) {
       icon:      found?.icon || defaults.icon || '',
       title:     found?.title || defaults.title || '',
       subtitle:  found?.subtitle || defaults.subtitle || '',
-      mediaUrl:  found?.media_url  || '',
-      mediaType: found?.media_type || '',
+      mediaUrl:    found?.media_url  || '',
+      mediaType:   found?.media_type || '',
+      aspectRatio: found?.aspect_ratio || '21:9',
     }
   })
 }

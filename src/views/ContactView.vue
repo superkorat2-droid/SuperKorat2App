@@ -112,7 +112,7 @@ onMounted(() => { fetchConfig(); fetchSupervisors() })
       <div class="mb-10">
         <PageHeaderPlain eyebrow="Contact Us" :title="header.title" :subtitle="header.subtitle"
           :mode="header.mode" :icon="header.icon"
-          :media-url="header.mediaUrl" :media-type="header.mediaType"/>
+          :media-url="header.mediaUrl" :media-type="header.mediaType" :aspect-ratio="header.aspectRatio"/>
       </div>
 
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">

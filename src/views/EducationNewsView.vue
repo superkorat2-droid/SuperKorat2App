@@ -40,7 +40,7 @@ onMounted(() => { fetchNews(); fetchConfig() })
       eyebrow="Education News"
       :title="header.title" :subtitle="header.subtitle"
       :mode="header.mode" :icon="header.icon"
-      :media-url="header.mediaUrl" :media-type="header.mediaType"
+      :media-url="header.mediaUrl" :media-type="header.mediaType" :aspect-ratio="header.aspectRatio"
       size="md" align="left" max-width="7xl"/>
 
     <!-- Content -->

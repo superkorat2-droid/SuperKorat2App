@@ -3,16 +3,17 @@ import { computed } from 'vue'
 import { iconPath, isIconKey } from '../composables/useIcons.js'
 
 const props = defineProps({
-  title:     { type: String, required: true },
-  subtitle:  { type: String, default: '' },
-  eyebrow:   { type: String, default: '' },
-  mode:      { type: String, default: 'icon' },   // 'icon' | 'media'
-  icon:      { type: String, default: '' },       // ICON_MAP key or emoji
-  mediaUrl:  { type: String, default: '' },
-  mediaType: { type: String, default: '' },        // 'image' | 'gif' | 'video'
-  size:      { type: String, default: 'lg' },      // 'lg' | 'md'
-  align:     { type: String, default: 'center' },  // 'center' | 'left'
-  maxWidth:  { type: String, default: '3xl' },     // tailwind max-w-* suffix, e.g. '3xl' | '6xl'
+  title:       { type: String, required: true },
+  subtitle:    { type: String, default: '' },
+  eyebrow:     { type: String, default: '' },
+  mode:        { type: String, default: 'icon' },   // 'icon' | 'media'
+  icon:        { type: String, default: '' },       // ICON_MAP key or emoji
+  mediaUrl:    { type: String, default: '' },
+  mediaType:   { type: String, default: '' },        // 'image' | 'gif' | 'video'
+  aspectRatio: { type: String, default: '21:9' },    // '21:9' | '16:9' | '3:1' | '4:1' — ใช้เฉพาะ mode='media'
+  size:        { type: String, default: 'lg' },      // 'lg' | 'md'
+  align:       { type: String, default: 'center' },  // 'center' | 'left'
+  maxWidth:    { type: String, default: '3xl' },     // tailwind max-w-* suffix, e.g. '3xl' | '6xl'
 })
 
 // media ต้องมี URL จริงถึงจะใช้ — ถ้า mode='media' แต่ยังไม่มีไฟล์ ให้ fallback ไปโหมด icon แทน (ไม่โชว์รูปพัง)
@@ -23,26 +24,26 @@ const isVideo   = computed(() => props.mediaType === 'video')
 // ต้องเป็น literal class ครบคำในไฟล์นี้ ไม่งั้น Tailwind JIT จะไม่สร้าง class ให้ (ต่อ string ไม่ได้)
 const MAX_W_CLASS = { '3xl': 'max-w-3xl', '5xl': 'max-w-5xl', '6xl': 'max-w-6xl', '7xl': 'max-w-7xl' }
 const containerMaxW = computed(() => MAX_W_CLASS[props.maxWidth] || 'max-w-3xl')
+
+// สัดส่วนกรอบรูป/วิดีโอ — ค่า CSS aspect-ratio จริง (ไม่ใช่ Tailwind class จึงต่อ string ได้ปกติ)
+const RATIO_CSS = { '21:9': '21 / 9', '16:9': '16 / 9', '3:1': '3 / 1', '4:1': '4 / 1' }
+const mediaAspectRatio = computed(() => RATIO_CSS[props.aspectRatio] || '21 / 9')
 </script>
 
 <template>
-  <div class="relative overflow-hidden" :class="size === 'lg' ? 'min-h-[220px]' : 'min-h-[140px]'">
+  <!-- โหมดรูป/วิดีโอ: ภาพคือหัวเว็บล้วนๆ ไม่มีตัวหนังสือทับ -->
+  <div v-if="showMedia" class="relative overflow-hidden w-full" :style="{ aspectRatio: mediaAspectRatio }">
+    <video v-if="isVideo" :src="mediaUrl" class="absolute inset-0 w-full h-full object-cover"
+      autoplay muted loop playsinline/>
+    <img v-else :src="mediaUrl" class="absolute inset-0 w-full h-full object-cover" alt=""/>
+  </div>
 
-    <!-- Media background (image/gif/video) -->
-    <template v-if="showMedia">
-      <video v-if="isVideo" :src="mediaUrl" class="absolute inset-0 w-full h-full object-cover"
-        autoplay muted loop playsinline/>
-      <img v-else :src="mediaUrl" class="absolute inset-0 w-full h-full object-cover" alt=""/>
-      <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/35 to-black/20"></div>
-    </template>
-
-    <!-- Flat gradient (default icon mode) -->
-    <template v-else>
-      <div class="absolute inset-0" style="background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)"></div>
-      <div class="absolute inset-0 opacity-10">
-        <svg width="100%" height="100%"><defs><pattern id="page-hero-dots" width="24" height="24" patternUnits="userSpaceOnUse"><circle cx="12" cy="12" r="1" fill="white"/></pattern></defs><rect width="100%" height="100%" fill="url(#page-hero-dots)"/></svg>
-      </div>
-    </template>
+  <!-- โหมดไอคอน (ค่าเริ่มต้น): gradient + ไอคอน + ชื่อ -->
+  <div v-else class="relative overflow-hidden" :class="size === 'lg' ? 'min-h-[220px]' : 'min-h-[140px]'">
+    <div class="absolute inset-0" style="background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)"></div>
+    <div class="absolute inset-0 opacity-10">
+      <svg width="100%" height="100%"><defs><pattern id="page-hero-dots" width="24" height="24" patternUnits="userSpaceOnUse"><circle cx="12" cy="12" r="1" fill="white"/></pattern></defs><rect width="100%" height="100%" fill="url(#page-hero-dots)"/></svg>
+    </div>
 
     <div :class="[containerMaxW, 'relative mx-auto px-4 flex flex-col',
         size === 'lg' ? 'py-12' : 'py-8',
@@ -61,8 +62,6 @@ const containerMaxW = computed(() => MAX_W_CLASS[props.maxWidth] || 'max-w-3xl')
 
       <h1 :class="['font-extrabold text-white leading-tight', size === 'lg' ? 'text-2xl md:text-3xl' : 'text-xl md:text-2xl']">{{ title }}</h1>
       <p v-if="subtitle" class="text-white/70 text-sm mt-2 max-w-xl">{{ subtitle }}</p>
-
-      <slot name="extra"/>
     </div>
   </div>
 </template>

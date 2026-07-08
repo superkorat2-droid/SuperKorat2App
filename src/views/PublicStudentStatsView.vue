@@ -137,22 +137,23 @@ function formatDate(d) {
       :title="header.title"
       :subtitle="header.subtitle || config?.area_name"
       :mode="header.mode" :icon="header.icon"
-      :media-url="header.mediaUrl" :media-type="header.mediaType"
-      align="left" max-width="5xl">
-      <template #extra>
-        <p v-if="period" class="text-white/50 text-xs mt-1">{{ period.title }} · เผยแพร่ {{ formatDate(period.archived_at) }}</p>
-        <div v-if="data && !loading" class="flex gap-3 flex-wrap mt-4">
-          <div class="bg-white/15 backdrop-blur rounded-2xl px-4 py-2.5 text-center">
-            <p class="text-2xl font-extrabold text-white">{{ allUploads.length }}</p>
-            <p class="text-white/60 text-xs">โรงเรียน</p>
-          </div>
-          <div class="bg-white/15 backdrop-blur rounded-2xl px-4 py-2.5 text-center">
-            <p class="text-2xl font-extrabold text-white">{{ allUploads.reduce((s,u)=>s+u.total,0).toLocaleString() }}</p>
-            <p class="text-white/60 text-xs">นักเรียนทั้งเขต</p>
-          </div>
+      :media-url="header.mediaUrl" :media-type="header.mediaType" :aspect-ratio="header.aspectRatio"
+      align="left" max-width="5xl"/>
+
+    <!-- ── Period info + stat badges (แยกจาก hero เสมอ ไม่ว่าจะใช้ไอคอนหรือรูป/วิดีโอ) ── -->
+    <div v-if="period || (data && !loading)" class="max-w-5xl mx-auto px-4 pt-6">
+      <p v-if="period" class="text-slate-400 text-xs mb-3">{{ period.title }} · เผยแพร่ {{ formatDate(period.archived_at) }}</p>
+      <div v-if="data && !loading" class="flex gap-3 flex-wrap">
+        <div class="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl px-4 py-2.5 text-center shadow-sm">
+          <p class="text-2xl font-extrabold text-primary">{{ allUploads.length }}</p>
+          <p class="text-slate-500 dark:text-slate-400 text-xs">โรงเรียน</p>
         </div>
-      </template>
-    </PageHero>
+        <div class="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl px-4 py-2.5 text-center shadow-sm">
+          <p class="text-2xl font-extrabold text-primary">{{ allUploads.reduce((s,u)=>s+u.total,0).toLocaleString() }}</p>
+          <p class="text-slate-500 dark:text-slate-400 text-xs">นักเรียนทั้งเขต</p>
+        </div>
+      </div>
+    </div>
 
     <div v-if="loading" class="flex justify-center py-24"><div class="w-10 h-10 border-4 border-primary/30 border-t-primary rounded-full animate-spin"/></div>
     <div v-else-if="error || !data" class="text-center py-24 text-slate-400">

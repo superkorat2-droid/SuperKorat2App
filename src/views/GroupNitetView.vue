@@ -14,18 +14,19 @@ const header = usePageHeader('nithet', { icon: 'eye', title: 'กลุ่มน
     <PageHero :title="header.title"
       :subtitle="header.subtitle || config?.area_name || 'สำนักงานเขตพื้นที่การศึกษา'"
       :mode="header.mode" :icon="header.icon"
-      :media-url="header.mediaUrl" :media-type="header.mediaType">
-      <template #extra>
-        <p class="text-white/50 text-xs mt-3 mb-2">หน้านี้อยู่ระหว่างพัฒนา</p>
-        <router-link to="/"
-          class="inline-flex items-center gap-2 px-6 py-2.5 bg-white/15 hover:bg-white/25 text-white font-bold rounded-2xl text-sm transition-all mt-2">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/>
-          </svg>
-          กลับหน้าแรก
-        </router-link>
-      </template>
-    </PageHero>
+      :media-url="header.mediaUrl" :media-type="header.mediaType" :aspect-ratio="header.aspectRatio"/>
+
+    <!-- แยกจาก hero เสมอ ไม่ว่าจะใช้ไอคอนหรือรูป/วิดีโอ -->
+    <div class="text-center pt-8 pb-4 px-4">
+      <p class="text-slate-400 text-xs mb-3">หน้านี้อยู่ระหว่างพัฒนา</p>
+      <router-link to="/"
+        class="inline-flex items-center gap-2 px-6 py-2.5 bg-primary hover:bg-primary-dark text-white font-bold rounded-2xl text-sm transition-all shadow-md">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/>
+        </svg>
+        กลับหน้าแรก
+      </router-link>
+    </div>
   </div>
 </template>
 

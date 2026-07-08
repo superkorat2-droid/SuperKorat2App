@@ -128,7 +128,7 @@ function visibleContact(p) {
     <!-- Page header -->
     <PageHero :title="header.title" :subtitle="header.subtitle"
       :mode="header.mode" :icon="header.icon"
-      :media-url="header.mediaUrl" :media-type="header.mediaType"
+      :media-url="header.mediaUrl" :media-type="header.mediaType" :aspect-ratio="header.aspectRatio"
       size="md" align="left" max-width="6xl"/>
 
     <div class="max-w-6xl mx-auto px-4 py-8">

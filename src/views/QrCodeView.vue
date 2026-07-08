@@ -79,7 +79,7 @@ onMounted(() => {
       <div class="mb-10">
         <PageHeaderPlain align="center" eyebrow="QR Code Generator" :title="header.title" :subtitle="header.subtitle"
           :mode="header.mode" :icon="header.icon"
-          :media-url="header.mediaUrl" :media-type="header.mediaType"/>
+          :media-url="header.mediaUrl" :media-type="header.mediaType" :aspect-ratio="header.aspectRatio"/>
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
