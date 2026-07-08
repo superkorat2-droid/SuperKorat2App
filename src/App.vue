@@ -122,7 +122,7 @@ const handleLogout = async () => {
 
     <!-- ── Navbar ─────────────────────────────────────────────────── -->
     <nav class="fixed top-[3px] inset-x-0 z-40 bg-white dark:bg-slate-900 border-b border-slate-200/80 dark:border-slate-700/80 shadow-sm shadow-slate-900/[0.03] transition-colors duration-300">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6">
+      <div class="w-full px-4 sm:px-6 lg:px-8">
         <div class="flex items-center justify-between h-[58px] sm:h-[68px] lg:h-20">
 
           <!-- Logo -->
@@ -145,7 +145,7 @@ const handleLogout = async () => {
           </RouterLink>
 
           <!-- Desktop nav -->
-          <div class="hidden lg:flex items-center gap-1 flex-1">
+          <div class="hidden lg:flex items-center gap-1 lg:ml-auto">
             <template v-for="item in navItems" :key="item.key">
 
               <!-- Simple link -->
