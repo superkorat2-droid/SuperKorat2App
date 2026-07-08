@@ -492,7 +492,7 @@ const stats = [
         <!-- ══ NEWS ══ -->
         <section v-if="sec.key === 'news'"
           :style="getBgStyle(sec)"
-          class="py-12 md:py-16">
+          class="py-8 md:py-12">
           <div class="max-w-7xl mx-auto px-4">
             <div class="flex items-end justify-between mb-8">
               <div>
@@ -580,7 +580,7 @@ const stats = [
         </section>
 
         <!-- ══ SUPERVISION LIST ══ -->
-        <section v-else-if="sec.key === 'supervision_list'" :style="getBgStyle(sec)" class="py-12 md:py-16">
+        <section v-else-if="sec.key === 'supervision_list'" :style="getBgStyle(sec)" class="py-8 md:py-12">
           <div class="max-w-4xl mx-auto px-4">
             <h2 class="text-2xl md:text-3xl font-extrabold text-slate-800 dark:text-slate-100 mb-2">{{ sec.title }}</h2>
             <p class="text-slate-500 dark:text-slate-400 text-sm mb-8">แบบนิเทศและแบบสอบถามที่เปิดรับอยู่</p>
@@ -747,7 +747,7 @@ const stats = [
         </section>
 
         <!-- ══ EDUCATION NEWS (Google RSS) ══ -->
-        <section v-else-if="sec.key === 'education_news'" :style="getBgStyle(sec)" class="py-10 md:py-12">
+        <section v-else-if="sec.key === 'education_news'" :style="getBgStyle(sec)" class="py-8 md:py-10">
           <div class="max-w-7xl mx-auto px-4">
             <!-- Header -->
             <div class="flex items-end justify-between mb-6">
@@ -814,7 +814,7 @@ const stats = [
 
         <!-- ══ SERVICES (e-services) ══ -->
         <section v-else-if="sec.key === 'services'" :style="getBgStyle(sec)">
-          <div class="py-12 md:py-16">
+          <div class="py-8 md:py-12">
             <div class="max-w-7xl mx-auto px-4">
               <div class="text-center mb-12">
                 <span v-if="sec.subtitle || sec.key === 'services'" class="text-secondary font-bold uppercase text-xs tracking-[0.18em] mb-2 block">{{ sec.subtitle || 'E-Service Center' }}</span>
