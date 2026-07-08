@@ -5,13 +5,18 @@ import { supabase } from '../supabase'
 import { useAreaConfig, DEFAULT_HOME_SECTIONS } from '../composables/useAreaConfig'
 import { ICON_MAP } from '../composables/useIcons.js'
 import { useEducationNews } from '../composables/useEducationNews'
+import { useTheme } from '../composables/useTheme'
 
 const router = useRouter()
 
 const { config, fetchConfig } = useAreaConfig()
+const { isDark } = useTheme()
 
 // ── Section background style ─────────────────────────────────────
+// สีพื้นหลังที่ admin ตั้งไว้เป็นโทนสว่างเสมอ (ออกแบบไว้สำหรับโหมดสว่างเท่านั้น)
+// โหมดมืดเลยไม่ใช้สีนี้ ปล่อยให้ใช้พื้นหลังเข้มมาตรฐานแทน ไม่งั้นตัวหนังสือสีขาว (dark:text-*) จะกลืนกับพื้นสว่างจนมองไม่เห็น
 function getBgStyle(sec) {
+  if (isDark.value) return {}
   const c1 = sec.bg  || '#ffffff'
   const c2 = sec.bg2 || '#f1f5f9'
   switch (sec.bg_type) {
