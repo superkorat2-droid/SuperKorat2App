@@ -242,9 +242,10 @@ function visibleContact(p) {
     </div>
 
     <!-- ── Profile Modal ──────────────────────────────────────────── -->
+    <Teleport to="body">
     <Transition enter-active-class="transition duration-200 ease-out" enter-from-class="opacity-0 scale-95"
       leave-active-class="transition duration-150 ease-in" leave-to-class="opacity-0 scale-95">
-      <div v-if="selected" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+      <div v-if="selected" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
         @click.self="selected = null">
         <div class="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden">
           <!-- Modal: gradient + วงกลม -->
@@ -303,6 +304,7 @@ function visibleContact(p) {
         </div>
       </div>
     </Transition>
+    </Teleport>
   </div>
 </template>
 
