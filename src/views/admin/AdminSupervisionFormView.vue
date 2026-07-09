@@ -82,6 +82,7 @@ const meta = ref({
   responsible_ids:   [],
   responsible_group: '',
   show_responsible:  false,
+  page_mode:         'continuous',
 })
 
 // ── current user permission ─────────────────────────────────────
@@ -310,6 +311,7 @@ async function load() {
     responsible_ids:   form.responsible_ids    || [],
     responsible_group: form.responsible_group  || '',
     show_responsible:  form.show_responsible   || false,
+    page_mode:         form.page_mode          || 'continuous',
   }
 
   const { data: qs } = await supabase
@@ -354,6 +356,7 @@ async function save() {
     responsible_ids:   meta.value.responsible_ids,
     responsible_group: meta.value.responsible_group,
     show_responsible:  meta.value.show_responsible,
+    page_mode:         meta.value.page_mode,
     updated_at:        new Date().toISOString(),
   }
 
@@ -830,6 +833,24 @@ onMounted(async () => {
               เพิ่มคำถาม
             </button>
           </div>
+        </div>
+
+        <!-- Page mode -->
+        <div class="flex items-center gap-2">
+          <span class="text-xs font-bold text-slate-500">รูปแบบการแสดงผล:</span>
+          <button @click="meta.page_mode = 'continuous'" type="button"
+            :class="['px-3 py-1.5 text-xs font-bold rounded-xl border-2 transition-all',
+              meta.page_mode === 'continuous' ? 'border-primary bg-primary/5 text-primary' : 'border-slate-200 text-slate-500']">
+            ต่อเนื่องหน้าเดียว
+          </button>
+          <button @click="meta.page_mode = 'paginated'" type="button"
+            :class="['px-3 py-1.5 text-xs font-bold rounded-xl border-2 transition-all',
+              meta.page_mode === 'paginated' ? 'border-primary bg-primary/5 text-primary' : 'border-slate-200 text-slate-500']">
+            แยกหน้าตามหัวข้อส่วน
+          </button>
+          <span v-if="meta.page_mode === 'paginated'" class="text-xs text-slate-400">
+            (แต่ละหัวข้อส่วนขึ้นหน้าใหม่ พร้อมปุ่มย้อนกลับ/ถัดไป)
+          </span>
         </div>
 
         <div v-if="questions.length === 0"

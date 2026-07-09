@@ -163,6 +163,7 @@ const { restoreDraft, clearDraft, watchAndSave } = useFormDraft(
   `supervision_school_draft_${route.params.formId}_${props.profile?.id || ''}`,
   () => ({
     started: started.value,
+    currentPageIndex: currentPageIndex.value,
     answers: answers.value, otherText: otherText.value,
     evidenceFileUrls: evidenceFileUrls.value, evidenceLinks: evidenceLinks.value,
     respondentName: respondentName.value, respondentPosition: respondentPosition.value,
@@ -172,6 +173,7 @@ const { restoreDraft, clearDraft, watchAndSave } = useFormDraft(
   }),
   (saved) => {
     started.value = saved.started ?? false
+    currentPageIndex.value = saved.currentPageIndex ?? 0
     if (saved.answers) Object.assign(answers.value, saved.answers)
     if (saved.otherText) Object.assign(otherText.value, saved.otherText)
     if (saved.evidenceFileUrls) {
@@ -295,7 +297,57 @@ function rePickImage(qId) {
   document.getElementById(`sfile_${qId}`)?.click()
 }
 
+// ─── Pagination (แยกหน้าตามหัวข้อส่วน) ───────────────────────────────────────
+const currentPageIndex = ref(0)
+const isPaginated = computed(() => form.value?.page_mode === 'paginated')
+
+const pages = computed(() => {
+  const result = []
+  let current = { section: null, questions: [] }
+  for (const q of questions.value) {
+    if (q.type === 'section') {
+      if (current.questions.length || current.section) result.push(current)
+      current = { section: q, questions: [] }
+    } else {
+      current.questions.push(q)
+    }
+  }
+  if (current.questions.length || current.section) result.push(current)
+  return result.length ? result : [{ section: null, questions: [] }]
+})
+
+const isLastPage = computed(() => currentPageIndex.value >= pages.value.length - 1)
+
+const visibleQuestions = computed(() => {
+  if (!isPaginated.value) return questions.value
+  const page = pages.value[currentPageIndex.value]
+  if (!page) return []
+  return page.section ? [page.section, ...page.questions] : page.questions
+})
+
 // ─── Validation ───────────────────────────────────────────────────────────────
+function validateQuestions(qList) {
+  for (const q of qList.filter(x => x.type !== 'section')) {
+    if (q.required) {
+      const a = answers.value[q.id]
+      if (q.type === 'multi_choice' && (!a || a.length === 0)) return `กรุณาตอบคำถาม "${q.question_text}"`
+      if (q.type === 'rating' && (a === null || a === undefined)) return `กรุณาตอบคำถาม "${q.question_text}"`
+      if (!['multi_choice','rating'].includes(q.type) && (a === '' || a === null)) return `กรุณาตอบคำถาม "${q.question_text}"`
+    }
+    if (['choice','multi_choice'].includes(q.type)) {
+      const a = answers.value[q.id]
+      const selectedValues = q.type === 'multi_choice' ? (a || []) : (a ? [a] : [])
+      const hasOtherSelected = selectedValues.some(v => q.options?.find(o => o.value === v)?.is_other)
+      if (hasOtherSelected && !(otherText.value[q.id] || '').trim()) return `กรุณาพิมพ์ข้อความ "อื่นๆ" ในคำถาม "${q.question_text}"`
+    }
+    if (q.evidence_required && q.evidence_type !== 'none') {
+      if (['upload','both'].includes(q.evidence_type) && !evidenceFileUrls.value[q.id]) return `กรุณาอัปโหลดหลักฐานคำถาม "${q.question_text}"`
+      if (['url','both'].includes(q.evidence_type) && !evidenceLinks.value[q.id]?.trim()) return `กรุณาใส่ลิงค์หลักฐานคำถาม "${q.question_text}"`
+    }
+  }
+  return null
+}
+
 function validate() {
   if (isIndividual.value && !isAnonymous.value) {
     if (fieldRequired('name')      && !respondentName.value.trim())     return 'กรุณาใส่ชื่อ-นามสกุล'
@@ -306,26 +358,22 @@ function validate() {
     if (fieldRequired('phone')     && !respondentPhone.value.trim())    return 'กรุณาใส่เบอร์โทรศัพท์'
     if (fieldRequired('email')     && !respondentEmail.value.trim())    return 'กรุณาใส่อีเมล'
   }
-  for (const q of nonSectionQs.value) {
-    const idx = nonSectionQs.value.indexOf(q) + 1
-    if (q.required) {
-      const a = answers.value[q.id]
-      if (q.type === 'multi_choice' && (!a || a.length === 0)) return `กรุณาตอบคำถามข้อที่ ${idx}`
-      if (q.type === 'rating' && (a === null || a === undefined)) return `กรุณาตอบคำถามข้อที่ ${idx}`
-      if (!['multi_choice','rating'].includes(q.type) && (a === '' || a === null)) return `กรุณาตอบคำถามข้อที่ ${idx}`
-    }
-    if (['choice','multi_choice'].includes(q.type)) {
-      const a = answers.value[q.id]
-      const selectedValues = q.type === 'multi_choice' ? (a || []) : (a ? [a] : [])
-      const hasOtherSelected = selectedValues.some(v => q.options?.find(o => o.value === v)?.is_other)
-      if (hasOtherSelected && !(otherText.value[q.id] || '').trim()) return `กรุณาพิมพ์ข้อความ "อื่นๆ" ในข้อที่ ${idx}`
-    }
-    if (q.evidence_required && q.evidence_type !== 'none') {
-      if (['upload','both'].includes(q.evidence_type) && !evidenceFileUrls.value[q.id]) return `กรุณาอัปโหลดหลักฐานข้อที่ ${idx}`
-      if (['url','both'].includes(q.evidence_type) && !evidenceLinks.value[q.id]?.trim()) return `กรุณาใส่ลิงค์หลักฐานข้อที่ ${idx}`
-    }
+  return validateQuestions(nonSectionQs.value)
+}
+
+function nextPage() {
+  const errMsg = validateQuestions(visibleQuestions.value)
+  if (errMsg) {
+    Swal.fire({ icon: 'warning', title: 'กรุณาตรวจสอบ', text: errMsg, confirmButtonColor: 'var(--color-primary, #2563eb)' })
+    return
   }
-  return null
+  currentPageIndex.value++
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
+function prevPage() {
+  currentPageIndex.value--
+  window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
 // ─── Submit ───────────────────────────────────────────────────────────────────
@@ -587,7 +635,7 @@ onMounted(() => { fetchConfig(); loadForm() })
 
       <!-- Questions -->
       <div class="space-y-4">
-        <template v-for="(q, i) in questions" :key="q.id">
+        <template v-for="q in visibleQuestions" :key="q.id">
 
           <!-- Section header -->
           <div v-if="q.type === 'section'"
@@ -604,17 +652,10 @@ onMounted(() => { fetchConfig(); loadForm() })
           <!-- Question card -->
           <div v-else class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
             <div class="mb-3">
-              <div class="flex items-start gap-2">
-                <span class="w-6 h-6 rounded-full bg-primary/10 text-primary text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">
-                  {{ questions.slice(0, i+1).filter(x => x.type !== 'section').length }}
-                </span>
-                <div>
-                  <p class="font-semibold text-slate-800 text-sm leading-snug">
-                    {{ q.question_text }}<span v-if="q.required" class="text-red-500 ml-0.5">*</span>
-                  </p>
-                  <p v-if="q.description" class="text-xs text-slate-400 mt-0.5">{{ q.description }}</p>
-                </div>
-              </div>
+              <p class="font-semibold text-slate-800 text-sm leading-snug">
+                {{ q.question_text }}<span v-if="q.required" class="text-red-500 ml-0.5">*</span>
+              </p>
+              <p v-if="q.description" class="text-xs text-slate-400 mt-0.5">{{ q.description }}</p>
               <img v-if="q.image_url" :src="q.image_url" class="w-full h-auto rounded-xl mt-3 block"/>
             </div>
 
@@ -738,11 +779,28 @@ onMounted(() => { fetchConfig(); loadForm() })
         </template>
       </div>
 
-      <!-- Submit -->
-      <button @click="submit" :disabled="submitting"
+      <!-- Navigation / Submit -->
+      <div v-if="isPaginated" class="flex gap-3">
+        <button v-if="currentPageIndex > 0" @click="prevPage" type="button"
+          class="flex-1 py-3.5 bg-white border-2 border-slate-200 text-slate-600 font-bold rounded-2xl hover:border-slate-300 transition-all">
+          ย้อนกลับ
+        </button>
+        <button v-if="!isLastPage" @click="nextPage" type="button"
+          class="flex-1 py-3.5 bg-primary text-white font-extrabold rounded-2xl shadow-lg hover:-translate-y-0.5 transition-all">
+          ถัดไป
+        </button>
+        <button v-else @click="submit" :disabled="submitting"
+          class="flex-1 py-3.5 bg-primary text-white font-extrabold rounded-2xl shadow-lg hover:-translate-y-0.5 transition-all disabled:opacity-50">
+          {{ submitting ? 'กำลังส่ง...' : 'ส่งแบบนิเทศ' }}
+        </button>
+      </div>
+      <button v-else @click="submit" :disabled="submitting"
         class="w-full py-4 bg-primary text-white font-extrabold text-lg rounded-2xl shadow-lg hover:-translate-y-0.5 transition-all disabled:opacity-50">
         {{ submitting ? 'กำลังส่ง...' : 'ส่งแบบนิเทศ' }}
       </button>
+      <p v-if="isPaginated" class="text-center text-xs text-slate-400">
+        หน้า {{ currentPageIndex + 1 }} / {{ pages.length }}
+      </p>
 
     </template>
   </div>
