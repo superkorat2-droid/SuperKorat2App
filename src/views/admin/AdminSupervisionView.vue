@@ -2,6 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase } from '../../supabase'
+import QRCode from 'qrcode'
 import Swal from 'sweetalert2'
 
 const router = useRouter()
@@ -81,6 +82,22 @@ function copyPublicLink(form) {
   const url = `${window.location.origin}${window.location.pathname}#/supervision/${form.public_token}`
   navigator.clipboard.writeText(url)
   Swal.fire({ icon: 'success', title: 'คัดลอกแล้ว', text: url, showConfirmButton: false, timer: 2000 })
+}
+
+async function downloadQR(form) {
+  if (!form.allow_public) {
+    Swal.fire({ icon: 'warning', title: 'ยังไม่ได้เปิดลิงค์สาธารณะ', text: 'แก้ไขฟอร์มและเปิด "อนุญาตลิงค์สาธารณะ" ก่อน' })
+    return
+  }
+  const url = `${window.location.origin}${window.location.pathname}#/supervision/${form.public_token}`
+  const dataUrl = await QRCode.toDataURL(url, {
+    width: 400, margin: 2, errorCorrectionLevel: 'M',
+    color: { dark: '#000000', light: '#ffffff' },
+  })
+  const a = document.createElement('a')
+  a.href = dataUrl
+  a.download = `qrcode-supervision-${form.public_token}.png`
+  a.click()
 }
 
 function formatDate(d) {
@@ -197,6 +214,13 @@ onMounted(async () => {
                 form.allow_public ? 'bg-blue-100 text-blue-700 hover:bg-blue-200' : 'bg-slate-100 text-slate-400 hover:bg-slate-200']">
               <SvgIcon name="link" class="w-3.5 h-3.5"/>
               ลิงค์
+            </button>
+            <!-- Download QR -->
+            <button @click="downloadQR(form)"
+              :class="['flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl transition-colors',
+                form.allow_public ? 'bg-blue-100 text-blue-700 hover:bg-blue-200' : 'bg-slate-100 text-slate-400 hover:bg-slate-200']">
+              <SvgIcon name="qrcode" class="w-3.5 h-3.5"/>
+              QR
             </button>
             <!-- Edit -->
             <button @click="router.push(`/dashboard/supervision/${form.id}/edit`)"

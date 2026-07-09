@@ -4,6 +4,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { supabase } from '../../supabase'
 import { ICON_MAP } from '../../composables/useIcons.js'
 import { useExternalUpload, externalUploadEnabled, deleteUploadedFile } from '../../composables/useExternalUpload'
+import QRCode from 'qrcode'
 import Swal from 'sweetalert2'
 
 const router = useRouter()
@@ -17,6 +18,17 @@ function publicUrl(token) {
 function copyPublicUrl(token) {
   navigator.clipboard.writeText(publicUrl(token))
   Swal.fire({ icon: 'success', title: 'คัดลอกแล้ว', showConfirmButton: false, timer: 1200 })
+}
+
+async function downloadPublicUrlQR(token) {
+  const dataUrl = await QRCode.toDataURL(publicUrl(token), {
+    width: 400, margin: 2, errorCorrectionLevel: 'M',
+    color: { dark: '#000000', light: '#ffffff' },
+  })
+  const a = document.createElement('a')
+  a.href = dataUrl
+  a.download = `qrcode-supervision-${token}.png`
+  a.click()
 }
 
 // ─── Respondent field definitions (must be before meta) ───────────────────────
@@ -714,6 +726,11 @@ onMounted(async () => {
           <button @click="copyPublicUrl(publicToken)"
             class="text-xs font-bold text-blue-600 hover:text-blue-800 flex-shrink-0">
             คัดลอก
+          </button>
+          <button @click="downloadPublicUrlQR(publicToken)"
+            class="flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-800 flex-shrink-0">
+            <SvgIcon name="qrcode" class="w-3.5 h-3.5"/>
+            ดาวน์โหลด QR
           </button>
         </div>
       </div>
