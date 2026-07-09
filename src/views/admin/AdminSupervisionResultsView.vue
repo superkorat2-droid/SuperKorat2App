@@ -32,7 +32,7 @@ async function load() {
       .select('*, supervision_answers(*)')
       .eq('form_id', formId.value)
       .eq('is_complete', true),
-    supabase.from('schools').select('id, name, district').order('district').order('name'),
+    supabase.from('schools').select('id, name, district, school_group').order('district').order('name'),
   ])
 
   form.value      = formData
@@ -292,7 +292,7 @@ function exportExcel() {
     .filter(q => q.type !== 'section')
     .sort((a, b) => a.sort_order - b.sort_order)
 
-  const headers = ['โรงเรียน', 'วันที่ส่ง']
+  const headers = ['โรงเรียน', 'อำเภอ', 'ศูนย์เครือข่าย', 'วันที่ส่ง']
   const colPlan = []
   for (const q of nonSectionQs) {
     const label = qSectionMap[q.id] ? `[${qSectionMap[q.id]}] ${q.question_text}` : q.question_text
@@ -306,7 +306,7 @@ function exportExcel() {
   const rows = responses.value.map(r => {
     const school = allSchools.value.find(s => s.id === r.school_id)
     const date = new Date(r.submitted_at).toLocaleDateString('th-TH')
-    const cells = [school?.name || r.school_name || '—', date]
+    const cells = [school?.name || r.school_name || '—', school?.district || '', school?.school_group || '', date]
     for (const { q, hasScoreCol } of colPlan) {
       const a = (r.supervision_answers || []).find(x => x.question_id === q.id)?.answer
       if (a === null || a === undefined) {
