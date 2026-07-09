@@ -57,6 +57,7 @@ const meta = ref({
 
 // ── current user permission ─────────────────────────────────────
 const currentProfile = ref(null)
+const currentUserId  = ref(null)
 const isAdminUser = computed(() =>
   ['super_admin','admin'].includes(currentProfile.value?.role)
 )
@@ -243,7 +244,7 @@ async function save() {
   if (isNew.value) {
     const { data, error } = await supabase
       .from('supervision_forms')
-      .insert(payload)
+      .insert({ ...payload, created_by: currentUserId.value })
       .select()
       .single()
     if (error) {
@@ -302,6 +303,7 @@ async function save() {
 
 onMounted(async () => {
   const { data: { user } } = await supabase.auth.getUser()
+  currentUserId.value = user?.id
   if (user?.id) {
     const { data: p } = await supabase
       .from('profiles').select('role, can_publish_supervision').eq('id', user.id).single()
