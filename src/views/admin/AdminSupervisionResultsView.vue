@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { supabase } from '../../supabase'
+import { utils as xlsxUtils, writeFile as xlsxWriteFile } from 'xlsx'
 
 const router = useRouter()
 const route  = useRoute()
@@ -261,8 +262,26 @@ function barOpts(categories, horizontal = false) {
   }
 }
 
-// ─── Export CSV ───────────────────────────────────────────────────────────────
-function exportCSV() {
+// ─── Export Excel (.xlsx) ───────────────────────────────────────────────────
+// คอลัมน์คำถามที่มีคะแนน (rating/yes_no/choice ที่ตั้งคะแนนไว้) จะมีคอลัมน์ตัวเลข
+// แยกให้คำนวณต่อได้ทันที (SUM/AVERAGE) โดยไม่ต้องแปลงข้อความเป็นตัวเลขเอง
+function labelForAnswer(q, val) {
+  if (val === null || val === undefined) return ''
+  const opt = q.options?.find(o => o.value === val)
+  return opt ? opt.label : String(val)
+}
+
+function scoreForAnswer(q, val) {
+  if (q.type === 'yes_no') return val === 'yes' ? 100 : (val === 'no' ? 0 : '')
+  if (q.type === 'choice') {
+    const opt = q.options?.find(o => o.value === val)
+    const s = opt?.score
+    return (s !== '' && s !== null && s !== undefined) ? Number(s) : ''
+  }
+  return ''
+}
+
+function exportExcel() {
   // map question_id → section title
   const qSectionMap = {}
   for (const sec of sectionsData.value) {
@@ -273,34 +292,48 @@ function exportCSV() {
     .filter(q => q.type !== 'section')
     .sort((a, b) => a.sort_order - b.sort_order)
 
-  const headers = [
-    'โรงเรียน', 'วันที่ส่ง',
-    ...nonSectionQs.map(q => qSectionMap[q.id] ? `[${qSectionMap[q.id]}] ${q.question_text}` : q.question_text)
-  ]
+  const headers = ['โรงเรียน', 'วันที่ส่ง']
+  const colPlan = []
+  for (const q of nonSectionQs) {
+    const label = qSectionMap[q.id] ? `[${qSectionMap[q.id]}] ${q.question_text}` : q.question_text
+    const isChoiceScored = q.type === 'choice' && q.options?.some(o => o.score !== '' && o.score !== null && o.score !== undefined)
+    const hasScoreCol = q.type === 'yes_no' || isChoiceScored
+    headers.push(label)
+    if (hasScoreCol) headers.push(`${label} (คะแนน)`)
+    colPlan.push({ q, hasScoreCol })
+  }
 
   const rows = responses.value.map(r => {
     const school = allSchools.value.find(s => s.id === r.school_id)
     const date = new Date(r.submitted_at).toLocaleDateString('th-TH')
-    const ans = nonSectionQs.map(q => {
+    const cells = [school?.name || r.school_name || '—', date]
+    for (const { q, hasScoreCol } of colPlan) {
       const a = (r.supervision_answers || []).find(x => x.question_id === q.id)?.answer
-      if (a === null || a === undefined) return ''
-      if (Array.isArray(a)) return a.join(', ')
-      return String(a)
-    })
-    return [school?.name || r.school_name || '—', date, ...ans]
+      if (a === null || a === undefined) {
+        cells.push('')
+        if (hasScoreCol) cells.push('')
+        continue
+      }
+      if (q.type === 'rating' || q.type === 'number') {
+        cells.push(Number(a))
+      } else if (Array.isArray(a)) {
+        cells.push(a.map(v => labelForAnswer(q, v)).join(', '))
+      } else if (q.type === 'yes_no') {
+        cells.push(a === 'yes' ? 'ใช่' : a === 'no' ? 'ไม่ใช่' : String(a))
+      } else if (q.type === 'choice') {
+        cells.push(labelForAnswer(q, a))
+      } else {
+        cells.push(String(a))
+      }
+      if (hasScoreCol) cells.push(scoreForAnswer(q, a))
+    }
+    return cells
   })
 
-  const csv = [headers, ...rows]
-    .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
-    .join('\n')
-
-  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = `supervision_${form.value?.title || 'results'}_${new Date().toISOString().slice(0,10)}.csv`
-  a.click()
-  URL.revokeObjectURL(url)
+  const ws = xlsxUtils.aoa_to_sheet([headers, ...rows])
+  const wb = xlsxUtils.book_new()
+  xlsxUtils.book_append_sheet(wb, ws, 'ผลลัพธ์')
+  xlsxWriteFile(wb, `supervision_${form.value?.title || 'results'}_${new Date().toISOString().slice(0,10)}.xlsx`)
 }
 
 function formatDate(d) {
@@ -333,10 +366,10 @@ function formatDate(d) {
           <SvgIcon name="wrench" class="w-4 h-4"/>
           แก้ไขแบบ
         </button>
-        <button @click="exportCSV" :disabled="responseCount === 0"
+        <button @click="exportExcel" :disabled="responseCount === 0"
           class="flex items-center gap-1.5 px-4 py-2.5 text-sm font-bold bg-emerald-600 text-white rounded-2xl hover:-translate-y-0.5 shadow-md transition-all disabled:opacity-50">
           <SvgIcon name="download" class="w-4 h-4"/>
-          Export CSV
+          Export Excel
         </button>
       </div>
     </div>
