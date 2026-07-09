@@ -91,7 +91,7 @@ onMounted(async () => {
           </div>
           <h3 class="font-bold text-slate-800 dark:text-slate-100">{{ event.title }}</h3>
           <div class="flex flex-wrap gap-3 mt-1 text-xs text-slate-400">
-            <span v-if="event.school">โรงเรียน: {{ event.school.name }}</span>
+            <span v-if="event.schools?.length">โรงเรียน: {{ event.schools.map(s => s.name).join(', ') }}</span>
             <span v-if="event.location">สถานที่: {{ event.location }}</span>
             <span v-if="event.responsible_group || event.responsible_names?.length">ผู้รับผิดชอบ: {{ responsibleText(event) }}</span>
           </div>
@@ -122,7 +122,7 @@ onMounted(async () => {
               <p v-if="selectedEvent.description" class="text-sm text-slate-600 dark:text-slate-300">{{ selectedEvent.description }}</p>
               <div class="border-t border-slate-100 dark:border-slate-800 pt-3 space-y-2 text-sm text-slate-600 dark:text-slate-300">
                 <p>📅 {{ formatEventDateRange(selectedEvent) }}</p>
-                <p v-if="selectedEvent.school">🏫 {{ selectedEvent.school.name }} <span class="text-slate-400">(อ.{{ selectedEvent.school.district }})</span></p>
+                <p v-for="s in (selectedEvent.schools || [])" :key="s.id">🏫 {{ s.name }} <span class="text-slate-400">(อ.{{ s.district }})</span></p>
                 <p v-if="selectedEvent.location">📍 {{ selectedEvent.location }}</p>
                 <p v-if="selectedEvent.responsible_group || selectedEvent.responsible_names?.length">👤 {{ responsibleText(selectedEvent) }}</p>
               </div>

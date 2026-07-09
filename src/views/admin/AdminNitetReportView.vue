@@ -39,25 +39,31 @@ async function load() {
   loading.value = true
   let query = supabase
     .from('nithet_events')
-    .select('*, school:schools(id,name,district)')
+    .select('*')
     .lte('start_date', dateTo.value)
     .gte('end_date', dateFrom.value)
     .order('start_date', { ascending: true })
   if (typeFilter.value !== 'all') query = query.eq('type', typeFilter.value)
-  if (schoolId.value) query = query.eq('school_id', schoolId.value)
   const { data, error } = await query
-  if (!error) events.value = data || []
+  let list = data || []
+  if (schoolId.value) list = list.filter(e => e.school_ids?.includes(schoolId.value))
+  if (!error) events.value = list
   loading.value = false
 }
 
+// แบบเดียวกันสามารถนิเทศได้หลายโรงเรียน — จัดกลุ่มตามโรงเรียน แต่ละกิจกรรมจะปรากฏ
+// ในทุกโรงเรียนที่ระบุไว้ (ไม่ใช่แค่โรงเรียนแรก) เพื่อให้ดูประวัติแยกรายโรงได้ครบ
 const groupedBySchool = computed(() => {
   const groups = new Map()
   for (const e of events.value) {
-    const key = e.school_id || '__none__'
-    if (!groups.has(key)) {
-      groups.set(key, { key, name: e.school?.name || 'กิจกรรมอื่นๆ (ไม่ระบุโรงเรียน)', district: e.school?.district || '', events: [] })
+    const ids = e.school_ids?.length ? e.school_ids : ['__none__']
+    for (const id of ids) {
+      if (!groups.has(id)) {
+        const school = schools.value.find(s => s.id === id)
+        groups.set(id, { key: id, name: school?.name || 'กิจกรรมอื่นๆ (ไม่ระบุโรงเรียน)', district: school?.district || '', events: [] })
+      }
+      groups.get(id).events.push(e)
     }
-    groups.get(key).events.push(e)
   }
   const list = [...groups.values()]
   list.sort((a, b) => {

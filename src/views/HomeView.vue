@@ -803,7 +803,7 @@ const stats = [
                   <span class="text-xs text-slate-400">{{ formatEventDateRange(event) }}</span>
                 </div>
                 <h3 class="font-bold text-slate-800 dark:text-slate-100">{{ event.title }}</h3>
-                <p v-if="event.school" class="text-xs text-slate-400 mt-1">โรงเรียน: {{ event.school.name }}</p>
+                <p v-if="event.schools?.length" class="text-xs text-slate-400 mt-1">โรงเรียน: {{ event.schools.map(s => s.name).join(', ') }}</p>
               </RouterLink>
             </div>
 

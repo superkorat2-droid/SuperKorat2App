@@ -41,6 +41,24 @@ const filtered = computed(() =>
 
 const districts = computed(() => [...new Set(schools.value.map(s => s.district))].filter(Boolean).sort())
 
+// ── ตัวกรองโรงเรียนในฟอร์ม (สำหรับ modal เพิ่ม/แก้ไข) ─────────
+const schoolFilterDistrict = ref('all')
+const schoolFilterGroup    = ref('all')
+const schoolFilterSearch   = ref('')
+const schoolGroups = computed(() => [...new Set(schools.value.map(s => s.school_group))].filter(Boolean).sort())
+const filteredSchools = computed(() => {
+  const q = schoolFilterSearch.value.trim().toLowerCase()
+  return schools.value.filter(s =>
+    (schoolFilterDistrict.value === 'all' || s.district === schoolFilterDistrict.value) &&
+    (schoolFilterGroup.value    === 'all' || s.school_group === schoolFilterGroup.value) &&
+    (!q || s.name.toLowerCase().includes(q))
+  )
+})
+const filteredDistricts = computed(() => [...new Set(filteredSchools.value.map(s => s.district))].filter(Boolean).sort())
+function resetSchoolFilters() { schoolFilterDistrict.value = 'all'; schoolFilterGroup.value = 'all'; schoolFilterSearch.value = '' }
+function selectAllEventSchools() { form.value.school_ids = [...new Set([...form.value.school_ids, ...filteredSchools.value.map(s => s.id)])] }
+function clearEventSchools() { form.value.school_ids = [] }
+
 function canEdit(event) {
   return isAdmin.value || event.created_by === currentUserId.value
 }
@@ -52,12 +70,18 @@ function responsibleNamesFor(event) {
     .map(displayName)
 }
 
+function schoolNamesFor(event) {
+  return (event.school_ids || [])
+    .map(id => schools.value.find(s => s.id === id)?.name)
+    .filter(Boolean)
+}
+
 function emptyForm() {
   const today = toDateKey(new Date())
   return {
     id: null, type: 'school_visit', title: '', description: '',
     start_date: today, end_date: today, start_time: '', end_time: '',
-    school_id: '', location: '', responsible_ids: [], responsible_group: '',
+    school_ids: [], location: '', responsible_ids: [], responsible_group: '',
     status: 'scheduled', show_public: true,
   }
 }
@@ -71,7 +95,7 @@ async function load() {
   loading.value = true
   let query = supabase
     .from('nithet_events')
-    .select('*, school:schools(id,name,district)')
+    .select('*')
     .order('start_date', { ascending: true })
   if (!isAdmin.value || myEventsOnly.value) query = query.eq('created_by', currentUserId.value)
   const { data, error } = await query
@@ -90,7 +114,7 @@ function openEdit(event) {
     id: event.id, type: event.type, title: event.title, description: event.description || '',
     start_date: event.start_date, end_date: event.end_date,
     start_time: event.start_time ? event.start_time.slice(0,5) : '', end_time: event.end_time ? event.end_time.slice(0,5) : '',
-    school_id: event.school_id || '', location: event.location || '',
+    school_ids: [...(event.school_ids || [])], location: event.location || '',
     responsible_ids: [...(event.responsible_ids || [])], responsible_group: event.responsible_group || '',
     status: event.status, show_public: event.show_public,
   }
@@ -102,8 +126,8 @@ async function save() {
     Swal.fire({ icon: 'warning', title: 'กรุณากรอกชื่อกิจกรรม' })
     return
   }
-  if (form.value.type === 'school_visit' && !form.value.school_id) {
-    Swal.fire({ icon: 'warning', title: 'กรุณาเลือกโรงเรียน', text: 'การนิเทศโรงเรียนต้องระบุโรงเรียนที่ไปนิเทศ' })
+  if (form.value.type === 'school_visit' && form.value.school_ids.length === 0) {
+    Swal.fire({ icon: 'warning', title: 'กรุณาเลือกโรงเรียน', text: 'การนิเทศโรงเรียนต้องระบุโรงเรียนที่ไปนิเทศอย่างน้อย 1 แห่ง' })
     return
   }
   saving.value = true
@@ -115,7 +139,7 @@ async function save() {
     end_date: form.value.end_date,
     start_time: form.value.start_time || null,
     end_time: form.value.end_time || null,
-    school_id: form.value.type === 'school_visit' ? form.value.school_id : (form.value.school_id || null),
+    school_ids: form.value.school_ids,
     location: form.value.location,
     responsible_ids: form.value.responsible_ids,
     responsible_group: form.value.responsible_group,
@@ -169,7 +193,7 @@ onMounted(async () => {
     const { data: p } = await supabase.from('profiles').select('role').eq('id', user.id).single()
     currentProfile.value = p
   }
-  const { data: sc } = await supabase.from('schools').select('id, name, district').order('district').order('name')
+  const { data: sc } = await supabase.from('schools').select('id, name, district, school_group').order('district').order('name')
   schools.value = sc || []
   const { data: pp } = await supabase.from('profiles')
     .select('id, title, first_name, last_name, full_name, role')
@@ -282,7 +306,7 @@ onMounted(async () => {
             <p v-if="event.description" class="text-sm text-slate-500 mt-0.5 line-clamp-2">{{ event.description }}</p>
             <div class="flex flex-wrap gap-4 mt-2 text-xs text-slate-400">
               <span>{{ formatEventDateRange(event) }}</span>
-              <span v-if="event.school">โรงเรียน: {{ event.school.name }}</span>
+              <span v-if="event.school_ids?.length">โรงเรียน: {{ schoolNamesFor(event).join(', ') }}</span>
               <span v-if="event.location">สถานที่: {{ event.location }}</span>
               <span v-if="event.responsible_group || event.responsible_ids?.length">
                 ผู้รับผิดชอบ: {{ formatResponsible(responsibleNamesFor(event), event.responsible_group ? groupLabel(event.responsible_group) : '') }}
@@ -383,16 +407,53 @@ onMounted(async () => {
               <div class="border-t border-slate-100 pt-1">
                 <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">โรงเรียน/สถานที่</p>
               </div>
-              <div>
-                <label class="block text-xs font-bold text-slate-600 mb-1">
-                  โรงเรียน <span v-if="form.type === 'school_visit'" class="text-red-400">*</span>
-                </label>
-                <select v-model="form.school_id" class="input-field w-full">
-                  <option value="">-- ไม่ระบุโรงเรียน --</option>
-                  <optgroup v-for="dist in districts" :key="dist" :label="`อ.${dist}`">
-                    <option v-for="s in schools.filter(x => x.district === dist)" :key="s.id" :value="s.id">{{ s.name }}</option>
-                  </optgroup>
-                </select>
+              <div class="space-y-2">
+                <div class="flex items-center justify-between">
+                  <label class="block text-xs font-bold text-slate-600">
+                    โรงเรียน <span v-if="form.type === 'school_visit'" class="text-red-400">*</span>
+                    <span class="font-normal text-slate-400">({{ form.school_ids.length }} โรงเรียน)</span>
+                  </label>
+                  <div class="flex gap-3">
+                    <button type="button" @click="selectAllEventSchools" class="text-xs text-primary font-bold hover:underline">เลือกทั้งหมด</button>
+                    <button type="button" @click="clearEventSchools" class="text-xs text-slate-400 font-bold hover:underline">ล้าง</button>
+                  </div>
+                </div>
+
+                <!-- ตัวกรอง: ชื่อโรงเรียน / อำเภอ / ศูนย์เครือข่าย -->
+                <div class="flex flex-wrap items-center gap-2">
+                  <div class="relative flex-1 min-w-[160px]">
+                    <SvgIcon name="magnify" class="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400"/>
+                    <input v-model="schoolFilterSearch" type="text" placeholder="ค้นหาชื่อโรงเรียน..."
+                      class="w-full pl-8 pr-2.5 py-1.5 border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-primary"/>
+                  </div>
+                  <select v-model="schoolFilterDistrict" class="px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs bg-white focus:outline-none focus:border-primary">
+                    <option value="all">ทุกอำเภอ</option>
+                    <option v-for="dist in districts" :key="dist" :value="dist">อ.{{ dist }}</option>
+                  </select>
+                  <select v-model="schoolFilterGroup" class="px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs bg-white focus:outline-none focus:border-primary">
+                    <option value="all">ทุกศูนย์เครือข่าย</option>
+                    <option v-for="g in schoolGroups" :key="g" :value="g">{{ g }}</option>
+                  </select>
+                  <button v-if="schoolFilterDistrict !== 'all' || schoolFilterGroup !== 'all' || schoolFilterSearch"
+                    type="button" @click="resetSchoolFilters"
+                    class="text-xs text-slate-400 hover:text-slate-600 font-bold">✕ ทั้งหมด</button>
+                  <span class="text-xs text-slate-400 w-full text-right">พบ {{ filteredSchools.length }} โรงเรียน</span>
+                </div>
+
+                <div class="border border-slate-200 rounded-xl max-h-52 overflow-y-auto divide-y divide-slate-100 bg-white">
+                  <template v-for="dist in filteredDistricts" :key="dist">
+                    <p class="px-3 py-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider bg-slate-50 sticky top-0">อ.{{ dist }}</p>
+                    <label v-for="s in filteredSchools.filter(x => x.district === dist)" :key="s.id"
+                      class="flex items-center gap-2 px-3 py-2 text-sm cursor-pointer hover:bg-slate-50">
+                      <input type="checkbox" :value="s.id" v-model="form.school_ids"
+                        class="rounded border-slate-300 text-primary focus:ring-primary/30"/>
+                      <span class="flex-1">{{ s.name }}</span>
+                      <span v-if="s.school_group" class="text-[10px] text-slate-400">{{ s.school_group }}</span>
+                    </label>
+                  </template>
+                  <p v-if="!schools.length" class="px-3 py-3 text-xs text-slate-400 text-center">กำลังโหลดรายชื่อโรงเรียน...</p>
+                  <p v-else-if="!filteredSchools.length" class="px-3 py-3 text-xs text-slate-400 text-center">ไม่พบโรงเรียนตามตัวกรอง</p>
+                </div>
               </div>
               <div>
                 <label class="block text-xs font-bold text-slate-600 mb-1">สถานที่ (ถ้ามี)</label>
