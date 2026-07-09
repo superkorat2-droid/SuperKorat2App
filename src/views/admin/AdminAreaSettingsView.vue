@@ -5,6 +5,7 @@ import { useAreaConfig, THEME_PRESETS } from '../../composables/useAreaConfig'
 
 import ImageCropperModal from '../../components/ImageCropperModal.vue'
 import StorageBrowser    from '../../components/StorageBrowser.vue'
+import { useExternalUpload, externalUploadEnabled, deleteUploadedFile } from '../../composables/useExternalUpload'
 import Swal from 'sweetalert2'
 
 const { updateConfig, previewTheme, resetTheme, fetchConfig } = useAreaConfig()
@@ -104,6 +105,50 @@ async function save() {
 // ── Logo upload ────────────────────────────────────────────────
 const showCropper   = ref(false)
 const uploadingLogo = ref(false)
+
+// ── Welcome popup image upload (ไม่ครอป กันภาพที่ออกแบบมาแล้วเพี้ยน + รองรับ GIF) ──
+const { uploadFile: uploadPopupExternal } = useExternalUpload()
+const popupFileInput   = ref(null)
+const uploadingPopup   = ref(false)
+const popupUploadError = ref('')
+
+function triggerPopupUpload() { popupFileInput.value?.click() }
+
+async function onPopupFileSelected(e) {
+  const file = e.target.files?.[0]
+  e.target.value = ''
+  if (!file) return
+  if (!/^image\//.test(file.type)) {
+    popupUploadError.value = 'รองรับเฉพาะไฟล์รูปภาพ (รวม GIF)'
+    return
+  }
+  if (file.size > 5 * 1024 * 1024) {
+    popupUploadError.value = `ไฟล์ใหญ่เกิน 5 MB (ไฟล์นี้ ${(file.size/1024/1024).toFixed(1)} MB)`
+    return
+  }
+  popupUploadError.value = ''
+  uploadingPopup.value = true
+  try {
+    if (externalUploadEnabled) {
+      config.value.welcome_popup_image_url = await uploadPopupExternal(file, 'welcome-popup')
+    } else {
+      const ext = file.name.split('.').pop() || 'png'
+      const fileName = `welcome-popup-${Date.now()}.${ext}`
+      const { data, error } = await supabase.storage.from('banners').upload(fileName, file, { contentType: file.type, upsert: false })
+      if (error) throw error
+      config.value.welcome_popup_image_url = supabase.storage.from('banners').getPublicUrl(data.path).data.publicUrl
+    }
+  } catch (err) {
+    popupUploadError.value = err.message
+  } finally {
+    uploadingPopup.value = false
+  }
+}
+
+async function clearPopupImage() {
+  if (config.value.welcome_popup_image_url) await deleteUploadedFile(config.value.welcome_popup_image_url)
+  config.value.welcome_popup_image_url = ''
+}
 
 // ดึงชื่อไฟล์จาก public URL
 function extractFileName(url) {
@@ -644,6 +689,47 @@ function resetToDefault() {
               <span>แจ้งรหัสให้บุคลากรผ่าน Line กลุ่ม หรือวิธีที่ปลอดภัย อย่า post สาธารณะ</span>
             </div>
           </div>
+
+          <!-- ── ป๊อปอัปต้อนรับก่อนเข้าเว็บ ─────────────────────── -->
+          <div class="border-t border-slate-100 pt-5 space-y-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="font-bold text-sm text-slate-800 flex items-center gap-1.5">
+                  <SvgIcon name="beaker" class="w-4 h-4 text-primary"/> ป๊อปอัปต้อนรับก่อนเข้าเว็บ
+                </p>
+                <p class="text-xs text-slate-400 mt-0.5">แสดงรูปป๊อปอัป 1 ครั้งต่อการเข้าชม (session) บนหน้าเว็บสาธารณะ</p>
+              </div>
+              <button @click="config.welcome_popup_enabled = !config.welcome_popup_enabled"
+                :class="['relative w-12 h-6 rounded-full transition-colors flex-shrink-0',
+                  config.welcome_popup_enabled ? 'bg-blue-600' : 'bg-slate-300']">
+                <span :class="['absolute w-5 h-5 bg-white rounded-full shadow-sm top-0.5 transition-all',
+                  config.welcome_popup_enabled ? 'left-6' : 'left-0.5']"></span>
+              </button>
+            </div>
+
+            <div v-if="config.welcome_popup_enabled" class="space-y-3 pl-2">
+              <div v-if="config.welcome_popup_image_url" class="rounded-xl overflow-hidden border border-slate-200 bg-slate-50 max-w-xs">
+                <img :src="config.welcome_popup_image_url" class="w-full h-auto block"/>
+              </div>
+              <div class="flex flex-wrap gap-2">
+                <button @click="triggerPopupUpload" type="button" :disabled="uploadingPopup"
+                  class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-colors disabled:opacity-50">
+                  {{ uploadingPopup ? 'กำลังอัปโหลด...' : (config.welcome_popup_image_url ? '🖼️ เปลี่ยนรูป' : '🖼️ อัปโหลดรูป (รองรับ GIF)') }}
+                </button>
+                <button v-if="config.welcome_popup_image_url" @click="clearPopupImage" type="button"
+                  class="px-3 py-2 bg-red-50 hover:bg-red-100 text-red-500 text-xs font-bold rounded-xl transition-colors">
+                  🗑️ ลบรูป
+                </button>
+              </div>
+              <p v-if="popupUploadError" class="text-xs text-red-500">{{ popupUploadError }}</p>
+              <div>
+                <label class="text-xs font-bold text-slate-600 mb-1.5 block">ลิงก์เมื่อคลิกที่รูป (ไม่บังคับ)</label>
+                <input v-model="config.welcome_popup_link_url" type="url" placeholder="https://..."
+                  class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"/>
+              </div>
+              <p class="text-[10px] text-slate-400">ไฟล์ไม่เกิน 5MB · แนะนำภาพแนวตั้งหรือสี่เหลี่ยมจัตุรัส ไม่ครอปอัตโนมัติเพื่อรักษาลาย GIF/ดีไซน์เดิม</p>
+            </div>
+          </div>
         </div>
 
         <!-- ── Tab: บริการออนไลน์ ─────────────────────────────── -->
@@ -770,6 +856,8 @@ function resetToDefault() {
     @close="showCropper = false"
     @cropped="onLogoCropped"
   />
+
+  <input ref="popupFileInput" type="file" accept="image/*" class="hidden" @change="onPopupFileSelected"/>
 </template>
 
 <style scoped>

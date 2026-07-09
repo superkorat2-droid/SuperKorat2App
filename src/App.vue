@@ -6,6 +6,8 @@ import { useAreaConfig } from './composables/useAreaConfig'
 import { useNavPages } from './composables/useNavPages'
 import { useTheme } from './composables/useTheme'
 import { iconPath, isIconKey } from './composables/useIcons.js'
+import WelcomePopup from './components/WelcomePopup.vue'
+import ScrollToTopButton from './components/ScrollToTopButton.vue'
 import Swal from 'sweetalert2'
 
 const { isDark, toggle: toggleTheme } = useTheme()
@@ -17,6 +19,7 @@ const route     = useRoute()
 const isSchoolRoute = computed(() =>
   route.path === '/school' || route.path.startsWith('/school/')
 )
+const isDashboardRoute = computed(() => route.path.startsWith('/dashboard'))
 const session   = ref(null)
 const userRole  = ref('')
 const isAdmin      = computed(() => ['super_admin','admin'].includes(userRole.value))
@@ -442,6 +445,9 @@ const handleLogout = async () => {
         </div>
       </div>
     </footer>
+
+    <WelcomePopup v-if="!isSchoolRoute && !isDashboardRoute"/>
+    <ScrollToTopButton v-if="!isSchoolRoute"/>
   </div>
 </template>
 

@@ -96,6 +96,9 @@ const DEFAULTS = {
     { key: 'other',   label: 'อื่นๆ',           visible: false, order: 4 },
   ],
   page_headers: DEFAULT_PAGE_HEADERS,
+  welcome_popup_enabled:   false,
+  welcome_popup_image_url: '',
+  welcome_popup_link_url:  '',
 }
 
 // ── Helper: hex → RGB ──────────────────────────────────────────
