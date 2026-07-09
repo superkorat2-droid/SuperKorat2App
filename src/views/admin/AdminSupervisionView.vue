@@ -2,10 +2,12 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase } from '../../supabase'
+import { useAreaConfig } from '../../composables/useAreaConfig'
 import QRCode from 'qrcode'
 import Swal from 'sweetalert2'
 
 const router = useRouter()
+const { config: areaConfig, fetchConfig } = useAreaConfig()
 
 const forms          = ref([])
 const loading        = ref(true)
@@ -13,6 +15,17 @@ const search         = ref('')
 const myFormsOnly    = ref(false)
 const currentProfile = ref(null)
 const currentUserId  = ref(null)
+const profilesById   = ref({})
+
+function groupLabel(key) { return areaConfig.value?.personnel_groups?.find(g => g.key === key)?.label || key }
+function displayName(p) {
+  if (!p) return '-'
+  if (p.first_name || p.last_name) return `${p.title || ''} ${p.first_name || ''} ${p.last_name || ''}`.trim()
+  return p.full_name || p.email || '-'
+}
+function responsibleFor(form) {
+  return (form.responsible_ids || []).map(id => profilesById.value[id]).filter(Boolean)
+}
 
 const isAdmin = computed(() =>
   ['super_admin','admin'].includes(currentProfile.value?.role)
@@ -38,14 +51,13 @@ const STATUS_COLOR = {
 
 async function load() {
   loading.value = true
-  let query = supabase
+  const { data, error } = await supabase
     .from('supervision_forms').select('*').order('created_at', { ascending: false })
-
+  let list = data || []
   if (!isAdmin.value || myFormsOnly.value) {
-    query = query.eq('created_by', currentUserId.value)
+    list = list.filter(f => f.created_by === currentUserId.value || f.responsible_ids?.includes(currentUserId.value))
   }
-  const { data, error } = await query
-  if (!error) forms.value = data || []
+  if (!error) forms.value = list
   loading.value = false
 }
 
@@ -106,6 +118,7 @@ function formatDate(d) {
 }
 
 onMounted(async () => {
+  await fetchConfig()
   const { data: { user } } = await supabase.auth.getUser()
   currentUserId.value = user?.id
   if (user?.id) {
@@ -113,6 +126,9 @@ onMounted(async () => {
       .from('profiles').select('role, can_publish_supervision').eq('id', user.id).single()
     currentProfile.value = p
   }
+  const { data: pp } = await supabase.from('profiles')
+    .select('id, title, first_name, last_name, full_name, avatar_url')
+  profilesById.value = Object.fromEntries((pp || []).map(p => [p.id, p]))
   await load()
 })
 </script>
@@ -194,9 +210,21 @@ onMounted(async () => {
             <p v-if="form.description" class="text-sm text-slate-500 mt-0.5 line-clamp-2">{{ form.description }}</p>
             <div class="flex flex-wrap gap-4 mt-2 text-xs text-slate-400">
               <span>สร้างเมื่อ: {{ formatDate(form.created_at) }}</span>
-              <span>สร้างเมื่อ: {{ formatDate(form.created_at) }}</span>
               <span v-if="form.deadline">กำหนดส่ง: {{ formatDate(form.deadline) }}</span>
               <span>เป้าหมาย: {{ form.target === 'all' ? 'ทุกโรงเรียน' : `${form.target_schools?.length || 0} โรงเรียน` }}</span>
+            </div>
+            <div v-if="form.responsible_group || responsibleFor(form).length" class="flex items-center gap-1.5 mt-2">
+              <span class="text-xs text-slate-400">ผู้รับผิดชอบ:</span>
+              <span v-if="form.responsible_group" class="text-xs bg-slate-100 text-slate-600 font-bold px-2 py-0.5 rounded-full">
+                {{ groupLabel(form.responsible_group) }}
+              </span>
+              <div v-for="p in responsibleFor(form)" :key="p.id" class="flex items-center gap-1 bg-slate-50 rounded-full pl-0.5 pr-2 py-0.5">
+                <div class="w-4 h-4 rounded-full overflow-hidden bg-slate-200 flex items-center justify-center flex-shrink-0">
+                  <img v-if="p.avatar_url" :src="p.avatar_url" class="w-full h-full object-cover object-top"/>
+                  <span v-else class="text-[8px] font-extrabold text-primary">{{ displayName(p)[0] || '?' }}</span>
+                </div>
+                <span class="text-xs text-slate-600">{{ displayName(p) }}</span>
+              </div>
             </div>
           </div>
 

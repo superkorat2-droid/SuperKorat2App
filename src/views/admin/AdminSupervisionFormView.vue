@@ -4,8 +4,20 @@ import { useRouter, useRoute } from 'vue-router'
 import { supabase } from '../../supabase'
 import { ICON_MAP } from '../../composables/useIcons.js'
 import { useExternalUpload, externalUploadEnabled, deleteUploadedFile } from '../../composables/useExternalUpload'
+import { useAreaConfig } from '../../composables/useAreaConfig'
 import QRCode from 'qrcode'
 import Swal from 'sweetalert2'
+
+const { config: areaConfig, fetchConfig } = useAreaConfig()
+const personnelGroups = computed(() => areaConfig.value?.personnel_groups || [])
+function groupLabel(key) { return personnelGroups.value.find(g => g.key === key)?.label || key }
+
+// เหมือน AdminPersonnelView.vue/PersonnelView.vue's displayName()
+function displayName(p) {
+  if (!p) return '-'
+  if (p.first_name || p.last_name) return `${p.title || ''} ${p.first_name || ''} ${p.last_name || ''}`.trim()
+  return p.full_name || p.email || '-'
+}
 
 const router = useRouter()
 const route  = useRoute()
@@ -67,6 +79,9 @@ const meta = ref({
   show_on_home:      false,
   status_visibility: 'hidden',
   cover_image_url:   '',
+  responsible_ids:   [],
+  responsible_group: '',
+  show_responsible:  false,
 })
 
 // ── current user permission ─────────────────────────────────────
@@ -106,6 +121,9 @@ const filteredSchools = computed(() => {
 const filteredDistricts = computed(() => [...new Set(filteredSchools.value.map(s => s.district))].filter(Boolean).sort())
 function resetSchoolFilters() { schoolFilterDistrict.value = 'all'; schoolFilterGroup.value = 'all'; schoolFilterSearch.value = '' }
 function selectAllSchools() { meta.value.target_schools = [...new Set([...meta.value.target_schools, ...filteredSchools.value.map(s => s.id)])] }
+
+// ─── Responsible people (ผู้รับผิดชอบ) ────────────────────────────────────────
+const responsibleOptions = ref([])
 function clearTargetSchools() { meta.value.target_schools = [] }
 
 const QUESTION_TYPES = [
@@ -289,6 +307,9 @@ async function load() {
     show_on_home:      form.show_on_home      || false,
     status_visibility: form.status_visibility || 'hidden',
     cover_image_url:   form.cover_image_url    || '',
+    responsible_ids:   form.responsible_ids    || [],
+    responsible_group: form.responsible_group  || '',
+    show_responsible:  form.show_responsible   || false,
   }
 
   const { data: qs } = await supabase
@@ -330,6 +351,9 @@ async function save() {
     show_on_home:      meta.value.show_on_home,
     status_visibility: meta.value.status_visibility,
     cover_image_url:   meta.value.cover_image_url,
+    responsible_ids:   meta.value.responsible_ids,
+    responsible_group: meta.value.responsible_group,
+    show_responsible:  meta.value.show_responsible,
     updated_at:        new Date().toISOString(),
   }
 
@@ -397,6 +421,7 @@ async function save() {
 }
 
 onMounted(async () => {
+  await fetchConfig()
   const { data: { user } } = await supabase.auth.getUser()
   currentUserId.value = user?.id
   if (user?.id) {
@@ -406,6 +431,11 @@ onMounted(async () => {
   }
   const { data: sc } = await supabase.from('schools').select('id, name, district, school_group').order('district').order('name')
   schools.value = sc || []
+  const { data: pp } = await supabase.from('profiles')
+    .select('id, title, first_name, last_name, full_name, avatar_url, role')
+    .in('role', ['supervisor','staff','super_admin','admin'])
+    .order('first_name')
+  responsibleOptions.value = pp || []
   load()
 })
 </script>
@@ -646,6 +676,47 @@ onMounted(async () => {
             <p class="text-xs text-indigo-500">
               ปิดทุกฟิลด์ = Anonymous (ไม่เก็บข้อมูลส่วนตัวใดๆ)
             </p>
+          </div>
+
+          <!-- ══ ผู้รับผิดชอบ ══ -->
+          <div class="sm:col-span-2 border-t border-slate-100 pt-5 space-y-3">
+            <p class="text-xs font-bold text-slate-500 uppercase tracking-wider">ผู้รับผิดชอบแบบนิเทศนี้</p>
+            <div>
+              <label class="block text-xs font-bold text-slate-600 mb-1">มอบทั้งกลุ่ม (ถ้ามี)</label>
+              <select v-model="meta.responsible_group"
+                class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:border-primary">
+                <option value="">-- ไม่ระบุกลุ่ม --</option>
+                <option v-for="g in personnelGroups" :key="g.key" :value="g.key">{{ g.label }}</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-600 mb-1">ผู้รับผิดชอบรายบุคคล (เลือกได้หลายคน)</label>
+              <div class="border border-slate-200 rounded-xl max-h-52 overflow-y-auto divide-y divide-slate-100 bg-white">
+                <label v-for="p in responsibleOptions" :key="p.id"
+                  class="flex items-center gap-2.5 px-3 py-2 text-sm cursor-pointer hover:bg-slate-50">
+                  <input type="checkbox" :value="p.id" v-model="meta.responsible_ids"
+                    class="rounded border-slate-300 text-primary focus:ring-primary/30 flex-shrink-0"/>
+                  <div class="w-7 h-7 rounded-full overflow-hidden bg-slate-100 flex-shrink-0 flex items-center justify-center">
+                    <img v-if="p.avatar_url" :src="p.avatar_url" class="w-full h-full object-cover object-top"/>
+                    <span v-else class="text-xs font-extrabold text-primary">{{ displayName(p)[0] || '?' }}</span>
+                  </div>
+                  {{ displayName(p) }}
+                </label>
+                <p v-if="!responsibleOptions.length" class="px-3 py-2 text-xs text-slate-400">ไม่มีรายชื่อ</p>
+              </div>
+            </div>
+            <div class="flex items-start gap-3 pt-1">
+              <label class="relative inline-flex items-center cursor-pointer mt-0.5">
+                <input type="checkbox" v-model="meta.show_responsible" class="sr-only peer"/>
+                <div class="w-10 h-5 bg-slate-200 rounded-full peer peer-checked:bg-primary transition-colors
+                            after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white
+                            after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-5"/>
+              </label>
+              <div>
+                <p class="text-sm font-bold text-slate-700">แสดงผู้รับผิดชอบให้ผู้ตอบเห็น</p>
+                <p class="text-xs text-slate-400">โชว์ชื่อและรูปผู้รับผิดชอบในหน้ากรอกแบบนิเทศ — ถ้าปิด ผู้ตอบจะไม่เห็น (แอดมินยังเห็นอยู่)</p>
+              </div>
+            </div>
           </div>
 
           <!-- Allow public -->

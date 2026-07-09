@@ -7,6 +7,7 @@ import 'vue-advanced-cropper/dist/style.css'
 import Swal from 'sweetalert2'
 import { useFormDraft } from '../../composables/useFormDraft'
 import { useExternalUpload, externalUploadEnabled } from '../../composables/useExternalUpload'
+import { useAreaConfig } from '../../composables/useAreaConfig'
 
 const route  = useRoute()
 const router = useRouter()
@@ -30,6 +31,15 @@ const started     = ref(false)
 const form      = ref(null)
 const questions = ref([])
 const schools   = ref([])  // for individual mode school selector
+const responsiblePeople = ref([])
+
+const { config: areaConfig, fetchConfig } = useAreaConfig()
+function groupLabel(key) { return areaConfig.value?.personnel_groups?.find(g => g.key === key)?.label || key }
+function displayName(p) {
+  if (!p) return '-'
+  if (p.first_name || p.last_name) return `${p.title || ''} ${p.first_name || ''} ${p.last_name || ''}`.trim()
+  return p.full_name || p.email || '-'
+}
 
 const answers           = ref({})
 const otherText         = ref({})
@@ -128,6 +138,13 @@ async function loadForm() {
   if (formData.respondent_type === 'individual') {
     const { data: sc } = await supabase.from('schools').select('id, name, district').order('district').order('name')
     schools.value = sc || []
+  }
+
+  if (formData.show_responsible && formData.responsible_ids?.length) {
+    const { data: pp } = await supabase.from('profiles')
+      .select('id, title, first_name, last_name, full_name, avatar_url')
+      .in('id', formData.responsible_ids)
+    responsiblePeople.value = pp || []
   }
 
   loading.value = false
@@ -354,7 +371,7 @@ async function submit() {
   submitted.value = true
 }
 
-onMounted(loadForm)
+onMounted(() => { fetchConfig(); loadForm() })
 </script>
 
 <template>
@@ -428,6 +445,20 @@ onMounted(loadForm)
         <h1 class="text-2xl font-extrabold text-slate-800 mt-3">{{ form.title }}</h1>
         <p v-if="form.description" class="text-slate-500 text-sm mt-2 whitespace-pre-line">{{ form.description }}</p>
         <p v-if="form.deadline" class="text-xs text-slate-400 mt-3">กำหนดส่ง: {{ formatDate(form.deadline) }}</p>
+        <div v-if="form.show_responsible && (form.responsible_group || responsiblePeople.length)"
+          class="flex flex-wrap items-center justify-center gap-2 mt-4">
+          <span class="text-xs text-slate-400">ผู้รับผิดชอบ:</span>
+          <span v-if="form.responsible_group" class="text-xs bg-slate-100 text-slate-600 font-bold px-2.5 py-1 rounded-full">
+            {{ groupLabel(form.responsible_group) }}
+          </span>
+          <div v-for="p in responsiblePeople" :key="p.id" class="flex items-center gap-1.5 bg-slate-50 rounded-full pl-1 pr-2.5 py-1">
+            <div class="w-5 h-5 rounded-full overflow-hidden bg-slate-200 flex items-center justify-center flex-shrink-0">
+              <img v-if="p.avatar_url" :src="p.avatar_url" class="w-full h-full object-cover object-top"/>
+              <span v-else class="text-[9px] font-extrabold text-primary">{{ displayName(p)[0] || '?' }}</span>
+            </div>
+            <span class="text-xs text-slate-600">{{ displayName(p) }}</span>
+          </div>
+        </div>
         <button @click="started = true"
           class="mt-6 w-full sm:w-auto sm:px-12 py-3.5 bg-primary text-white font-extrabold rounded-2xl shadow-lg hover:-translate-y-0.5 transition-all">
           เริ่มทำแบบสอบถาม
@@ -451,6 +482,20 @@ onMounted(loadForm)
         </div>
         <h1 class="text-xl font-extrabold text-slate-800 mt-2">{{ form.title }}</h1>
         <p v-if="form.description" class="text-slate-500 text-sm mt-1">{{ form.description }}</p>
+        <div v-if="form.show_responsible && (form.responsible_group || responsiblePeople.length)"
+          class="flex flex-wrap items-center gap-2 mt-3">
+          <span class="text-xs text-slate-400">ผู้รับผิดชอบ:</span>
+          <span v-if="form.responsible_group" class="text-xs bg-slate-100 text-slate-600 font-bold px-2.5 py-1 rounded-full">
+            {{ groupLabel(form.responsible_group) }}
+          </span>
+          <div v-for="p in responsiblePeople" :key="p.id" class="flex items-center gap-1.5 bg-slate-50 rounded-full pl-1 pr-2.5 py-1">
+            <div class="w-5 h-5 rounded-full overflow-hidden bg-slate-200 flex items-center justify-center flex-shrink-0">
+              <img v-if="p.avatar_url" :src="p.avatar_url" class="w-full h-full object-cover object-top"/>
+              <span v-else class="text-[9px] font-extrabold text-primary">{{ displayName(p)[0] || '?' }}</span>
+            </div>
+            <span class="text-xs text-slate-600">{{ displayName(p) }}</span>
+          </div>
+        </div>
         <!-- Progress -->
         <div class="mt-4">
           <div class="flex justify-between text-xs text-slate-400 mb-1">
