@@ -628,7 +628,8 @@ const stats = [
               <div v-for="form in supervisionForms" :key="form.id"
                 class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
                 <div class="p-5">
-                  <div class="flex items-start gap-4">
+                  <div class="flex flex-col sm:flex-row gap-4">
+                    <div class="flex items-start gap-4 flex-1 min-w-0">
                     <!-- Icon -->
                     <div class="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
                       <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
@@ -668,13 +669,14 @@ const stats = [
                       <p v-else-if="form.respondent_type === 'individual' && form.response_count > 0"
                         class="mt-2 text-xs text-slate-500">{{ form.response_count }} คนตอบแล้ว</p>
                     </div>
+                    </div>
 
                     <!-- Fill button -->
-                    <div class="flex-shrink-0">
+                    <div class="flex-shrink-0 w-full sm:w-auto">
                       <!-- สาธารณะ: กรอกได้เลย -->
                       <a v-if="form.allow_public && form.public_token"
                         :href="`#/supervision/${form.public_token}`"
-                        class="flex items-center gap-1.5 px-4 py-2 text-sm font-bold bg-primary text-white rounded-xl hover:-translate-y-0.5 shadow-sm transition-all whitespace-nowrap">
+                        class="flex items-center justify-center gap-1.5 px-4 py-2 text-sm font-bold bg-primary text-white rounded-xl hover:-translate-y-0.5 shadow-sm transition-all whitespace-nowrap w-full sm:w-auto">
                         {{ form.respondent_type === 'individual' ? 'ร่วมตอบ' : 'ดำเนินการ' }}
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                           <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/>
@@ -683,7 +685,7 @@ const stats = [
                       <!-- ต้อง login: logged in แล้ว → ไปกรอก -->
                       <router-link v-else-if="!form.allow_public && userSession"
                         :to="`/school/supervision/${form.id}`"
-                        class="flex items-center gap-1.5 px-4 py-2 text-sm font-bold bg-primary text-white rounded-xl hover:-translate-y-0.5 shadow-sm transition-all whitespace-nowrap">
+                        class="flex items-center justify-center gap-1.5 px-4 py-2 text-sm font-bold bg-primary text-white rounded-xl hover:-translate-y-0.5 shadow-sm transition-all whitespace-nowrap w-full sm:w-auto">
                         {{ form.respondent_type === 'individual' ? 'ร่วมตอบ' : 'ดำเนินการ' }}
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                           <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/>
@@ -692,7 +694,7 @@ const stats = [
                       <!-- ต้อง login: ยังไม่ login → ปุ่มไปหน้า login พร้อม redirect กลับมา -->
                       <router-link v-else-if="!form.allow_public && !userSession"
                         :to="`/login?next=/school/supervision/${form.id}`"
-                        class="flex items-center gap-1.5 px-4 py-2 text-sm font-bold border-2 border-primary text-primary rounded-xl hover:bg-primary hover:text-white transition-all whitespace-nowrap">
+                        class="flex items-center justify-center gap-1.5 px-4 py-2 text-sm font-bold border-2 border-primary text-primary rounded-xl hover:bg-primary hover:text-white transition-all whitespace-nowrap w-full sm:w-auto">
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                           <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/>
                         </svg>
