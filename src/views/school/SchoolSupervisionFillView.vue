@@ -6,6 +6,7 @@ import { Cropper } from 'vue-advanced-cropper'
 import 'vue-advanced-cropper/dist/style.css'
 import Swal from 'sweetalert2'
 import { useFormDraft } from '../../composables/useFormDraft'
+import { useExternalUpload, externalUploadEnabled } from '../../composables/useExternalUpload'
 
 const route  = useRoute()
 const router = useRouter()
@@ -222,19 +223,26 @@ function resizeCanvas(src, maxPx = 1200) {
   return c
 }
 
+const { uploadFile: uploadEvidenceExternal } = useExternalUpload()
+
 async function uploadBlob(questionId, blob, ext = 'jpg') {
   uploadingEvidence.value[questionId] = true
-  const path = `${formId.value}/${questionId}_${Date.now()}.${ext}`
-  const { error: upErr } = await supabase.storage
-    .from('supervision-evidence').upload(path, blob, { upsert: true, contentType: blob.type })
-  if (upErr) {
+  try {
+    if (externalUploadEnabled) {
+      const file = blob instanceof File ? blob : new File([blob], `evidence_${questionId}_${Date.now()}.${ext}`, { type: blob.type })
+      evidenceFileUrls.value[questionId] = await uploadEvidenceExternal(file, 'supervision-evidence')
+    } else {
+      const path = `${formId.value}/${questionId}_${Date.now()}.${ext}`
+      const { error: upErr } = await supabase.storage
+        .from('supervision-evidence').upload(path, blob, { upsert: true, contentType: blob.type })
+      if (upErr) throw upErr
+      evidenceFileUrls.value[questionId] = supabase.storage.from('supervision-evidence').getPublicUrl(path).data.publicUrl
+    }
+  } catch (err) {
+    Swal.fire({ icon: 'error', title: 'อัปโหลดไม่สำเร็จ', text: err.message })
+  } finally {
     uploadingEvidence.value[questionId] = false
-    Swal.fire({ icon: 'error', title: 'อัปโหลดไม่สำเร็จ', text: upErr.message })
-    return
   }
-  const { data: { publicUrl } } = supabase.storage.from('supervision-evidence').getPublicUrl(path)
-  evidenceFileUrls.value[questionId]  = publicUrl
-  uploadingEvidence.value[questionId] = false
 }
 
 function onFileChange(questionId, event) {

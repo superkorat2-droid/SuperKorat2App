@@ -78,8 +78,17 @@ const publicToken = ref(null)
 
 // ─── Schools (สำหรับเลือกเป้าหมาย "เฉพาะโรงเรียน") ──────────────────────────
 const schools = ref([])
+const schoolFilterDistrict = ref('all')
+const schoolFilterGroup    = ref('all')
 const districts = computed(() => [...new Set(schools.value.map(s => s.district))].filter(Boolean).sort())
-function selectAllSchools() { meta.value.target_schools = schools.value.map(s => s.id) }
+const schoolGroups = computed(() => [...new Set(schools.value.map(s => s.school_group))].filter(Boolean).sort())
+const filteredSchools = computed(() => schools.value.filter(s =>
+  (schoolFilterDistrict.value === 'all' || s.district === schoolFilterDistrict.value) &&
+  (schoolFilterGroup.value    === 'all' || s.school_group === schoolFilterGroup.value)
+))
+const filteredDistricts = computed(() => [...new Set(filteredSchools.value.map(s => s.district))].filter(Boolean).sort())
+function resetSchoolFilters() { schoolFilterDistrict.value = 'all'; schoolFilterGroup.value = 'all' }
+function selectAllSchools() { meta.value.target_schools = [...new Set([...meta.value.target_schools, ...filteredSchools.value.map(s => s.id)])] }
 function clearTargetSchools() { meta.value.target_schools = [] }
 
 const QUESTION_TYPES = [
@@ -378,7 +387,7 @@ onMounted(async () => {
       .from('profiles').select('role, can_publish_supervision').eq('id', user.id).single()
     currentProfile.value = p
   }
-  const { data: sc } = await supabase.from('schools').select('id, name, district').order('district').order('name')
+  const { data: sc } = await supabase.from('schools').select('id, name, district, school_group').order('district').order('name')
   schools.value = sc || []
   load()
 })
@@ -493,17 +502,36 @@ onMounted(async () => {
                 <button type="button" @click="clearTargetSchools" class="text-xs text-slate-400 font-bold hover:underline">ล้าง</button>
               </div>
             </div>
+
+            <!-- ตัวกรอง: อำเภอ / ศูนย์เครือข่าย -->
+            <div class="flex flex-wrap items-center gap-2">
+              <select v-model="schoolFilterDistrict" class="px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs bg-white focus:outline-none focus:border-primary">
+                <option value="all">ทุกอำเภอ</option>
+                <option v-for="dist in districts" :key="dist" :value="dist">อ.{{ dist }}</option>
+              </select>
+              <select v-model="schoolFilterGroup" class="px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs bg-white focus:outline-none focus:border-primary">
+                <option value="all">ทุกศูนย์เครือข่าย</option>
+                <option v-for="g in schoolGroups" :key="g" :value="g">{{ g }}</option>
+              </select>
+              <button v-if="schoolFilterDistrict !== 'all' || schoolFilterGroup !== 'all'"
+                type="button" @click="resetSchoolFilters"
+                class="text-xs text-slate-400 hover:text-slate-600 font-bold">✕ ทั้งหมด</button>
+              <span class="text-xs text-slate-400 ml-auto">พบ {{ filteredSchools.length }} โรงเรียน</span>
+            </div>
+
             <div class="max-h-64 overflow-y-auto border border-slate-200 bg-white rounded-xl divide-y divide-slate-100">
-              <template v-for="dist in districts" :key="dist">
+              <template v-for="dist in filteredDistricts" :key="dist">
                 <p class="px-3 py-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider bg-slate-50 sticky top-0">อ.{{ dist }}</p>
-                <label v-for="s in schools.filter(x => x.district === dist)" :key="s.id"
+                <label v-for="s in filteredSchools.filter(x => x.district === dist)" :key="s.id"
                   class="flex items-center gap-2 px-3 py-2 text-sm cursor-pointer hover:bg-slate-50">
                   <input type="checkbox" :value="s.id" v-model="meta.target_schools"
                     class="rounded border-slate-300 text-primary focus:ring-primary/30"/>
-                  {{ s.name }}
+                  <span class="flex-1">{{ s.name }}</span>
+                  <span v-if="s.school_group" class="text-[10px] text-slate-400">{{ s.school_group }}</span>
                 </label>
               </template>
               <p v-if="!schools.length" class="px-3 py-3 text-xs text-slate-400 text-center">กำลังโหลดรายชื่อโรงเรียน...</p>
+              <p v-else-if="!filteredSchools.length" class="px-3 py-3 text-xs text-slate-400 text-center">ไม่พบโรงเรียนตามตัวกรอง</p>
             </div>
             <p v-if="meta.target_schools.length === 0" class="text-xs text-amber-600">
               ⚠️ ยังไม่ได้เลือกโรงเรียน — ถ้าไม่เลือกจะไม่มีโรงเรียนใดเห็นแบบนิเทศนี้
