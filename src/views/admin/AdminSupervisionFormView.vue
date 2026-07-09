@@ -3,6 +3,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { supabase } from '../../supabase'
 import { ICON_MAP } from '../../composables/useIcons.js'
+import { useExternalUpload, externalUploadEnabled, deleteUploadedFile } from '../../composables/useExternalUpload'
 import Swal from 'sweetalert2'
 
 const router = useRouter()
@@ -53,6 +54,7 @@ const meta = ref({
   respondent_fields: normalizeRespondentFields([]),
   show_on_home:      false,
   status_visibility: 'hidden',
+  cover_image_url:   '',
 })
 
 // ── current user permission ─────────────────────────────────────
@@ -96,6 +98,7 @@ function newQuestion() {
     sort_order:        questions.value.length,
     evidence_type:     'none',
     evidence_required: false,
+    image_url:         '',
   }
 }
 
@@ -147,7 +150,7 @@ function reorder() {
 
 function addOption(q) {
   const n = q.options.length + 1
-  q.options.push({ value: `opt_${Date.now()}`, label: `ตัวเลือกที่ ${n}`, score: '' })
+  q.options.push({ value: `opt_${Date.now()}`, label: `ตัวเลือกที่ ${n}`, score: '', is_other: false })
 }
 
 function removeOption(q, i) {
@@ -165,6 +168,62 @@ function onTypeChange(q) {
   if (['text', 'textarea', 'number', 'yes_no'].includes(q.type)) {
     q.options = []
   }
+}
+
+// ─── Cover image (form) + question image upload ──────────────────────────────
+const { uploadFile: uploadImgExternal } = useExternalUpload()
+const coverFileInput      = ref(null)
+const questionFileInput   = ref(null)
+const activeQuestionIndex = ref(-1)
+const uploadingCover      = ref(false)
+const uploadingQuestionImage = ref(false)
+
+async function uploadPlainImage(file, category) {
+  if (externalUploadEnabled) return uploadImgExternal(file, category)
+  const ext = file.name.split('.').pop() || 'jpg'
+  const fileName = `${category}-${Date.now()}.${ext}`
+  const { data, error } = await supabase.storage.from('supervision-evidence').upload(fileName, file, { contentType: file.type })
+  if (error) throw error
+  return supabase.storage.from('supervision-evidence').getPublicUrl(fileName).data.publicUrl
+}
+
+function triggerCoverUpload() { coverFileInput.value?.click() }
+async function onCoverFileSelected(e) {
+  const file = e.target.files?.[0]
+  e.target.value = ''
+  if (!file) return
+  uploadingCover.value = true
+  try {
+    meta.value.cover_image_url = await uploadPlainImage(file, 'supervision-cover')
+  } catch (err) {
+    Swal.fire({ icon: 'error', title: 'อัปโหลดไม่สำเร็จ', text: err.message })
+  } finally {
+    uploadingCover.value = false
+  }
+}
+async function clearCoverImage() {
+  if (meta.value.cover_image_url) await deleteUploadedFile(meta.value.cover_image_url)
+  meta.value.cover_image_url = ''
+}
+
+function triggerQuestionUpload(i) { activeQuestionIndex.value = i; questionFileInput.value?.click() }
+async function onQuestionFileSelected(e) {
+  const file = e.target.files?.[0]
+  e.target.value = ''
+  if (!file || activeQuestionIndex.value < 0) return
+  const q = questions.value[activeQuestionIndex.value]
+  uploadingQuestionImage.value = true
+  try {
+    q.image_url = await uploadPlainImage(file, 'supervision-question')
+  } catch (err) {
+    Swal.fire({ icon: 'error', title: 'อัปโหลดไม่สำเร็จ', text: err.message })
+  } finally {
+    uploadingQuestionImage.value = false
+  }
+}
+async function clearQuestionImage(q) {
+  if (q.image_url) await deleteUploadedFile(q.image_url)
+  q.image_url = ''
 }
 
 // ─── Load existing form ──────────────────────────────────────────────────────
@@ -197,6 +256,7 @@ async function load() {
     respondent_fields: normalizeRespondentFields(form.respondent_fields || []),
     show_on_home:      form.show_on_home      || false,
     status_visibility: form.status_visibility || 'hidden',
+    cover_image_url:   form.cover_image_url    || '',
   }
 
   const { data: qs } = await supabase
@@ -210,7 +270,8 @@ async function load() {
     _key:              q.id,
     evidence_type:     q.evidence_type || 'none',
     evidence_required: q.evidence_required || false,
-    options:           (q.options || []).map(o => ({ score: '', ...o })),
+    image_url:         q.image_url || '',
+    options:           (q.options || []).map(o => ({ score: '', is_other: false, ...o })),
   }))
   loading.value = false
 }
@@ -236,6 +297,7 @@ async function save() {
     respondent_fields: meta.value.respondent_fields,
     show_on_home:      meta.value.show_on_home,
     status_visibility: meta.value.status_visibility,
+    cover_image_url:   meta.value.cover_image_url,
     updated_at:        new Date().toISOString(),
   }
 
@@ -282,6 +344,7 @@ async function save() {
       settings:          q.settings || {},
       evidence_type:     q.evidence_type || 'none',
       evidence_required: q.evidence_required || false,
+      image_url:         q.image_url || '',
     }))
     const { error } = await supabase.from('supervision_questions').insert(qRows)
     if (error) {
@@ -369,6 +432,25 @@ onMounted(async () => {
             <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">คำอธิบาย</label>
             <textarea v-model="meta.description" rows="2" placeholder="อธิบายวัตถุประสงค์ของแบบนิเทศนี้ (ไม่บังคับ)"
               class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm resize-none focus:outline-none focus:border-primary"/>
+          </div>
+
+          <!-- Cover image -->
+          <div class="sm:col-span-2">
+            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">รูปหน้าปก (ไม่บังคับ)</label>
+            <p class="text-xs text-slate-400 mb-2">แสดงในหน้าปกก่อนเริ่มทำแบบสอบถาม (เหมือน Google Form)</p>
+            <div v-if="meta.cover_image_url" class="relative rounded-xl overflow-hidden mb-2 bg-slate-100 max-w-sm" style="aspect-ratio: 16/9;">
+              <img :src="meta.cover_image_url" class="w-full h-full object-cover"/>
+              <button @click="clearCoverImage" type="button"
+                class="absolute top-2 right-2 w-7 h-7 bg-white/90 hover:bg-white rounded-full flex items-center justify-center shadow">
+                <svg class="w-3.5 h-3.5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+              </button>
+            </div>
+            <button @click="triggerCoverUpload" :disabled="uploadingCover" type="button"
+              class="px-3 py-2 text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl transition-colors disabled:opacity-50">
+              {{ uploadingCover ? 'กำลังอัปโหลด...' : (meta.cover_image_url ? '🖼️ เปลี่ยนรูป' : '🖼️ อัปโหลดรูปหน้าปก') }}
+            </button>
           </div>
 
           <!-- Status -->
@@ -664,6 +746,19 @@ onMounted(async () => {
                     class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:border-primary"/>
                   <input v-model="q.description" type="text" placeholder="คำอธิบายเพิ่มเติม (ไม่บังคับ)"
                     class="w-full px-3 py-2 border border-slate-100 bg-slate-50 rounded-xl text-xs focus:outline-none focus:border-primary"/>
+                  <div v-if="q.image_url" class="relative rounded-lg overflow-hidden bg-slate-100 max-w-[200px]" style="aspect-ratio: 16/9;">
+                    <img :src="q.image_url" class="w-full h-full object-cover"/>
+                    <button @click="clearQuestionImage(q)" type="button"
+                      class="absolute top-1 right-1 w-6 h-6 bg-white/90 hover:bg-white rounded-full flex items-center justify-center shadow">
+                      <svg class="w-3 h-3 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                      </svg>
+                    </button>
+                  </div>
+                  <button v-else @click="triggerQuestionUpload(i)" :disabled="uploadingQuestionImage" type="button"
+                    class="flex items-center gap-1 text-xs text-slate-400 hover:text-primary transition-colors disabled:opacity-50">
+                    🖼️ แทรกภาพประกอบคำถาม
+                  </button>
                 </div>
 
                 <div class="flex items-center gap-2 flex-shrink-0">
@@ -718,6 +813,10 @@ onMounted(async () => {
                     class="flex-1 px-3 py-1.5 border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-primary"/>
                   <input v-model.number="opt.score" type="number" min="0" placeholder="คะแนน"
                     class="w-20 px-2 py-1.5 border border-slate-200 rounded-lg text-xs text-center focus:outline-none focus:border-emerald-400"/>
+                  <label class="flex items-center gap-1 flex-shrink-0 cursor-pointer" title="เป็นตัวเลือก 'อื่นๆ' — ผู้ตอบจะเห็นช่องให้พิมพ์ข้อความเอง">
+                    <input type="checkbox" v-model="opt.is_other" class="w-3.5 h-3.5 rounded accent-primary cursor-pointer"/>
+                    <span class="text-[10px] text-slate-500">อื่นๆ</span>
+                  </label>
                   <button @click="removeOption(q, oi)" :disabled="q.options.length <= 2" type="button"
                     class="w-5 h-5 flex items-center justify-center text-slate-300 hover:text-red-500 disabled:opacity-20 transition-colors">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
@@ -775,6 +874,8 @@ onMounted(async () => {
       </div>
     </template>
 
+    <input ref="coverFileInput" type="file" accept="image/*" class="hidden" @change="onCoverFileSelected"/>
+    <input ref="questionFileInput" type="file" accept="image/*" class="hidden" @change="onQuestionFileSelected"/>
   </div>
 </template>
 

@@ -5,6 +5,7 @@ import { supabase } from '../supabase'
 import { Cropper } from 'vue-advanced-cropper'
 import 'vue-advanced-cropper/dist/style.css'
 import Swal from 'sweetalert2'
+import { useFormDraft } from '../composables/useFormDraft'
 
 const route = useRoute()
 const token = computed(() => route.params.token)
@@ -15,6 +16,7 @@ const submitting  = ref(false)
 const submitted   = ref(false)
 const error       = ref(null)
 const alreadyDone = ref(false)
+const started     = ref(false)
 
 const form      = ref(null)
 const questions = ref([])
@@ -22,6 +24,7 @@ const schools   = ref([])
 
 const selectedSchool    = ref(null)
 const answers           = ref({})
+const otherText         = ref({})
 const evidenceFileUrls  = ref({})
 const evidencePreviews  = ref({})
 const evidenceLinks     = ref({})
@@ -100,6 +103,63 @@ async function loadForm() {
     .from('schools').select('id, name, district').order('district').order('name')
   schools.value = sc || []
   loading.value = false
+
+  // กู้คืนคำตอบที่กรอกค้างไว้ (ถ้ามี) แล้วเริ่ม autosave
+  const restored = restoreDraft()
+  if (restored) {
+    started.value = true
+    Swal.fire({ icon: 'info', title: 'กู้คืนคำตอบที่กรอกค้างไว้แล้ว', showConfirmButton: false, timer: 1800 })
+  }
+  watchAndSave()
+}
+
+// ─── Draft (กันข้อมูลหายเมื่อเน็ตหลุด) ───────────────────────────────────────
+const { restoreDraft, clearDraft, watchAndSave } = useFormDraft(
+  `supervision_draft_${route.params.token}`,
+  () => ({
+    started: started.value, selectedSchool: selectedSchool.value,
+    answers: answers.value, otherText: otherText.value,
+    evidenceFileUrls: evidenceFileUrls.value, evidenceLinks: evidenceLinks.value,
+    respondentName: respondentName.value, respondentPosition: respondentPosition.value,
+    respondentSchoolId: respondentSchoolId.value, respondentGender: respondentGender.value,
+    respondentAgeRange: respondentAgeRange.value, respondentPhone: respondentPhone.value,
+    respondentEmail: respondentEmail.value,
+  }),
+  (saved) => {
+    started.value = saved.started ?? false
+    selectedSchool.value = saved.selectedSchool ?? null
+    if (saved.answers) Object.assign(answers.value, saved.answers)
+    if (saved.otherText) Object.assign(otherText.value, saved.otherText)
+    if (saved.evidenceFileUrls) {
+      Object.assign(evidenceFileUrls.value, saved.evidenceFileUrls)
+      Object.assign(evidencePreviews.value, saved.evidenceFileUrls)
+    }
+    if (saved.evidenceLinks) Object.assign(evidenceLinks.value, saved.evidenceLinks)
+    respondentName.value     = saved.respondentName || ''
+    respondentPosition.value = saved.respondentPosition || ''
+    respondentSchoolId.value = saved.respondentSchoolId || null
+    respondentGender.value   = saved.respondentGender || ''
+    respondentAgeRange.value = saved.respondentAgeRange || ''
+    respondentPhone.value    = saved.respondentPhone || ''
+    respondentEmail.value    = saved.respondentEmail || ''
+  }
+)
+
+// ─── "อื่นๆ" free-text: แปลงคำตอบก่อนส่ง ─────────────────────────────────────
+function resolveAnswerForSubmit(q) {
+  const a = answers.value[q.id]
+  if (q.type === 'choice') {
+    const opt = q.options?.find(o => o.value === a)
+    if (opt?.is_other) return `อื่นๆ: ${(otherText.value[q.id] || '').trim()}`.trim()
+    return a
+  }
+  if (q.type === 'multi_choice' && Array.isArray(a)) {
+    return a.map(v => {
+      const opt = q.options?.find(o => o.value === v)
+      return opt?.is_other ? `อื่นๆ: ${(otherText.value[q.id] || '').trim()}`.trim() : v
+    })
+  }
+  return a
 }
 
 // ─── Evidence helpers ────────────────────────────────────────────────────────
@@ -219,6 +279,12 @@ function validate() {
       if (q.type === 'rating' && (a === null || a === undefined)) return `กรุณาตอบคำถามข้อที่ ${idx}`
       if (!['multi_choice','rating'].includes(q.type) && (a === '' || a === null)) return `กรุณาตอบคำถามข้อที่ ${idx}`
     }
+    if (['choice','multi_choice'].includes(q.type)) {
+      const a = answers.value[q.id]
+      const selectedValues = q.type === 'multi_choice' ? (a || []) : (a ? [a] : [])
+      const hasOtherSelected = selectedValues.some(v => q.options?.find(o => o.value === v)?.is_other)
+      if (hasOtherSelected && !(otherText.value[q.id] || '').trim()) return `กรุณาพิมพ์ข้อความ "อื่นๆ" ในข้อที่ ${idx}`
+    }
     if (q.evidence_required && q.evidence_type !== 'none') {
       const needUpload = ['upload','both'].includes(q.evidence_type)
       const needLink   = ['url','both'].includes(q.evidence_type)
@@ -250,7 +316,7 @@ async function submit() {
 
   const answerPayload = nonSectionQs.value.map(q => ({
     question_id:       q.id,
-    answer:            answers.value[q.id],
+    answer:            resolveAnswerForSubmit(q),
     evidence_file_url: evidenceFileUrls.value[q.id] || null,
     evidence_link_url: evidenceLinks.value[q.id]?.trim() || null,
   }))
@@ -269,6 +335,7 @@ async function submit() {
     return
   }
   if (data?.error === 'already_submitted') { alreadyDone.value = true; return }
+  clearDraft()
   submitted.value = true
 }
 
@@ -316,6 +383,23 @@ onMounted(loadForm)
         </div>
         <h2 class="text-2xl font-extrabold text-emerald-700 mb-2">ส่งแบบนิเทศเรียบร้อย!</h2>
         <p class="text-slate-500 text-sm">ขอบคุณที่ตอบแบบนิเทศ ข้อมูลของคุณได้รับการบันทึกแล้ว</p>
+      </div>
+
+      <!-- Cover page (ก่อนเริ่มทำแบบสอบถาม) -->
+      <div v-else-if="form && !started" class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+        <img v-if="form.cover_image_url" :src="form.cover_image_url" class="w-full object-cover" style="aspect-ratio: 16/9;"/>
+        <div class="p-8 text-center">
+          <span class="text-xs bg-primary/10 text-primary font-bold px-3 py-1 rounded-full">แบบนิเทศ</span>
+          <h1 class="text-2xl font-extrabold text-slate-800 mt-3">{{ form.title }}</h1>
+          <p v-if="form.description" class="text-slate-500 text-sm mt-2 whitespace-pre-line">{{ form.description }}</p>
+          <p v-if="form.deadline" class="text-xs text-slate-400 mt-3">
+            กำหนดส่ง: {{ new Date(form.deadline).toLocaleDateString('th-TH', { year:'numeric', month:'short', day:'numeric' }) }}
+          </p>
+          <button @click="started = true"
+            class="mt-6 w-full sm:w-auto sm:px-12 py-3.5 bg-primary text-white font-extrabold rounded-2xl shadow-lg hover:-translate-y-0.5 transition-all">
+            เริ่มทำแบบสอบถาม
+          </button>
+        </div>
       </div>
 
       <!-- Form -->
@@ -452,6 +536,7 @@ onMounted(loadForm)
                   <p v-if="q.description" class="text-xs text-slate-400 mt-0.5">{{ q.description }}</p>
                 </div>
               </div>
+              <img v-if="q.image_url" :src="q.image_url" class="w-full rounded-xl mt-3 object-cover" style="max-height: 320px;"/>
             </div>
 
             <!-- text -->
@@ -471,32 +556,42 @@ onMounted(loadForm)
 
             <!-- choice -->
             <div v-else-if="q.type === 'choice'" class="space-y-2">
-              <label v-for="opt in q.options" :key="opt.value"
-                class="flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all"
-                :class="answers[q.id] === opt.value ? 'border-primary bg-primary/5' : 'border-slate-200 hover:border-slate-300'">
-                <div :class="['w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0',
-                  answers[q.id] === opt.value ? 'border-primary' : 'border-slate-300']">
-                  <div v-if="answers[q.id] === opt.value" class="w-2 h-2 rounded-full bg-primary"/>
-                </div>
-                <input type="radio" v-model="answers[q.id]" :value="opt.value" class="sr-only"/>
-                <span class="text-sm text-slate-700">{{ opt.label }}</span>
-              </label>
+              <template v-for="opt in q.options" :key="opt.value">
+                <label class="flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all"
+                  :class="answers[q.id] === opt.value ? 'border-primary bg-primary/5' : 'border-slate-200 hover:border-slate-300'">
+                  <div :class="['w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0',
+                    answers[q.id] === opt.value ? 'border-primary' : 'border-slate-300']">
+                    <div v-if="answers[q.id] === opt.value" class="w-2 h-2 rounded-full bg-primary"/>
+                  </div>
+                  <input type="radio" v-model="answers[q.id]" :value="opt.value" class="sr-only"/>
+                  <span class="text-sm text-slate-700">{{ opt.label }}</span>
+                </label>
+                <input v-if="opt.is_other && answers[q.id] === opt.value" v-model="otherText[q.id]" type="text"
+                  placeholder="พิมพ์คำตอบของคุณ..."
+                  class="w-full ml-7 px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-primary"
+                  style="width: calc(100% - 1.75rem);"/>
+              </template>
             </div>
 
             <!-- multi_choice -->
             <div v-else-if="q.type === 'multi_choice'" class="space-y-2">
-              <label v-for="opt in q.options" :key="opt.value"
-                class="flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all"
-                :class="answers[q.id]?.includes(opt.value) ? 'border-primary bg-primary/5' : 'border-slate-200 hover:border-slate-300'">
-                <div :class="['w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0',
-                  answers[q.id]?.includes(opt.value) ? 'border-primary bg-primary' : 'border-slate-300']">
-                  <svg v-if="answers[q.id]?.includes(opt.value)" class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/>
-                  </svg>
-                </div>
-                <input type="checkbox" :value="opt.value" v-model="answers[q.id]" class="sr-only"/>
-                <span class="text-sm text-slate-700">{{ opt.label }}</span>
-              </label>
+              <template v-for="opt in q.options" :key="opt.value">
+                <label class="flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all"
+                  :class="answers[q.id]?.includes(opt.value) ? 'border-primary bg-primary/5' : 'border-slate-200 hover:border-slate-300'">
+                  <div :class="['w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0',
+                    answers[q.id]?.includes(opt.value) ? 'border-primary bg-primary' : 'border-slate-300']">
+                    <svg v-if="answers[q.id]?.includes(opt.value)" class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/>
+                    </svg>
+                  </div>
+                  <input type="checkbox" :value="opt.value" v-model="answers[q.id]" class="sr-only"/>
+                  <span class="text-sm text-slate-700">{{ opt.label }}</span>
+                </label>
+                <input v-if="opt.is_other && answers[q.id]?.includes(opt.value)" v-model="otherText[q.id]" type="text"
+                  placeholder="พิมพ์คำตอบของคุณ..."
+                  class="px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-primary"
+                  style="width: calc(100% - 1.75rem); margin-left: 1.75rem;"/>
+              </template>
             </div>
 
             <!-- rating -->
