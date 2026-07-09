@@ -88,7 +88,7 @@ const isPersonnel = computed(() =>
 
 const displayName = computed(() => {
   const f = form.value
-  if (f.first_name || f.last_name) return `${f.title} ${f.first_name} ${f.last_name}`.trim()
+  if (f.first_name || f.last_name) return `${f.title || ''}${f.first_name || ''}${f.last_name ? ' ' + f.last_name : ''}`.trim()
   return f.full_name || profile.value?.email || 'ผู้ใช้งาน'
 })
 

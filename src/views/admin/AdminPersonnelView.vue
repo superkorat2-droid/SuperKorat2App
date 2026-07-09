@@ -131,7 +131,7 @@ const filtered = computed(() => {
 })
 
 function displayName(p) {
-  if (p.first_name || p.last_name) return `${p.title||''} ${p.first_name||''} ${p.last_name||''}`.trim()
+  if (p.first_name || p.last_name) return `${p.title||''}${p.first_name||''}${p.last_name ? ' ' + p.last_name : ''}`.trim()
   return p.full_name || p.email || '-'
 }
 

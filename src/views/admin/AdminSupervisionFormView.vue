@@ -15,7 +15,7 @@ function groupLabel(key) { return personnelGroups.value.find(g => g.key === key)
 // เหมือน AdminPersonnelView.vue/PersonnelView.vue's displayName()
 function displayName(p) {
   if (!p) return '-'
-  if (p.first_name || p.last_name) return `${p.title || ''} ${p.first_name || ''} ${p.last_name || ''}`.trim()
+  if (p.first_name || p.last_name) return `${p.title || ''}${p.first_name || ''}${p.last_name ? ' ' + p.last_name : ''}`.trim()
   return p.full_name || p.email || '-'
 }
 

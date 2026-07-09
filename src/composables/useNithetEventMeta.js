@@ -29,7 +29,7 @@ export const STATUS_COLOR = {
 // เหมือน AdminPersonnelView.vue's displayName() — ใช้ร่วมกันสำหรับ "ผู้รับผิดชอบ"
 export function displayName(p) {
   if (!p) return '-'
-  if (p.first_name || p.last_name) return `${p.title || ''} ${p.first_name || ''} ${p.last_name || ''}`.trim()
+  if (p.first_name || p.last_name) return `${p.title || ''}${p.first_name || ''}${p.last_name ? ' ' + p.last_name : ''}`.trim()
   return p.full_name || p.email || '-'
 }
 

@@ -20,7 +20,7 @@ const profilesById   = ref({})
 function groupLabel(key) { return areaConfig.value?.personnel_groups?.find(g => g.key === key)?.label || key }
 function displayName(p) {
   if (!p) return '-'
-  if (p.first_name || p.last_name) return `${p.title || ''} ${p.first_name || ''} ${p.last_name || ''}`.trim()
+  if (p.first_name || p.last_name) return `${p.title || ''}${p.first_name || ''}${p.last_name ? ' ' + p.last_name : ''}`.trim()
   return p.full_name || p.email || '-'
 }
 function responsibleFor(form) {
