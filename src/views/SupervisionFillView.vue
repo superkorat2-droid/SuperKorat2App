@@ -266,6 +266,12 @@ function rePickImage(questionId) {
 }
 
 // ─── Progress ─────────────────────────────────────────────────────────────────
+// เฉพาะโรงเรียนที่ถูกเลือกเป็นเป้าหมาย (ถ้าตั้ง target='selected' ไว้)
+const availableSchools = computed(() => {
+  if (!form.value || form.value.target !== 'selected' || !form.value.target_schools?.length) return schools.value
+  return schools.value.filter(s => form.value.target_schools.includes(s.id))
+})
+
 const nonSectionQs = computed(() => questions.value.filter(q => q.type !== 'section'))
 
 const answered = computed(() =>
@@ -523,8 +529,8 @@ onMounted(() => { fetchConfig(); loadForm() })
               <select v-model="respondentSchoolId"
                 class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:border-primary">
                 <option :value="null">— ไม่ระบุ —</option>
-                <optgroup v-for="dist in [...new Set(schools.map(s=>s.district))].sort()" :key="dist" :label="`อ.${dist}`">
-                  <option v-for="s in schools.filter(x=>x.district===dist)" :key="s.id" :value="s.id">{{ s.name }}</option>
+                <optgroup v-for="dist in [...new Set(availableSchools.map(s=>s.district))].sort()" :key="dist" :label="`อ.${dist}`">
+                  <option v-for="s in availableSchools.filter(x=>x.district===dist)" :key="s.id" :value="s.id">{{ s.name }}</option>
                 </optgroup>
               </select>
             </div>
@@ -549,8 +555,8 @@ onMounted(() => { fetchConfig(); loadForm() })
           <select v-model="selectedSchool"
             class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:border-primary">
             <option value="" disabled selected>-- เลือกโรงเรียน --</option>
-            <optgroup v-for="dist in [...new Set(schools.map(s=>s.district))].sort()" :key="dist" :label="`อ.${dist}`">
-              <option v-for="s in schools.filter(x=>x.district===dist)" :key="s.id" :value="s.id">{{ s.name }}</option>
+            <optgroup v-for="dist in [...new Set(availableSchools.map(s=>s.district))].sort()" :key="dist" :label="`อ.${dist}`">
+              <option v-for="s in availableSchools.filter(x=>x.district===dist)" :key="s.id" :value="s.id">{{ s.name }}</option>
             </optgroup>
           </select>
         </div>
