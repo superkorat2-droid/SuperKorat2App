@@ -45,6 +45,7 @@ import AdminDmcResultsView        from '../views/admin/AdminDmcResultsView.vue'
 import PublicStudentStatsView     from '../views/PublicStudentStatsView.vue'
 import AdminSupervisionFormView from '../views/admin/AdminSupervisionFormView.vue'
 import AdminSupervisionResultsView from '../views/admin/AdminSupervisionResultsView.vue'
+import AdminNitetCalendarView from '../views/admin/AdminNitetCalendarView.vue'
 
 // ─── Dynamic CMS page (public) ───────────────────────────────────────────
 import DynamicPageView        from '../views/DynamicPageView.vue'
@@ -116,6 +117,7 @@ const routes = [
       { path: 'supervision/new',       name: 'adminSupervisionNew',     component: AdminSupervisionFormView,    meta: { title: 'สร้างแบบนิเทศ' } },
       { path: 'supervision/:id/edit',  name: 'adminSupervisionEdit',    component: AdminSupervisionFormView,    meta: { title: 'แก้ไขแบบนิเทศ' } },
       { path: 'supervision/:id/results', name: 'adminSupervisionResults', component: AdminSupervisionResultsView, meta: { title: 'ผลลัพธ์แบบนิเทศ' } },
+      { path: 'nithet-calendar',       name: 'adminNithetCalendar',     component: AdminNitetCalendarView,      meta: { title: 'ปฏิทินนิเทศ' } },
       { path: 'news',     name: 'adminNews',      component: AdminNewsView,          meta: { title: 'จัดการข่าวสาร', icon: '📰' } },
       { path: 'pages',          name: 'adminPages',      component: AdminPagesView,      meta: { title: 'จัดการหน้าเนื้อหา', icon: '📄' } },
       { path: 'pages/:id/edit', name: 'adminPageEditor', component: AdminPageEditorView, meta: { title: 'แก้ไขเนื้อหา' } },
