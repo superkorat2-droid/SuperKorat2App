@@ -387,7 +387,7 @@ onMounted(loadForm)
 
       <!-- Cover page (ก่อนเริ่มทำแบบสอบถาม) -->
       <div v-else-if="form && !started" class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-        <img v-if="form.cover_image_url" :src="form.cover_image_url" class="w-full object-cover" style="aspect-ratio: 16/9;"/>
+        <img v-if="form.cover_image_url" :src="form.cover_image_url" class="w-full h-auto block"/>
         <div class="p-8 text-center">
           <span class="text-xs bg-primary/10 text-primary font-bold px-3 py-1 rounded-full">แบบนิเทศ</span>
           <h1 class="text-2xl font-extrabold text-slate-800 mt-3">{{ form.title }}</h1>
@@ -536,7 +536,7 @@ onMounted(loadForm)
                   <p v-if="q.description" class="text-xs text-slate-400 mt-0.5">{{ q.description }}</p>
                 </div>
               </div>
-              <img v-if="q.image_url" :src="q.image_url" class="w-full rounded-xl mt-3 object-cover" style="max-height: 320px;"/>
+              <img v-if="q.image_url" :src="q.image_url" class="w-full h-auto rounded-xl mt-3 block"/>
             </div>
 
             <!-- text -->
