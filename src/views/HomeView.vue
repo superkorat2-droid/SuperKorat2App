@@ -587,8 +587,8 @@ const stats = [
         <!-- ══ SUPERVISION LIST ══ -->
         <section v-else-if="sec.key === 'supervision_list'" :style="getBgStyle(sec)" class="py-8 md:py-12">
           <div class="max-w-4xl mx-auto px-4">
-            <h2 class="text-2xl md:text-3xl font-extrabold text-slate-800 dark:text-slate-100 mb-2">{{ sec.title }}</h2>
-            <p class="text-slate-500 dark:text-slate-400 text-sm mb-8">แบบนิเทศและแบบสอบถามที่เปิดรับอยู่</p>
+            <h2 class="text-2xl md:text-3xl font-extrabold text-slate-800 dark:text-slate-100 mb-2 text-center">{{ sec.title }}</h2>
+            <p class="text-slate-500 dark:text-slate-400 text-sm mb-8 text-center">แบบนิเทศและแบบสอบถามที่เปิดรับอยู่</p>
 
             <div v-if="loadingSupervision" class="flex justify-center py-12">
               <div class="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin"/>
