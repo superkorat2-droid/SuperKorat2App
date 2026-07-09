@@ -5,11 +5,16 @@ import { usePageHeader } from '../composables/usePageHeader'
 import PageHero from '../components/PageHero.vue'
 import MonthCalendar from '../components/calendar/MonthCalendar.vue'
 import { supabase } from '../supabase'
-import { TYPE_LABEL, TYPE_COLOR, formatEventDateRange } from '../composables/useNithetEventMeta'
+import { TYPE_LABEL, TYPE_COLOR, formatEventDateRange, formatResponsible } from '../composables/useNithetEventMeta'
 
 const { config, fetchConfig } = useAreaConfig()
 onMounted(fetchConfig)
 const header = usePageHeader('nithet', { icon: 'eye', title: 'กลุ่มนิเทศ ติดตามและประเมินผล' })
+
+function groupLabel(key) { return config.value?.personnel_groups?.find(g => g.key === key)?.label || key }
+function responsibleText(event) {
+  return formatResponsible(event.responsible_names || [], event.responsible_group ? groupLabel(event.responsible_group) : '')
+}
 
 const events        = ref([])
 const loadingEvents = ref(true)
@@ -88,7 +93,7 @@ onMounted(async () => {
           <div class="flex flex-wrap gap-3 mt-1 text-xs text-slate-400">
             <span v-if="event.school">โรงเรียน: {{ event.school.name }}</span>
             <span v-if="event.location">สถานที่: {{ event.location }}</span>
-            <span v-if="event.responsible_name">ผู้รับผิดชอบ: {{ event.responsible_name }}</span>
+            <span v-if="event.responsible_group || event.responsible_names?.length">ผู้รับผิดชอบ: {{ responsibleText(event) }}</span>
           </div>
         </button>
       </div>
@@ -119,7 +124,7 @@ onMounted(async () => {
                 <p>📅 {{ formatEventDateRange(selectedEvent) }}</p>
                 <p v-if="selectedEvent.school">🏫 {{ selectedEvent.school.name }} <span class="text-slate-400">(อ.{{ selectedEvent.school.district }})</span></p>
                 <p v-if="selectedEvent.location">📍 {{ selectedEvent.location }}</p>
-                <p v-if="selectedEvent.responsible_name">👤 {{ selectedEvent.responsible_name }}</p>
+                <p v-if="selectedEvent.responsible_group || selectedEvent.responsible_names?.length">👤 {{ responsibleText(selectedEvent) }}</p>
               </div>
             </div>
           </div>

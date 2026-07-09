@@ -4,7 +4,12 @@ import { supabase } from '../../supabase'
 import Swal from 'sweetalert2'
 import MonthCalendar from '../../components/calendar/MonthCalendar.vue'
 import { toDateKey } from '../../composables/useCalendarGrid'
-import { TYPE_LABEL, TYPE_COLOR, STATUS_LABEL, STATUS_COLOR, displayName, formatEventDateRange } from '../../composables/useNithetEventMeta'
+import { useAreaConfig } from '../../composables/useAreaConfig'
+import { TYPE_LABEL, TYPE_COLOR, STATUS_LABEL, STATUS_COLOR, displayName, formatEventDateRange, formatResponsible } from '../../composables/useNithetEventMeta'
+
+const { config: areaConfig, fetchConfig } = useAreaConfig()
+const personnelGroups = computed(() => areaConfig.value?.personnel_groups || [])
+function groupLabel(key) { return personnelGroups.value.find(g => g.key === key)?.label || key }
 
 const events        = ref([])
 const schools       = ref([])
@@ -40,12 +45,19 @@ function canEdit(event) {
   return isAdmin.value || event.created_by === currentUserId.value
 }
 
+function responsibleNamesFor(event) {
+  return (event.responsible_ids || [])
+    .map(id => responsibleOptions.value.find(p => p.id === id))
+    .filter(Boolean)
+    .map(displayName)
+}
+
 function emptyForm() {
   const today = toDateKey(new Date())
   return {
     id: null, type: 'school_visit', title: '', description: '',
     start_date: today, end_date: today, start_time: '', end_time: '',
-    school_id: '', location: '', responsible_id: '',
+    school_id: '', location: '', responsible_ids: [], responsible_group: '',
     status: 'scheduled', show_public: true,
   }
 }
@@ -59,7 +71,7 @@ async function load() {
   loading.value = true
   let query = supabase
     .from('nithet_events')
-    .select('*, school:schools(id,name,district), responsible:profiles!nithet_events_responsible_id_fkey(id,title,first_name,last_name,full_name)')
+    .select('*, school:schools(id,name,district)')
     .order('start_date', { ascending: true })
   if (!isAdmin.value || myEventsOnly.value) query = query.eq('created_by', currentUserId.value)
   const { data, error } = await query
@@ -79,7 +91,8 @@ function openEdit(event) {
     start_date: event.start_date, end_date: event.end_date,
     start_time: event.start_time ? event.start_time.slice(0,5) : '', end_time: event.end_time ? event.end_time.slice(0,5) : '',
     school_id: event.school_id || '', location: event.location || '',
-    responsible_id: event.responsible_id || '', status: event.status, show_public: event.show_public,
+    responsible_ids: [...(event.responsible_ids || [])], responsible_group: event.responsible_group || '',
+    status: event.status, show_public: event.show_public,
   }
   showModal.value = true
 }
@@ -104,7 +117,8 @@ async function save() {
     end_time: form.value.end_time || null,
     school_id: form.value.type === 'school_visit' ? form.value.school_id : (form.value.school_id || null),
     location: form.value.location,
-    responsible_id: form.value.responsible_id || null,
+    responsible_ids: form.value.responsible_ids,
+    responsible_group: form.value.responsible_group,
     status: form.value.status,
     show_public: form.value.show_public,
   }
@@ -148,6 +162,7 @@ function onSelectEvent(ev) {
 }
 
 onMounted(async () => {
+  await fetchConfig()
   const { data: { user } } = await supabase.auth.getUser()
   currentUserId.value = user?.id
   if (user?.id) {
@@ -269,7 +284,9 @@ onMounted(async () => {
               <span>{{ formatEventDateRange(event) }}</span>
               <span v-if="event.school">โรงเรียน: {{ event.school.name }}</span>
               <span v-if="event.location">สถานที่: {{ event.location }}</span>
-              <span v-if="event.responsible">ผู้รับผิดชอบ: {{ displayName(event.responsible) }}</span>
+              <span v-if="event.responsible_group || event.responsible_ids?.length">
+                ผู้รับผิดชอบ: {{ formatResponsible(responsibleNamesFor(event), event.responsible_group ? groupLabel(event.responsible_group) : '') }}
+              </span>
             </div>
           </div>
 
@@ -388,10 +405,22 @@ onMounted(async () => {
                 <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">ผู้รับผิดชอบ</p>
               </div>
               <div>
-                <select v-model="form.responsible_id" class="input-field w-full">
-                  <option value="">-- ไม่ระบุผู้รับผิดชอบ --</option>
-                  <option v-for="p in responsibleOptions" :key="p.id" :value="p.id">{{ displayName(p) }}</option>
+                <label class="block text-xs font-bold text-slate-600 mb-1">มอบทั้งกลุ่ม (ถ้ามี)</label>
+                <select v-model="form.responsible_group" class="input-field w-full">
+                  <option value="">-- ไม่ระบุกลุ่ม --</option>
+                  <option v-for="g in personnelGroups" :key="g.key" :value="g.key">{{ g.label }}</option>
                 </select>
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-600 mb-1">ผู้รับผิดชอบรายบุคคล (เลือกได้หลายคน)</label>
+                <div class="border border-slate-200 rounded-xl max-h-40 overflow-y-auto divide-y divide-slate-100">
+                  <label v-for="p in responsibleOptions" :key="p.id"
+                    class="flex items-center gap-2 px-3 py-2 text-sm cursor-pointer hover:bg-slate-50">
+                    <input type="checkbox" :value="p.id" v-model="form.responsible_ids" class="rounded border-slate-300 text-primary focus:ring-primary/30"/>
+                    {{ displayName(p) }}
+                  </label>
+                  <p v-if="!responsibleOptions.length" class="px-3 py-2 text-xs text-slate-400">ไม่มีรายชื่อ</p>
+                </div>
               </div>
 
               <!-- ══ สถานะและการแสดงผล ══ -->

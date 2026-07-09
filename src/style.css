@@ -132,3 +132,12 @@ body {
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 99px; }
 ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+/* ── Print isolation: หน้ารายงานที่ต้อง teleport ไป #print-report-root
+   จะโชว์เฉพาะตอนพิมพ์ ซ่อนทุกอย่างอื่นในหน้า (sidebar/navbar/modal) ─── */
+#print-report-root { display: none; }
+@media print {
+  @page { size: A4; margin: 0; }
+  body > *:not(#print-report-root) { display: none !important; }
+  #print-report-root { display: block !important; }
+}

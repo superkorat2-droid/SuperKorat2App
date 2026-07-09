@@ -49,3 +49,11 @@ export function formatEventDateRange(event) {
   const timeStr = event.start_time ? `${fmtTime(event.start_time)}${event.end_time ? '-' + fmtTime(event.end_time) : ''} น.` : ''
   return timeStr ? `${dateStr} · ${timeStr}` : dateStr
 }
+
+// รวมชื่อผู้รับผิดชอบหลายคน + ชื่อกลุ่ม (ถ้ามอบทั้งกลุ่ม) เป็นสตริงเดียวสำหรับแสดงผล
+export function formatResponsible(names, groupLabel) {
+  const parts = []
+  if (groupLabel) parts.push(groupLabel)
+  if (names && names.length) parts.push(names.join(', '))
+  return parts.join(' · ')
+}

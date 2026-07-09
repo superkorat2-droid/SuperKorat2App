@@ -48,6 +48,7 @@ const ICON_MAP = {
   '/dashboard/services':     'globe',
   '/dashboard/supervision':  'supervision',
   '/dashboard/nithet-calendar': 'calendar',
+  '/dashboard/nithet-report': 'documents',
   '/dashboard/news':         'news',
   '/dashboard/pages':        'pages',
   '/dashboard/page-headers': 'banners',
@@ -101,6 +102,7 @@ const allGroups = [
     items: [
       { to: '/dashboard/supervision', label: 'แบบนิเทศติดตาม', roles: ['super_admin','admin','supervisor','staff'] },
       { to: '/dashboard/nithet-calendar', label: 'ปฏิทินนิเทศ', roles: ['super_admin','admin','supervisor','staff'] },
+      { to: '/dashboard/nithet-report', label: 'รายงานผลการนิเทศ', roles: ['super_admin','admin','supervisor','staff'] },
     ]
   },
   {
