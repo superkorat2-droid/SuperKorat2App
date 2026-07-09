@@ -6,6 +6,7 @@ import { useAreaConfig, DEFAULT_HOME_SECTIONS } from '../composables/useAreaConf
 import { ICON_MAP } from '../composables/useIcons.js'
 import { useEducationNews } from '../composables/useEducationNews'
 import { useTheme } from '../composables/useTheme'
+import { TYPE_LABEL, TYPE_COLOR, formatEventDateRange } from '../composables/useNithetEventMeta'
 
 const router = useRouter()
 
@@ -132,6 +133,26 @@ const needsEduNewsSection = computed(() =>
   orderedSections.value.some(s => s.key === 'education_news' && s.visible)
 )
 
+// ── Nithet calendar (home section) ────────────────────────────────
+const nithetEvents        = ref([])
+const loadingNithetEvents = ref(false)
+const NITHET_HOME_LIMIT = 4
+
+const needsNithetCalendarSection = computed(() =>
+  orderedSections.value.some(s => s.key === 'nithet_calendar' && s.visible)
+)
+
+async function fetchNithetEvents() {
+  loadingNithetEvents.value = true
+  const { data } = await supabase.rpc('get_nithet_events_public')
+  const today = new Date().toISOString().slice(0, 10)
+  nithetEvents.value = (Array.isArray(data) ? data : [])
+    .filter(e => e.end_date >= today)
+    .sort((a, b) => a.start_date.localeCompare(b.start_date) || (a.start_time || '').localeCompare(b.start_time || ''))
+    .slice(0, NITHET_HOME_LIMIT)
+  loadingNithetEvents.value = false
+}
+
 async function fetchSupervisionForms() {
   loadingSupervision.value = true
   const { data } = await supabase.rpc('get_supervision_list_public')
@@ -176,6 +197,7 @@ onMounted(async () => {
     slideInterval = setInterval(nextSlide, 7000)
   if (needsSupervisionSection.value) fetchSupervisionForms()
   if (needsEduNewsSection.value) fetchEduNews()
+  if (needsNithetCalendarSection.value) fetchNithetEvents()
 
   // รีโหลดแบบนิเทศเมื่อ tab กลับมา (หลังแก้ไขในหน้า admin)
   document.addEventListener('visibilitychange', () => {
@@ -747,6 +769,50 @@ const stats = [
                   </div>
                 </Transition>
               </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ══ NITHET CALENDAR ══ -->
+        <section v-else-if="sec.key === 'nithet_calendar'" :style="getBgStyle(sec)" class="py-8 md:py-12">
+          <div class="max-w-4xl mx-auto px-4">
+            <h2 class="text-2xl md:text-3xl font-extrabold text-slate-800 dark:text-slate-100 mb-2 text-center">{{ sec.title }}</h2>
+            <p class="text-slate-500 dark:text-slate-400 text-sm mb-8 text-center">กำหนดการนิเทศโรงเรียนและกิจกรรมของกลุ่มนิเทศที่ใกล้ถึง</p>
+
+            <div v-if="loadingNithetEvents" class="flex justify-center py-12">
+              <div class="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin"/>
+            </div>
+
+            <div v-else-if="nithetEvents.length === 0"
+              class="text-center py-12 bg-white/60 dark:bg-slate-800/60 rounded-2xl border border-slate-200 dark:border-slate-700 text-slate-400">
+              <svg class="w-12 h-12 mx-auto mb-3 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5m-9-6h.008v.008H12v-.008z"/>
+              </svg>
+              <p class="font-medium">ยังไม่มีกำหนดการในขณะนี้</p>
+            </div>
+
+            <div v-else class="space-y-3">
+              <RouterLink v-for="event in nithetEvents" :key="event.id" to="/nithet"
+                class="block bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-4 hover:shadow-md transition-shadow">
+                <div class="flex flex-wrap items-center gap-2 mb-1.5">
+                  <span :class="['text-xs font-bold px-2.5 py-0.5 rounded-full', TYPE_COLOR[event.type]?.bg, TYPE_COLOR[event.type]?.text]">
+                    {{ TYPE_LABEL[event.type] }}
+                  </span>
+                  <span class="text-xs text-slate-400">{{ formatEventDateRange(event) }}</span>
+                </div>
+                <h3 class="font-bold text-slate-800 dark:text-slate-100">{{ event.title }}</h3>
+                <p v-if="event.school" class="text-xs text-slate-400 mt-1">โรงเรียน: {{ event.school.name }}</p>
+              </RouterLink>
+            </div>
+
+            <div class="text-center mt-8">
+              <RouterLink to="/nithet"
+                class="inline-flex items-center gap-2 px-6 py-2.5 border border-primary text-primary font-bold rounded-2xl text-sm hover:bg-primary hover:text-white transition-all">
+                ดูปฏิทินทั้งหมด
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/>
+                </svg>
+              </RouterLink>
             </div>
           </div>
         </section>
