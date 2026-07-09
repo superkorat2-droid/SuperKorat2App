@@ -80,14 +80,19 @@ const publicToken = ref(null)
 const schools = ref([])
 const schoolFilterDistrict = ref('all')
 const schoolFilterGroup    = ref('all')
+const schoolFilterSearch   = ref('')
 const districts = computed(() => [...new Set(schools.value.map(s => s.district))].filter(Boolean).sort())
 const schoolGroups = computed(() => [...new Set(schools.value.map(s => s.school_group))].filter(Boolean).sort())
-const filteredSchools = computed(() => schools.value.filter(s =>
-  (schoolFilterDistrict.value === 'all' || s.district === schoolFilterDistrict.value) &&
-  (schoolFilterGroup.value    === 'all' || s.school_group === schoolFilterGroup.value)
-))
+const filteredSchools = computed(() => {
+  const q = schoolFilterSearch.value.trim().toLowerCase()
+  return schools.value.filter(s =>
+    (schoolFilterDistrict.value === 'all' || s.district === schoolFilterDistrict.value) &&
+    (schoolFilterGroup.value    === 'all' || s.school_group === schoolFilterGroup.value) &&
+    (!q || s.name.toLowerCase().includes(q))
+  )
+})
 const filteredDistricts = computed(() => [...new Set(filteredSchools.value.map(s => s.district))].filter(Boolean).sort())
-function resetSchoolFilters() { schoolFilterDistrict.value = 'all'; schoolFilterGroup.value = 'all' }
+function resetSchoolFilters() { schoolFilterDistrict.value = 'all'; schoolFilterGroup.value = 'all'; schoolFilterSearch.value = '' }
 function selectAllSchools() { meta.value.target_schools = [...new Set([...meta.value.target_schools, ...filteredSchools.value.map(s => s.id)])] }
 function clearTargetSchools() { meta.value.target_schools = [] }
 
@@ -503,8 +508,13 @@ onMounted(async () => {
               </div>
             </div>
 
-            <!-- ตัวกรอง: อำเภอ / ศูนย์เครือข่าย -->
+            <!-- ตัวกรอง: ชื่อโรงเรียน / อำเภอ / ศูนย์เครือข่าย -->
             <div class="flex flex-wrap items-center gap-2">
+              <div class="relative flex-1 min-w-[160px]">
+                <SvgIcon name="magnify" class="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400"/>
+                <input v-model="schoolFilterSearch" type="text" placeholder="ค้นหาชื่อโรงเรียน..."
+                  class="w-full pl-8 pr-2.5 py-1.5 border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-primary"/>
+              </div>
               <select v-model="schoolFilterDistrict" class="px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs bg-white focus:outline-none focus:border-primary">
                 <option value="all">ทุกอำเภอ</option>
                 <option v-for="dist in districts" :key="dist" :value="dist">อ.{{ dist }}</option>
@@ -513,10 +523,10 @@ onMounted(async () => {
                 <option value="all">ทุกศูนย์เครือข่าย</option>
                 <option v-for="g in schoolGroups" :key="g" :value="g">{{ g }}</option>
               </select>
-              <button v-if="schoolFilterDistrict !== 'all' || schoolFilterGroup !== 'all'"
+              <button v-if="schoolFilterDistrict !== 'all' || schoolFilterGroup !== 'all' || schoolFilterSearch"
                 type="button" @click="resetSchoolFilters"
                 class="text-xs text-slate-400 hover:text-slate-600 font-bold">✕ ทั้งหมด</button>
-              <span class="text-xs text-slate-400 ml-auto">พบ {{ filteredSchools.length }} โรงเรียน</span>
+              <span class="text-xs text-slate-400 w-full text-right">พบ {{ filteredSchools.length }} โรงเรียน</span>
             </div>
 
             <div class="max-h-64 overflow-y-auto border border-slate-200 bg-white rounded-xl divide-y divide-slate-100">
