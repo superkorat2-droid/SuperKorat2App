@@ -53,6 +53,7 @@ import DynamicPageView        from '../views/DynamicPageView.vue'
 
 // ─── Personnel ────────────────────────────────────────────────────────────
 import PersonnelView          from '../views/PersonnelView.vue'
+import OrgChartView           from '../views/OrgChartView.vue'
 
 // ─── Supervision fill (public) ────────────────────────────────────────────
 import SupervisionFillView    from '../views/SupervisionFillView.vue'
@@ -228,6 +229,8 @@ const routes = [
   { path: '/student-stats', name: 'studentStats', component: PublicStudentStatsView },
 
   // ── Dynamic CMS pages ────────────────────────────────────────────────
+  // /page/org แทนที่ด้วยผังโครงสร้างที่ดึงข้อมูลจริง (ต้องมาก่อน /page/:slug ทั่วไป)
+  { path: '/page/org', name: 'orgChart', component: OrgChartView },
   { path: '/page/:slug', name: 'dynamicPage', component: DynamicPageView },
 
   // ── Supervision fill (public link) ───────────────────────────────────
