@@ -105,14 +105,10 @@ function displayName(p) {
   if (p.first_name || p.last_name) return `${p.title||''}${p.first_name||''}${p.last_name ? ' '+p.last_name : ''}`.trim()
   return p.full_name || ''
 }
-// การ์ดขึ้นบรรทัดใหม่ที่ช่องว่างจริงระหว่างชื่อ/นามสกุลเสมอ กันคำถูกตัดกลางคำ
-// (word-break:keep-all ไม่กันการตัดคำไทยกลางพยางค์ในเบราว์เซอร์ chromium)
-function cardNameFirstLine(p) {
-  const t = `${p.title||''}${p.first_name||''}`.trim()
-  return t || p.full_name || ''
-}
-function cardNameLastLine(p) {
-  return (p.first_name || p.last_name) ? (p.last_name || '') : ''
+// ชื่อ/ตำแหน่งในการ์ดต้องอยู่บรรทัดเดียวเสมอ (whitespace-nowrap) — ถ้ายาวเกินให้ย่อขนาดตัวอักษรแทนการตัดบรรทัด
+function fitTextClass(text, tiers = [[18, 'text-sm'], [24, 'text-xs'], [Infinity, 'text-[10px]']]) {
+  const len = (text || '').length
+  return tiers.find(([max]) => len <= max)[1]
 }
 function isExec(p) { return ['director','deputy','group_director'].includes(p.org_role) }
 
@@ -160,8 +156,8 @@ function visibleContact(p) {
                     <span v-else class="avatar-initial">{{ displayName(p)[0] }}</span>
               </div>
               <div class="card-body">
-                <p class="card-name">{{ cardNameFirstLine(p) }}<br v-if="cardNameLastLine(p)">{{ cardNameLastLine(p) }}</p>
-                <p class="card-pos">{{ p.position }}</p>
+                <p class="card-name" :class="fitTextClass(displayName(p))">{{ displayName(p) }}</p>
+                <p class="card-pos" :class="fitTextClass(p.position)">{{ p.position }}</p>
               </div>
             </button>
           </div>
@@ -180,8 +176,8 @@ function visibleContact(p) {
                     <span v-else class="avatar-initial">{{ displayName(p)[0] }}</span>
               </div>
               <div class="card-body">
-                <p class="card-name">{{ cardNameFirstLine(p) }}<br v-if="cardNameLastLine(p)">{{ cardNameLastLine(p) }}</p>
-                <p class="card-pos">{{ p.position }}</p>
+                <p class="card-name" :class="fitTextClass(displayName(p))">{{ displayName(p) }}</p>
+                <p class="card-pos" :class="fitTextClass(p.position)">{{ p.position }}</p>
               </div>
             </button>
           </div>
@@ -200,8 +196,8 @@ function visibleContact(p) {
                     <span v-else class="avatar-initial">{{ displayName(p)[0] }}</span>
               </div>
               <div class="card-body">
-                <p class="card-name">{{ cardNameFirstLine(p) }}<br v-if="cardNameLastLine(p)">{{ cardNameLastLine(p) }}</p>
-                <p class="card-pos">{{ p.position }}</p>
+                <p class="card-name" :class="fitTextClass(displayName(p))">{{ displayName(p) }}</p>
+                <p class="card-pos" :class="fitTextClass(p.position)">{{ p.position }}</p>
                 <p v-if="p.department" class="card-dept">{{ p.department }}</p>
               </div>
             </button>
@@ -233,8 +229,8 @@ function visibleContact(p) {
                     <span v-else class="avatar-initial">{{ displayName(p)[0] }}</span>
               </div>
               <div class="card-body">
-                <p class="card-name">{{ cardNameFirstLine(p) }}<br v-if="cardNameLastLine(p)">{{ cardNameLastLine(p) }}</p>
-                <p class="card-pos">{{ p.position_level || p.position }}</p>
+                <p class="card-name" :class="fitTextClass(displayName(p))">{{ displayName(p) }}</p>
+                <p class="card-pos" :class="fitTextClass(p.position_level || p.position)">{{ p.position_level || p.position }}</p>
                 <div class="flex flex-wrap justify-center gap-1 mt-1.5">
                   <span v-for="s in (p.subjects||[]).slice(0,2)" :key="s"
                     class="text-[9px] font-bold px-1.5 py-0.5 bg-secondary/10 text-secondary rounded-full">{{ s }}</span>
@@ -322,8 +318,8 @@ function visibleContact(p) {
 
 /* ── Unified card — height เท่ากันทุกใบ ───────────────────────── */
 .personnel-card {
-  @apply w-52 bg-white dark:bg-slate-800 rounded-2xl shadow-lg hover:shadow-2xl overflow-hidden text-left cursor-pointer flex flex-col;
-  min-height: 260px;
+  @apply w-60 bg-white dark:bg-slate-800 rounded-2xl shadow-lg hover:shadow-2xl overflow-hidden text-left cursor-pointer flex flex-col;
+  min-height: 280px;
 }
 .personnel-card-sm {
   @apply w-48;
@@ -360,10 +356,10 @@ function visibleContact(p) {
   @apply pt-3 pb-4 px-3 text-center flex-1 flex flex-col items-center;
 }
 .card-name {
-  @apply font-extrabold text-slate-800 dark:text-slate-100 text-sm leading-tight break-keep break-words;
+  @apply w-full font-extrabold text-slate-800 dark:text-slate-100 leading-tight whitespace-nowrap overflow-hidden;
 }
 .card-pos {
-  @apply text-xs text-primary font-bold mt-1 leading-tight break-keep break-words;
+  @apply text-primary font-bold mt-1 leading-tight break-keep break-words;
 }
 .card-dept {
   @apply text-[10px] text-slate-400 mt-0.5 break-keep break-words;
