@@ -78,6 +78,16 @@ const deptGroups = computed(() => {
 
   return [...fromConfig, ...extras]
 })
+
+// แบ่งกล่องกลุ่มงานเป็นแถวละ 4 กล่อง แล้ววาดเส้นแนวนอน+ก้านแบบเดียวกับชั้นอื่น (แถวละชุด กันเส้นเพี้ยนตอนห่อบรรทัด)
+const DEPT_ROW_SIZE = 4
+const deptGroupRows = computed(() => {
+  const rows = []
+  for (let i = 0; i < deptGroups.value.length; i += DEPT_ROW_SIZE) {
+    rows.push(deptGroups.value.slice(i, i + DEPT_ROW_SIZE))
+  }
+  return rows
+})
 </script>
 
 <template>
@@ -145,23 +155,25 @@ const deptGroups = computed(() => {
           </div>
         </template>
 
-        <!-- Tier 4: กลุ่มงาน (ใช้ chart-tier ธรรมดา ไม่ใช่ branch — จำนวนกลุ่มเพิ่มได้เรื่อยๆ ขึ้นบรรทัดใหม่บ่อย
-             เส้นแนวนอนแบบ branch จะเพี้ยนเวลาห่อบรรทัด เลยใช้แค่เส้นเชื่อมเดียวด้านบนพอ) -->
-        <template v-if="deptGroups.length">
+        <!-- Tier 4: กลุ่มงาน — แบ่งเป็นแถวละ 4 กล่อง แต่ละแถววาดเส้นแนวนอน+ก้านเหมือนชั้นอื่น
+             (แถวละชุดแยกกัน กันเส้นเพี้ยนเวลาห่อบรรทัดของทั้งกลุ่ม) -->
+        <template v-if="deptGroupRows.length">
           <div class="chart-connector"></div>
-          <div class="chart-tier">
-            <div v-for="g in deptGroups" :key="g.name" class="chart-box">
-              <p class="chart-box-title" :class="fitTextClass(g.name, [[22,'text-sm'],[30,'text-xs'],[Infinity,'text-[11px]']])">{{ g.name }}</p>
-              <div v-if="g.members.length" class="chart-roster">
-                <div v-for="m in g.members" :key="m.id" class="chart-roster-item">
-                  <div class="chart-roster-avatar">
-                    <img v-if="m.avatar_url" :src="m.avatar_url" class="w-full h-full object-cover object-top"/>
-                    <span v-else class="chart-roster-initial">{{ displayName(m)[0] }}</span>
+          <div v-for="(row, ri) in deptGroupRows" :key="ri" class="chart-branch chart-branch-deptrow">
+            <div v-for="g in row" :key="g.name" class="chart-branch-item">
+              <div class="chart-box">
+                <p class="chart-box-title" :class="fitTextClass(g.name, [[22,'text-sm'],[30,'text-xs'],[Infinity,'text-[11px]']])">{{ g.name }}</p>
+                <div v-if="g.members.length" class="chart-roster">
+                  <div v-for="m in g.members" :key="m.id" class="chart-roster-item">
+                    <div class="chart-roster-avatar">
+                      <img v-if="m.avatar_url" :src="m.avatar_url" class="w-full h-full object-cover object-top"/>
+                      <span v-else class="chart-roster-initial">{{ displayName(m)[0] }}</span>
+                    </div>
+                    <span class="chart-roster-name">{{ displayName(m) }}</span>
                   </div>
-                  <span class="chart-roster-name">{{ displayName(m) }}</span>
                 </div>
+                <p v-else class="chart-box-empty">ยังไม่มีเจ้าหน้าที่</p>
               </div>
-              <p v-else class="chart-box-empty">ยังไม่มีเจ้าหน้าที่</p>
             </div>
           </div>
         </template>
@@ -183,8 +195,9 @@ const deptGroups = computed(() => {
 
 /* แถวลูก (มีเส้นแนวนอนคาดด้านบน + เส้นสต็มลงมาแต่ละกล่อง) */
 .chart-branch { @apply flex justify-center gap-6 flex-wrap; }
-.chart-branch-wrap { @apply flex-wrap; }
 .chart-branch-item { @apply relative flex flex-col items-center pt-8; }
+/* กลุ่มงานแบ่งเป็นหลายแถว (ดูข้างล่าง) — เว้นระยะระหว่างแถว */
+.chart-branch-deptrow + .chart-branch-deptrow { @apply mt-6; }
 .chart-branch-item::before {
   /* เส้นสต็มลงมาจากเส้นแนวนอนถึงกล่อง */
   content: ''; position: absolute; top: 0; left: 50%; width: 2px; height: 2rem;
@@ -205,6 +218,12 @@ const deptGroups = computed(() => {
 @media (max-width: 640px) {
   .chart-branch { flex-direction: column; }
   .chart-branch-item::after { display: none; }
+}
+/* แถวกลุ่มงาน (chart-box กว้าง 256px ×4 + ช่องไฟ ต้องการ ~1130px ถึงจะพอดี 1 แถวจริง)
+   แคบกว่านี้ให้ตกลงมาเรียงเป็นคอลัมน์เดียวไปเลย กันเส้นคาดเพี้ยนตอนห่อกลางแถว */
+@media (max-width: 1180px) {
+  .chart-branch-deptrow { flex-direction: column; }
+  .chart-branch-deptrow > .chart-branch-item::after { display: none; }
 }
 
 /* ── การ์ดผู้บริหาร (ผอ.เขต/รองผอ.เขต/ผอ.กลุ่ม) ───────────────── */
