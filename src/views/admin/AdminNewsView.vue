@@ -45,6 +45,8 @@ function youtubeThumbnail(url) {
 
 // ── State ────────────────────────────────────────────────────────
 const newsList        = ref([])
+const currentUserId   = ref(null)
+const currentRole     = ref(null)
 const loading         = ref(true)
 const saving          = ref(false)
 const showModal       = ref(false)
@@ -94,7 +96,18 @@ async function fetchNews() {
   if (!error) newsList.value = data || []
   loading.value = false
 }
-onMounted(fetchNews)
+onMounted(async () => {
+  const { data: { user } } = await supabase.auth.getUser()
+  currentUserId.value = user?.id || null
+  if (user) {
+    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+    currentRole.value = profile?.role || null
+  }
+  await fetchNews()
+})
+
+const isAdmin = computed(() => ['super_admin','admin'].includes(currentRole.value))
+function canEditNews(n) { return isAdmin.value || n.created_by === currentUserId.value }
 
 // ── Computed ──────────────────────────────────────────────────────
 const filtered = computed(() => {
@@ -219,14 +232,13 @@ async function saveNews() {
     published_at: form.value.is_published
       ? (form.value.published_at || new Date().toISOString())
       : null,
-    created_by: user?.id || null,
   }
 
   let error
   if (form.value.id) {
     ;({ error } = await supabase.from('news').update(payload).eq('id', form.value.id))
   } else {
-    ;({ error } = await supabase.from('news').insert(payload))
+    ;({ error } = await supabase.from('news').insert({ ...payload, created_by: user?.id || null }))
   }
 
   if (error) {
@@ -415,15 +427,16 @@ function getCatPath(val) {
             </td>
             <!-- Published badge -->
             <td class="px-4 py-3 text-center">
-              <button @click="togglePublish(n)"
+              <button @click="togglePublish(n)" :disabled="!canEditNews(n)"
                 :class="['px-2.5 py-1 rounded-full text-xs font-bold transition-all',
+                  !canEditNews(n) ? 'opacity-50 cursor-not-allowed' : '',
                   n.is_published ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' : 'bg-slate-100 text-slate-500 hover:bg-slate-200']">
                 {{ n.is_published ? 'เผยแพร่' : 'ร่าง' }}
               </button>
             </td>
             <!-- Actions -->
             <td class="px-4 py-3 text-right">
-              <div class="flex items-center justify-end gap-1.5">
+              <div v-if="canEditNews(n)" class="flex items-center justify-end gap-1.5">
                 <button @click="openEdit(n)"
                   class="p-1.5 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-all">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
@@ -437,6 +450,7 @@ function getCatPath(val) {
                   </svg>
                 </button>
               </div>
+              <span v-else class="text-xs text-slate-300">—</span>
             </td>
           </tr>
         </tbody>
