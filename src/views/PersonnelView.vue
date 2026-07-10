@@ -105,6 +105,15 @@ function displayName(p) {
   if (p.first_name || p.last_name) return `${p.title||''}${p.first_name||''}${p.last_name ? ' '+p.last_name : ''}`.trim()
   return p.full_name || ''
 }
+// การ์ดขึ้นบรรทัดใหม่ที่ช่องว่างจริงระหว่างชื่อ/นามสกุลเสมอ กันคำถูกตัดกลางคำ
+// (word-break:keep-all ไม่กันการตัดคำไทยกลางพยางค์ในเบราว์เซอร์ chromium)
+function cardNameFirstLine(p) {
+  const t = `${p.title||''}${p.first_name||''}`.trim()
+  return t || p.full_name || ''
+}
+function cardNameLastLine(p) {
+  return (p.first_name || p.last_name) ? (p.last_name || '') : ''
+}
 function isExec(p) { return ['director','deputy','group_director'].includes(p.org_role) }
 
 function visibleSocials(p) {
@@ -151,7 +160,7 @@ function visibleContact(p) {
                     <span v-else class="avatar-initial">{{ displayName(p)[0] }}</span>
               </div>
               <div class="card-body">
-                <p class="card-name">{{ displayName(p) }}</p>
+                <p class="card-name">{{ cardNameFirstLine(p) }}<br v-if="cardNameLastLine(p)">{{ cardNameLastLine(p) }}</p>
                 <p class="card-pos">{{ p.position }}</p>
               </div>
             </button>
@@ -171,7 +180,7 @@ function visibleContact(p) {
                     <span v-else class="avatar-initial">{{ displayName(p)[0] }}</span>
               </div>
               <div class="card-body">
-                <p class="card-name">{{ displayName(p) }}</p>
+                <p class="card-name">{{ cardNameFirstLine(p) }}<br v-if="cardNameLastLine(p)">{{ cardNameLastLine(p) }}</p>
                 <p class="card-pos">{{ p.position }}</p>
               </div>
             </button>
@@ -191,7 +200,7 @@ function visibleContact(p) {
                     <span v-else class="avatar-initial">{{ displayName(p)[0] }}</span>
               </div>
               <div class="card-body">
-                <p class="card-name">{{ displayName(p) }}</p>
+                <p class="card-name">{{ cardNameFirstLine(p) }}<br v-if="cardNameLastLine(p)">{{ cardNameLastLine(p) }}</p>
                 <p class="card-pos">{{ p.position }}</p>
                 <p v-if="p.department" class="card-dept">{{ p.department }}</p>
               </div>
@@ -224,7 +233,7 @@ function visibleContact(p) {
                     <span v-else class="avatar-initial">{{ displayName(p)[0] }}</span>
               </div>
               <div class="card-body">
-                <p class="card-name">{{ displayName(p) }}</p>
+                <p class="card-name">{{ cardNameFirstLine(p) }}<br v-if="cardNameLastLine(p)">{{ cardNameLastLine(p) }}</p>
                 <p class="card-pos">{{ p.position_level || p.position }}</p>
                 <div class="flex flex-wrap justify-center gap-1 mt-1.5">
                   <span v-for="s in (p.subjects||[]).slice(0,2)" :key="s"
@@ -268,7 +277,7 @@ function visibleContact(p) {
           </div>
           <div class="pt-16 pb-6 px-6">
             <div class="text-center mb-4">
-              <h2 class="text-lg font-extrabold text-slate-900 dark:text-slate-50 leading-tight">{{ displayName(selected) }}</h2>
+              <h2 class="text-lg font-extrabold text-slate-900 dark:text-slate-50 leading-tight break-keep break-words">{{ displayName(selected) }}</h2>
               <p class="text-primary font-bold text-sm mt-0.5">{{ isExec(selected) ? selected.position : (selected.position_level || selected.position) }}</p>
               <p v-if="selected.department" class="text-slate-400 text-xs mt-0.5">{{ selected.department }}</p>
             </div>
@@ -351,13 +360,13 @@ function visibleContact(p) {
   @apply pt-3 pb-4 px-3 text-center flex-1 flex flex-col items-center;
 }
 .card-name {
-  @apply font-extrabold text-slate-800 dark:text-slate-100 text-sm leading-tight;
+  @apply font-extrabold text-slate-800 dark:text-slate-100 text-sm leading-tight break-keep break-words;
 }
 .card-pos {
-  @apply text-xs text-primary font-bold mt-1 leading-tight;
+  @apply text-xs text-primary font-bold mt-1 leading-tight break-keep break-words;
 }
 .card-dept {
-  @apply text-[10px] text-slate-400 mt-0.5;
+  @apply text-[10px] text-slate-400 mt-0.5 break-keep break-words;
 }
 
 /* org chart */
