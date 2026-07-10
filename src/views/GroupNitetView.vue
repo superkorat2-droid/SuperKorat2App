@@ -18,17 +18,28 @@ function responsibleText(event) {
 
 const events        = ref([])
 const loadingEvents = ref(true)
-const viewMode      = ref('list')
-const currentYear   = ref(new Date().getFullYear())
-const currentMonth  = ref(new Date().getMonth())
 const selectedEvent = ref(null)
 
-const sortedEvents = computed(() => {
+// ── กิจกรรมที่กำลังจะถึง (เหมือน widget หน้าแรก) ───────────────────
+const upcomingEvents = computed(() => {
   const today = new Date().toISOString().slice(0, 10)
   return events.value
     .filter(e => e.end_date >= today)
     .sort((a, b) => a.start_date.localeCompare(b.start_date) || (a.start_time || '').localeCompare(b.start_time || ''))
 })
+
+// ── ปฏิทินทั้งหมด (ล่าสุด + ที่ผ่านมา สำหรับดูและตรวจสอบ) ───────────
+const allViewMode    = ref('list')
+const allTypeFilter  = ref('all')
+const allCurrentYear  = ref(new Date().getFullYear())
+const allCurrentMonth = ref(new Date().getMonth())
+
+const allFilteredEvents = computed(() =>
+  allTypeFilter.value === 'all' ? events.value : events.value.filter(e => e.type === allTypeFilter.value)
+)
+const allSortedEvents = computed(() =>
+  [...allFilteredEvents.value].sort((a, b) => b.start_date.localeCompare(a.start_date) || (b.start_time || '').localeCompare(a.start_time || ''))
+)
 
 function onSelectEvent(ev) { selectedEvent.value = ev }
 
@@ -47,59 +58,102 @@ onMounted(async () => {
       :media-url="header.mediaUrl" :media-type="header.mediaType" :aspect-ratio="header.aspectRatio"/>
 
     <!-- แยกจาก hero เสมอ ไม่ว่าจะใช้ไอคอนหรือรูป/วิดีโอ -->
-    <div class="max-w-4xl mx-auto px-4 py-8 space-y-5">
-      <div class="flex items-center justify-between">
-        <h2 class="text-xl font-extrabold text-slate-800 dark:text-slate-100">ปฏิทินนิเทศ</h2>
-        <div class="flex gap-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-1 rounded-xl">
-          <button @click="viewMode = 'list'"
-            :class="['px-4 py-1.5 text-sm font-bold rounded-lg transition-colors',
-              viewMode === 'list' ? 'bg-primary text-white shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700']">
-            รายการ
-          </button>
-          <button @click="viewMode = 'month'"
-            :class="['px-4 py-1.5 text-sm font-bold rounded-lg transition-colors',
-              viewMode === 'month' ? 'bg-primary text-white shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700']">
-            ปฏิทิน
-          </button>
-        </div>
-      </div>
+    <div class="max-w-4xl mx-auto px-4 py-8 space-y-10">
 
       <!-- Loading -->
       <div v-if="loadingEvents" class="flex justify-center py-16">
         <div class="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin"/>
       </div>
 
-      <!-- Month view -->
-      <MonthCalendar v-else-if="viewMode === 'month'" :events="events" v-model:year="currentYear" v-model:month="currentMonth"
-        @select-event="onSelectEvent"/>
+      <template v-else>
+        <!-- ══ SECTION 1: กิจกรรมที่กำลังจะถึง ══════════════════════ -->
+        <section class="space-y-4">
+          <h2 class="text-xl font-extrabold text-slate-800 dark:text-slate-100">กิจกรรมที่กำลังจะถึง</h2>
 
-      <!-- Empty -->
-      <div v-else-if="sortedEvents.length === 0"
-        class="text-center py-16 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 text-slate-400">
-        <svg class="w-12 h-12 mx-auto mb-3 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5m-9-6h.008v.008H12v-.008z"/>
-        </svg>
-        <p class="font-medium">ยังไม่มีกำหนดการในขณะนี้</p>
-      </div>
+          <div v-if="upcomingEvents.length === 0"
+            class="text-center py-16 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 text-slate-400">
+            <svg class="w-12 h-12 mx-auto mb-3 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5m-9-6h.008v.008H12v-.008z"/>
+            </svg>
+            <p class="font-medium">ยังไม่มีกำหนดการในขณะนี้</p>
+          </div>
 
-      <!-- List view -->
-      <div v-else class="space-y-3">
-        <button v-for="event in sortedEvents" :key="event.id" @click="selectedEvent = event" type="button"
-          class="w-full text-left bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-4 hover:shadow-md transition-shadow">
-          <div class="flex flex-wrap items-center gap-2 mb-1.5">
-            <span :class="['text-xs font-bold px-2.5 py-0.5 rounded-full', TYPE_COLOR[event.type]?.bg, TYPE_COLOR[event.type]?.text]">
-              {{ TYPE_LABEL[event.type] }}
-            </span>
-            <span class="text-xs text-slate-400">{{ formatEventDateRange(event) }}</span>
+          <div v-else class="space-y-3">
+            <button v-for="event in upcomingEvents" :key="event.id" @click="selectedEvent = event" type="button"
+              class="w-full text-left bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-4 hover:shadow-md transition-shadow">
+              <div class="flex flex-wrap items-center gap-2 mb-1.5">
+                <span :class="['text-xs font-bold px-2.5 py-0.5 rounded-full', TYPE_COLOR[event.type]?.bg, TYPE_COLOR[event.type]?.text]">
+                  {{ TYPE_LABEL[event.type] }}
+                </span>
+                <span class="text-xs text-slate-400">{{ formatEventDateRange(event) }}</span>
+              </div>
+              <h3 class="font-bold text-slate-800 dark:text-slate-100">{{ event.title }}</h3>
+              <div class="flex flex-wrap gap-3 mt-1 text-xs text-slate-400">
+                <span v-if="event.schools?.length">โรงเรียน: {{ event.schools.map(s => s.name).join(', ') }}</span>
+                <span v-if="event.location">สถานที่: {{ event.location }}</span>
+                <span v-if="event.responsible_group || event.responsible_names?.length">ผู้รับผิดชอบ: {{ responsibleText(event) }}</span>
+              </div>
+            </button>
           </div>
-          <h3 class="font-bold text-slate-800 dark:text-slate-100">{{ event.title }}</h3>
-          <div class="flex flex-wrap gap-3 mt-1 text-xs text-slate-400">
-            <span v-if="event.schools?.length">โรงเรียน: {{ event.schools.map(s => s.name).join(', ') }}</span>
-            <span v-if="event.location">สถานที่: {{ event.location }}</span>
-            <span v-if="event.responsible_group || event.responsible_names?.length">ผู้รับผิดชอบ: {{ responsibleText(event) }}</span>
+        </section>
+
+        <!-- ══ SECTION 2: ปฏิทินทั้งหมด (ล่าสุด + ที่ผ่านมา) ═══════════ -->
+        <section class="space-y-4">
+          <div>
+            <h2 class="text-xl font-extrabold text-slate-800 dark:text-slate-100">ปฏิทินทั้งหมด</h2>
+            <p class="text-sm text-slate-400 mt-0.5">ดูและตรวจสอบกำหนดการทั้งหมด รวมกิจกรรมที่ผ่านมาแล้ว</p>
           </div>
-        </button>
-      </div>
+
+          <div class="flex flex-wrap items-center gap-2">
+            <select v-model="allTypeFilter"
+              class="px-3 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-medium text-slate-600 dark:text-slate-300">
+              <option value="all">ทุกประเภท</option>
+              <option v-for="(label, key) in TYPE_LABEL" :key="key" :value="key">{{ label }}</option>
+            </select>
+            <div class="flex gap-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-1 rounded-xl ml-auto">
+              <button @click="allViewMode = 'list'"
+                :class="['px-4 py-1.5 text-sm font-bold rounded-lg transition-colors',
+                  allViewMode === 'list' ? 'bg-primary text-white shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700']">
+                รายการ
+              </button>
+              <button @click="allViewMode = 'month'"
+                :class="['px-4 py-1.5 text-sm font-bold rounded-lg transition-colors',
+                  allViewMode === 'month' ? 'bg-primary text-white shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700']">
+                ปฏิทิน
+              </button>
+            </div>
+          </div>
+
+          <!-- Month view -->
+          <MonthCalendar v-if="allViewMode === 'month'" :events="allFilteredEvents" v-model:year="allCurrentYear" v-model:month="allCurrentMonth"
+            @select-event="onSelectEvent"/>
+
+          <!-- Empty -->
+          <div v-else-if="allSortedEvents.length === 0"
+            class="text-center py-16 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 text-slate-400">
+            <p class="font-medium">ไม่พบกำหนดการ</p>
+          </div>
+
+          <!-- List view -->
+          <div v-else class="space-y-3">
+            <button v-for="event in allSortedEvents" :key="event.id" @click="selectedEvent = event" type="button"
+              class="w-full text-left bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-4 hover:shadow-md transition-shadow">
+              <div class="flex flex-wrap items-center gap-2 mb-1.5">
+                <span :class="['text-xs font-bold px-2.5 py-0.5 rounded-full', TYPE_COLOR[event.type]?.bg, TYPE_COLOR[event.type]?.text]">
+                  {{ TYPE_LABEL[event.type] }}
+                </span>
+                <span class="text-xs text-slate-400">{{ formatEventDateRange(event) }}</span>
+              </div>
+              <h3 class="font-bold text-slate-800 dark:text-slate-100">{{ event.title }}</h3>
+              <div class="flex flex-wrap gap-3 mt-1 text-xs text-slate-400">
+                <span v-if="event.schools?.length">โรงเรียน: {{ event.schools.map(s => s.name).join(', ') }}</span>
+                <span v-if="event.location">สถานที่: {{ event.location }}</span>
+                <span v-if="event.responsible_group || event.responsible_names?.length">ผู้รับผิดชอบ: {{ responsibleText(event) }}</span>
+              </div>
+            </button>
+          </div>
+        </section>
+      </template>
     </div>
 
     <!-- Detail Modal (read-only) -->
