@@ -158,24 +158,26 @@ const deptGroupRows = computed(() => {
         <!-- Tier 4: กลุ่มงาน — แบ่งเป็นแถวละ 4 กล่อง แต่ละแถววาดเส้นแนวนอน+ก้านเหมือนชั้นอื่น
              (แถวละชุดแยกกัน กันเส้นเพี้ยนเวลาห่อบรรทัดของทั้งกลุ่ม) -->
         <template v-if="deptGroupRows.length">
-          <div class="chart-connector"></div>
-          <div v-for="(row, ri) in deptGroupRows" :key="ri" class="chart-branch chart-branch-deptrow">
-            <div v-for="g in row" :key="g.name" class="chart-branch-item">
-              <div class="chart-box">
-                <p class="chart-box-title" :class="fitTextClass(g.name, [[22,'text-sm'],[30,'text-xs'],[Infinity,'text-[11px]']])">{{ g.name }}</p>
-                <div v-if="g.members.length" class="chart-roster">
-                  <div v-for="m in g.members" :key="m.id" class="chart-roster-item">
-                    <div class="chart-roster-avatar">
-                      <img v-if="m.avatar_url" :src="m.avatar_url" class="w-full h-full object-cover object-top"/>
-                      <span v-else class="chart-roster-initial">{{ displayName(m)[0] }}</span>
+          <template v-for="(row, ri) in deptGroupRows" :key="ri">
+            <div class="chart-connector"></div>
+            <div class="chart-branch chart-branch-deptrow">
+              <div v-for="g in row" :key="g.name" class="chart-branch-item">
+                <div class="chart-box">
+                  <p class="chart-box-title" :class="fitTextClass(g.name, [[22,'text-sm'],[30,'text-xs'],[Infinity,'text-[11px]']])">{{ g.name }}</p>
+                  <div v-if="g.members.length" class="chart-roster">
+                    <div v-for="m in g.members" :key="m.id" class="chart-roster-item">
+                      <div class="chart-roster-avatar">
+                        <img v-if="m.avatar_url" :src="m.avatar_url" class="w-full h-full object-cover object-top"/>
+                        <span v-else class="chart-roster-initial">{{ displayName(m)[0] }}</span>
+                      </div>
+                      <span class="chart-roster-name">{{ displayName(m) }}</span>
                     </div>
-                    <span class="chart-roster-name">{{ displayName(m) }}</span>
                   </div>
+                  <p v-else class="chart-box-empty">ยังไม่มีเจ้าหน้าที่</p>
                 </div>
-                <p v-else class="chart-box-empty">ยังไม่มีเจ้าหน้าที่</p>
               </div>
             </div>
-          </div>
+          </template>
         </template>
       </div>
     </div>
@@ -196,8 +198,6 @@ const deptGroupRows = computed(() => {
 /* แถวลูก (มีเส้นแนวนอนคาดด้านบน + เส้นสต็มลงมาแต่ละกล่อง) */
 .chart-branch { @apply flex justify-center gap-6 flex-wrap; }
 .chart-branch-item { @apply relative flex flex-col items-center pt-8; }
-/* กลุ่มงานแบ่งเป็นหลายแถว (ดูข้างล่าง) — เว้นระยะระหว่างแถว */
-.chart-branch-deptrow + .chart-branch-deptrow { @apply mt-6; }
 .chart-branch-item::before {
   /* เส้นสต็มลงมาจากเส้นแนวนอนถึงกล่อง */
   content: ''; position: absolute; top: 0; left: 50%; width: 2px; height: 2rem;
@@ -205,8 +205,10 @@ const deptGroupRows = computed(() => {
 }
 .dark .chart-branch-item::before { background: theme('colors.slate.600'); }
 .chart-branch-item::after {
-  /* เส้นแนวนอนคาดด้านบน เชื่อมกล่องในแถวเดียวกัน */
-  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  /* เส้นแนวนอนคาดด้านบน เชื่อมกล่องในแถวเดียวกัน — ยื่นเลยขอบกล่องออกไปครึ่งหนึ่งของช่องว่าง (gap-6=24px)
+     ทั้งสองข้าง กันเส้นขาดเป็นช่วงๆ ตรงรอยต่อระหว่างกล่อง (ปกติ left/right:0 จะหยุดแค่ขอบกล่องตัวเอง
+     ไม่คลุมช่องว่างระหว่างกล่อง) */
+  content: ''; position: absolute; top: 0; left: -12px; right: -12px; height: 2px;
   background: theme('colors.slate.300');
 }
 .dark .chart-branch-item::after { background: theme('colors.slate.600'); }
