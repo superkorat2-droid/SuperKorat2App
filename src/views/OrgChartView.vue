@@ -37,8 +37,9 @@ onMounted(async () => {
   loading.value = false
 })
 
-const directors = computed(() => personnel.value.filter(p => p.org_role === 'director'))
-const deputies  = computed(() => personnel.value.filter(p => p.org_role === 'deputy'))
+const directors  = computed(() => personnel.value.filter(p => p.org_role === 'director'))
+const deputies   = computed(() => personnel.value.filter(p => p.org_role === 'deputy'))
+const groupDirs  = computed(() => personnel.value.filter(p => p.org_role === 'group_director'))
 
 const groupConfig = computed(() => config.value?.personnel_groups || [])
 
@@ -49,10 +50,10 @@ function isGroupVisible(label) {
   return g ? g.visible !== false : true
 }
 
-// กลุ่มงาน: รวมทุกคนที่ไม่ใช่ ผอ.เขต/รองผอ.เขต (รวม group_director ปนกับ staff) จัดตาม department
-// หัวหน้ากลุ่ม = คนที่ sort_order น้อยสุดในกลุ่มนั้น (ไม่ต้องตั้งค่าเพิ่ม)
+// กลุ่มงาน: รวมทุกคนที่ไม่ใช่ ผอ.เขต/รองผอ.เขต/ผอ.กลุ่ม (มีชั้นของตัวเองแล้ว) จัดตาม department
+// แสดงสมาชิกทุกคนเรียงตาม sort_order (ไม่ระบุ "หัวหน้า" แยก — คนแรกในลำดับคือคนที่ถูกจัดไว้บนสุด)
 const deptGroups = computed(() => {
-  const rest = personnel.value.filter(p => !['director', 'deputy'].includes(p.org_role))
+  const rest = personnel.value.filter(p => !['director', 'deputy', 'group_director'].includes(p.org_role))
   const map = {}
   rest.forEach(p => {
     const dep = p.department || 'ไม่ระบุกลุ่มงาน'
@@ -62,10 +63,10 @@ const deptGroups = computed(() => {
   const cfg = groupConfig.value
   return Object.entries(map)
     .filter(([dep]) => isGroupVisible(dep))
-    .map(([dep, members]) => {
-      const sorted = [...members].sort((a, b) => (a.sort_order ?? 99) - (b.sort_order ?? 99))
-      return { name: dep, count: sorted.length, head: sorted[0] }
-    })
+    .map(([dep, members]) => ({
+      name: dep,
+      members: [...members].sort((a, b) => (a.sort_order ?? 99) - (b.sort_order ?? 99)),
+    }))
     .sort((a, b) => {
       const ga = cfg.find(g => g.label === a.name)
       const gb = cfg.find(g => g.label === b.name)
@@ -88,7 +89,7 @@ const deptGroups = computed(() => {
       </div>
 
       <!-- Empty -->
-      <div v-else-if="!directors.length && !deputies.length && !deptGroups.length"
+      <div v-else-if="!directors.length && !deputies.length && !groupDirs.length && !deptGroups.length"
         class="text-center py-20 text-slate-400">
         ยังไม่มีข้อมูลบุคลากรสำหรับแสดงผัง
       </div>
@@ -123,17 +124,38 @@ const deptGroups = computed(() => {
           </div>
         </template>
 
-        <!-- Tier 3: กลุ่มงาน -->
+        <!-- Tier 3: ผู้อำนวยการกลุ่ม -->
+        <template v-if="groupDirs.length">
+          <div class="chart-connector"></div>
+          <div class="chart-branch">
+            <div v-for="p in groupDirs" :key="p.id" class="chart-branch-item">
+              <div class="chart-card chart-card-sm">
+                <div class="chart-avatar chart-avatar-sm">
+                  <img v-if="p.avatar_url" :src="p.avatar_url" class="w-full h-full object-cover object-top"/>
+                  <span v-else class="chart-avatar-initial">{{ displayName(p)[0] }}</span>
+                </div>
+                <p class="chart-name" :class="fitTextClass(displayName(p))">{{ displayName(p) }}</p>
+                <p class="chart-pos" :class="fitTextClass(p.position)">{{ p.position }}</p>
+              </div>
+            </div>
+          </div>
+        </template>
+
+        <!-- Tier 4: กลุ่มงาน -->
         <template v-if="deptGroups.length">
           <div class="chart-connector"></div>
           <div class="chart-branch chart-branch-wrap">
             <div v-for="g in deptGroups" :key="g.name" class="chart-branch-item">
               <div class="chart-box">
                 <p class="chart-box-title" :class="fitTextClass(g.name, [[22,'text-sm'],[30,'text-xs'],[Infinity,'text-[11px]']])">{{ g.name }}</p>
-                <p class="chart-box-count">{{ g.count }} คน</p>
-                <div v-if="g.head" class="chart-box-head">
-                  <span class="chart-box-head-label">หัวหน้า</span>
-                  <span class="chart-box-head-name">{{ displayName(g.head) }}</span>
+                <div class="chart-roster">
+                  <div v-for="m in g.members" :key="m.id" class="chart-roster-item">
+                    <div class="chart-roster-avatar">
+                      <img v-if="m.avatar_url" :src="m.avatar_url" class="w-full h-full object-cover object-top"/>
+                      <span v-else class="chart-roster-initial">{{ displayName(m)[0] }}</span>
+                    </div>
+                    <span class="chart-roster-name">{{ displayName(m) }}</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -181,29 +203,31 @@ const deptGroups = computed(() => {
   .chart-branch-item::after { display: none; }
 }
 
-/* ── การ์ดผู้บริหาร (ผอ.เขต/รองผอ.เขต) ───────────────────────── */
+/* ── การ์ดผู้บริหาร (ผอ.เขต/รองผอ.เขต/ผอ.กลุ่ม) ───────────────── */
 .chart-card {
   @apply w-40 bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-100 dark:border-slate-700
          overflow-hidden flex flex-col items-center pt-4 pb-3 px-2 text-center;
 }
+.chart-card-sm { @apply w-32 pt-3 pb-2; }
 .chart-avatar {
   @apply w-16 h-16 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-700 flex items-center justify-center mb-2 flex-shrink-0;
 }
+.chart-avatar-sm { @apply w-12 h-12 mb-1.5; }
 .chart-avatar-initial { @apply text-2xl font-extrabold; color: var(--color-primary); }
 .chart-name { @apply w-full font-extrabold text-slate-800 dark:text-slate-100 leading-tight whitespace-nowrap overflow-hidden; }
 .chart-pos  { @apply w-full text-primary font-bold mt-0.5 leading-tight whitespace-nowrap overflow-hidden; }
 
-/* ── กล่องกลุ่มงาน (สรุป 1 กล่องต่อกลุ่ม) ────────────────────── */
+/* ── กล่องกลุ่มงาน (แสดงทุกคนในกลุ่มเป็นรูปเล็ก+ชื่อ เรียงตามลำดับ) ── */
 .chart-box {
-  @apply w-56 bg-white dark:bg-slate-800/60 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700
+  @apply w-64 bg-white dark:bg-slate-800/60 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700
          p-4 text-center;
 }
-.chart-box-title { @apply font-extrabold leading-tight break-keep break-words; color: var(--color-primary); }
-.chart-box-count {
-  @apply inline-block text-[10px] font-bold text-white px-2 py-0.5 rounded-full mt-1.5;
-  background: var(--color-secondary);
+.chart-box-title { @apply font-extrabold leading-tight break-keep break-words mb-3; color: var(--color-primary); }
+.chart-roster { @apply flex flex-col gap-2; }
+.chart-roster-item { @apply flex items-center gap-2 text-left; }
+.chart-roster-avatar {
+  @apply w-7 h-7 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-700 flex items-center justify-center flex-shrink-0;
 }
-.chart-box-head { @apply mt-2 pt-2 border-t border-slate-100 dark:border-slate-700 text-xs; }
-.chart-box-head-label { @apply text-slate-400 mr-1; }
-.chart-box-head-name  { @apply font-bold text-slate-600 dark:text-slate-300; }
+.chart-roster-initial { @apply text-[10px] font-extrabold; color: var(--color-primary); }
+.chart-roster-name { @apply text-xs font-bold text-slate-600 dark:text-slate-300 leading-tight; }
 </style>
