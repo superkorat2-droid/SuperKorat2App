@@ -147,12 +147,9 @@ function visibleContact(p) {
       <template v-else>
 
         <!-- แถว 1: ผอ.เขต (director) — กลางหน้า -->
-        <div v-if="directors.length" class="mb-8">
+        <section v-if="directors.length" class="group-panel">
           <div class="group-header">
-            <div class="inline-flex items-center gap-2 flex-wrap justify-center">
-              <h2 class="group-title">ผู้อำนวยการเขตพื้นที่การศึกษา</h2>
-              <span class="group-count">{{ directors.length }} คน</span>
-            </div>
+            <h2 class="group-title">ผู้อำนวยการเขตพื้นที่การศึกษา</h2>
             <div class="group-underline"></div>
           </div>
           <div class="flex justify-center gap-5">
@@ -168,18 +165,12 @@ function visibleContact(p) {
               </div>
             </button>
           </div>
-          <div v-if="deputies.length || groupDirs.length" class="flex justify-center mt-4">
-            <div class="w-px h-8 bg-slate-300 dark:bg-slate-600"></div>
-          </div>
-        </div>
+        </section>
 
         <!-- แถว 2: รอง ผอ. (deputy) — กลางหน้า -->
-        <div v-if="deputies.length" class="mb-8">
+        <section v-if="deputies.length" class="group-panel">
           <div class="group-header">
-            <div class="inline-flex items-center gap-2 flex-wrap justify-center">
-              <h2 class="group-title">รองผู้อำนวยการเขตพื้นที่การศึกษา</h2>
-              <span class="group-count">{{ deputies.length }} คน</span>
-            </div>
+            <h2 class="group-title">รองผู้อำนวยการเขตพื้นที่การศึกษา</h2>
             <div class="group-underline"></div>
           </div>
           <div class="flex justify-center flex-wrap gap-5">
@@ -195,18 +186,12 @@ function visibleContact(p) {
               </div>
             </button>
           </div>
-          <div v-if="groupDirs.length" class="flex justify-center mt-4">
-            <div class="w-px h-8 bg-slate-300 dark:bg-slate-600"></div>
-          </div>
-        </div>
+        </section>
 
         <!-- แถว 3: ผอ.กลุ่ม (group_director) — กลางหน้า -->
-        <div v-if="groupDirs.length" class="mb-10">
+        <section v-if="groupDirs.length" class="group-panel">
           <div class="group-header">
-            <div class="inline-flex items-center gap-2 flex-wrap justify-center">
-              <h2 class="group-title">ผู้อำนวยการกลุ่ม</h2>
-              <span class="group-count">{{ groupDirs.length }} คน</span>
-            </div>
+            <h2 class="group-title">ผู้อำนวยการกลุ่ม</h2>
             <div class="group-underline"></div>
           </div>
           <div class="flex justify-center flex-wrap gap-5">
@@ -223,16 +208,13 @@ function visibleContact(p) {
               </div>
             </button>
           </div>
-        </div>
+        </section>
 
         <!-- แถว 4+: กลุ่มงาน + บุคลากร -->
-        <div v-for="[dep, members] in departmentGroups" :key="dep" class="mb-10">
+        <section v-for="[dep, members] in departmentGroups" :key="dep" class="group-panel">
           <!-- หัวข้อกลุ่มงาน -->
           <div class="group-header">
-            <div class="inline-flex items-center gap-2 flex-wrap justify-center">
-              <h2 class="group-title">{{ dep }}</h2>
-              <span class="group-count">{{ members.length }} คน</span>
-            </div>
+            <h2 class="group-title">{{ dep }}</h2>
             <div class="group-underline"></div>
           </div>
           <!-- การ์ด 4 คอลัมน์ แถวสุดท้ายอยู่กลาง -->
@@ -256,7 +238,7 @@ function visibleContact(p) {
               </div>
             </button>
           </div>
-        </div>
+        </section>
 
       </template>
     </div>
@@ -331,10 +313,14 @@ function visibleContact(p) {
 <style scoped>
 .font-sarabun { font-family: 'Sarabun', sans-serif; }
 
-/* ── หัวข้อกลุ่ม (ผู้บริหาร/กลุ่มงาน) — อยู่กลาง ฟอนต์น้ำเงินเข้ม ──── */
+/* ── กรอบบล็อกแยกแต่ละกลุ่ม (ผู้บริหาร/กลุ่มงาน) ให้เป็นสัดส่วน ──── */
+.group-panel {
+  @apply bg-white dark:bg-slate-800/60 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm p-6 md:p-8 mb-6;
+}
+
+/* ── หัวข้อกลุ่ม — อยู่กลาง ฟอนต์น้ำเงินเข้ม ──────────────────── */
 .group-header { @apply text-center mb-6; }
 .group-title  { @apply text-lg font-extrabold; color: var(--color-primary); }
-.group-count  { @apply text-xs font-bold px-2.5 py-0.5 rounded-full text-white; background: var(--color-primary); }
 .group-underline { @apply w-10 h-1 rounded-full mx-auto mt-2; background: var(--color-secondary); }
 
 /* ── Unified card — height เท่ากันทุกใบ ───────────────────────── */
