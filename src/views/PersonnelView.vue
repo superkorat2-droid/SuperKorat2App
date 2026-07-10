@@ -148,6 +148,13 @@ function visibleContact(p) {
 
         <!-- แถว 1: ผอ.เขต (director) — กลางหน้า -->
         <div v-if="directors.length" class="mb-8">
+          <div class="group-header">
+            <div class="inline-flex items-center gap-2 flex-wrap justify-center">
+              <h2 class="group-title">ผู้อำนวยการเขตพื้นที่การศึกษา</h2>
+              <span class="group-count">{{ directors.length }} คน</span>
+            </div>
+            <div class="group-underline"></div>
+          </div>
           <div class="flex justify-center gap-5">
             <button v-for="p in directors" :key="p.id" @click="selected = p"
               class="personnel-card hover:shadow-xl hover:-translate-y-1 transition-all">
@@ -168,6 +175,13 @@ function visibleContact(p) {
 
         <!-- แถว 2: รอง ผอ. (deputy) — กลางหน้า -->
         <div v-if="deputies.length" class="mb-8">
+          <div class="group-header">
+            <div class="inline-flex items-center gap-2 flex-wrap justify-center">
+              <h2 class="group-title">รองผู้อำนวยการเขตพื้นที่การศึกษา</h2>
+              <span class="group-count">{{ deputies.length }} คน</span>
+            </div>
+            <div class="group-underline"></div>
+          </div>
           <div class="flex justify-center flex-wrap gap-5">
             <button v-for="p in deputies" :key="p.id" @click="selected = p"
               class="personnel-card hover:shadow-xl hover:-translate-y-1 transition-all">
@@ -188,6 +202,13 @@ function visibleContact(p) {
 
         <!-- แถว 3: ผอ.กลุ่ม (group_director) — กลางหน้า -->
         <div v-if="groupDirs.length" class="mb-10">
+          <div class="group-header">
+            <div class="inline-flex items-center gap-2 flex-wrap justify-center">
+              <h2 class="group-title">ผู้อำนวยการกลุ่ม</h2>
+              <span class="group-count">{{ groupDirs.length }} คน</span>
+            </div>
+            <div class="group-underline"></div>
+          </div>
           <div class="flex justify-center flex-wrap gap-5">
             <button v-for="p in groupDirs" :key="p.id" @click="selected = p"
               class="personnel-card hover:shadow-xl hover:-translate-y-1 transition-all">
@@ -207,18 +228,12 @@ function visibleContact(p) {
         <!-- แถว 4+: กลุ่มงาน + บุคลากร -->
         <div v-for="[dep, members] in departmentGroups" :key="dep" class="mb-10">
           <!-- หัวข้อกลุ่มงาน -->
-          <div class="flex items-center gap-3 mb-6">
-            <!-- accent bar พร้อม mini gradient -->
-            <div class="flex-shrink-0 flex items-center gap-2 px-3 py-2 rounded-xl"
-              style="background:linear-gradient(to right,color-mix(in srgb,var(--color-primary) 12%,transparent),transparent)">
-              <div class="w-1 h-6 rounded-full" style="background:var(--color-primary)"></div>
-              <h2 class="text-base font-extrabold text-slate-800 dark:text-slate-100 whitespace-nowrap">{{ dep }}</h2>
+          <div class="group-header">
+            <div class="inline-flex items-center gap-2 flex-wrap justify-center">
+              <h2 class="group-title">{{ dep }}</h2>
+              <span class="group-count">{{ members.length }} คน</span>
             </div>
-            <div class="flex-1 h-px bg-slate-200 dark:bg-slate-700"></div>
-            <span class="text-xs font-bold px-3 py-1 rounded-full text-white flex-shrink-0"
-              style="background:var(--color-primary)">
-              {{ members.length }} คน
-            </span>
+            <div class="group-underline"></div>
           </div>
           <!-- การ์ด 4 คอลัมน์ แถวสุดท้ายอยู่กลาง -->
           <div class="flex flex-wrap justify-center gap-5">
@@ -315,6 +330,12 @@ function visibleContact(p) {
 
 <style scoped>
 .font-sarabun { font-family: 'Sarabun', sans-serif; }
+
+/* ── หัวข้อกลุ่ม (ผู้บริหาร/กลุ่มงาน) — อยู่กลาง ฟอนต์น้ำเงินเข้ม ──── */
+.group-header { @apply text-center mb-6; }
+.group-title  { @apply text-lg font-extrabold; color: var(--color-primary); }
+.group-count  { @apply text-xs font-bold px-2.5 py-0.5 rounded-full text-white; background: var(--color-primary); }
+.group-underline { @apply w-10 h-1 rounded-full mx-auto mt-2; background: var(--color-secondary); }
 
 /* ── Unified card — height เท่ากันทุกใบ ───────────────────────── */
 .personnel-card {
