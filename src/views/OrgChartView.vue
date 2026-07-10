@@ -24,6 +24,8 @@ function fitTextClass(text, tiers = [[18, 'text-sm'], [24, 'text-xs'], [Infinity
   const len = (text || '').length
   return tiers.find(([max]) => len <= max)[1]
 }
+// การ์ด ผอ.กลุ่ม (chart-card-sm) แคบกว่าการ์ดผอ.เขต/รองผอ.เขต มาก — ใช้เกณฑ์ย่อขนาดที่เข้มกว่าเดิม กันตัวหนังสือถูกตัด
+const SM_TIERS = [[13, 'text-xs'], [18, 'text-[10px]'], [Infinity, 'text-[9px]']]
 
 onMounted(async () => {
   fetchConfig()
@@ -43,15 +45,9 @@ const groupDirs  = computed(() => personnel.value.filter(p => p.org_role === 'gr
 
 const groupConfig = computed(() => config.value?.personnel_groups || [])
 
-function isGroupVisible(label) {
-  const cfg = groupConfig.value
-  if (!cfg.length) return true
-  const g = cfg.find(g => g.label === label)
-  return g ? g.visible !== false : true
-}
-
-// กลุ่มงาน: รวมทุกคนที่ไม่ใช่ ผอ.เขต/รองผอ.เขต/ผอ.กลุ่ม (มีชั้นของตัวเองแล้ว) จัดตาม department
-// แสดงสมาชิกทุกคนเรียงตาม sort_order (ไม่ระบุ "หัวหน้า" แยก — คนแรกในลำดับคือคนที่ถูกจัดไว้บนสุด)
+// กลุ่มงาน: เริ่มจากรายการกลุ่มที่ตั้งค่าไว้ใน "จัดการกลุ่มงาน" ทั้งหมดก่อน (แม้ยังไม่มีใครสังกัดก็ให้ขึ้นโครงไว้)
+// แล้วค่อยเติมสมาชิกที่ department ตรงกับกลุ่มนั้น (ไม่รวม ผอ.เขต/รองผอ.เขต/ผอ.กลุ่ม เพราะมีชั้นของตัวเองแล้ว)
+// เรียงสมาชิกตาม sort_order (ไม่ระบุ "หัวหน้า" แยก — คนแรกในลำดับคือคนที่ถูกจัดไว้บนสุด)
 const deptGroups = computed(() => {
   const rest = personnel.value.filter(p => !['director', 'deputy', 'group_director'].includes(p.org_role))
   const map = {}
@@ -61,18 +57,26 @@ const deptGroups = computed(() => {
     map[dep].push(p)
   })
   const cfg = groupConfig.value
-  return Object.entries(map)
-    .filter(([dep]) => isGroupVisible(dep))
+
+  const fromConfig = cfg
+    .filter(g => g.visible !== false)
+    .sort((a, b) => (a.order ?? 99) - (b.order ?? 99))
+    .map(g => ({
+      name: g.label,
+      members: [...(map[g.label] || [])].sort((a, b) => (a.sort_order ?? 99) - (b.sort_order ?? 99)),
+    }))
+
+  // กลุ่มที่มีคนจริงแต่ department ไม่ตรงกับ label ไหนเลยใน config (เช่น ยังไม่ได้ตั้งกลุ่มไว้) — แสดงต่อท้าย กันข้อมูลตกหล่น
+  const configLabels = new Set(cfg.map(g => g.label))
+  const extras = Object.entries(map)
+    .filter(([dep]) => !configLabels.has(dep))
     .map(([dep, members]) => ({
       name: dep,
       members: [...members].sort((a, b) => (a.sort_order ?? 99) - (b.sort_order ?? 99)),
     }))
-    .sort((a, b) => {
-      const ga = cfg.find(g => g.label === a.name)
-      const gb = cfg.find(g => g.label === b.name)
-      const oa = ga?.order ?? 99, ob = gb?.order ?? 99
-      return oa !== ob ? oa - ob : a.name.localeCompare(b.name, 'th')
-    })
+    .sort((a, b) => a.name.localeCompare(b.name, 'th'))
+
+  return [...fromConfig, ...extras]
 })
 </script>
 
@@ -134,30 +138,30 @@ const deptGroups = computed(() => {
                   <img v-if="p.avatar_url" :src="p.avatar_url" class="w-full h-full object-cover object-top"/>
                   <span v-else class="chart-avatar-initial">{{ displayName(p)[0] }}</span>
                 </div>
-                <p class="chart-name" :class="fitTextClass(displayName(p))">{{ displayName(p) }}</p>
-                <p class="chart-pos" :class="fitTextClass(p.position)">{{ p.position }}</p>
+                <p class="chart-name" :class="fitTextClass(displayName(p), SM_TIERS)">{{ displayName(p) }}</p>
+                <p class="chart-pos" :class="fitTextClass(p.position, SM_TIERS)">{{ p.position }}</p>
               </div>
             </div>
           </div>
         </template>
 
-        <!-- Tier 4: กลุ่มงาน -->
+        <!-- Tier 4: กลุ่มงาน (ใช้ chart-tier ธรรมดา ไม่ใช่ branch — จำนวนกลุ่มเพิ่มได้เรื่อยๆ ขึ้นบรรทัดใหม่บ่อย
+             เส้นแนวนอนแบบ branch จะเพี้ยนเวลาห่อบรรทัด เลยใช้แค่เส้นเชื่อมเดียวด้านบนพอ) -->
         <template v-if="deptGroups.length">
           <div class="chart-connector"></div>
-          <div class="chart-branch chart-branch-wrap">
-            <div v-for="g in deptGroups" :key="g.name" class="chart-branch-item">
-              <div class="chart-box">
-                <p class="chart-box-title" :class="fitTextClass(g.name, [[22,'text-sm'],[30,'text-xs'],[Infinity,'text-[11px]']])">{{ g.name }}</p>
-                <div class="chart-roster">
-                  <div v-for="m in g.members" :key="m.id" class="chart-roster-item">
-                    <div class="chart-roster-avatar">
-                      <img v-if="m.avatar_url" :src="m.avatar_url" class="w-full h-full object-cover object-top"/>
-                      <span v-else class="chart-roster-initial">{{ displayName(m)[0] }}</span>
-                    </div>
-                    <span class="chart-roster-name">{{ displayName(m) }}</span>
+          <div class="chart-tier">
+            <div v-for="g in deptGroups" :key="g.name" class="chart-box">
+              <p class="chart-box-title" :class="fitTextClass(g.name, [[22,'text-sm'],[30,'text-xs'],[Infinity,'text-[11px]']])">{{ g.name }}</p>
+              <div v-if="g.members.length" class="chart-roster">
+                <div v-for="m in g.members" :key="m.id" class="chart-roster-item">
+                  <div class="chart-roster-avatar">
+                    <img v-if="m.avatar_url" :src="m.avatar_url" class="w-full h-full object-cover object-top"/>
+                    <span v-else class="chart-roster-initial">{{ displayName(m)[0] }}</span>
                   </div>
+                  <span class="chart-roster-name">{{ displayName(m) }}</span>
                 </div>
               </div>
+              <p v-else class="chart-box-empty">ยังไม่มีเจ้าหน้าที่</p>
             </div>
           </div>
         </template>
@@ -208,7 +212,7 @@ const deptGroups = computed(() => {
   @apply w-40 bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-100 dark:border-slate-700
          overflow-hidden flex flex-col items-center pt-4 pb-3 px-2 text-center;
 }
-.chart-card-sm { @apply w-32 pt-3 pb-2; }
+.chart-card-sm { @apply w-36 pt-3 pb-2 px-1.5; }
 .chart-avatar {
   @apply w-16 h-16 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-700 flex items-center justify-center mb-2 flex-shrink-0;
 }
@@ -230,4 +234,5 @@ const deptGroups = computed(() => {
 }
 .chart-roster-initial { @apply text-[10px] font-extrabold; color: var(--color-primary); }
 .chart-roster-name { @apply text-xs font-bold text-slate-600 dark:text-slate-300 leading-tight; }
+.chart-box-empty { @apply text-xs text-slate-400 italic; }
 </style>
