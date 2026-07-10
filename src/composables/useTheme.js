@@ -12,9 +12,11 @@ function applyTheme(dark) {
   }
 }
 
-// init จาก localStorage ตอนโหลด module
-isDark.value = localStorage.getItem('theme') === 'dark'
-applyTheme(isDark.value)
+// ปิดใช้งาน dark mode ชั่วคราวระหว่างพัฒนา — หลายหน้ายังมีปัญหาสีข้อความมองไม่เห็นในโหมดมืด
+// (ปุ่มสลับถูกซ่อนแล้วใน App.vue; บังคับ light เสมอและล้างค่าเก่าที่อาจค้างจาก localStorage)
+isDark.value = false
+localStorage.removeItem('theme')
+applyTheme(false)
 
 export function useTheme() {
   function toggle() {
