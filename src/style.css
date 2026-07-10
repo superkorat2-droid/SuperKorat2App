@@ -35,6 +35,12 @@
   .hover\:bg-primary-light:hover  { background-color: var(--color-primary-light) !important; }
   .hover\:text-primary:hover      { color: var(--color-primary) !important; }
   .hover\:border-primary:hover    { border-color: var(--color-primary) !important; }
+  /* .text-primary/.text-secondary ใช้ !important เพื่อชนะ Tailwind base ทั่วไป แต่ต้องแพ้ hover:text-white
+     ตอน hover ปุ่ม (เช่น border-primary text-primary hover:bg-primary hover:text-white) ไม่งั้นตัวหนังสือ
+     จะเป็นสีเดียวกับพื้นหลังตอน hover มองไม่เห็น — เขียนเป็น selector ผสม (ไม่ใช่ .hover\:text-white:hover เฉยๆ)
+     กัน Tailwind ทับซ้ำกับ utility ชื่อเดียวกันที่มันสร้างเองตอน build */
+  .text-primary.hover\:text-white:hover,
+  .text-secondary.hover\:text-white:hover { color: #fff !important; }
 
   /* gradient solid (ไม่ใช้ multi-color ดูหรูกว่า) */
   .gradient-primary {

@@ -23,9 +23,12 @@ const currentYear   = ref(new Date().getFullYear())
 const currentMonth  = ref(new Date().getMonth())
 const selectedEvent = ref(null)
 
-const sortedEvents = computed(() =>
-  [...events.value].sort((a, b) => a.start_date.localeCompare(b.start_date) || (a.start_time || '').localeCompare(b.start_time || ''))
-)
+const sortedEvents = computed(() => {
+  const today = new Date().toISOString().slice(0, 10)
+  return events.value
+    .filter(e => e.end_date >= today)
+    .sort((a, b) => a.start_date.localeCompare(b.start_date) || (a.start_time || '').localeCompare(b.start_time || ''))
+})
 
 function onSelectEvent(ev) { selectedEvent.value = ev }
 
