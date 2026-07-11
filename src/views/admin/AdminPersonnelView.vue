@@ -1,7 +1,6 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { supabase } from '../../supabase'
-import { supabaseAdmin } from '../../supabaseAdmin'
 import { useAreaConfig } from '../../composables/useAreaConfig'
 import ImageCropperModal from '../../components/ImageCropperModal.vue'
 import Swal from 'sweetalert2'
@@ -57,7 +56,6 @@ async function saveGroups() {
 const createForm = ref({ email: '', password: '', full_name: '', role: 'supervisor', org_role: 'supervisor' })
 
 async function createUser() {
-  if (!supabaseAdmin) return Swal.fire({ icon: 'error', title: 'ไม่มี Service Key', text: 'กรุณาตั้งค่า VITE_SUPABASE_SERVICE_KEY ใน .env.local' })
   if (!createForm.value.email || !createForm.value.password || !createForm.value.full_name)
     return Swal.fire({ icon: 'warning', title: 'กรอกข้อมูลให้ครบ' })
   if (createForm.value.password.length < 8)
@@ -65,23 +63,17 @@ async function createUser() {
 
   creating.value = true
   try {
-    // 1. สร้าง auth user
-    const { data: authData, error: authErr } = await supabaseAdmin.auth.admin.createUser({
-      email:            createForm.value.email,
-      password:         createForm.value.password,
-      email_confirm:    true,
-      user_metadata:    { full_name: createForm.value.full_name },
+    const { data, error } = await supabase.functions.invoke('admin-users', {
+      body: {
+        action: 'create_personnel',
+        email: createForm.value.email,
+        password: createForm.value.password,
+        full_name: createForm.value.full_name,
+        role: createForm.value.role,
+        org_role: createForm.value.org_role,
+      },
     })
-    if (authErr) throw authErr
-
-    // 2. อัปเดต profile (trigger สร้าง profile พื้นฐานให้แล้ว)
-    await supabase.from('profiles').update({
-      full_name:    createForm.value.full_name,
-      role:         createForm.value.role,
-      org_role:     createForm.value.org_role,
-      is_approved:  true,
-      is_active:    true,
-    }).eq('id', authData.user.id)
+    if (error || data?.error) throw new Error(data?.error || error.message)
 
     Swal.fire({ icon: 'success', title: 'สร้างบัญชีสำเร็จ', text: `${createForm.value.email} พร้อมใช้งานแล้ว`, confirmButtonColor: '#3b82f6' })
     showCreate.value = false

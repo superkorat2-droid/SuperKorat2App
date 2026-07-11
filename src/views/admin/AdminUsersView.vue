@@ -98,6 +98,30 @@ async function toggleActive(user) {
   user.is_active = !user.is_active
 }
 
+async function resetPassword(user) {
+  const { value: password } = await Swal.fire({
+    title: 'รีเซ็ตรหัสผ่าน',
+    html: `<span class="text-sm">ผู้ใช้: <b>${user.full_name || user.email}</b></span>`,
+    input: 'text',
+    inputPlaceholder: 'รหัสผ่านใหม่ (อย่างน้อย 8 ตัวอักษร)',
+    showCancelButton: true,
+    confirmButtonText: 'รีเซ็ต',
+    cancelButtonText: 'ยกเลิก',
+    confirmButtonColor: '#ef4444',
+    inputValidator: (v) => (!v || v.length < 8) ? 'รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร' : undefined,
+  })
+  if (!password) return
+
+  const { data, error } = await supabase.functions.invoke('admin-users', {
+    body: { action: 'reset_password', user_id: user.id, new_password: password },
+  })
+  if (error || data?.error) {
+    Swal.fire({ icon: 'error', title: 'ไม่สำเร็จ', text: data?.error || error.message })
+  } else {
+    Swal.fire({ icon: 'success', title: 'รีเซ็ตสำเร็จ', html: `รหัสผ่านใหม่: <b>${password}</b>`, showConfirmButton: true })
+  }
+}
+
 function formatDate(iso) {
   if (!iso) return '—'
   return new Date(iso).toLocaleDateString('th-TH', { day:'numeric', month:'short', year:'numeric' })
@@ -205,6 +229,8 @@ function formatDate(iso) {
                   </template>
                   <!-- Edit -->
                   <button @click="openEdit(u)" class="text-xs font-bold text-slate-600 hover:text-blue-700 bg-slate-100 hover:bg-blue-50 px-3 py-1.5 rounded-lg transition-colors">✏️ แก้ไข</button>
+                  <!-- Reset password -->
+                  <button @click="resetPassword(u)" class="text-xs font-bold text-slate-600 hover:text-amber-700 bg-slate-100 hover:bg-amber-50 px-3 py-1.5 rounded-lg transition-colors">🔑 รีเซ็ต</button>
                   <!-- Toggle active -->
                   <button @click="toggleActive(u)" :class="['text-xs font-bold px-2 py-1.5 rounded-lg transition-colors', u.is_active ? 'text-slate-400 hover:text-red-500 hover:bg-red-50' : 'text-emerald-600 hover:bg-emerald-50']">
                     {{ u.is_active ? '🚫' : '✅' }}

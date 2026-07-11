@@ -1,7 +1,6 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { supabase } from '../../supabase'
-import { supabaseAdmin } from '../../supabaseAdmin'
 import { useAreaConfig } from '../../composables/useAreaConfig'
 import Swal from 'sweetalert2'
 
@@ -67,42 +66,19 @@ async function resetPassword(school) {
   })
   if (!result.isConfirmed) return
 
-  if (!supabaseAdmin) {
-    Swal.fire({ icon: 'error', title: 'ไม่พบ Service Key', text: 'กรุณาตั้งค่า VITE_SUPABASE_SERVICE_KEY ใน .env.local' })
-    return
-  }
-
-  // ค้นหา user จาก email
-  const { data: { users } } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 })
-  let user = users?.find(u => u.email?.toLowerCase() === school.email?.toLowerCase())
-
-  // ถ้ายังไม่มี account → สร้างใหม่
-  if (!user) {
-    const { data: created, error: createErr } = await supabaseAdmin.auth.admin.createUser({
-      email:            school.email,
-      password:         defaultPassword.value,
-      email_confirm:    true,
-      user_metadata:    { full_name: school.name },
-    })
-    if (createErr) { Swal.fire({ icon: 'error', title: 'สร้าง account ไม่สำเร็จ', text: createErr.message }); return }
-    user = created.user
-    // สร้าง profile
-    await supabase.from('profiles').upsert({
-      id:         user.id,
-      email:      school.email,
-      full_name:  school.name,
-      role:       'school',
-      school_id:  school.id,
-      is_approved:true,
-      is_active:  true,
-    }, { onConflict: 'id' })
+  const { data, error } = await supabase.functions.invoke('admin-users', {
+    body: {
+      action: 'create_school_account',
+      email: school.email,
+      password: defaultPassword.value,
+      school_id: school.id,
+      school_name: school.name,
+    },
+  })
+  if (error || data?.error) {
+    Swal.fire({ icon: 'error', title: 'ไม่สำเร็จ', text: data?.error || error.message })
+  } else if (data.created) {
     Swal.fire({ icon: 'success', title: 'สร้าง account และรีเซ็ตสำเร็จ', html: `Email: <b>${school.email}</b><br>Password: <b>${defaultPassword.value}</b>`, showConfirmButton: true })
-    return
-  }
-
-  const { error } = await supabaseAdmin.auth.admin.updateUserById(user.id, { password: defaultPassword.value })
-  if (error) {
-    Swal.fire({ icon: 'error', title: 'ไม่สำเร็จ', text: error.message })
   } else {
     Swal.fire({ icon: 'success', title: 'รีเซ็ตสำเร็จ', html: `Password: <b>${defaultPassword.value}</b>`, showConfirmButton: false, timer: 2000 })
   }

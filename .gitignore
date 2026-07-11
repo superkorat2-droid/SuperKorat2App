@@ -36,6 +36,7 @@ pnpm-debug.log*
 # Supabase local (ไม่ push ไฟล์ชั่วคราว)
 supabase/.branches/
 supabase/.temp/
+supabase/functions/.env
 # ข้อมูล production dump — มี hash/token อย่า push
 supabase/seed_prod.sql
 
