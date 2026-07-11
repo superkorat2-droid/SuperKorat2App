@@ -15,10 +15,13 @@ const currentUserId   = ref(null)
 const currentRole     = ref(null)
 const canManageDocs   = ref(false)
 
-const activeTab    = ref('active')
-const search       = ref('')
-const filterStatus = ref('all')
-const filterDept   = ref('all')
+const activeTab      = ref('active')
+const search         = ref('')
+const filterStatus   = ref('all')
+const filterDept     = ref('all')
+const filterAssignee = ref('all')
+const filterDateFrom = ref('')
+const filterDateTo   = ref('')
 
 const showModal   = ref(false)
 const form        = ref(emptyForm())
@@ -95,12 +98,17 @@ function filterList(list) {
   let out = list
   if (filterDept.value !== 'all') out = out.filter(t => t.department === filterDept.value)
   if (activeTab.value === 'active' && filterStatus.value !== 'all') out = out.filter(t => t.status === filterStatus.value)
-  const q = search.value.trim().toLowerCase()
-  if (q) out = out.filter(t =>
-    t.title.toLowerCase().includes(q) ||
-    (t.description || '').toLowerCase().includes(q) ||
-    displayName(profileById.value[t.assigned_to]).toLowerCase().includes(q)
-  )
+  if (filterAssignee.value !== 'all') out = out.filter(t => t.assigned_to === filterAssignee.value)
+  if (filterDateFrom.value) out = out.filter(t => t.created_at >= filterDateFrom.value)
+  if (filterDateTo.value) out = out.filter(t => t.created_at <= filterDateTo.value + 'T23:59:59')
+
+  // ค้นหาแบบแยกคำ ไม่สนใจลำดับ/จำนวนช่องว่าง (พิมพ์ "นิเทศ ประเมิน" ต้องเจอแม้ชื่อเรื่องจะเรียงคำสลับกัน)
+  const terms = search.value.trim().toLowerCase().split(/\s+/).filter(Boolean)
+  if (terms.length) out = out.filter(t => {
+    const haystack = [t.title, t.description || '', displayName(profileById.value[t.assigned_to])]
+      .join(' ').toLowerCase()
+    return terms.every(term => haystack.includes(term))
+  })
   return out
 }
 const filteredActive  = computed(() => filterList(activeTasksAll.value))
@@ -282,10 +290,22 @@ async function saveTypes() {
         <option value="all">ทุกกลุ่มงาน</option>
         <option v-for="d in deptOptions" :key="d" :value="d">{{ d }}</option>
       </select>
+      <select v-model="filterAssignee" class="px-3 py-2.5 text-sm border border-slate-200 rounded-2xl bg-white focus:outline-none focus:border-primary">
+        <option value="all">ทุกศึกษานิเทศก์</option>
+        <option v-for="p in profiles" :key="p.id" :value="p.id">{{ displayName(p) }}</option>
+      </select>
       <select v-if="activeTab === 'active'" v-model="filterStatus" class="px-3 py-2.5 text-sm border border-slate-200 rounded-2xl bg-white focus:outline-none focus:border-primary">
         <option value="all">ทุกสถานะ</option>
         <option v-for="(label, key) in STATUS_LABEL" :key="key" :value="key">{{ label }}</option>
       </select>
+    </div>
+    <div class="flex flex-wrap items-center gap-2">
+      <label class="text-xs font-bold text-slate-400">ช่วงวันที่:</label>
+      <input v-model="filterDateFrom" type="date" class="px-3 py-2 text-sm border border-slate-200 rounded-2xl bg-white focus:outline-none focus:border-primary"/>
+      <span class="text-slate-300">-</span>
+      <input v-model="filterDateTo" type="date" class="px-3 py-2 text-sm border border-slate-200 rounded-2xl bg-white focus:outline-none focus:border-primary"/>
+      <button v-if="filterDateFrom || filterDateTo" @click="filterDateFrom = ''; filterDateTo = ''" type="button"
+        class="text-xs font-bold text-slate-400 hover:text-red-500 px-2">ล้างวันที่</button>
     </div>
 
     <!-- Loading -->
