@@ -79,6 +79,8 @@ import EducationNewsView     from '../views/EducationNewsView.vue'
 
 // ─── Service pages (มีหน้าจริง) ──────────────────────────────────────────
 import DownloadView     from '../views/DownloadView.vue'
+import SchoolDocumentsView from '../views/SchoolDocumentsView.vue'
+import AdminDocumentTasksView from '../views/admin/AdminDocumentTasksView.vue'
 import UrlShortView     from '../views/UrlShortView.vue'
 import QrCodeView       from '../views/QrCodeView.vue'
 import ShortRedirectView from '../views/ShortRedirectView.vue'
@@ -126,6 +128,7 @@ const routes = [
       { path: 'pages/:id/edit', name: 'adminPageEditor', component: AdminPageEditorView, meta: { title: 'แก้ไขเนื้อหา' } },
       { path: 'page-headers',   name: 'adminPageHeaders', component: AdminPageHeadersView, meta: { title: 'จัดการหัวข้อหน้า', icon: '🖼️' } },
       { path: 'documents',name: 'adminDocuments', component: AdminDocumentsView,    meta: { title: 'เอกสารและดาวน์โหลด', icon: '📂' } },
+      { path: 'document-tasks', name: 'adminDocumentTasks', component: AdminDocumentTasksView, meta: { title: 'ระบบธุรการ' } },
       { path: 'contact-messages', name: 'adminContactMessages', component: AdminContactMessagesView, meta: { title: 'ข้อความติดต่อ', icon: '📬' } },
       { path: 'works',    name: 'adminWorks',     component: AdminPlaceholderView,  meta: { title: 'ผลงานและนวัตกรรม', icon: '🏆' } },
       { path: 'works-approve', name: 'adminWorksApprove', component: AdminPlaceholderView, meta: { title: 'อนุมัติผลงาน', icon: '✅' } },
@@ -243,6 +246,7 @@ const routes = [
 
   // ── บริการ ────────────────────────────────────────────────────────────
   { path: '/download',  name: 'download',  component: DownloadView  },
+  { path: '/school-documents', name: 'schoolDocuments', component: SchoolDocumentsView },
   { path: '/url-short', name: 'urlShort',  component: UrlShortView  },
   { path: '/qrcode',    name: 'qrcode',    component: QrCodeView    },
   { path: '/s/:slug',   name: 'shortRedirect', component: ShortRedirectView },

@@ -90,6 +90,11 @@ const DEFAULTS = {
     { key: 'budget',    label: 'กลุ่มบริหารงบประมาณ',                         visible: true, order: 4 },
     { key: 'general',   label: 'กลุ่มอำนวยการ',                               visible: true, order: 5 },
   ],
+  task_types: [
+    { key: 'announcement', label: 'ประกาศ',  visible: true, order: 1 },
+    { key: 'order',        label: 'คำสั่ง',   visible: true, order: 2 },
+    { key: 'other',        label: 'อื่นๆ',    visible: true, order: 3 },
+  ],
   nav_groups: [
     { key: 'general', label: 'ข้อมูลทั่วไป',   visible: true,  order: 1 },
     { key: 'work',    label: 'งานนิเทศติดตาม', visible: true,  order: 2 },
