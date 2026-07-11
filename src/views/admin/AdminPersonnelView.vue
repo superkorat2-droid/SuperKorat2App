@@ -263,8 +263,7 @@ async function save() {
 
     <!-- Create user modal -->
     <Transition enter-active-class="transition duration-200" enter-from-class="opacity-0" leave-to-class="opacity-0">
-      <div v-if="showCreate" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
-        @click.self="showCreate = false">
+      <div v-if="showCreate" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
         <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md p-6 space-y-4">
           <h2 class="text-lg font-extrabold text-slate-800">สร้างบัญชีบุคลากร</h2>
           <p class="text-xs text-slate-400">บัญชีจะถูกสร้างและอนุมัติทันที บุคลากรสามารถ login ได้เลย</p>
@@ -422,8 +421,7 @@ async function save() {
 
     <!-- Edit Modal -->
     <Transition enter-active-class="transition duration-200" enter-from-class="opacity-0" leave-to-class="opacity-0">
-      <div v-if="editTarget" class="fixed inset-0 z-50 flex items-start justify-center p-4 bg-black/50 backdrop-blur-sm overflow-y-auto"
-        @click.self="editTarget=null">
+      <div v-if="editTarget" class="fixed inset-0 z-50 flex items-start justify-center p-4 bg-black/50 backdrop-blur-sm overflow-y-auto">
         <div class="bg-white rounded-3xl shadow-2xl w-full max-w-2xl my-4 p-6 space-y-5">
           <div class="flex items-center justify-between">
             <h2 class="text-lg font-extrabold text-slate-800">แก้ไข: {{ displayName(editTarget) }}</h2>

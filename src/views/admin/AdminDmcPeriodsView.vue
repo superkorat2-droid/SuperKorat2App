@@ -323,7 +323,7 @@ const archivedPeriods = computed(() => periods.value.filter(p => p.is_archived))
   <!-- ── Create/Edit Modal ──────────────────────────────────────────────── -->
   <Teleport to="body">
     <Transition name="fade">
-      <div v-if="showModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 font-sarabun" @click.self="showModal=false">
+      <div v-if="showModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 font-sarabun">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md">
           <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
             <h2 class="font-extrabold text-slate-800">{{ form.id ? 'แก้ไขรอบ' : 'สร้างรอบใหม่' }}</h2>
@@ -381,7 +381,7 @@ const archivedPeriods = computed(() => periods.value.filter(p => p.is_archived))
   <!-- ── Visibility Modal ────────────────────────────────────────────────── -->
   <Teleport to="body">
     <Transition name="fade">
-      <div v-if="showVisibility && visPeriod" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 font-sarabun" @click.self="showVisibility=false">
+      <div v-if="showVisibility && visPeriod" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 font-sarabun">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] flex flex-col overflow-hidden">
           <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between flex-shrink-0">
             <div>

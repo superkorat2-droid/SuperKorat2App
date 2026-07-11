@@ -525,8 +525,7 @@ async function exportCSV() {
   <Teleport to="body">
     <Transition name="fade">
       <div v-if="uploadModal.open"
-        class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 font-sarabun"
-        @click.self="closeUploadModal">
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 font-sarabun">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg">
 
           <!-- Header -->

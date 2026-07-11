@@ -315,8 +315,7 @@ function initials(name) {
   <Teleport to="body">
     <Transition name="fade">
       <div v-if="showModal"
-        class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 font-sarabun"
-        @click.self="showModal=false">
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 font-sarabun">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden">
 
           <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between flex-shrink-0">

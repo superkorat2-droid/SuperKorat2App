@@ -218,7 +218,7 @@ function formatDate(iso) {
 
     <!-- Edit Modal -->
     <Transition enter-active-class="transition duration-200" enter-from-class="opacity-0" enter-to-class="opacity-100">
-      <div v-if="showModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" @click.self="showModal = false">
+      <div v-if="showModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
         <div class="bg-white rounded-3xl shadow-2xl w-full max-w-lg p-6 md:p-8">
           <h2 class="text-xl font-extrabold text-slate-900 mb-5">{{ editUser?.id ? '✏️ แก้ไขผู้ใช้' : '➕ เพิ่มผู้ใช้' }}</h2>
           <div class="space-y-4">

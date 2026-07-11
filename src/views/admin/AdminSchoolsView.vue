@@ -271,8 +271,7 @@ function openMapsForGps(school) {
   <Teleport to="body">
     <Transition name="fade">
       <div v-if="editSchool"
-        class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 font-sarabun"
-        @click.self="closeEdit">
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 font-sarabun">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
 
           <!-- Header -->

@@ -215,7 +215,7 @@ function initials(name) { return name?.split(' ').map(n=>n[0]).join('').slice(0,
   <!-- ── Modal ───────────────────────────────────────────────────────────── -->
   <Teleport to="body">
     <Transition name="fade">
-      <div v-if="showModal" class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 p-0 sm:p-4 font-sarabun" @click.self="showModal=false">
+      <div v-if="showModal" class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 p-0 sm:p-4 font-sarabun">
         <div class="bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl w-full sm:max-w-lg max-h-[92dvh] flex flex-col overflow-hidden">
           <div class="flex justify-center pt-3 pb-1 sm:hidden"><div class="w-10 h-1 bg-slate-200 rounded-full"/></div>
           <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between flex-shrink-0">

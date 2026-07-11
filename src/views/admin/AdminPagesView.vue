@@ -504,8 +504,7 @@ function goEditor(p) { router.push(`/dashboard/pages/${p.id}/edit`) }
 
     <!-- ── Permission Modal ──────────────────────────────────────── -->
     <Transition enter-active-class="transition duration-200" enter-from-class="opacity-0" leave-to-class="opacity-0">
-      <div v-if="showPermModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
-        @click.self="showPermModal = false">
+      <div v-if="showPermModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
         <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md flex flex-col" style="max-height:85vh">
 
           <!-- Header -->
