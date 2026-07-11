@@ -130,23 +130,25 @@ function formatDate(iso) {
       </div>
       <div v-else class="space-y-3">
         <div v-for="file in filtered" :key="file.id"
-          class="flex items-center gap-4 bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 p-4 shadow-sm hover:shadow-md hover:border-primary/30 transition-all group">
-          <div class="w-12 h-12 bg-slate-50 dark:bg-slate-700 rounded-xl flex items-center justify-center text-2xl flex-shrink-0">
-            {{ typeIcon[file.file_type] || '📎' }}
-          </div>
-          <div class="flex-1 min-w-0">
-            <p class="font-bold text-slate-800 dark:text-slate-100 group-hover:text-primary transition-colors leading-snug truncate">{{ file.title }}</p>
-            <p v-if="file.description" class="text-xs text-slate-400 truncate mt-0.5">{{ file.description }}</p>
-            <div class="flex items-center gap-3 mt-1.5 flex-wrap">
-              <span :class="['text-[10px] font-bold px-2 py-0.5 rounded font-mono', typeColor[file.file_type] || 'bg-slate-100 text-slate-600']">{{ file.file_type }}</span>
-              <span v-if="file.file_size" class="text-xs text-slate-400">{{ file.file_size }}</span>
-              <span class="text-xs text-slate-400">{{ formatDate(file.created_at) }}</span>
-              <span v-if="publisherLine(file)" class="text-xs text-slate-400">👤 {{ publisherLine(file) }}</span>
-              <span class="text-xs text-slate-400">📥 {{ (file.download_count || 0).toLocaleString() }}</span>
+          class="flex flex-col sm:flex-row sm:items-center gap-3 bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 p-4 shadow-sm hover:shadow-md hover:border-primary/30 transition-all group">
+          <div class="flex items-center gap-4 flex-1 min-w-0">
+            <div class="w-12 h-12 bg-slate-50 dark:bg-slate-700 rounded-xl flex items-center justify-center text-2xl flex-shrink-0">
+              {{ typeIcon[file.file_type] || '📎' }}
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="font-bold text-slate-800 dark:text-slate-100 group-hover:text-primary transition-colors leading-snug break-words">{{ file.title }}</p>
+              <p v-if="file.description" class="text-xs text-slate-400 mt-0.5 break-words">{{ file.description }}</p>
+              <div class="flex items-center gap-3 mt-1.5 flex-wrap">
+                <span :class="['text-[10px] font-bold px-2 py-0.5 rounded font-mono', typeColor[file.file_type] || 'bg-slate-100 text-slate-600']">{{ file.file_type }}</span>
+                <span v-if="file.file_size" class="text-xs text-slate-400">{{ file.file_size }}</span>
+                <span class="text-xs text-slate-400">{{ formatDate(file.created_at) }}</span>
+                <span v-if="publisherLine(file)" class="text-xs text-slate-400">👤 {{ publisherLine(file) }}</span>
+                <span class="text-xs text-slate-400">📥 {{ (file.download_count || 0).toLocaleString() }}</span>
+              </div>
             </div>
           </div>
           <button @click="download(file)"
-            class="flex items-center gap-1.5 bg-primary-light hover:bg-primary text-primary hover:text-white text-xs font-bold px-4 py-2 rounded-xl transition-all flex-shrink-0 border border-primary/20 hover:border-primary">
+            class="flex items-center justify-center gap-1.5 bg-primary-light hover:bg-primary text-primary hover:text-white text-xs font-bold px-4 py-2 rounded-xl transition-all flex-shrink-0 border border-primary/20 hover:border-primary w-full sm:w-auto">
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
             </svg>
