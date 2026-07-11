@@ -1,8 +1,19 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { supabase } from '../../supabase'
+import { useAreaConfig } from '../../composables/useAreaConfig'
 import ImageCropperModal from '../../components/ImageCropperModal.vue'
 import Swal from 'sweetalert2'
+
+const { config, fetchConfig } = useAreaConfig()
+// เดียวกับตัวเลือก "กลุ่มงาน/สังกัด" ใน AdminPersonnelView.vue — ให้ผู้ใช้เลือกจากรายการที่ตั้งไว้จริง
+// (แก้บั๊ก: เดิมเป็นช่องพิมพ์อิสระ ทำให้พิมพ์ชื่อกลุ่มเพี้ยนจากที่ตั้งค่าไว้ กลายเป็นกลุ่มลอยไม่ตรงกับใครในผังองค์กร)
+const deptOptions = computed(() =>
+  (config.value?.personnel_groups || [])
+    .filter(g => g.visible !== false)
+    .sort((a, b) => (a.order ?? 99) - (b.order ?? 99))
+    .map(g => g.label)
+)
 
 const profile   = ref(null)
 const loading   = ref(true)
@@ -163,6 +174,7 @@ function toggleVis(key) {
 
 // ── Load ─────────────────────────────────────────────────────────
 onMounted(async () => {
+  fetchConfig()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return
   const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single()
@@ -381,8 +393,11 @@ async function changePassword() {
         <!-- กลุ่มงาน -->
         <div>
           <label class="text-xs font-bold text-slate-500 uppercase tracking-wider">กลุ่มงาน/สังกัด</label>
-          <input v-model="form.department" type="text" placeholder="เช่น กลุ่มนิเทศ ติดตามและประเมินผลฯ"
-            class="mt-1 w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-primary"/>
+          <select v-model="form.department"
+            class="mt-1 w-full px-3 py-2 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:border-primary">
+            <option value="">-- ไม่ระบุ --</option>
+            <option v-for="dep in deptOptions" :key="dep" :value="dep">{{ dep }}</option>
+          </select>
         </div>
 
         <!-- กลุ่มสาระ -->
