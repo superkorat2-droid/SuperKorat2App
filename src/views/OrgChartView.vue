@@ -116,8 +116,8 @@ const deptGroupRows = computed(() => {
               <img v-if="p.avatar_url" :src="p.avatar_url" class="w-full h-full object-cover object-top"/>
               <span v-else class="chart-avatar-initial">{{ displayName(p)[0] }}</span>
             </div>
-            <p class="chart-name" :class="fitTextClass(displayName(p))">{{ displayName(p) }}</p>
-            <p class="chart-pos" :class="fitTextClass(p.position)">{{ p.position }}</p>
+            <p class="chart-name" :class="fitTextClass(displayName(p), SM_TIERS)">{{ displayName(p) }}</p>
+            <p class="chart-pos" :class="fitTextClass(p.position, SM_TIERS)">{{ p.position }}</p>
           </div>
         </div>
 
@@ -131,8 +131,8 @@ const deptGroupRows = computed(() => {
                   <img v-if="p.avatar_url" :src="p.avatar_url" class="w-full h-full object-cover object-top"/>
                   <span v-else class="chart-avatar-initial">{{ displayName(p)[0] }}</span>
                 </div>
-                <p class="chart-name" :class="fitTextClass(displayName(p))">{{ displayName(p) }}</p>
-                <p class="chart-pos" :class="fitTextClass(p.position)">{{ p.position }}</p>
+                <p class="chart-name" :class="fitTextClass(displayName(p), SM_TIERS)">{{ displayName(p) }}</p>
+                <p class="chart-pos" :class="fitTextClass(p.position, SM_TIERS)">{{ p.position }}</p>
               </div>
             </div>
           </div>
@@ -230,7 +230,7 @@ const deptGroupRows = computed(() => {
 
 /* ── การ์ดผู้บริหาร (ผอ.เขต/รองผอ.เขต/ผอ.กลุ่ม) ───────────────── */
 .chart-card {
-  @apply w-40 bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-100 dark:border-slate-700
+  @apply w-44 bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-100 dark:border-slate-700
          overflow-hidden flex flex-col items-center pt-4 pb-3 px-2 text-center;
 }
 .chart-card-sm { @apply w-36 pt-3 pb-2 px-1.5; }
