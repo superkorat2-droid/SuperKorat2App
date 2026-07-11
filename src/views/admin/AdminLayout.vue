@@ -244,10 +244,14 @@ function iconKey(to) {
               style="background-color: var(--color-secondary)"></span>
 
             <!-- SVG icon -->
-            <svg class="w-4.5 h-4.5 flex-shrink-0 w-[18px] h-[18px]"
-              fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
-              <path stroke-linecap="round" stroke-linejoin="round" :d="NAV_ICONS[iconKey(item.to)]"/>
-            </svg>
+            <span class="relative flex-shrink-0">
+              <svg class="w-4.5 h-4.5 w-[18px] h-[18px]"
+                fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                <path stroke-linecap="round" stroke-linejoin="round" :d="NAV_ICONS[iconKey(item.to)]"/>
+              </svg>
+              <span v-if="item.to === '/dashboard/document-tasks' && pendingCount > 0"
+                class="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full ring-2 ring-[#0c1220]"></span>
+            </span>
 
             <span v-if="sidebarOpen" class="truncate">{{ item.label }}</span>
 
