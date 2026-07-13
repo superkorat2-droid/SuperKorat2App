@@ -5,18 +5,18 @@ const props = defineProps({
   title:  { type: String, default: '' },
 })
 
-// ── โครงสร้างต่อ layout: ทุกแบบใช้ 1 ใน 4 pattern (card/plain/caption/list) ──
-// ต่างกันแค่จำนวนคอลัมน์ (desktop) กับสัดส่วนภาพ — กันโค้ดซ้ำ 9 รอบ
+// ── โครงสร้างต่อ layout: ทุกแบบใช้ 1 ใน 5 pattern (full/card/plain/caption/list) ──
+// ต่างกันแค่จำนวนคอลัมน์ (desktop) กับสัดส่วนภาพ — กันโค้ดซ้ำ
 const LAYOUT_META = {
-  'card':                    { pattern: 'card',    cols: 'grid-cols-1 sm:grid-cols-2 md:grid-cols-4', aspect: 'aspect-video' },
+  'card':                    { pattern: 'full',    cols: 'grid-cols-1 sm:grid-cols-2 md:grid-cols-4', aspect: 'aspect-[2/1]' },
   'rect-landscape-below':    { pattern: 'card',    cols: 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4', aspect: 'aspect-[4/3]' },
 
-  'square-3':                { pattern: 'plain',   cols: 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3', aspect: 'aspect-square' },
-  'square-4':                { pattern: 'plain',   cols: 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4', aspect: 'aspect-square' },
+  'rect-half-3':             { pattern: 'plain',   cols: 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3', aspect: 'aspect-[8/3]' },
+  'rect-half-4':             { pattern: 'plain',   cols: 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4', aspect: 'aspect-[8/3]' },
   'rect-landscape':          { pattern: 'plain',   cols: 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3', aspect: 'aspect-[4/3]' },
   'rect-portrait':           { pattern: 'plain',   cols: 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4', aspect: 'aspect-[3/4]' },
 
-  'square-caption':          { pattern: 'caption', cols: 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3', aspect: 'aspect-square' },
+  'rect-half-caption':       { pattern: 'caption', cols: 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3', aspect: 'aspect-[8/3]' },
   'rect-landscape-caption':  { pattern: 'caption', cols: 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3', aspect: 'aspect-[4/3]' },
 
   'list':                    { pattern: 'list' },
@@ -40,8 +40,23 @@ function itemTag(item) {
   <div class="font-sarabun">
     <h3 v-if="title" class="text-xl font-extrabold text-slate-800 dark:text-slate-100 mb-4">{{ title }}</h3>
 
+    <!-- Pattern: full (ภาพเต็มการ์ด + ข้อความซ้อนทับด้านล่างเสมอ ไม่มี zoom hover) -->
+    <div v-if="meta(layout).pattern === 'full'" class="grid gap-5" :class="meta(layout).cols">
+      <component :is="itemTag(item)" v-for="item in items" :key="item.id"
+        :href="itemHref(item)" :to="itemTo(item)"
+        :target="item.link_type === 'external' ? '_blank' : undefined"
+        :rel="item.link_type === 'external' ? 'noopener' : undefined"
+        :class="['group relative block bg-slate-100 dark:bg-slate-700 rounded-2xl overflow-hidden shadow-sm border border-slate-100 dark:border-slate-700 transition-all hover:shadow-lg hover:-translate-y-1', meta(layout).aspect]">
+        <img v-if="item.image_url" :src="item.image_url" :alt="item.title" class="w-full h-full object-cover"/>
+        <div v-if="item.title || item.caption" class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent p-3 pt-6">
+          <p v-if="item.title" class="text-white text-sm font-bold leading-snug break-words">{{ item.title }}</p>
+          <p v-if="item.caption" class="text-white/70 text-xs mt-0.5 break-words">{{ item.caption }}</p>
+        </div>
+      </component>
+    </div>
+
     <!-- Pattern: card (ภาพ + หัวข้อใต้ภาพ เสมอ) -->
-    <div v-if="meta(layout).pattern === 'card'" class="grid gap-5" :class="meta(layout).cols">
+    <div v-else-if="meta(layout).pattern === 'card'" class="grid gap-5" :class="meta(layout).cols">
       <component :is="itemTag(item)" v-for="item in items" :key="item.id"
         :href="itemHref(item)" :to="itemTo(item)"
         :target="item.link_type === 'external' ? '_blank' : undefined"

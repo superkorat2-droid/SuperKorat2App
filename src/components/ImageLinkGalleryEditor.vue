@@ -10,19 +10,19 @@ const props = defineProps({
 })
 
 const LAYOUTS = [
-  { value: 'card',      group: 'การ์ด/รายการ',      label: 'การ์ด 16:9',            hint: 'รูป + หัวข้อใต้ภาพ',         ratio: 16/9, size: '1200×675 px (16:9)', caption: 'below' },
-  { value: 'list',      group: 'การ์ด/รายการ',      label: 'รายการแนวนอน',          hint: 'ภาพซ้าย + ข้อความขวา',       ratio: 1,    size: '400×400 px (1:1)',   caption: 'side' },
+  { value: 'card',      group: 'การ์ด/รายการ', label: 'การ์ดแนวนอน 2:1',        hint: 'ภาพเต็มการ์ด + ข้อความซ้อนล่าง เสมอ', ratio: 2/1, size: '1200×600 px (2:1)', caption: 'overlay-always' },
+  { value: 'list',      group: 'การ์ด/รายการ', label: 'รายการแนวนอน',          hint: 'ภาพซ้าย + ข้อความขวา',              ratio: 1,   size: '400×400 px (1:1)',   caption: 'side' },
 
-  { value: 'square-3',        group: 'สี่เหลี่ยมจัตุรัส', label: 'จัตุรัส 3 คอลัมน์',        hint: 'ภาพล้วน ไม่มีข้อความ',       ratio: 1, size: '1000×1000 px (1:1)', caption: 'none' },
-  { value: 'square-4',        group: 'สี่เหลี่ยมจัตุรัส', label: 'จัตุรัส 4 คอลัมน์',        hint: 'ภาพล้วน ไม่มีข้อความ',       ratio: 1, size: '1000×1000 px (1:1)', caption: 'none' },
-  { value: 'square-caption',  group: 'สี่เหลี่ยมจัตุรัส', label: 'จัตุรัส 3 คอลัมน์ + ข้อความ', hint: 'ข้อความซ้อนบนภาพ (hover)', ratio: 1, size: '1000×1000 px (1:1)', caption: 'overlay' },
+  { value: 'rect-half-3',       group: 'ผืนผ้าเตี้ย 8:3', label: 'ผืนผ้าเตี้ย 3 คอลัมน์',        hint: 'ภาพล้วน ไม่มีข้อความ',       ratio: 8/3, size: '1600×600 px (8:3)', caption: 'none' },
+  { value: 'rect-half-4',       group: 'ผืนผ้าเตี้ย 8:3', label: 'ผืนผ้าเตี้ย 4 คอลัมน์',        hint: 'ภาพล้วน ไม่มีข้อความ',       ratio: 8/3, size: '1600×600 px (8:3)', caption: 'none' },
+  { value: 'rect-half-caption', group: 'ผืนผ้าเตี้ย 8:3', label: 'ผืนผ้าเตี้ย 3 คอลัมน์ + ข้อความ', hint: 'ข้อความซ้อนบนภาพ (hover)', ratio: 8/3, size: '1600×600 px (8:3)', caption: 'overlay' },
 
   { value: 'rect-landscape',         group: 'สี่เหลี่ยมผืนผ้า', label: 'แนวนอน 3 คอลัมน์',           hint: 'ภาพล้วน ไม่มีข้อความ',       ratio: 4/3, size: '1200×900 px (4:3)', caption: 'none' },
   { value: 'rect-landscape-caption', group: 'สี่เหลี่ยมผืนผ้า', label: 'แนวนอน 3 คอลัมน์ + ข้อความ',  hint: 'ข้อความซ้อนบนภาพ (hover)', ratio: 4/3, size: '1200×900 px (4:3)', caption: 'overlay' },
   { value: 'rect-landscape-below',   group: 'สี่เหลี่ยมผืนผ้า', label: 'แนวนอน 4 คอลัมน์ + ข้อความ',  hint: 'ข้อความอยู่ใต้ภาพแบบการ์ด',  ratio: 4/3, size: '1200×900 px (4:3)', caption: 'below' },
   { value: 'rect-portrait',          group: 'สี่เหลี่ยมผืนผ้า', label: 'แนวตั้ง 4 คอลัมน์',          hint: 'ภาพล้วน ไม่มีข้อความ',       ratio: 3/4, size: '900×1200 px (3:4)', caption: 'none' },
 ]
-const LAYOUT_GROUPS = ['การ์ด/รายการ', 'สี่เหลี่ยมจัตุรัส', 'สี่เหลี่ยมผืนผ้า']
+const LAYOUT_GROUPS = ['การ์ด/รายการ', 'ผืนผ้าเตี้ย 8:3', 'สี่เหลี่ยมผืนผ้า']
 const currentLayout = computed(() => LAYOUTS.find(l => l.value === props.gallery.layout) || LAYOUTS[0])
 
 function newItem() {
@@ -105,7 +105,7 @@ async function onCropped({ blob }) {
             <div v-else class="h-14 mb-2 flex items-end gap-1">
               <div v-for="n in 3" :key="n" class="flex-1 relative rounded bg-slate-200 overflow-hidden" :style="{ aspectRatio: l.ratio }">
                 <div v-if="l.caption === 'below' && n === 1" class="absolute inset-x-0 bottom-0 h-1.5 bg-slate-300"></div>
-                <div v-if="l.caption === 'overlay' && n === 1" class="absolute inset-x-0 bottom-0 h-2.5 bg-slate-400/60"></div>
+                <div v-if="(l.caption === 'overlay' || l.caption === 'overlay-always') && n === 1" class="absolute inset-x-0 bottom-0 h-2.5 bg-slate-400/60"></div>
               </div>
             </div>
             <p class="text-xs font-bold text-slate-700">{{ l.label }}</p>
