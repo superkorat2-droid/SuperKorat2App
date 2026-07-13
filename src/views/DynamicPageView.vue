@@ -10,6 +10,12 @@ const router  = useRouter()
 const page    = ref(null)
 const loading = ref(true)
 
+// ── ลิงก์ภายใน (ปุ่ม CTA) — path สำหรับ router-link จาก "#/page" หรือ "/page" ──
+function internalPath(url) {
+  if (!url) return '/'
+  return url.startsWith('#') ? url.slice(1) : url
+}
+
 // ── Embed URL transform ───────────────────────────────────────────
 function toEmbedUrl(url, type) {
   if (!url) return url
@@ -143,6 +149,43 @@ watch(() => route.params.slug, s => { if (s) load(s) })
           <!-- GALLERY -->
           <ImageLinkGallery v-else-if="block.type === 'gallery' && block.items?.length"
             :layout="block.layout" :items="block.items" :title="block.title"/>
+
+          <!-- MEDIA-TEXT -->
+          <div v-else-if="block.type === 'media-text' && block.url"
+            :class="['flex flex-col md:flex-row gap-6 items-center', block.side === 'right' ? 'md:flex-row-reverse' : '']">
+            <img :src="block.url" class="w-full md:w-1/2 rounded-2xl shadow-md object-cover"/>
+            <div class="w-full md:w-1/2">
+              <h3 v-if="block.heading" class="text-xl font-extrabold text-slate-900 dark:text-slate-50 mb-2">{{ block.heading }}</h3>
+              <p v-if="block.text" class="text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">{{ block.text }}</p>
+            </div>
+          </div>
+
+          <!-- BUTTON -->
+          <div v-else-if="block.type === 'button' && block.text"
+            :class="['flex', block.align==='center' ? 'justify-center' : block.align==='right' ? 'justify-end' : 'justify-start']">
+            <component :is="block.link_type === 'external' ? 'a' : 'router-link'"
+              :href="block.link_type === 'external' ? (block.link_url || '#') : undefined"
+              :to="block.link_type === 'internal' ? internalPath(block.link_url) : undefined"
+              :target="block.link_type === 'external' ? '_blank' : undefined"
+              :rel="block.link_type === 'external' ? 'noopener' : undefined"
+              class="inline-block px-6 py-3 bg-primary hover:bg-primary-dark text-white font-bold rounded-2xl shadow-md hover:-translate-y-0.5 transition-all">
+              {{ block.text }}
+            </component>
+          </div>
+
+          <!-- ACCORDION -->
+          <div v-else-if="block.type === 'accordion' && block.items?.length" class="space-y-2">
+            <details v-for="item in block.items" :key="item.id"
+              class="group bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl overflow-hidden">
+              <summary class="flex items-center justify-between gap-3 px-4 py-3 cursor-pointer font-bold text-slate-800 dark:text-slate-100 select-none">
+                {{ item.question }}
+                <svg class="w-4 h-4 flex-shrink-0 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/>
+                </svg>
+              </summary>
+              <p class="px-4 pb-4 text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">{{ item.answer }}</p>
+            </details>
+          </div>
 
         </template>
 
