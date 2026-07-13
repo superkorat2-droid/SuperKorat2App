@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { supabase } from '../supabase'
 import ImageCropperModal from './ImageCropperModal.vue'
 import { useExternalUpload, externalUploadEnabled } from '../composables/useExternalUpload'
@@ -10,10 +10,12 @@ const props = defineProps({
 })
 
 const LAYOUTS = [
-  { value: 'card',   label: 'การ์ดกริด',      hint: 'รูป + หัวข้อ เหมาะแสดงรายการหลัก' },
-  { value: 'mosaic', label: 'กริดรูปล้วน',    hint: 'ไม่มีข้อความ เน้นภาพ' },
-  { value: 'list',   label: 'รายการแนวนอน',  hint: 'รูปเล็ก + ข้อความข้าง เหมาะมือถือ' },
+  { value: 'card',      label: 'การ์ดกริด',      hint: 'รูป + หัวข้อ เหมาะแสดงรายการหลัก', ratio: 16/9, size: '1200×675 px (16:9)' },
+  { value: 'mosaic',    label: 'กริดรูปล้วน',    hint: 'ไม่มีข้อความ เน้นภาพ สี่เหลี่ยมจัตุรัส', ratio: 1, size: '1000×1000 px (1:1)' },
+  { value: 'rectangle', label: 'กริดผืนผ้า',    hint: 'ไม่มีข้อความ เน้นภาพ สี่เหลี่ยมผืนผ้า', ratio: 4/3, size: '1200×900 px (4:3)' },
+  { value: 'list',      label: 'รายการแนวนอน',  hint: 'รูปเล็ก + ข้อความข้าง เหมาะมือถือ', ratio: 1, size: '400×400 px (1:1)' },
 ]
+const currentLayout = computed(() => LAYOUTS.find(l => l.value === props.gallery.layout) || LAYOUTS[0])
 
 function newItem() {
   return { id: crypto.randomUUID(), image_url: '', title: '', caption: '', link_type: 'none', link_url: '' }
@@ -78,7 +80,7 @@ async function onCropped({ blob }) {
     <!-- Layout picker พร้อมตัวอย่าง -->
     <div>
       <label class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 block">รูปแบบการแสดงผล</label>
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <button v-for="l in LAYOUTS" :key="l.value" type="button" @click="gallery.layout = l.value"
           :class="['text-left p-3 rounded-2xl border-2 transition-all',
             gallery.layout === l.value ? 'border-primary bg-primary/5' : 'border-slate-200 hover:border-slate-300']">
@@ -91,6 +93,9 @@ async function onCropped({ blob }) {
             </template>
             <template v-else-if="l.value === 'mosaic'">
               <div v-for="n in 4" :key="n" class="flex-1 aspect-square rounded bg-slate-200"></div>
+            </template>
+            <template v-else-if="l.value === 'rectangle'">
+              <div v-for="n in 3" :key="n" class="flex-1 aspect-[4/3] rounded bg-slate-200"></div>
             </template>
             <template v-else>
               <div class="flex-1 h-full flex flex-col gap-1">
@@ -105,6 +110,10 @@ async function onCropped({ blob }) {
           <p class="text-[10px] text-slate-400">{{ l.hint }}</p>
         </button>
       </div>
+      <p class="text-xs text-slate-500 mt-2 flex items-center gap-1.5">
+        <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z"/></svg>
+        แนะนำขนาดภาพสำหรับรูปแบบนี้: <b class="text-slate-700">{{ currentLayout.size }}</b>
+      </p>
     </div>
 
     <!-- Items -->
@@ -159,8 +168,8 @@ async function onCropped({ blob }) {
       </div>
     </div>
 
-    <ImageCropperModal :show="showCropper" :aspect-ratio="1" title="ครอบรูปภาพ (1:1)"
-      :output-max-width="1200" :output-max-height="1200" output-type="image/jpeg" :output-quality="0.85"
+    <ImageCropperModal :show="showCropper" :aspect-ratio="currentLayout.ratio" :title="`ครอบรูปภาพ (${currentLayout.size})`"
+      :output-max-width="1600" :output-max-height="1600" output-type="image/jpeg" :output-quality="0.85"
       @close="showCropper = false" @cropped="onCropped"/>
     <p v-if="uploadErr" class="text-xs text-red-500">{{ uploadErr }}</p>
   </div>

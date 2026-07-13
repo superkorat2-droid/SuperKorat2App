@@ -55,6 +55,21 @@ function itemTag(item) {
       </component>
     </div>
 
+    <!-- Layout: กริดผืนผ้า (ไม่มีข้อความ ยกเว้น hover overlay — สี่เหลี่ยมผืนผ้า 4:3) -->
+    <div v-else-if="layout === 'rectangle'" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+      <component :is="itemTag(item)" v-for="item in items" :key="item.id"
+        :href="itemHref(item)" :to="itemTo(item)"
+        :target="item.link_type === 'external' ? '_blank' : undefined"
+        :rel="item.link_type === 'external' ? 'noopener' : undefined"
+        class="group relative block aspect-[4/3] bg-slate-100 dark:bg-slate-700 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-all">
+        <img v-if="item.image_url" :src="item.image_url" :alt="item.title"
+          class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"/>
+        <div v-if="item.title" class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-3 opacity-0 group-hover:opacity-100 transition-opacity">
+          <p class="text-white text-xs font-bold truncate">{{ item.title }}</p>
+        </div>
+      </component>
+    </div>
+
     <!-- Layout: รายการแนวนอน (รูปเล็ก + ข้อความข้าง เหมาะมือถือ) -->
     <div v-else class="space-y-3">
       <component :is="itemTag(item)" v-for="item in items" :key="item.id"
