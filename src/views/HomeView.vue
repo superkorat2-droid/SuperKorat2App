@@ -3,6 +3,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase } from '../supabase'
 import { useAreaConfig, DEFAULT_HOME_SECTIONS } from '../composables/useAreaConfig'
+import ImageLinkGallery from '../components/ImageLinkGallery.vue'
 import { ICON_MAP } from '../composables/useIcons.js'
 import { useEducationNews } from '../composables/useEducationNews'
 import { useTheme } from '../composables/useTheme'
@@ -913,6 +914,18 @@ const stats = [
                 </component>
               </div>
             </div>
+          </div>
+        </section>
+
+        <!-- ══ IMAGE GALLERY ══ -->
+        <section v-else-if="sec.key === 'image_gallery' && config?.home_gallery?.items?.length"
+          :style="getBgStyle(sec)" class="py-8 md:py-12">
+          <div class="max-w-7xl mx-auto px-4">
+            <div class="text-center mb-12">
+              <span v-if="sec.subtitle" class="text-secondary font-bold uppercase text-xs tracking-[0.18em] mb-2 block">{{ sec.subtitle }}</span>
+              <h2 class="text-3xl md:text-4xl font-extrabold text-slate-900 accent-line-center">{{ sec.title || 'ภาพลิงค์' }}</h2>
+            </div>
+            <ImageLinkGallery :layout="config.home_gallery.layout" :items="config.home_gallery.items"/>
           </div>
         </section>
 

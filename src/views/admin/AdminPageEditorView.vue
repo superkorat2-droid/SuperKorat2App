@@ -6,6 +6,7 @@ import Swal from 'sweetalert2'
 import ImageCropperModal from '../../components/ImageCropperModal.vue'
 import { useExternalUpload, externalUploadEnabled, deleteUploadedFile } from '../../composables/useExternalUpload'
 import IconPicker from '../../components/IconPicker.vue'
+import ImageLinkGalleryEditor from '../../components/ImageLinkGalleryEditor.vue'
 
 const route  = useRoute()
 const router = useRouter()
@@ -51,6 +52,7 @@ const BLOCK_TYPES = [
   { type: 'embed',   label: 'Embed URL', iconName: 'globe'     },
   { type: 'html',    label: 'HTML',      iconName: 'beaker'    },
   { type: 'divider', label: 'เส้นแบ่ง', iconName: 'plus'      },
+  { type: 'gallery', label: 'ภาพลิงค์', iconName: 'link'      },
 ]
 
 function newBlock(type) {
@@ -62,6 +64,7 @@ function newBlock(type) {
     case 'embed':    return { ...base, url: '', embed_type: 'youtube', aspect: '16/9' }
     case 'html':     return { ...base, code: '' }
     case 'divider':  return { ...base }
+    case 'gallery':  return { ...base, layout: 'card', title: '', items: [] }
     default:         return base
   }
 }
@@ -499,6 +502,11 @@ async function clearHeaderMedia() {
                 <span class="text-xs text-slate-400">เส้นแบ่งส่วน</span>
                 <div class="flex-1 h-px bg-slate-200"></div>
               </div>
+            </template>
+
+            <!-- GALLERY -->
+            <template v-else-if="block.type === 'gallery'">
+              <ImageLinkGalleryEditor :gallery="block"/>
             </template>
 
           </div>

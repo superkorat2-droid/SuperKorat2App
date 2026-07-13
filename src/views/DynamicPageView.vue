@@ -3,6 +3,7 @@ import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { supabase } from '../supabase'
 import PageHero from '../components/PageHero.vue'
+import ImageLinkGallery from '../components/ImageLinkGallery.vue'
 
 const route   = useRoute()
 const router  = useRouter()
@@ -138,6 +139,10 @@ watch(() => route.params.slug, s => { if (s) load(s) })
           <!-- DIVIDER -->
           <hr v-else-if="block.type === 'divider'"
             class="border-slate-200 dark:border-slate-700"/>
+
+          <!-- GALLERY -->
+          <ImageLinkGallery v-else-if="block.type === 'gallery' && block.items?.length"
+            :layout="block.layout" :items="block.items" :title="block.title"/>
 
         </template>
 
