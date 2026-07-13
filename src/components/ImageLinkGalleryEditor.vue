@@ -10,11 +10,19 @@ const props = defineProps({
 })
 
 const LAYOUTS = [
-  { value: 'card',      label: 'การ์ดกริด',      hint: 'รูป + หัวข้อ เหมาะแสดงรายการหลัก', ratio: 16/9, size: '1200×675 px (16:9)' },
-  { value: 'mosaic',    label: 'กริดรูปล้วน',    hint: 'ไม่มีข้อความ เน้นภาพ สี่เหลี่ยมจัตุรัส', ratio: 1, size: '1000×1000 px (1:1)' },
-  { value: 'rectangle', label: 'กริดผืนผ้า',    hint: 'ไม่มีข้อความ เน้นภาพ สี่เหลี่ยมผืนผ้า', ratio: 4/3, size: '1200×900 px (4:3)' },
-  { value: 'list',      label: 'รายการแนวนอน',  hint: 'รูปเล็ก + ข้อความข้าง เหมาะมือถือ', ratio: 1, size: '400×400 px (1:1)' },
+  { value: 'card',      group: 'การ์ด/รายการ',      label: 'การ์ด 16:9',            hint: 'รูป + หัวข้อใต้ภาพ',         ratio: 16/9, size: '1200×675 px (16:9)', caption: 'below' },
+  { value: 'list',      group: 'การ์ด/รายการ',      label: 'รายการแนวนอน',          hint: 'ภาพซ้าย + ข้อความขวา',       ratio: 1,    size: '400×400 px (1:1)',   caption: 'side' },
+
+  { value: 'square-3',        group: 'สี่เหลี่ยมจัตุรัส', label: 'จัตุรัส 3 คอลัมน์',        hint: 'ภาพล้วน ไม่มีข้อความ',       ratio: 1, size: '1000×1000 px (1:1)', caption: 'none' },
+  { value: 'square-4',        group: 'สี่เหลี่ยมจัตุรัส', label: 'จัตุรัส 4 คอลัมน์',        hint: 'ภาพล้วน ไม่มีข้อความ',       ratio: 1, size: '1000×1000 px (1:1)', caption: 'none' },
+  { value: 'square-caption',  group: 'สี่เหลี่ยมจัตุรัส', label: 'จัตุรัส 3 คอลัมน์ + ข้อความ', hint: 'ข้อความซ้อนบนภาพ (hover)', ratio: 1, size: '1000×1000 px (1:1)', caption: 'overlay' },
+
+  { value: 'rect-landscape',         group: 'สี่เหลี่ยมผืนผ้า', label: 'แนวนอน 3 คอลัมน์',           hint: 'ภาพล้วน ไม่มีข้อความ',       ratio: 4/3, size: '1200×900 px (4:3)', caption: 'none' },
+  { value: 'rect-landscape-caption', group: 'สี่เหลี่ยมผืนผ้า', label: 'แนวนอน 3 คอลัมน์ + ข้อความ',  hint: 'ข้อความซ้อนบนภาพ (hover)', ratio: 4/3, size: '1200×900 px (4:3)', caption: 'overlay' },
+  { value: 'rect-landscape-below',   group: 'สี่เหลี่ยมผืนผ้า', label: 'แนวนอน 4 คอลัมน์ + ข้อความ',  hint: 'ข้อความอยู่ใต้ภาพแบบการ์ด',  ratio: 4/3, size: '1200×900 px (4:3)', caption: 'below' },
+  { value: 'rect-portrait',          group: 'สี่เหลี่ยมผืนผ้า', label: 'แนวตั้ง 4 คอลัมน์',          hint: 'ภาพล้วน ไม่มีข้อความ',       ratio: 3/4, size: '900×1200 px (3:4)', caption: 'none' },
 ]
+const LAYOUT_GROUPS = ['การ์ด/รายการ', 'สี่เหลี่ยมจัตุรัส', 'สี่เหลี่ยมผืนผ้า']
 const currentLayout = computed(() => LAYOUTS.find(l => l.value === props.gallery.layout) || LAYOUTS[0])
 
 function newItem() {
@@ -78,39 +86,35 @@ async function onCropped({ blob }) {
     </div>
 
     <!-- Layout picker พร้อมตัวอย่าง -->
-    <div>
-      <label class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 block">รูปแบบการแสดงผล</label>
-      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <button v-for="l in LAYOUTS" :key="l.value" type="button" @click="gallery.layout = l.value"
-          :class="['text-left p-3 rounded-2xl border-2 transition-all',
-            gallery.layout === l.value ? 'border-primary bg-primary/5' : 'border-slate-200 hover:border-slate-300']">
-          <!-- Preview swatch -->
-          <div class="h-14 mb-2 flex items-center gap-1" >
-            <template v-if="l.value === 'card'">
-              <div v-for="n in 3" :key="n" class="flex-1 h-full rounded bg-slate-200 flex flex-col justify-end p-0.5">
-                <div class="h-1.5 bg-slate-300 rounded-sm"></div>
+    <div class="space-y-3">
+      <label class="text-xs font-bold text-slate-500 uppercase tracking-wider block">รูปแบบการแสดงผล</label>
+
+      <div v-for="group in LAYOUT_GROUPS" :key="group">
+        <p class="text-[11px] font-bold text-slate-400 mb-1.5">{{ group }}</p>
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-3">
+          <button v-for="l in LAYOUTS.filter(x => x.group === group)" :key="l.value" type="button" @click="gallery.layout = l.value"
+            :class="['text-left p-3 rounded-2xl border-2 transition-all',
+              gallery.layout === l.value ? 'border-primary bg-primary/5' : 'border-slate-200 hover:border-slate-300']">
+            <!-- Preview swatch -->
+            <div v-if="l.value === 'list'" class="h-14 mb-2 flex flex-col gap-1 justify-center">
+              <div v-for="n in 3" :key="n" class="flex-1 flex items-center gap-1">
+                <div class="w-4 h-full rounded bg-slate-300 flex-shrink-0"></div>
+                <div class="flex-1 h-1.5 bg-slate-200 rounded-sm"></div>
               </div>
-            </template>
-            <template v-else-if="l.value === 'mosaic'">
-              <div v-for="n in 4" :key="n" class="flex-1 aspect-square rounded bg-slate-200"></div>
-            </template>
-            <template v-else-if="l.value === 'rectangle'">
-              <div v-for="n in 3" :key="n" class="flex-1 aspect-[4/3] rounded bg-slate-200"></div>
-            </template>
-            <template v-else>
-              <div class="flex-1 h-full flex flex-col gap-1">
-                <div v-for="n in 3" :key="n" class="flex-1 flex items-center gap-1">
-                  <div class="w-4 h-full rounded bg-slate-300 flex-shrink-0"></div>
-                  <div class="flex-1 h-1.5 bg-slate-200 rounded-sm"></div>
-                </div>
+            </div>
+            <div v-else class="h-14 mb-2 flex items-end gap-1">
+              <div v-for="n in 3" :key="n" class="flex-1 relative rounded bg-slate-200 overflow-hidden" :style="{ aspectRatio: l.ratio }">
+                <div v-if="l.caption === 'below' && n === 1" class="absolute inset-x-0 bottom-0 h-1.5 bg-slate-300"></div>
+                <div v-if="l.caption === 'overlay' && n === 1" class="absolute inset-x-0 bottom-0 h-2.5 bg-slate-400/60"></div>
               </div>
-            </template>
-          </div>
-          <p class="text-xs font-bold text-slate-700">{{ l.label }}</p>
-          <p class="text-[10px] text-slate-400">{{ l.hint }}</p>
-        </button>
+            </div>
+            <p class="text-xs font-bold text-slate-700">{{ l.label }}</p>
+            <p class="text-[10px] text-slate-400">{{ l.hint }}</p>
+          </button>
+        </div>
       </div>
-      <p class="text-xs text-slate-500 mt-2 flex items-center gap-1.5">
+
+      <p class="text-xs text-slate-500 flex items-center gap-1.5">
         <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z"/></svg>
         แนะนำขนาดภาพสำหรับรูปแบบนี้: <b class="text-slate-700">{{ currentLayout.size }}</b>
       </p>
