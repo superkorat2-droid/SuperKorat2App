@@ -1,15 +1,14 @@
 <script setup>
 import { ref, onMounted } from 'vue'
-import { useAreaConfig, DEFAULT_HOME_SECTIONS, DEFAULT_HOME_GALLERY } from '../../composables/useAreaConfig'
+import { useAreaConfig, DEFAULT_HOME_SECTIONS } from '../../composables/useAreaConfig'
 import ImageLinkGalleryEditor from '../../components/ImageLinkGalleryEditor.vue'
 import Swal from 'sweetalert2'
 
 const { config, fetchConfig, updateConfig } = useAreaConfig()
 
-const sections    = ref([])
-const saving      = ref(false)
-const homeGallery = ref({ ...DEFAULT_HOME_GALLERY, items: [] })
-const showGalleryModal = ref(false)
+const sections       = ref([])
+const saving         = ref(false)
+const editingSection = ref(null) // section object ที่กำลังจัดการรูปภาพอยู่ (เฉพาะ key ขึ้นต้นด้วย image_gallery)
 
 // ── Gradient types ────────────────────────────────────────────────
 const BG_TYPES = [
@@ -88,6 +87,29 @@ const SECTION_DESC = {
   cta:             'แบนเนอร์เชิญชวน + ลิงค์หลัก',
 }
 
+// keys ของเซกชันภาพลิงค์ไม่คงที่ (image_gallery_<timestamp>) — ต้องเช็คด้วย prefix แทน exact match
+function isGallerySection(sec) { return sec.key.startsWith('image_gallery') }
+function sectionIcon(sec) { return isGallerySection(sec) ? SECTION_ICONS.image_gallery : (SECTION_ICONS[sec.key] || SECTION_ICONS.news) }
+function sectionDesc(sec) { return isGallerySection(sec) ? SECTION_DESC.image_gallery : (SECTION_DESC[sec.key] || '') }
+
+function addGallerySection() {
+  const key = `image_gallery_${Date.now()}`
+  sections.value.push({
+    key, label: 'ภาพลิงค์', subtitle: 'Gallery', title: 'ภาพลิงค์', visible: true,
+    bg: '#ffffff', bg2: '#f1f5f9', bg_type: 'solid', order: sections.value.length + 1,
+    gallery: { layout: 'card', title: '', items: [] },
+  })
+}
+
+async function removeSection(i) {
+  const res = await Swal.fire({
+    title: 'ลบเซกชันนี้?', icon: 'warning', showCancelButton: true,
+    confirmButtonColor: '#ef4444', confirmButtonText: 'ลบ', cancelButtonText: 'ยกเลิก',
+  })
+  if (!res.isConfirmed) return
+  sections.value.splice(i, 1)
+}
+
 onMounted(async () => {
   await fetchConfig()
   const raw = config.value?.home_sections
@@ -101,20 +123,18 @@ onMounted(async () => {
   const merged = [
     ...raw.map(s => {
       const def = DEFAULT_HOME_SECTIONS.find(d => d.key === s.key)
-      return { subtitle: def?.subtitle ?? '', ...s }  // backfill subtitle
+      const withSubtitle = { subtitle: def?.subtitle ?? '', ...s }  // backfill subtitle
+      // เซกชันภาพลิงค์เก่าที่อาจยังไม่มี field gallery (ข้อมูลก่อนอัปเดต) — เติมค่าว่างให้
+      if (isGallerySection(withSubtitle) && !withSubtitle.gallery) {
+        withSubtitle.gallery = { layout: 'card', title: '', items: [] }
+      }
+      return withSubtitle
     }),
     ...DEFAULT_HOME_SECTIONS
       .filter(s => !storedKeys.has(s.key))
       .map((s, i) => ({ ...s, order: maxOrder + i + 1 })),
   ]
   sections.value = merged.sort((a, b) => a.order - b.order)
-
-  const g = config.value?.home_gallery
-  homeGallery.value = {
-    layout: g?.layout || 'card',
-    title:  g?.title  || '',
-    items:  Array.isArray(g?.items) ? g.items.map(it => ({ ...it })) : [],
-  }
 })
 
 // ── Reorder ───────────────────────────────────────────────────────
@@ -137,7 +157,7 @@ function moveDown(i) {
 async function save() {
   saving.value = true
   const payload = sections.value.map((s, i) => ({ ...s, order: i + 1 }))
-  const { error } = await updateConfig({ home_sections: payload, home_gallery: homeGallery.value })
+  const { error } = await updateConfig({ home_sections: payload })
   if (error) {
     Swal.fire({ icon: 'error', title: 'บันทึกไม่สำเร็จ', text: error.message })
   } else {
@@ -167,6 +187,12 @@ function isDark(hex) {
         </h1>
         <p class="text-sm text-slate-500 mt-0.5">เปิด/ปิด เรียงลำดับ และเปลี่ยนสีพื้นหลังแต่ละ section</p>
       </div>
+      <div class="flex flex-wrap gap-2">
+      <button @click="addGallerySection" type="button"
+        class="flex items-center gap-1.5 px-4 py-2.5 text-sm font-bold bg-white border-2 border-primary/30 text-primary rounded-2xl hover:bg-primary/5 transition-all">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+        เพิ่มเซกชันภาพลิงค์
+      </button>
       <button @click="save" :disabled="saving"
         class="flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary-dark text-white font-bold rounded-2xl shadow-md transition-all hover:-translate-y-0.5 disabled:opacity-50">
         <svg v-if="saving" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
@@ -178,6 +204,7 @@ function isDark(hex) {
         </svg>
         บันทึก
       </button>
+      </div>
     </div>
 
     <!-- Info -->
@@ -219,23 +246,27 @@ function isDark(hex) {
               :style="{ backgroundColor: sec.bg || '#f8fafc' }">
               <svg class="w-5 h-5" :class="isDark(sec.bg || '#f8fafc') ? 'text-white' : 'text-primary'"
                 fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
-                <path stroke-linecap="round" stroke-linejoin="round" :d="SECTION_ICONS[sec.key] || SECTION_ICONS.news"/>
+                <path stroke-linecap="round" stroke-linejoin="round" :d="sectionIcon(sec)"/>
               </svg>
             </div>
             <div>
               <p class="font-extrabold text-slate-800">{{ sec.label }}</p>
-              <p class="text-xs text-slate-400">{{ SECTION_DESC[sec.key] || '' }}</p>
+              <p class="text-xs text-slate-400">{{ sectionDesc(sec) }}</p>
             </div>
           </div>
 
-          <!-- จัดการรูปภาพ (เฉพาะ image_gallery) -->
-          <div v-if="sec.key === 'image_gallery'" class="flex-shrink-0">
-            <button @click="showGalleryModal = true" type="button"
+          <!-- จัดการรูปภาพ / ลบ (เฉพาะเซกชันภาพลิงค์) -->
+          <div v-if="isGallerySection(sec)" class="flex-shrink-0 flex items-center gap-2">
+            <button @click="editingSection = sec" type="button"
               class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border-2 border-primary/30 text-primary hover:bg-primary/5 transition-all">
               <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3 12V4.5A2.25 2.25 0 015.25 2.25h13.5A2.25 2.25 0 0121 4.5V12M3 12v7.5A2.25 2.25 0 005.25 21.75h13.5A2.25 2.25 0 0021 19.5V12M3 12l4.5-4.5"/>
               </svg>
-              จัดการรูปภาพ ({{ homeGallery.items.length }})
+              จัดการรูปภาพ ({{ sec.gallery?.items?.length || 0 }})
+            </button>
+            <button @click="removeSection(i)" type="button"
+              class="p-1.5 rounded-xl text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all" title="ลบเซกชันนี้">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/></svg>
             </button>
           </div>
 
@@ -387,7 +418,7 @@ function isDark(hex) {
             :style="getBgStyle(sec)">
             <span class="text-slate-400 font-bold w-4">{{ i + 1 }}</span>
             <svg class="w-3.5 h-3.5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
-              <path stroke-linecap="round" stroke-linejoin="round" :d="SECTION_ICONS[sec.key] || SECTION_ICONS.news"/>
+              <path stroke-linecap="round" stroke-linejoin="round" :d="sectionIcon(sec)"/>
             </svg>
             <span class="text-slate-700">{{ sec.label }}</span>
             <span v-if="!sec.visible" class="ml-auto text-slate-400 text-[10px]">ซ่อน</span>
@@ -396,23 +427,23 @@ function isDark(hex) {
       </div>
     </div>
 
-    <!-- ══ MODAL: จัดการรูปภาพ (image_gallery) ══════════════════════ -->
+    <!-- ══ MODAL: จัดการรูปภาพ (เซกชันภาพลิงค์ที่กำลังแก้ไข) ══════════════════ -->
     <Teleport to="body">
       <Transition enter-active-class="transition duration-200" enter-from-class="opacity-0" enter-to-class="opacity-100"
         leave-active-class="transition duration-150" leave-from-class="opacity-100" leave-to-class="opacity-0">
-        <div v-if="showGalleryModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+        <div v-if="editingSection" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <div class="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[92vh] flex flex-col overflow-hidden">
             <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100 flex-shrink-0">
               <h2 class="text-lg font-extrabold text-slate-800">จัดการรูปภาพ — ภาพลิงค์หน้าแรก</h2>
-              <button @click="showGalleryModal = false" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 text-slate-400">
+              <button @click="editingSection = null" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 text-slate-400">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
               </button>
             </div>
             <div class="flex-1 overflow-y-auto px-6 py-5">
-              <ImageLinkGalleryEditor :gallery="homeGallery"/>
+              <ImageLinkGalleryEditor :gallery="editingSection.gallery"/>
             </div>
             <div class="flex gap-3 px-6 py-4 border-t border-slate-100 flex-shrink-0">
-              <button @click="showGalleryModal = false" type="button" class="flex-1 py-2.5 rounded-2xl border border-slate-200 text-sm font-bold text-slate-600 hover:bg-slate-50">
+              <button @click="editingSection = null" type="button" class="flex-1 py-2.5 rounded-2xl border border-slate-200 text-sm font-bold text-slate-600 hover:bg-slate-50">
                 ปิด
               </button>
               <button @click="save" :disabled="saving" type="button" class="flex-1 py-2.5 rounded-2xl bg-primary text-white text-sm font-bold hover:bg-primary-dark disabled:opacity-50">

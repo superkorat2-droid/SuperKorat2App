@@ -917,15 +917,15 @@ const stats = [
           </div>
         </section>
 
-        <!-- ══ IMAGE GALLERY ══ -->
-        <section v-else-if="sec.key === 'image_gallery' && config?.home_gallery?.items?.length"
+        <!-- ══ IMAGE GALLERY (เพิ่มได้หลายเซกชัน key ขึ้นต้นด้วย image_gallery ข้อมูลฝังในตัว sec.gallery) ══ -->
+        <section v-else-if="sec.key.startsWith('image_gallery') && sec.gallery?.items?.length"
           :style="getBgStyle(sec)" class="py-8 md:py-12">
           <div class="max-w-7xl mx-auto px-4">
             <div class="text-center mb-12">
               <span v-if="sec.subtitle" class="text-secondary font-bold uppercase text-xs tracking-[0.18em] mb-2 block">{{ sec.subtitle }}</span>
               <h2 class="text-3xl md:text-4xl font-extrabold text-slate-900 accent-line-center">{{ sec.title || 'ภาพลิงค์' }}</h2>
             </div>
-            <ImageLinkGallery :layout="config.home_gallery.layout" :items="config.home_gallery.items"/>
+            <ImageLinkGallery :layout="sec.gallery.layout" :items="sec.gallery.items"/>
           </div>
         </section>
 

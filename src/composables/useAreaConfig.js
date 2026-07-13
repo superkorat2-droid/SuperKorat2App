@@ -44,12 +44,10 @@ export const DEFAULT_HOME_SECTIONS = [
   { key: 'supervision_list',label: 'แบบนิเทศ',       subtitle: 'Supervision',      title: 'แบบนิเทศและแบบสอบถาม',               visible: false, bg: '#f8fafc', bg2: '#e0e7ff', bg_type: 'solid', order: 3 },
   { key: 'nithet_calendar', label: 'ปฏิทินนิเทศ',    subtitle: 'Supervision Calendar', title: 'ปฏิทินนิเทศ',                   visible: false, bg: '#f8fafc', bg2: '#e0e7ff', bg_type: 'solid', order: 4 },
   { key: 'services',        label: 'บริการออนไลน์',  subtitle: 'E-Service Center', title: 'บริการออนไลน์',                      visible: true,  bg: '#f8fafc', bg2: '#e2e8f0', bg_type: 'solid', order: 5 },
-  { key: 'image_gallery',   label: 'ภาพลิงค์',       subtitle: 'Gallery',          title: 'ภาพลิงค์',                            visible: false, bg: '#ffffff', bg2: '#f1f5f9', bg_type: 'solid', order: 6 },
-  { key: 'cta',             label: 'CTA Banner',      subtitle: '',                 title: 'ระบบกลุ่มนิเทศ ติดตามและประเมินผล', visible: true,  bg: '#ffffff', bg2: '#f1f5f9', bg_type: 'solid', order: 7 },
+  { key: 'cta',             label: 'CTA Banner',      subtitle: '',                 title: 'ระบบกลุ่มนิเทศ ติดตามและประเมินผล', visible: true,  bg: '#ffffff', bg2: '#f1f5f9', bg_type: 'solid', order: 6 },
 ]
-
-// ── Default home gallery (เนื้อหาจริงของเซกชัน 'image_gallery' — admin กำหนดเฉพาะหน้าแรก) ──
-export const DEFAULT_HOME_GALLERY = { layout: 'card', title: '', items: [] }
+// image_gallery: เพิ่มได้เองผ่านปุ่ม "+ เพิ่มเซกชันภาพลิงค์" ใน AdminHomeSectionsView.vue — ไม่ fix ไว้ล่วงหน้า
+// เพราะเพิ่มได้หลายชุด แต่ละ entry มี key ไม่ซ้ำ (image_gallery_<timestamp>) + field gallery:{layout,title,items} ฝังในตัว
 
 // ── Default page headers (ว่างเปล่า = ทุกหน้าใช้ icon/title default ของไฟล์ตัวเอง) ──
 // entry: { key: routeName, mode: 'icon'|'media', icon, title, subtitle, media_url, media_type }
@@ -77,7 +75,6 @@ const DEFAULTS = {
   schools_page_title:      'ทำเนียบสถานศึกษา',
   schools_page_subtitle:   '',
   home_sections:           DEFAULT_HOME_SECTIONS,
-  home_gallery:            DEFAULT_HOME_GALLERY,
   services: [
     { key:'nitet',    label:'กลุ่มนิเทศติดตามฯ',   icon:'eye',       type:'internal', url:'/nithet',    visible:true, order:1 },
     { key:'download', label:'ดาวน์โหลดเอกสาร',     icon:'download',  type:'internal', url:'/download',  visible:true, order:2 },
