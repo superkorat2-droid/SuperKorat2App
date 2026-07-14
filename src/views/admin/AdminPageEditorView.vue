@@ -61,7 +61,7 @@ const BLOCK_TYPES = [
 function newBlock(type) {
   const base = { id: crypto.randomUUID(), type }
   switch (type) {
-    case 'heading':     return { ...base, level: 'h2', text: '' }
+    case 'heading':     return { ...base, level: 'h2', text: '', size: '', align: 'left', color: '' }
     case 'text':        return { ...base, text: '' }
     case 'image':       return { ...base, url: '', caption: '', align: 'center' }
     case 'embed':       return { ...base, url: '', embed_type: 'youtube', aspect: '16/9' }
@@ -146,6 +146,21 @@ function detectEmbedType(url) {
 }
 
 const EMBED_LABELS = { youtube:'YouTube', drive:'Google Drive', slides:'Slides', canva:'Canva', iframe:'Iframe' }
+
+// ── หัวข้อ: ขนาดตัวอักษร (แยกจาก level ซึ่งคุมแค่แท็ก h2/h3/h4 เพื่อ SEO) ──
+const HEADING_SIZES = [
+  { value: 'sm',  label: 'เล็ก',        class: 'text-lg'   },
+  { value: 'md',  label: 'กลาง',        class: 'text-xl'   },
+  { value: 'lg',  label: 'ใหญ่',        class: 'text-2xl'  },
+  { value: 'xl',  label: 'ใหญ่มาก',    class: 'text-3xl'  },
+  { value: '2xl', label: 'ใหญ่พิเศษ',  class: 'text-4xl'  },
+]
+const HEADING_DEFAULT_SIZE = { h2: 'lg', h3: 'md', h4: 'sm' }
+function headingSizeClass(block) {
+  const size = block.size || HEADING_DEFAULT_SIZE[block.level] || 'lg'
+  return HEADING_SIZES.find(s => s.value === size)?.class || 'text-2xl'
+}
+const HEADING_COLOR_PRESETS = ['#0f172a', '#1e3a5f', '#b8922a', '#dc2626', '#2563eb', '#059669', '#7c3aed', '#ffffff']
 
 // ── Image block upload ────────────────────────────────────────────
 const showCropper   = ref(false)
@@ -434,17 +449,42 @@ async function clearHeaderMedia() {
 
             <!-- HEADING -->
             <template v-if="block.type === 'heading'">
-              <div class="flex gap-2 mb-2">
+              <div class="flex flex-wrap gap-2 mb-2">
                 <select v-model="block.level"
-                  class="px-2 py-1 border border-slate-200 rounded-lg text-xs bg-white">
-                  <option value="h2">H2 — หัวใหญ่</option>
-                  <option value="h3">H3 — หัวกลาง</option>
-                  <option value="h4">H4 — หัวเล็ก</option>
+                  class="px-2 py-1 border border-slate-200 rounded-lg text-xs bg-white" title="ระดับหัวข้อ (สำหรับ SEO)">
+                  <option value="h2">H2</option>
+                  <option value="h3">H3</option>
+                  <option value="h4">H4</option>
+                </select>
+                <select v-model="block.size"
+                  class="px-2 py-1 border border-slate-200 rounded-lg text-xs bg-white" title="ขนาดตัวอักษร">
+                  <option value="">ขนาดอัตโนมัติ</option>
+                  <option v-for="s in HEADING_SIZES" :key="s.value" :value="s.value">{{ s.label }}</option>
+                </select>
+                <select v-model="block.align" class="px-2 py-1 border border-slate-200 rounded-lg text-xs bg-white" title="ตำแหน่ง">
+                  <option value="left">ซ้าย</option>
+                  <option value="center">กลาง</option>
+                  <option value="right">ขวา</option>
                 </select>
               </div>
               <input v-model="block.text" type="text" placeholder="ข้อความหัวข้อ..."
-                :class="['w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-primary',
-                  block.level==='h2' ? 'text-2xl font-extrabold' : block.level==='h3' ? 'text-xl font-bold' : 'text-lg font-semibold']"/>
+                :class="['w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-primary font-extrabold',
+                  headingSizeClass(block),
+                  block.align==='center' ? 'text-center' : block.align==='right' ? 'text-right' : 'text-left']"
+                :style="block.color ? { color: block.color } : {}"/>
+              <div class="flex items-center gap-2 mt-2">
+                <span class="text-xs font-bold text-slate-400">สี:</span>
+                <button v-for="c in HEADING_COLOR_PRESETS" :key="c" @click="block.color = c" type="button"
+                  :class="['w-6 h-6 rounded-full border-2 transition-all hover:scale-110', block.color === c ? 'border-primary scale-110' : 'border-slate-200']"
+                  :style="{ backgroundColor: c }"/>
+                <label class="relative cursor-pointer">
+                  <div class="w-6 h-6 rounded-full border-2 border-dashed border-slate-300 flex items-center justify-center">
+                    <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+                  </div>
+                  <input type="color" :value="block.color || '#0f172a'" @input="block.color = $event.target.value" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full"/>
+                </label>
+                <button v-if="block.color" @click="block.color = ''" type="button" class="text-xs font-bold text-slate-400 hover:text-red-500">รีเซ็ต</button>
+              </div>
             </template>
 
             <!-- TEXT -->

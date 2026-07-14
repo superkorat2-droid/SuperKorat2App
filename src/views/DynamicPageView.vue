@@ -10,6 +10,13 @@ const router  = useRouter()
 const page    = ref(null)
 const loading = ref(true)
 
+// ── หัวข้อ: ขนาดตัวอักษร (แยกจาก level ซึ่งคุมแค่แท็ก h2/h3/h4 เพื่อ SEO) — ต้องตรงกับ AdminPageEditorView.vue ──
+const HEADING_SIZE_CLASS = { sm:'text-lg', md:'text-xl', lg:'text-2xl', xl:'text-3xl', '2xl':'text-4xl' }
+const HEADING_DEFAULT_SIZE = { h2:'lg', h3:'md', h4:'sm' }
+function headingSizeClass(block) {
+  return HEADING_SIZE_CLASS[block.size || HEADING_DEFAULT_SIZE[block.level] || 'lg']
+}
+
 // ── ลิงก์ภายใน (ปุ่ม CTA) — path สำหรับ router-link จาก "#/page" หรือ "/page" ──
 function internalPath(url) {
   if (!url) return '/'
@@ -99,8 +106,9 @@ watch(() => route.params.slug, s => { if (s) load(s) })
 
           <!-- HEADING -->
           <component :is="block.level || 'h2'" v-if="block.type === 'heading'"
-            :class="['font-extrabold text-slate-900 dark:text-slate-50',
-              block.level==='h2' ? 'text-2xl' : block.level==='h3' ? 'text-xl' : 'text-lg']">
+            :class="['font-extrabold', headingSizeClass(block), !block.color ? 'text-slate-900 dark:text-slate-50' : '',
+              block.align==='center' ? 'text-center' : block.align==='right' ? 'text-right' : 'text-left']"
+            :style="block.color ? { color: block.color } : {}">
             {{ block.text }}
           </component>
 
