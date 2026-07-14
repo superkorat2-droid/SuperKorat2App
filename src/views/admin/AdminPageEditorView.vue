@@ -7,6 +7,7 @@ import ImageCropperModal from '../../components/ImageCropperModal.vue'
 import { useExternalUpload, externalUploadEnabled, deleteUploadedFile } from '../../composables/useExternalUpload'
 import IconPicker from '../../components/IconPicker.vue'
 import ImageLinkGalleryEditor from '../../components/ImageLinkGalleryEditor.vue'
+import { BG_TYPES, BG_PRESETS, GRADIENT_PRESETS, getBgStyle } from '../../composables/useBgStyle'
 
 const route  = useRoute()
 const router = useRouter()
@@ -631,6 +632,51 @@ async function clearHeaderMedia() {
                 เพิ่มคำถาม
               </button>
             </template>
+
+            <!-- พื้นหลังบล็อก — ใช้ได้กับทุก block type -->
+            <details class="mt-3 pt-3 border-t border-slate-100 group">
+              <summary class="flex items-center gap-1.5 text-xs font-bold text-slate-500 cursor-pointer select-none">
+                <svg class="w-3.5 h-3.5 transition-transform group-open:rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/></svg>
+                🎨 พื้นหลังบล็อก
+                <span v-if="block.bg_type" class="w-3 h-3 rounded-full border border-slate-300 ml-1" :style="getBgStyle(block)"></span>
+              </summary>
+              <div class="mt-2 space-y-2 pl-1">
+                <div class="flex flex-wrap gap-1.5">
+                  <button @click="block.bg_type = ''" type="button"
+                    :class="['px-2.5 py-1 rounded-lg text-[11px] font-bold border-2 transition-all',
+                      !block.bg_type ? 'border-primary bg-primary text-white' : 'border-slate-200 text-slate-500 hover:border-primary/50']">
+                    ไม่มี
+                  </button>
+                  <button v-for="t in BG_TYPES" :key="t.value" @click="block.bg_type = t.value" type="button"
+                    :class="['px-2.5 py-1 rounded-lg text-[11px] font-bold border-2 transition-all',
+                      block.bg_type === t.value ? 'border-primary bg-primary text-white' : 'border-slate-200 text-slate-500 hover:border-primary/50']">
+                    {{ t.label }}
+                  </button>
+                </div>
+
+                <!-- Gradient สำเร็จรูป: กดแล้วตั้งทั้งสีและ type ให้ทันที ไม่ต้องเลือก type ก่อน -->
+                <div class="flex flex-wrap gap-1">
+                  <button v-for="gp in GRADIENT_PRESETS" :key="gp.label"
+                    @click="block.bg = gp.bg; block.bg2 = gp.bg2; block.bg_type = gp.bg_type"
+                    :title="gp.label" class="w-6 h-6 rounded-md border border-white shadow-sm hover:scale-110 transition-transform flex-shrink-0"
+                    :style="`background: linear-gradient(to right, ${gp.bg}, ${gp.bg2})`"/>
+                </div>
+                <div v-if="block.bg_type" class="flex items-center gap-1.5 flex-wrap">
+                  <span class="text-[10px] font-bold text-slate-400">สี 1:</span>
+                  <button v-for="p in BG_PRESETS" :key="p.value" @click="block.bg = p.value" :title="p.label"
+                    :class="['w-5 h-5 rounded-full border-2', block.bg === p.value ? 'border-primary' : 'border-slate-200']"
+                    :style="{ backgroundColor: p.value }"/>
+                  <input type="color" :value="block.bg || '#ffffff'" @input="block.bg = $event.target.value" class="w-5 h-5 rounded-full cursor-pointer border border-slate-200"/>
+                </div>
+                <div v-if="block.bg_type && block.bg_type !== 'solid'" class="flex items-center gap-1.5 flex-wrap">
+                  <span class="text-[10px] font-bold text-slate-400">สี 2:</span>
+                  <button v-for="p in BG_PRESETS" :key="p.value" @click="block.bg2 = p.value" :title="p.label"
+                    :class="['w-5 h-5 rounded-full border-2', block.bg2 === p.value ? 'border-primary' : 'border-slate-200']"
+                    :style="{ backgroundColor: p.value }"/>
+                  <input type="color" :value="block.bg2 || '#f1f5f9'" @input="block.bg2 = $event.target.value" class="w-5 h-5 rounded-full cursor-pointer border border-slate-200"/>
+                </div>
+              </div>
+            </details>
 
           </div>
         </div>

@@ -4,11 +4,20 @@ import { useRoute, useRouter } from 'vue-router'
 import { supabase } from '../supabase'
 import PageHero from '../components/PageHero.vue'
 import ImageLinkGallery from '../components/ImageLinkGallery.vue'
+import { getBgStyle as getBgStyleRaw } from '../composables/useBgStyle'
+import { useTheme } from '../composables/useTheme'
 
 const route   = useRoute()
 const router  = useRouter()
 const page    = ref(null)
 const loading = ref(true)
+
+// พื้นหลังบล็อกออกแบบไว้สำหรับโหมดสว่างเท่านั้น (เหมือน section หน้าแรก) — โหมดมืดไม่ใช้ กันตัวหนังสือกลืนพื้นหลัง
+const { isDark } = useTheme()
+function getBgStyle(block) {
+  if (!block.bg_type || isDark.value) return {}
+  return getBgStyleRaw(block)
+}
 
 // ── หัวข้อ: ขนาดตัวอักษร (แยกจาก level ซึ่งคุมแค่แท็ก h2/h3/h4 เพื่อ SEO) — ต้องตรงกับ AdminPageEditorView.vue ──
 const HEADING_SIZE_CLASS = { sm:'text-lg', md:'text-xl', lg:'text-2xl', xl:'text-3xl', '2xl':'text-4xl' }
@@ -103,6 +112,7 @@ watch(() => route.params.slug, s => { if (s) load(s) })
         page.layout === 'medium' ? 'max-w-5xl' : 'max-w-3xl'
       ]">
         <template v-for="block in (page.blocks || [])" :key="block.id">
+        <div :class="block.bg_type ? 'rounded-2xl p-5 sm:p-6' : ''" :style="getBgStyle(block)">
 
           <!-- HEADING -->
           <component :is="block.level || 'h2'" v-if="block.type === 'heading'"
@@ -195,6 +205,7 @@ watch(() => route.params.slug, s => { if (s) load(s) })
             </details>
           </div>
 
+        </div>
         </template>
 
         <!-- Empty -->
