@@ -12,15 +12,8 @@ const { config, fetchConfig, updateConfig } = useAreaConfig()
 
 // หน้าสาธารณะที่ปรับ header ได้ — key ต้องตรงกับ route name ใน router/index.js เป๊ะ
 const KNOWN_ROUTES = [
-  { key: 'vision',         label: 'วิสัยทัศน์และพันธกิจ' },
   { key: 'org',            label: 'โครงสร้างการบริหาร' },
   { key: 'personnel',      label: 'ทำเนียบบุคลากร' },
-  { key: 'curriculum',     label: 'พัฒนาหลักสูตรการศึกษา' },
-  { key: 'supervisionEdu', label: 'นิเทศการศึกษา' },
-  { key: 'evaluation',     label: 'วัดและประเมินผลการศึกษา' },
-  { key: 'quality',        label: 'ประกันคุณภาพการศึกษา' },
-  { key: 'research',       label: 'วิจัย สื่อ และเทคโนโลยี' },
-  { key: 'secretariat',    label: 'ส่งเสริมพัฒนาระบบการบริหารจัดการ' },
   { key: 'schools',        label: 'ทำเนียบสถานศึกษา' },
   { key: 'principals',     label: 'ผู้บริหารสถานศึกษา' },
   { key: 'newsletters',    label: 'จดหมายข่าว' },

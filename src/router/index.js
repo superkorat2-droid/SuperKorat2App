@@ -69,9 +69,6 @@ import SchoolSupervisionFillView   from '../views/school/SchoolSupervisionFillVi
 // ─── Public school directory ──────────────────────────────────────────────
 import PublicSchoolsView      from '../views/PublicSchoolsView.vue'
 
-// ─── Reusable placeholder ─────────────────────────────────────────────────
-import PlaceholderView  from '../views/PlaceholderView.vue'
-
 // ─── News public pages ───────────────────────────────────────────────────
 import NewsView              from '../views/NewsView.vue'
 import NewsDetailView        from '../views/NewsDetailView.vue'
@@ -140,68 +137,10 @@ const routes = [
 
   // ── ข้อมูลทั่วไป ──────────────────────────────────────────────────────
   {
-    path: '/vision', name: 'vision', component: PlaceholderView,
-    meta: {
-      title: 'วิสัยทัศน์และพันธกิจ', icon: '👁️',
-      desc:  'วิสัยทัศน์ พันธกิจ และเป้าประสงค์ของกลุ่มนิเทศ ติดตามและประเมินผลการจัดการศึกษา',
-    }
-  },
-  {
-    path: '/org', name: 'org', component: PlaceholderView,
-    meta: {
-      title: 'โครงสร้างการบริหาร', icon: '🏢',
-      desc:  'แผนผังการแบ่งงานและโครงสร้างการบริหารงานภายในกลุ่มนิเทศฯ',
-    }
-  },
-  {
     path: '/personnel', name: 'personnel', component: PersonnelView,
     meta: {
       title: 'ทำเนียบบุคลากร', icon: '👥',
       desc:  'รายชื่อศึกษานิเทศก์ แยกตามกลุ่มงานและกลุ่มสาระฯ พร้อมข้อมูลการติดต่อ',
-    }
-  },
-
-  // ── งานนิเทศติดตาม ────────────────────────────────────────────────────
-  {
-    path: '/curriculum', name: 'curriculum', component: PlaceholderView,
-    meta: {
-      title: 'พัฒนาหลักสูตรการศึกษา', icon: '📖',
-      desc:  'หลักสูตรแกนกลาง หลักสูตรท้องถิ่น การศึกษาปฐมวัย และการศึกษาพิเศษ',
-    }
-  },
-  {
-    path: '/supervision-edu', name: 'supervisionEdu', component: PlaceholderView,
-    meta: {
-      title: 'นิเทศการศึกษา', icon: '🔍',
-      desc:  'แผนการนิเทศ 8 กลุ่มสาระการเรียนรู้ Active Learning และระบบ Coaching & Mentoring',
-    }
-  },
-  {
-    path: '/evaluation', name: 'evaluation', component: PlaceholderView,
-    meta: {
-      title: 'วัดและประเมินผลการศึกษา', icon: '📊',
-      desc:  'การทดสอบระดับชาติ RT NT O-NET PISA เกณฑ์การวัดผล และระบบรายงานผล',
-    }
-  },
-  {
-    path: '/quality', name: 'quality', component: PlaceholderView,
-    meta: {
-      title: 'ประกันคุณภาพการศึกษา', icon: '⭐',
-      desc:  'ประกันคุณภาพภายใน (IQA) ภายนอก (EQA) และมาตรฐานการศึกษาขั้นพื้นฐาน',
-    }
-  },
-  {
-    path: '/research', name: 'research', component: PlaceholderView,
-    meta: {
-      title: 'วิจัย สื่อ และเทคโนโลยี', icon: '🔬',
-      desc:  'คลังวิจัยชั้นเรียน สื่อดิจิทัล DLTV/DLIT และแนวทางวิทยฐานะ (PA)',
-    }
-  },
-  {
-    path: '/secretariat', name: 'secretariat', component: PlaceholderView,
-    meta: {
-      title: 'ส่งเสริมพัฒนาระบบการบริหารจัดการ', icon: '📋',
-      desc:  'คณะกรรมการ ก.ต.ป.น. โครงการพิเศษตามนโยบาย และรายงานผลการดำเนินงาน',
     }
   },
 
