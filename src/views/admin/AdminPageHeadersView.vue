@@ -29,6 +29,7 @@ const KNOWN_ROUTES = [
   { key: 'news',           label: 'ข่าวสาร' },
   { key: 'educationNews',  label: 'ข่าวการศึกษา' },
   { key: 'nithet',         label: 'กลุ่มนิเทศ ติดตามและประเมินผล' },
+  { key: 'school-documents', label: 'หนังสือถึงโรงเรียน' },
   { key: 'contact',        label: 'ติดต่อสอบถาม' },
   { key: 'download',       label: 'ดาวน์โหลดเอกสาร' },
   { key: 'urlShort',       label: 'ย่อลิงค์' },
