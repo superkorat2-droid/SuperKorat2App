@@ -1,5 +1,6 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, nextTick } from 'vue'
+import { useRoute } from 'vue-router'
 import { supabase } from '../../supabase'
 import { useAreaConfig } from '../../composables/useAreaConfig'
 import { useExternalUpload, externalUploadEnabled, deleteUploadedFile } from '../../composables/useExternalUpload'
@@ -8,7 +9,9 @@ import ImageCropperModal from '../../components/ImageCropperModal.vue'
 import StorageBrowser from '../../components/StorageBrowser.vue'
 import Swal from 'sweetalert2'
 
+const route = useRoute()
 const { config, fetchConfig, updateConfig } = useAreaConfig()
+const highlightKey = ref('')
 
 // หน้าสาธารณะที่ปรับ header ได้ — key ต้องตรงกับ route name ใน router/index.js เป๊ะ
 const KNOWN_ROUTES = [
@@ -51,6 +54,16 @@ function emptyHeader(key) {
 onMounted(async () => {
   await fetchConfig()
   headers.value = (config.value?.page_headers || []).map(h => ({ ...h }))
+
+  // มาจากปุ่ม "ตั้งค่าหัวข้อ" ในหน้า "จัดการหน้าเนื้อหา" — เพิ่มแถวให้อัตโนมัติถ้ายังไม่มี แล้วเลื่อนไปเน้นให้เห็นเลย
+  const key = route.query.key
+  if (key) {
+    if (!headers.value.some(h => h.key === key)) headers.value.push(emptyHeader(key))
+    highlightKey.value = key
+    await nextTick()
+    document.getElementById(`header-row-${key}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    setTimeout(() => { highlightKey.value = '' }, 2500)
+  }
 })
 
 function addRoute() {
@@ -203,7 +216,9 @@ async function clearMedia(row) {
     </div>
 
     <!-- Rows -->
-    <div v-for="(row, i) in headers" :key="row.key" class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 space-y-4">
+    <div v-for="(row, i) in headers" :key="row.key" :id="`header-row-${row.key}`"
+      :class="['bg-white rounded-2xl border shadow-sm p-5 space-y-4 transition-all',
+        highlightKey === row.key ? 'border-primary ring-2 ring-primary/30' : 'border-slate-100']">
       <div class="flex items-center justify-between">
         <h3 class="font-extrabold text-slate-800">{{ routeLabel(row.key) }}</h3>
         <button @click="removeRoute(i)" class="px-3 py-1.5 bg-red-50 text-red-500 text-xs font-bold rounded-xl hover:bg-red-100 transition-all">

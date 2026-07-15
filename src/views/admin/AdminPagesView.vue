@@ -6,6 +6,7 @@ import { useRouter } from 'vue-router'
 import { supabase } from '../../supabase'
 import { useNavPages } from '../../composables/useNavPages'
 import { useAreaConfig } from '../../composables/useAreaConfig'
+import { SYSTEM_ROUTE_HEADER_KEYS } from '../../composables/usePageHeader'
 import IconPicker from '../../components/IconPicker.vue'
 import Swal from 'sweetalert2'
 
@@ -234,6 +235,13 @@ async function deletePage(p) {
 }
 
 function goEditor(p) { router.push(`/dashboard/pages/${p.id}/edit`) }
+
+function headerKeyFor(p) { return SYSTEM_ROUTE_HEADER_KEYS[p.system_route] || '' }
+function goHeaderSettings(p) {
+  const key = headerKeyFor(p)
+  if (!key) return
+  router.push(`/dashboard/page-headers?key=${encodeURIComponent(key)}`)
+}
 </script>
 
 <template>
@@ -356,6 +364,12 @@ function goEditor(p) { router.push(`/dashboard/pages/${p.id}/edit`) }
                 class="flex items-center gap-1 px-3 py-1.5 text-xs font-bold bg-indigo-50 text-indigo-700 rounded-xl hover:bg-indigo-100 transition-colors">
                 <SvgIcon name="document" class="w-3.5 h-3.5"/>
                 แก้เนื้อหา
+              </button>
+              <button v-if="p.page_type === 'system' && headerKeyFor(p)" @click="goHeaderSettings(p)"
+                title="ตั้งชื่อ/จัดวาง/รูปภาพ/ซ่อน หัวข้อหน้านี้"
+                class="flex items-center gap-1 px-3 py-1.5 text-xs font-bold bg-indigo-50 text-indigo-700 rounded-xl hover:bg-indigo-100 transition-colors">
+                <SvgIcon name="settings" class="w-3.5 h-3.5"/>
+                ตั้งค่าหัวข้อ
               </button>
               <button @click="togglePublish(p)"
                 :class="['flex items-center gap-1 px-3 py-1.5 text-xs font-bold rounded-xl transition-colors',
