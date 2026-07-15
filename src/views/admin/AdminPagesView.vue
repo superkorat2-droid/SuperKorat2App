@@ -154,14 +154,16 @@ async function save() {
     form.value.slug = raw.length >= 2 ? raw : `page-${Date.now()}`
   }
   saving.value = true
+  let error
   if (form.value.id) {
     const { id, ...patch } = form.value
-    await supabase.from('pages').update(patch).eq('id', id)
+    ;({ error } = await supabase.from('pages').update(patch).eq('id', id))
   } else {
     const { id, ...payload } = form.value
-    await supabase.from('pages').insert({ ...payload, blocks: [] })
+    ;({ error } = await supabase.from('pages').insert({ ...payload, blocks: [] }))
   }
-  saving.value   = false
+  saving.value = false
+  if (error) return Swal.fire({ icon: 'error', title: 'บันทึกไม่สำเร็จ', text: error.message })
   showForm.value = false
   await load()
   fetchNavPages(true)
