@@ -267,6 +267,20 @@ const configServices = computed(() => {
     .sort((a,b) => (a.order||99) - (b.order||99))
 })
 
+// สีประจำแต่ละบริการ — ระบบวนสีให้อัตโนมัติตามลำดับ (i % length) ให้ไอคอนมีสีสัน ไม่จำเจ
+// ต้องเป็น class string เต็มตัวอักษร (Tailwind JIT ถึงจะไม่ purge ทิ้ง)
+const SERVICE_COLORS = [
+  { chip:'bg-blue-100',    chipHover:'group-hover:bg-blue-600',    icon:'text-blue-600',    iconHover:'group-hover:text-white' },
+  { chip:'bg-emerald-100', chipHover:'group-hover:bg-emerald-600', icon:'text-emerald-600', iconHover:'group-hover:text-white' },
+  { chip:'bg-amber-100',   chipHover:'group-hover:bg-amber-600',   icon:'text-amber-600',   iconHover:'group-hover:text-white' },
+  { chip:'bg-violet-100',  chipHover:'group-hover:bg-violet-600',  icon:'text-violet-600',  iconHover:'group-hover:text-white' },
+  { chip:'bg-rose-100',    chipHover:'group-hover:bg-rose-600',    icon:'text-rose-600',    iconHover:'group-hover:text-white' },
+  { chip:'bg-cyan-100',    chipHover:'group-hover:bg-cyan-600',    icon:'text-cyan-600',    iconHover:'group-hover:text-white' },
+  { chip:'bg-indigo-100',  chipHover:'group-hover:bg-indigo-600',  icon:'text-indigo-600',  iconHover:'group-hover:text-white' },
+  { chip:'bg-orange-100',  chipHover:'group-hover:bg-orange-600',  icon:'text-orange-600',  iconHover:'group-hover:text-white' },
+]
+function serviceColor(i) { return SERVICE_COLORS[i % SERVICE_COLORS.length] }
+
 function serviceHref(svc) {
   if (!svc.url) return '#'
   if (svc.type === 'internal') return '#' + svc.url
@@ -896,20 +910,20 @@ const stats = [
               </div>
               <div class="flex flex-wrap justify-center gap-4">
                 <component
-                  v-for="svc in configServices" :key="svc.key || svc.label"
+                  v-for="(svc, si) in configServices" :key="svc.key || svc.label"
                   :is="svc.type === 'external' ? 'a' : 'router-link'"
                   :href="svc.type === 'external' ? (svc.url || '#') : undefined"
                   :to="svc.type !== 'external' ? (svc.url || '#') : undefined"
                   :target="svc.type === 'external' ? '_blank' : undefined"
                   :rel="svc.type === 'external' ? 'noopener' : undefined"
-                  class="group flex flex-col items-center p-6 bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1 hover:border-primary/20 transition-all duration-300 w-[calc(50%-8px)] md:w-[calc(25%-12px)]">
-                  <div class="w-14 h-14 rounded-2xl bg-primary-light flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors duration-300">
-                    <svg class="w-6 h-6 text-primary group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                  class="group flex flex-col items-center p-6 bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1 hover:border-slate-200 transition-all duration-300 w-[calc(50%-8px)] md:w-[calc(25%-12px)]">
+                  <div :class="['w-14 h-14 rounded-2xl flex items-center justify-center mb-4 transition-colors duration-300', serviceColor(si).chip, serviceColor(si).chipHover]">
+                    <svg :class="['w-6 h-6 group-hover:scale-110 transition-all duration-300', serviceColor(si).icon, serviceColor(si).iconHover]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
                       <path stroke-linecap="round" stroke-linejoin="round"
                         :d="svc.icon ? (ICON_MAP[svc.icon] || svc.path) : svc.path"/>
                     </svg>
                   </div>
-                  <span class="text-sm font-bold text-slate-700 text-center leading-snug group-hover:text-primary transition-colors">{{ svc.label }}</span>
+                  <span class="text-sm font-bold text-slate-700 text-center leading-snug group-hover:text-slate-900 transition-colors">{{ svc.label }}</span>
                   <span v-if="svc.type === 'external'" class="text-[10px] text-slate-400 mt-0.5">↗</span>
                 </component>
               </div>
