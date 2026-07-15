@@ -13,6 +13,7 @@ const header = usePageHeader(route.name, {
   icon:    route.meta.icon  || '📄',
   title:   route.meta.title || 'หน้านี้',
   subtitle: route.meta.desc  || 'หน้านี้อยู่ระหว่างการพัฒนา',
+  align: 'center',
 })
 
 const contentTools = [
@@ -28,9 +29,10 @@ const contentTools = [
 <template>
   <div class="font-sarabun min-h-[70vh]">
 
-    <PageHero :title="header.title" :subtitle="header.subtitle"
+    <PageHero v-if="!header.hidden" :title="header.title" :subtitle="header.subtitle"
       :mode="header.mode" :icon="header.icon"
-      :media-url="header.mediaUrl" :media-type="header.mediaType" :aspect-ratio="header.aspectRatio"/>
+      :media-url="header.mediaUrl" :media-type="header.mediaType" :aspect-ratio="header.aspectRatio"
+      :align="header.align"/>
 
     <div class="max-w-xl w-full mx-auto py-12 px-4">
 

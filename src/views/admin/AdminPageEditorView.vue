@@ -24,6 +24,8 @@ const headerMode        = ref('icon')
 const headerMediaUrl    = ref('')
 const headerMediaType   = ref('')
 const headerAspectRatio = ref('21:9')
+const headerAlign       = ref('center')
+const headerHidden      = ref(false)
 
 const ASPECT_RATIOS = [
   { value: '21:9', label: '21:9 กว้างเตี้ย', ratio: 21/9 },
@@ -94,6 +96,8 @@ onMounted(async () => {
   headerMediaUrl.value    = data.header_media_url  || ''
   headerMediaType.value   = data.header_media_type || ''
   headerAspectRatio.value = data.header_aspect_ratio || '21:9'
+  headerAlign.value       = data.header_align || 'center'
+  headerHidden.value      = data.header_hidden || false
 
   if (user) {
     const { data: profile } = await supabase.from('profiles').select('id, role').eq('id', user.id).single()
@@ -124,6 +128,7 @@ async function save(publish = null) {
     nav_icon: page.value.nav_icon,
     header_mode: headerMode.value, header_media_url: headerMediaUrl.value, header_media_type: headerMediaType.value,
     header_aspect_ratio: headerAspectRatio.value,
+    header_align: headerAlign.value, header_hidden: headerHidden.value,
   }
   if (publish !== null) payload.is_published = publish
   const { error } = await supabase.from('pages').update(payload).eq('id', page.value.id)
@@ -349,6 +354,25 @@ async function clearHeaderMedia() {
               headerMode === 'media' ? 'border-primary bg-primary/5 text-primary' : 'border-slate-200 text-slate-500']">
             ใช้รูป/วิดีโอ/GIF
           </button>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-3">
+          <div class="flex gap-2">
+            <button @click="headerAlign = 'left'"
+              :class="['px-3 py-1.5 text-xs font-bold rounded-xl border-2 transition-all',
+                headerAlign === 'left' ? 'border-primary bg-primary/5 text-primary' : 'border-slate-200 text-slate-500']">
+              ↤ ชิดซ้าย
+            </button>
+            <button @click="headerAlign = 'center'"
+              :class="['px-3 py-1.5 text-xs font-bold rounded-xl border-2 transition-all',
+                headerAlign === 'center' ? 'border-primary bg-primary/5 text-primary' : 'border-slate-200 text-slate-500']">
+              ↔ กึ่งกลาง
+            </button>
+          </div>
+          <label class="flex items-center gap-1.5 text-xs font-bold text-slate-600 cursor-pointer select-none">
+            <input type="checkbox" v-model="headerHidden" class="w-4 h-4 rounded accent-primary"/>
+            ซ่อนหัวข้อหน้านี้ทั้งหมด
+          </label>
         </div>
 
         <IconPicker v-if="headerMode === 'icon'" v-model="page.nav_icon"/>

@@ -13,6 +13,7 @@ const { fetchConfig } = useAreaConfig()
 onMounted(fetchConfig)
 const header = usePageHeader('urlShort', {
   icon: 'link', title: 'ย่อลิงค์', subtitle: 'ย่อ URL ยาวให้สั้นและจำง่าย เหมาะสำหรับแชร์ใน LINE หรือ QR Code',
+  align: 'center',
 })
 
 const checkingAuth = ref(true)
@@ -147,8 +148,8 @@ onMounted(async () => {
     <div class="max-w-2xl mx-auto px-4">
 
       <!-- Header -->
-      <div class="mb-10">
-        <PageHeaderPlain align="center" eyebrow="URL Shortener" :title="header.title" :subtitle="header.subtitle"
+      <div v-if="!header.hidden" class="mb-10">
+        <PageHeaderPlain :align="header.align" eyebrow="URL Shortener" :title="header.title" :subtitle="header.subtitle"
           :mode="header.mode" :icon="header.icon"
           :media-url="header.mediaUrl" :media-type="header.mediaType" :aspect-ratio="header.aspectRatio"/>
       </div>

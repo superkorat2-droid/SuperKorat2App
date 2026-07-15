@@ -98,12 +98,13 @@ watch(() => route.params.slug, s => { if (s) load(s) })
 
     <template v-else-if="page">
       <!-- Page header — icon/title default หรือรูป/วิดีโอ/GIF ถ้าตั้งค่าไว้ -->
-      <PageHero :title="page.title"
+      <PageHero v-if="!page.header_hidden" :title="page.title"
         :mode="page.header_mode || 'icon'"
         :icon="page.nav_icon || page.icon || '📄'"
         :media-url="page.header_media_url"
         :media-type="page.header_media_type"
-        :aspect-ratio="page.header_aspect_ratio || '21:9'"/>
+        :aspect-ratio="page.header_aspect_ratio || '21:9'"
+        :align="page.header_align || 'center'"/>
 
       <!-- Blocks -->
       <div :class="[

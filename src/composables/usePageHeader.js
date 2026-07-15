@@ -15,6 +15,8 @@ export function usePageHeader(routeKey, defaults = {}) {
       mediaUrl:    found?.media_url  || '',
       mediaType:   found?.media_type || '',
       aspectRatio: found?.aspect_ratio || '21:9',
+      align:       found?.align || defaults.align || 'center',
+      hidden:      found?.hidden ?? false,
     }
   })
 }

@@ -9,7 +9,7 @@ import { TYPE_LABEL, TYPE_COLOR, formatEventDateRange, formatResponsible } from 
 
 const { config, fetchConfig } = useAreaConfig()
 onMounted(fetchConfig)
-const header = usePageHeader('nithet', { icon: 'eye', title: 'กลุ่มนิเทศ ติดตามและประเมินผล' })
+const header = usePageHeader('nithet', { icon: 'eye', title: 'กลุ่มนิเทศ ติดตามและประเมินผล', align: 'center' })
 
 function groupLabel(key) { return config.value?.personnel_groups?.find(g => g.key === key)?.label || key }
 function responsibleText(event) {
@@ -52,10 +52,11 @@ onMounted(async () => {
 
 <template>
   <div class="font-sarabun min-h-[60vh] bg-slate-50 dark:bg-slate-950">
-    <PageHero :title="header.title"
+    <PageHero v-if="!header.hidden" :title="header.title"
       :subtitle="header.subtitle || config?.area_name || 'สำนักงานเขตพื้นที่การศึกษา'"
       :mode="header.mode" :icon="header.icon"
-      :media-url="header.mediaUrl" :media-type="header.mediaType" :aspect-ratio="header.aspectRatio"/>
+      :media-url="header.mediaUrl" :media-type="header.mediaType" :aspect-ratio="header.aspectRatio"
+      :align="header.align"/>
 
     <!-- แยกจาก hero เสมอ ไม่ว่าจะใช้ไอคอนหรือรูป/วิดีโอ -->
     <div class="max-w-4xl mx-auto px-4 py-8 space-y-10">

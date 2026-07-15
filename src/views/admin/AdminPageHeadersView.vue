@@ -51,7 +51,7 @@ const addKey    = ref('')
 const availableRoutes = computed(() => KNOWN_ROUTES.filter(r => !headers.value.some(h => h.key === r.key)))
 
 function emptyHeader(key) {
-  return { key, mode: 'icon', icon: '', title: '', subtitle: '', media_url: '', media_type: '', aspect_ratio: '21:9' }
+  return { key, mode: 'icon', icon: '', title: '', subtitle: '', media_url: '', media_type: '', aspect_ratio: '21:9', align: '', hidden: false }
 }
 
 onMounted(async () => {
@@ -229,6 +229,26 @@ async function clearMedia(row) {
             row.mode === 'media' ? 'border-primary bg-primary/5 text-primary' : 'border-slate-200 text-slate-500']">
           ใช้รูป/วิดีโอ/GIF
         </button>
+      </div>
+
+      <!-- Align + ซ่อน -->
+      <div class="flex flex-wrap items-center gap-3">
+        <div class="flex gap-2">
+          <button @click="row.align = 'left'"
+            :class="['px-3 py-1.5 text-xs font-bold rounded-xl border-2 transition-all',
+              (row.align || 'center') === 'left' ? 'border-primary bg-primary/5 text-primary' : 'border-slate-200 text-slate-500']">
+            ↤ ชิดซ้าย
+          </button>
+          <button @click="row.align = 'center'"
+            :class="['px-3 py-1.5 text-xs font-bold rounded-xl border-2 transition-all',
+              (row.align || 'center') === 'center' ? 'border-primary bg-primary/5 text-primary' : 'border-slate-200 text-slate-500']">
+            ↔ กึ่งกลาง
+          </button>
+        </div>
+        <label class="flex items-center gap-1.5 text-xs font-bold text-slate-600 cursor-pointer select-none">
+          <input type="checkbox" v-model="row.hidden" class="w-4 h-4 rounded accent-primary"/>
+          ซ่อนหัวข้อหน้านี้ทั้งหมด
+        </label>
       </div>
 
       <!-- Icon mode -->

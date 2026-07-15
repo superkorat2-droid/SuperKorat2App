@@ -15,7 +15,7 @@ const newsSection = computed(() => {
   if (Array.isArray(sections)) return sections.find(s => s.key === 'news') || DEFAULT_HOME_SECTIONS[0]
   return DEFAULT_HOME_SECTIONS[0]
 })
-const header = usePageHeader('news', {})
+const header = usePageHeader('news', { align: 'left' })
 
 // ── Constants ────────────────────────────────────────────────────
 const CATEGORIES = [
@@ -104,12 +104,12 @@ const catMeta = {
   <div class="font-sarabun bg-slate-50 dark:bg-slate-950 dark:text-slate-100 min-h-screen transition-colors duration-300">
 
     <!-- ── Hero bar ──────────────────────────────────────────────── -->
-    <PageHero
+    <PageHero v-if="!header.hidden"
       :title="header.title || newsSection.title || 'ข่าวสารและประชาสัมพันธ์'"
       :subtitle="header.subtitle || config?.area_name || 'กลุ่มนิเทศ ติดตามและประเมินผลการจัดการศึกษา'"
       :mode="header.mode" :icon="header.icon"
       :media-url="header.mediaUrl" :media-type="header.mediaType" :aspect-ratio="header.aspectRatio"
-      size="md" align="left" max-width="7xl"/>
+      size="md" :align="header.align" max-width="7xl"/>
 
     <div class="max-w-7xl mx-auto px-4 py-8">
 

@@ -6,7 +6,7 @@ import { usePageHeader } from '../composables/usePageHeader'
 import PageHero from '../components/PageHero.vue'
 
 const { config, fetchConfig } = useAreaConfig()
-const header = usePageHeader('newsletters', { icon: 'document', title: 'จดหมายข่าว / เอกสารเผยแพร่' })
+const header = usePageHeader('newsletters', { icon: 'document', title: 'จดหมายข่าว / เอกสารเผยแพร่', align: 'center' })
 const items    = ref([])
 const loading  = ref(true)
 const searchQ  = ref('')
@@ -75,12 +75,12 @@ function monthLabel(m) { return m ? MONTHS[m-1] : '' }
   <div class="font-sarabun bg-slate-50 dark:bg-slate-950 min-h-screen">
 
     <!-- ── Hero ───────────────────────────────────────────────────────────────── -->
-    <PageHero
+    <PageHero v-if="!header.hidden"
       :title="header.title"
       :subtitle="header.subtitle || `${config?.area_name} · ${items.length} รายการ`"
       :mode="header.mode" :icon="header.icon"
       :media-url="header.mediaUrl" :media-type="header.mediaType" :aspect-ratio="header.aspectRatio"
-      max-width="5xl"/>
+      :align="header.align" max-width="5xl"/>
 
     <div class="max-w-7xl mx-auto px-4 py-6 space-y-5">
 

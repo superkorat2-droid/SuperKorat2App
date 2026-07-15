@@ -8,6 +8,7 @@ import PageHeaderPlain from '../components/PageHeaderPlain.vue'
 const { fetchConfig } = useAreaConfig()
 const header = usePageHeader('download', {
   title: 'ดาวน์โหลดเอกสาร', subtitle: 'แบบฟอร์ม คู่มือ เอกสารราชการ และรายงานต่าง ๆ',
+  align: 'left',
 })
 
 const categories = [
@@ -81,8 +82,8 @@ function formatDate(iso) {
     <div class="max-w-5xl mx-auto px-4">
 
       <!-- Header -->
-      <div class="mb-10">
-        <PageHeaderPlain eyebrow="Downloads" :title="header.title" :subtitle="header.subtitle"
+      <div v-if="!header.hidden" class="mb-10">
+        <PageHeaderPlain :align="header.align" eyebrow="Downloads" :title="header.title" :subtitle="header.subtitle"
           :mode="header.mode" :icon="header.icon"
           :media-url="header.mediaUrl" :media-type="header.mediaType" :aspect-ratio="header.aspectRatio"/>
       </div>

@@ -7,7 +7,7 @@ import { usePageHeader } from '../composables/usePageHeader'
 import PageHero from '../components/PageHero.vue'
 
 const { config, fetchConfig } = useAreaConfig()
-const header = usePageHeader('media', { icon: 'folder', title: 'คลังสื่อการเรียนรู้' })
+const header = usePageHeader('media', { icon: 'folder', title: 'คลังสื่อการเรียนรู้', align: 'center' })
 const router = useRouter()
 
 const items      = ref([])
@@ -128,12 +128,12 @@ const isFiltered = computed(() =>
   <div class="font-sarabun bg-slate-50 dark:bg-slate-950 min-h-screen">
 
     <!-- Hero -->
-    <PageHero
+    <PageHero v-if="!header.hidden"
       :title="header.title"
       :subtitle="header.subtitle || `${config?.area_name} · ${totalCount.toLocaleString()} รายการ`"
       :mode="header.mode" :icon="header.icon"
       :media-url="header.mediaUrl" :media-type="header.mediaType" :aspect-ratio="header.aspectRatio"
-      max-width="5xl"/>
+      :align="header.align" max-width="5xl"/>
 
     <div class="max-w-7xl mx-auto px-4 py-6 space-y-5">
 

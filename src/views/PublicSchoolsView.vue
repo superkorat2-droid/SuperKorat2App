@@ -6,7 +6,7 @@ import { usePageHeader } from '../composables/usePageHeader'
 import PageHero from '../components/PageHero.vue'
 
 const { config, fetchConfig } = useAreaConfig()
-const header = usePageHeader('schools', { icon: 'school' })
+const header = usePageHeader('schools', { icon: 'school', align: 'center' })
 const schools  = ref([])
 const loading  = ref(true)
 const searchQ  = ref('')
@@ -95,11 +95,12 @@ function resetFilters() {
   <div class="font-sarabun bg-slate-50 dark:bg-slate-950 dark:text-slate-100 min-h-screen transition-colors duration-300">
 
     <!-- ── Hero ── -->
-    <PageHero
+    <PageHero v-if="!header.hidden"
       :title="header.title || config?.schools_page_title || 'ทำเนียบสถานศึกษา'"
       :subtitle="header.subtitle || `${config?.schools_page_subtitle || config?.area_name || 'สพป.'} · ${schools.length} โรงเรียน`"
       :mode="header.mode" :icon="header.icon"
-      :media-url="header.mediaUrl" :media-type="header.mediaType" :aspect-ratio="header.aspectRatio"/>
+      :media-url="header.mediaUrl" :media-type="header.mediaType" :aspect-ratio="header.aspectRatio"
+      :align="header.align"/>
 
     <div class="max-w-7xl mx-auto px-4 py-6 space-y-5">
 

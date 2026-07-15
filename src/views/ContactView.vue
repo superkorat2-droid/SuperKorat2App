@@ -8,6 +8,7 @@ import PageHeaderPlain from '../components/PageHeaderPlain.vue'
 const { config, fetchConfig } = useAreaConfig()
 const header = usePageHeader('contact', {
   title: 'ติดต่อสอบถาม', subtitle: 'กลุ่มนิเทศ ติดตามและประเมินผลการจัดการศึกษา ยินดีให้บริการและตอบข้อซักถามทุกช่องทาง',
+  align: 'left',
 })
 
 const form = ref({ name: '', position: '', phone: '', email: '', subject: '', message: '' })
@@ -109,8 +110,8 @@ onMounted(() => { fetchConfig(); fetchSupervisors() })
     <div class="max-w-5xl mx-auto px-4">
 
       <!-- Header -->
-      <div class="mb-10">
-        <PageHeaderPlain eyebrow="Contact Us" :title="header.title" :subtitle="header.subtitle"
+      <div v-if="!header.hidden" class="mb-10">
+        <PageHeaderPlain :align="header.align" eyebrow="Contact Us" :title="header.title" :subtitle="header.subtitle"
           :mode="header.mode" :icon="header.icon"
           :media-url="header.mediaUrl" :media-type="header.mediaType" :aspect-ratio="header.aspectRatio"/>
       </div>

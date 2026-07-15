@@ -8,6 +8,7 @@ import PageHero from '../components/PageHero.vue'
 const { config, fetchConfig } = useAreaConfig()
 const header = usePageHeader('personnel', {
   icon: 'users', title: 'ทำเนียบบุคลากร', subtitle: 'บุคลากรกลุ่มนิเทศ ติดตามและประเมินผลการจัดการศึกษา',
+  align: 'left',
 })
 const loading   = ref(true)
 const personnel = ref([])
@@ -131,10 +132,10 @@ function visibleContact(p) {
   <div class="font-sarabun min-h-screen transition-colors" style="background:radial-gradient(ellipse at top,#f0f4ff 0%,#f8fafc 60%)">
 
     <!-- Page header -->
-    <PageHero :title="header.title" :subtitle="header.subtitle"
+    <PageHero v-if="!header.hidden" :title="header.title" :subtitle="header.subtitle"
       :mode="header.mode" :icon="header.icon"
       :media-url="header.mediaUrl" :media-type="header.mediaType" :aspect-ratio="header.aspectRatio"
-      size="md" align="left" max-width="6xl"/>
+      size="md" :align="header.align" max-width="6xl"/>
 
     <div class="max-w-6xl mx-auto px-4 py-8">
 

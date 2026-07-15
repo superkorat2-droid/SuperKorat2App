@@ -6,7 +6,7 @@ import { usePageHeader } from '../composables/usePageHeader'
 import PageHero from '../components/PageHero.vue'
 
 const { config } = useAreaConfig()
-const header = usePageHeader('studentStats', { icon: 'students', title: 'สารสนเทศนักเรียน' })
+const header = usePageHeader('studentStats', { icon: 'students', title: 'สารสนเทศนักเรียน', align: 'left' })
 const loading = ref(true)
 const data    = ref(null)
 const error   = ref(null)
@@ -133,12 +133,12 @@ function formatDate(d) {
 
 <template>
   <div class="font-sarabun bg-slate-50 dark:bg-slate-950 min-h-screen">
-    <PageHero
+    <PageHero v-if="!header.hidden"
       :title="header.title"
       :subtitle="header.subtitle || config?.area_name"
       :mode="header.mode" :icon="header.icon"
       :media-url="header.mediaUrl" :media-type="header.mediaType" :aspect-ratio="header.aspectRatio"
-      align="left" max-width="5xl"/>
+      :align="header.align" max-width="5xl"/>
 
     <!-- ── Period info + stat badges (แยกจาก hero เสมอ ไม่ว่าจะใช้ไอคอนหรือรูป/วิดีโอ) ── -->
     <div v-if="period || (data && !loading)" class="max-w-5xl mx-auto px-4 pt-6">

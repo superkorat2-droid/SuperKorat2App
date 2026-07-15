@@ -11,6 +11,7 @@ const { fetchConfig } = useAreaConfig()
 onMounted(fetchConfig)
 const header = usePageHeader('qrcode', {
   icon: 'qrcode', title: 'สร้าง QR Code', subtitle: 'สร้าง QR Code จากข้อความหรือลิงค์ พร้อมปรับแต่งสี ขนาด และดาวน์โหลดได้ทันที',
+  align: 'center',
 })
 
 const inputText  = ref('')
@@ -76,8 +77,8 @@ onMounted(() => {
     <div class="max-w-3xl mx-auto px-4">
 
       <!-- Header -->
-      <div class="mb-10">
-        <PageHeaderPlain align="center" eyebrow="QR Code Generator" :title="header.title" :subtitle="header.subtitle"
+      <div v-if="!header.hidden" class="mb-10">
+        <PageHeaderPlain :align="header.align" eyebrow="QR Code Generator" :title="header.title" :subtitle="header.subtitle"
           :mode="header.mode" :icon="header.icon"
           :media-url="header.mediaUrl" :media-type="header.mediaType" :aspect-ratio="header.aspectRatio"/>
       </div>

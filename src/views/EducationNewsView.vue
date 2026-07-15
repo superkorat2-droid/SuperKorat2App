@@ -9,6 +9,7 @@ const { news, loading, error, fetchNews } = useEducationNews()
 const { fetchConfig } = useAreaConfig()
 const header = usePageHeader('educationNews', {
   title: 'ข่าวการศึกษา', subtitle: 'ข่าวสารด้านการศึกษาจาก Google News',
+  align: 'left',
 })
 
 const searchQ = ref('')
@@ -36,12 +37,12 @@ onMounted(() => { fetchNews(); fetchConfig() })
   <div class="font-sarabun text-slate-800 bg-slate-50 min-h-screen">
 
     <!-- Hero -->
-    <PageHero
+    <PageHero v-if="!header.hidden"
       eyebrow="Education News"
       :title="header.title" :subtitle="header.subtitle"
       :mode="header.mode" :icon="header.icon"
       :media-url="header.mediaUrl" :media-type="header.mediaType" :aspect-ratio="header.aspectRatio"
-      size="md" align="left" max-width="7xl"/>
+      size="md" :align="header.align" max-width="7xl"/>
 
     <!-- Content -->
     <section class="py-10">

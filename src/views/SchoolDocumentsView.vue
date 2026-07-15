@@ -9,6 +9,7 @@ const { config, fetchConfig } = useAreaConfig()
 const header = usePageHeader('school-documents', {
   icon: 'document', title: 'หนังสือถึงโรงเรียน',
   subtitle: 'ประกาศ คำสั่ง และหนังสือราชการสำหรับโรงเรียนในสังกัด',
+  align: 'left',
 })
 
 const docs    = ref([])
@@ -51,9 +52,9 @@ function formatDate(iso) {
 
 <template>
   <div class="font-sarabun min-h-[60vh] bg-slate-50 dark:bg-slate-950">
-    <PageHero :title="header.title" :subtitle="header.subtitle" :mode="header.mode" :icon="header.icon"
+    <PageHero v-if="!header.hidden" :title="header.title" :subtitle="header.subtitle" :mode="header.mode" :icon="header.icon"
       :media-url="header.mediaUrl" :media-type="header.mediaType" :aspect-ratio="header.aspectRatio"
-      size="md" align="left" max-width="6xl"/>
+      size="md" :align="header.align" max-width="6xl"/>
 
     <div class="max-w-5xl mx-auto px-4 py-8">
       <!-- Search + stats -->
