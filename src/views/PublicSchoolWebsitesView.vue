@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { supabase } from '../supabase'
 import { useAreaConfig } from '../composables/useAreaConfig'
 import { usePageHeader } from '../composables/usePageHeader'
@@ -16,8 +16,12 @@ const loading = ref(true)
 const searchQ = ref('')
 const filterDistrict = ref('all')
 const filterGroup    = ref('all')
-const sortKey = ref('name')   // 'name' | 'school_group'
-const sortDir = ref('asc')    // 'asc' | 'desc'
+const sortKey = ref('school_group')   // 'name' | 'school_group'
+const sortDir = ref('asc')            // 'asc' | 'desc'
+
+const PAGE_SIZE_OPTIONS = [10, 20, 50, 100, 'all']
+const pageSize    = ref(20)
+const currentPage = ref(1)
 
 onMounted(async () => {
   await fetchConfig()
@@ -68,6 +72,39 @@ function toggleSort(key) {
     sortDir.value = 'asc'
   }
 }
+
+// ─── Pagination ───────────────────────────────────────────────────────────
+const totalPages = computed(() => pageSize.value === 'all' ? 1 : Math.max(1, Math.ceil(sorted.value.length / pageSize.value)))
+
+const paginated = computed(() => {
+  if (pageSize.value === 'all') return sorted.value
+  const start = (currentPage.value - 1) * pageSize.value
+  return sorted.value.slice(start, start + pageSize.value)
+})
+
+const rangeStart = computed(() => sorted.value.length === 0 ? 0 : pageSize.value === 'all' ? 1 : (currentPage.value - 1) * pageSize.value + 1)
+const rangeEnd   = computed(() => pageSize.value === 'all' ? sorted.value.length : Math.min(currentPage.value * pageSize.value, sorted.value.length))
+
+// หน้าตัวเลข แบบมี ... เมื่อหน้าเยอะ (แสดงหน้าแรก/สุดท้ายเสมอ + รอบๆ หน้าปัจจุบัน)
+const pageNumbers = computed(() => {
+  const tp = totalPages.value, cur = currentPage.value, delta = 1
+  const withDots = []
+  let last = 0
+  for (let i = 1; i <= tp; i++) {
+    if (i === 1 || i === tp || (i >= cur - delta && i <= cur + delta)) {
+      if (last && i - last === 2) withDots.push(last + 1)
+      else if (last && i - last > 2) withDots.push('...')
+      withDots.push(i)
+      last = i
+    }
+  }
+  return withDots
+})
+
+function goToPage(p) { if (p >= 1 && p <= totalPages.value) currentPage.value = p }
+
+watch([searchQ, filterDistrict, filterGroup, pageSize, sortKey, sortDir], () => { currentPage.value = 1 })
+watch(totalPages, tp => { if (currentPage.value > tp) currentPage.value = tp })
 
 const stats = computed(() => ({
   total: filtered.value.length,
@@ -125,6 +162,10 @@ function resetFilters() {
           <option value="all">ทุกศูนย์เครือข่าย</option>
           <option v-for="g in groups" :key="g" :value="g">{{ g }}</option>
         </select>
+        <select v-model="pageSize"
+          class="px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-xl text-sm focus:outline-none focus:border-primary bg-white dark:bg-slate-800">
+          <option v-for="n in PAGE_SIZE_OPTIONS" :key="n" :value="n">{{ n === 'all' ? 'แสดงทั้งหมด' : `แสดง ${n} รายการ` }}</option>
+        </select>
         <button v-if="hasActiveFilter" @click="resetFilters"
           class="flex items-center gap-1 text-xs text-slate-400 hover:text-red-500 px-2 py-2 transition-colors">
           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
@@ -176,7 +217,9 @@ function resetFilters() {
               </tr>
             </thead>
             <tbody>
-              <tr v-for="s in sorted" :key="s.id" class="border-b border-slate-50 dark:border-slate-700/50 last:border-0 hover:bg-slate-50/50 dark:hover:bg-slate-900/30 transition-colors">
+              <tr v-for="(s, i) in paginated" :key="s.id"
+                :class="['border-b border-slate-50 dark:border-slate-700/50 last:border-0 hover:bg-primary/5 dark:hover:bg-primary/10 transition-colors',
+                  i % 2 === 1 ? 'bg-slate-50/70 dark:bg-slate-900/20' : '']">
                 <td class="px-5 py-3 text-slate-500 dark:text-slate-400">{{ s.school_group }}</td>
                 <td class="px-5 py-3 font-bold text-slate-800 dark:text-slate-100">{{ s.name }}</td>
                 <td class="px-5 py-3 text-center">
@@ -195,8 +238,9 @@ function resetFilters() {
 
         <!-- ── Mobile card list ── -->
         <div class="md:hidden space-y-3">
-          <div v-for="s in sorted" :key="s.id"
-            class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 p-4 shadow-sm">
+          <div v-for="(s, i) in paginated" :key="s.id"
+            :class="['rounded-2xl border border-slate-100 dark:border-slate-700 p-4 shadow-sm',
+              i % 2 === 1 ? 'bg-slate-50 dark:bg-slate-900/30' : 'bg-white dark:bg-slate-800']">
             <p class="text-[11px] text-slate-400 font-semibold uppercase tracking-wide">{{ s.school_group }}</p>
             <p class="font-extrabold text-slate-800 dark:text-slate-100 mt-0.5 mb-3">{{ s.name }}</p>
             <a v-if="s.website_url" :href="s.website_url" target="_blank" rel="noopener noreferrer"
@@ -208,6 +252,36 @@ function resetFilters() {
             </span>
           </div>
         </div>
+
+        <!-- ── Pagination ── -->
+        <div v-if="pageSize !== 'all' && totalPages > 1" class="flex flex-col sm:flex-row items-center justify-between gap-3 pt-1">
+          <p class="text-xs text-slate-400 order-2 sm:order-1">
+            แสดง {{ rangeStart }}-{{ rangeEnd }} จาก {{ sorted.length }} รายการ
+          </p>
+          <div class="flex items-center gap-1 order-1 sm:order-2">
+            <button @click="goToPage(currentPage - 1)" :disabled="currentPage === 1"
+              class="w-9 h-9 flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-600 text-slate-500 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5"/>
+              </svg>
+            </button>
+            <template v-for="(p, idx) in pageNumbers" :key="idx">
+              <span v-if="p === '...'" class="w-9 h-9 flex items-center justify-center text-slate-300 text-sm">…</span>
+              <button v-else @click="goToPage(p)"
+                :class="['w-9 h-9 flex items-center justify-center rounded-xl text-sm font-bold transition-colors',
+                  p === currentPage ? 'bg-primary text-white shadow-sm' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700']">
+                {{ p }}
+              </button>
+            </template>
+            <button @click="goToPage(currentPage + 1)" :disabled="currentPage === totalPages"
+              class="w-9 h-9 flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-600 text-slate-500 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <p v-else class="text-center text-xs text-slate-400">แสดงทั้งหมด {{ sorted.length }} รายการ</p>
       </template>
 
     </div>
