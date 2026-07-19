@@ -68,6 +68,7 @@ import SchoolSupervisionFillView   from '../views/school/SchoolSupervisionFillVi
 
 // ─── Public school directory ──────────────────────────────────────────────
 import PublicSchoolsView      from '../views/PublicSchoolsView.vue'
+import PublicSchoolWebsitesView from '../views/PublicSchoolWebsitesView.vue'
 
 // ─── News public pages ───────────────────────────────────────────────────
 import NewsView              from '../views/NewsView.vue'
@@ -164,6 +165,7 @@ const routes = [
 
   // ── ทำเนียบโรงเรียน (สาธารณะ) ─────────────────────────────────────────
   { path: '/schools',       name: 'schools',      component: PublicSchoolsView },
+  { path: '/schoolweb',     name: 'schoolWebsites', component: PublicSchoolWebsitesView },
   { path: '/principals',   name: 'principals',   component: PublicPrincipalsView },
   { path: '/newsletters',  name: 'newsletters',  component: PublicNewslettersView },
   { path: '/media',        name: 'media',        component: PublicMediaView },

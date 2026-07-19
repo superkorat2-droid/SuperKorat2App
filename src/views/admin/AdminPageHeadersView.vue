@@ -18,6 +18,7 @@ const KNOWN_ROUTES = [
   { key: 'org',            label: 'โครงสร้างการบริหาร' },
   { key: 'personnel',      label: 'ทำเนียบบุคลากร' },
   { key: 'schools',        label: 'ทำเนียบสถานศึกษา' },
+  { key: 'schoolWebsites', label: 'เว็บไซต์โรงเรียน' },
   { key: 'principals',     label: 'ผู้บริหารสถานศึกษา' },
   { key: 'newsletters',    label: 'จดหมายข่าว' },
   { key: 'media',          label: 'คลังสื่อการเรียนรู้' },

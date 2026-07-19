@@ -19,6 +19,7 @@ export const SYSTEM_ROUTE_HEADER_KEYS = {
   '/contact':          'contact',
   '/nithet':           'nithet',
   '/page/org':         'org',
+  '/schoolweb':        'schoolWebsites',
 }
 
 // ดึงการตั้งค่า header (ไอคอน/ชื่อ default หรือ รูป/วิดีโอ/GIF) ของหน้า public ตาม route key
