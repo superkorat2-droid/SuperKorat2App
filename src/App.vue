@@ -221,7 +221,7 @@ const handleLogout = async () => {
                   leave-to-class="opacity-0">
                   <div v-if="openDropdown === item.key"
                     :class="[
-                      'absolute top-[calc(100%+8px)] left-0 z-50 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-lg shadow-slate-200/60 py-1.5 origin-top-left',
+                      'absolute top-[calc(100%+8px)] left-0 z-50 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-lg shadow-slate-200/60 py-1.5 origin-top-left max-h-[70vh] overflow-y-auto',
                       item.key === 'work' ? 'w-72' : 'w-60'
                     ]"
                     @mouseenter="showDropdown(item.key)"
