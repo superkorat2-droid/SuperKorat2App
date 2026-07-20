@@ -731,8 +731,8 @@ onMounted(async () => {
                           after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-5"/>
             </label>
             <div>
-              <p class="text-sm font-bold text-slate-700">เปิดลิงค์สาธารณะ</p>
-              <p class="text-xs text-slate-400">ใครก็ตามที่มีลิงค์สามารถกรอกโดยไม่ต้อง login</p>
+              <p class="text-sm font-bold text-slate-700">เปิดลิงก์สาธารณะ</p>
+              <p class="text-xs text-slate-400">ใครก็ตามที่มีลิงก์สามารถกรอกโดยไม่ต้อง login</p>
             </div>
           </div>
 
@@ -1028,7 +1028,7 @@ onMounted(async () => {
                   class="px-2 py-1.5 border border-slate-200 rounded-xl text-xs bg-white focus:outline-none focus:border-primary">
                   <option value="none">ไม่ต้องการ</option>
                   <option value="upload">อัปโหลดภาพ/ไฟล์</option>
-                  <option value="url">ลิงค์ URL</option>
+                  <option value="url">ลิงก์ URL</option>
                   <option value="both">ทั้งสองอย่าง</option>
                 </select>
                 <label v-if="q.evidence_type !== 'none'" class="flex items-center gap-1.5 cursor-pointer">

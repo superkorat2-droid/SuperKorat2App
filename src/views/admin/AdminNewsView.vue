@@ -598,10 +598,10 @@ function getCatPath(val) {
                       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244"/>
                       </svg>
-                      ใส่ลิงค์ URL
+                      ใส่ลิงก์ URL
                     </button>
                   </div>
-                  <!-- URL input (แสดงเมื่อกด "ใส่ลิงค์ URL") -->
+                  <!-- URL input (แสดงเมื่อกด "ใส่ลิงก์ URL") -->
                   <div v-if="showCoverUrlInput" class="px-4 pb-4 flex gap-2">
                     <input v-model="coverUrlDraft" type="url"
                       placeholder="https://example.com/image.jpg"
@@ -809,9 +809,9 @@ function getCatPath(val) {
 
               <!-- ⑧ File attachment -->
               <div>
-                <label class="block text-xs font-bold text-slate-600 mb-1">ไฟล์แนบ / ลิงค์เพิ่มเติม</label>
+                <label class="block text-xs font-bold text-slate-600 mb-1">ไฟล์แนบ / ลิงก์เพิ่มเติม</label>
                 <div class="flex gap-2">
-                  <input v-model="form.file_url" type="text" placeholder="URL ไฟล์แนบ (PDF, ฯลฯ) หรือลิงค์ภายนอก"
+                  <input v-model="form.file_url" type="text" placeholder="URL ไฟล์แนบ (PDF, ฯลฯ) หรือลิงก์ภายนอก"
                     class="input-field flex-1"/>
                   <button @click="pickStorage('file')"
                     class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-colors flex-shrink-0">

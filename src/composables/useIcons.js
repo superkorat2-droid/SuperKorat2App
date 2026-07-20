@@ -42,7 +42,7 @@ export const ICON_LABELS = {
   'chart-bar': 'กราฟ/สถิติ', 'book-open': 'หนังสือ/หลักสูตร', 'magnify': 'ค้นหา/นิเทศ',
   'clipboard': 'รายการ/ประเมิน', 'star': 'คุณภาพ/ดาว', 'beaker': 'วิจัย/ทดลอง',
   'wrench': 'เครื่องมือ', 'presentation': 'นำเสนอ', 'download': 'ดาวน์โหลด',
-  'link': 'ลิงค์', 'qrcode': 'QR Code', 'home': 'บ้าน/หน้าแรก',
+  'link': 'ลิงก์', 'qrcode': 'QR Code', 'home': 'บ้าน/หน้าแรก',
   'phone': 'โทรศัพท์', 'mail': 'อีเมล', 'globe': 'เว็บไซต์/โลก',
   'news': 'ข่าวสาร', 'document': 'เอกสาร', 'folder': 'แฟ้ม/หมวด',
   'settings': 'ตั้งค่า', 'user': 'โปรไฟล์', 'school': 'โรงเรียน',

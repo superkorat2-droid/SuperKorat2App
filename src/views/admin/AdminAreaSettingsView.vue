@@ -36,7 +36,7 @@ const DEFAULT_SERVICES = [
   { key:'nitet',    label:'กลุ่มนิเทศติดตามฯ',   icon:'eye',       type:'internal', url:'/nithet',    visible:true, order:1 },
   { key:'download', label:'ดาวน์โหลดเอกสาร',     icon:'download',  type:'internal', url:'/download',  visible:true, order:2 },
   { key:'qrcode',   label:'สร้าง QR Code',        icon:'qrcode',    type:'internal', url:'/qrcode',    visible:true, order:3 },
-  { key:'urlshort', label:'ย่อลิงค์',             icon:'link',      type:'internal', url:'/url-short', visible:true, order:4 },
+  { key:'urlshort', label:'ย่อลิงก์',             icon:'link',      type:'internal', url:'/url-short', visible:true, order:4 },
   { key:'sar',      label:'ระบบ SAR Online',       icon:'chart-bar', type:'external', url:'',           visible:true, order:5 },
   { key:'media',    label:'คลังสื่อนวัตกรรม',     icon:'beaker',    type:'external', url:'',           visible:true, order:6 },
   { key:'training', label:'ลงทะเบียนอบรม',        icon:'clipboard', type:'external', url:'',           visible:true, order:7 },
@@ -65,7 +65,7 @@ const SYSTEM_ROUTES = [
   { route:'/schools',   label:'ทำเนียบโรงเรียน' },
   { route:'/news',      label:'ข่าวสาร' },
   { route:'/download',  label:'ดาวน์โหลด' },
-  { route:'/url-short', label:'ย่อลิงค์' },
+  { route:'/url-short', label:'ย่อลิงก์' },
   { route:'/qrcode',    label:'QR Code' },
   { route:'/contact',   label:'ติดต่อเรา' },
 ]

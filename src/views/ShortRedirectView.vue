@@ -20,8 +20,8 @@ onMounted(async () => {
   <div class="font-sarabun min-h-[60vh] flex items-center justify-center px-4">
     <div v-if="notFound" class="text-center">
       <div class="text-5xl mb-4">🔗</div>
-      <h1 class="text-xl font-extrabold text-slate-800 mb-2">ไม่พบลิงค์นี้</h1>
-      <p class="text-sm text-slate-500">ลิงค์อาจถูกลบ ปิดใช้งาน หรือหมดอายุแล้ว</p>
+      <h1 class="text-xl font-extrabold text-slate-800 mb-2">ไม่พบลิงก์นี้</h1>
+      <p class="text-sm text-slate-500">ลิงก์อาจถูกลบ ปิดใช้งาน หรือหมดอายุแล้ว</p>
       <router-link to="/" class="inline-block mt-5 text-indigo-600 font-bold text-sm hover:underline">← กลับหน้าแรก</router-link>
     </div>
     <div v-else class="text-center text-slate-400 text-sm">
@@ -29,7 +29,7 @@ onMounted(async () => {
         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
       </svg>
-      กำลังนำไปยังลิงค์ปลายทาง...
+      กำลังนำไปยังลิงก์ปลายทาง...
     </div>
   </div>
 </template>

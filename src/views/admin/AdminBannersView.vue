@@ -335,9 +335,9 @@ const TYPE_OPTIONS = [
   { v: 'youtube', icon: 'M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h-.008v.008H12V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM9.75 12h.008v.008H9.75V12zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm3.75.75h-.008v.008h.008v-.008zm-.375 0a.375.375 0 11.75 0 .375.375 0 01-.75 0z', label: 'YouTube' },
 ]
 const LINK_OPTIONS = [
-  { v: 'none',     label: 'ไม่มีลิงค์', desc: 'คลิกแล้วไม่ทำอะไร' },
+  { v: 'none',     label: 'ไม่มีลิงก์', desc: 'คลิกแล้วไม่ทำอะไร' },
   { v: 'internal', label: 'ภายในเว็บ',  desc: 'เปิดหน้าในเว็บเดิม' },
-  { v: 'external', label: 'ลิงค์นอก',  desc: 'เปิดแท็บใหม่' },
+  { v: 'external', label: 'ลิงก์นอก',  desc: 'เปิดแท็บใหม่' },
 ]
 </script>
 
@@ -484,7 +484,7 @@ const LINK_OPTIONS = [
                   ? 'M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25'
                   : 'M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244'"/>
             </svg>
-            {{ b.link_type === 'external' ? 'ลิงค์นอก' : 'ภายในเว็บ' }}
+            {{ b.link_type === 'external' ? 'ลิงก์นอก' : 'ภายในเว็บ' }}
           </span>
         </div>
 
@@ -795,9 +795,9 @@ const LINK_OPTIONS = [
                   class="input-field w-full resize-none"></textarea>
               </div>
 
-              <!-- ─ Section 4: ลิงค์ ─ -->
+              <!-- ─ Section 4: ลิงก์ ─ -->
               <div>
-                <label class="section-label">ลิงค์เมื่อคลิก</label>
+                <label class="section-label">ลิงก์เมื่อคลิก</label>
                 <div class="grid grid-cols-3 gap-2 mt-2">
                   <button v-for="lt in LINK_OPTIONS" :key="lt.v"
                     @click="form.link_type = lt.v"

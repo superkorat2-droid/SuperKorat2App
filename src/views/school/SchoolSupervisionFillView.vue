@@ -342,7 +342,7 @@ function validateQuestions(qList) {
     }
     if (q.evidence_required && q.evidence_type !== 'none') {
       if (['upload','both'].includes(q.evidence_type) && !evidenceFileUrls.value[q.id]) return `กรุณาอัปโหลดหลักฐานคำถาม "${q.question_text}"`
-      if (['url','both'].includes(q.evidence_type) && !evidenceLinks.value[q.id]?.trim()) return `กรุณาใส่ลิงค์หลักฐานคำถาม "${q.question_text}"`
+      if (['url','both'].includes(q.evidence_type) && !evidenceLinks.value[q.id]?.trim()) return `กรุณาใส่ลิงก์หลักฐานคำถาม "${q.question_text}"`
     }
   }
   return null

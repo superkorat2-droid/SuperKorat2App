@@ -23,14 +23,14 @@ const SECTION_ICONS = {
 
 const SECTION_DESC = {
   news:            'การ์ดข่าวสาร 8 รายการล่าสุด',
-  education_news:  'ข่าวการศึกษา 8 รายการล่าสุดจาก Google News RSS + ลิงค์ไปหน้า /education-news',
+  education_news:  'ข่าวการศึกษา 8 รายการล่าสุดจาก Google News RSS + ลิงก์ไปหน้า /education-news',
   supervision_list:'รายการแบบนิเทศ/สอบถามที่เปิดรับ + ดูสถานะโรงเรียน',
   services:        'สถิติเขต + เมนูบริการออนไลน์',
-  image_gallery:   'ภาพลิงค์ — กำหนดรูปภาพ/ลิงก์ที่จะแสดงในหน้าแรกได้เอง',
-  cta:             'แบนเนอร์เชิญชวน + ลิงค์หลัก',
+  image_gallery:   'ภาพลิงก์ — กำหนดรูปภาพ/ลิงก์ที่จะแสดงในหน้าแรกได้เอง',
+  cta:             'แบนเนอร์เชิญชวน + ลิงก์หลัก',
 }
 
-// keys ของเซกชันภาพลิงค์ไม่คงที่ (image_gallery_<timestamp>) — ต้องเช็คด้วย prefix แทน exact match
+// keys ของเซกชันภาพลิงก์ไม่คงที่ (image_gallery_<timestamp>) — ต้องเช็คด้วย prefix แทน exact match
 function isGallerySection(sec) { return sec.key.startsWith('image_gallery') }
 function sectionIcon(sec) { return isGallerySection(sec) ? SECTION_ICONS.image_gallery : (SECTION_ICONS[sec.key] || SECTION_ICONS.news) }
 function sectionDesc(sec) { return isGallerySection(sec) ? SECTION_DESC.image_gallery : (SECTION_DESC[sec.key] || '') }
@@ -38,7 +38,7 @@ function sectionDesc(sec) { return isGallerySection(sec) ? SECTION_DESC.image_ga
 function addGallerySection() {
   const key = `image_gallery_${Date.now()}`
   sections.value.push({
-    key, label: 'ภาพลิงค์', subtitle: 'Gallery', title: 'ภาพลิงค์', visible: true,
+    key, label: 'ภาพลิงก์', subtitle: 'Gallery', title: 'ภาพลิงก์', visible: true,
     bg: '#ffffff', bg2: '#f1f5f9', bg_type: 'solid', order: sections.value.length + 1,
     gallery: { layout: 'card', title: '', items: [] },
   })
@@ -67,7 +67,7 @@ onMounted(async () => {
     ...raw.map(s => {
       const def = DEFAULT_HOME_SECTIONS.find(d => d.key === s.key)
       const withSubtitle = { subtitle: def?.subtitle ?? '', ...s }  // backfill subtitle
-      // เซกชันภาพลิงค์เก่าที่อาจยังไม่มี field gallery (ข้อมูลก่อนอัปเดต) — เติมค่าว่างให้
+      // เซกชันภาพลิงก์เก่าที่อาจยังไม่มี field gallery (ข้อมูลก่อนอัปเดต) — เติมค่าว่างให้
       if (isGallerySection(withSubtitle) && !withSubtitle.gallery) {
         withSubtitle.gallery = { layout: 'card', title: '', items: [] }
       }
@@ -128,7 +128,7 @@ async function save() {
       <button @click="addGallerySection" type="button"
         class="flex items-center gap-1.5 px-4 py-2.5 text-sm font-bold bg-white border-2 border-primary/30 text-primary rounded-2xl hover:bg-primary/5 transition-all">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
-        เพิ่มเซกชันภาพลิงค์
+        เพิ่มเซกชันภาพลิงก์
       </button>
       <button @click="save" :disabled="saving"
         class="flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary-dark text-white font-bold rounded-2xl shadow-md transition-all hover:-translate-y-0.5 disabled:opacity-50">
@@ -192,7 +192,7 @@ async function save() {
             </div>
           </div>
 
-          <!-- จัดการรูปภาพ / ลบ (เฉพาะเซกชันภาพลิงค์) -->
+          <!-- จัดการรูปภาพ / ลบ (เฉพาะเซกชันภาพลิงก์) -->
           <div v-if="isGallerySection(sec)" class="flex-shrink-0 flex items-center gap-2">
             <button @click="editingSection = sec" type="button"
               class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border-2 border-primary/30 text-primary hover:bg-primary/5 transition-all">
@@ -364,14 +364,14 @@ async function save() {
       </div>
     </div>
 
-    <!-- ══ MODAL: จัดการรูปภาพ (เซกชันภาพลิงค์ที่กำลังแก้ไข) ══════════════════ -->
+    <!-- ══ MODAL: จัดการรูปภาพ (เซกชันภาพลิงก์ที่กำลังแก้ไข) ══════════════════ -->
     <Teleport to="body">
       <Transition enter-active-class="transition duration-200" enter-from-class="opacity-0" enter-to-class="opacity-100"
         leave-active-class="transition duration-150" leave-from-class="opacity-100" leave-to-class="opacity-0">
         <div v-if="editingSection" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <div class="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[92vh] flex flex-col overflow-hidden">
             <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100 flex-shrink-0">
-              <h2 class="text-lg font-extrabold text-slate-800">จัดการรูปภาพ — ภาพลิงค์หน้าแรก</h2>
+              <h2 class="text-lg font-extrabold text-slate-800">จัดการรูปภาพ — ภาพลิงก์หน้าแรก</h2>
               <button @click="editingSection = null" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 text-slate-400">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
               </button>

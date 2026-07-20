@@ -48,10 +48,10 @@ function isFileAttachment(url) {
 }
 
 function attachmentLabel(url) {
-  return isFileAttachment(url) ? 'เอกสารแนบ' : 'ลิงค์ที่เกี่ยวข้อง'
+  return isFileAttachment(url) ? 'เอกสารแนบ' : 'ลิงก์ที่เกี่ยวข้อง'
 }
 function attachmentBtnLabel(url) {
-  return isFileAttachment(url) ? 'ดาวน์โหลด' : 'เปิดลิงค์'
+  return isFileAttachment(url) ? 'ดาวน์โหลด' : 'เปิดลิงก์'
 }
 function attachmentIcon(url) {
   return isFileAttachment(url)

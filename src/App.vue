@@ -92,7 +92,7 @@ function fitFontSize(text, { min, max, maxCqw, avgChar = 0.54 }) {
 const titleFontSize = computed(() => fitFontSize(areaName.value, { min: 8, max: 19, maxCqw: 6.5 }))
 const subtitleFontSize = computed(() => fitFontSize(areaShort.value, { min: 7, max: 13, maxCqw: 4.5 }))
 
-// navItems ผสม: หน้าแรก + DB groups + ลิงค์คงที่
+// navItems ผสม: หน้าแรก + DB groups + ลิงก์คงที่
 const staticBefore = [
   { key: 'home', label: 'หน้าแรก', to: '/' },
 ]

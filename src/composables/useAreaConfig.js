@@ -46,7 +46,7 @@ export const DEFAULT_HOME_SECTIONS = [
   { key: 'services',        label: 'บริการออนไลน์',  subtitle: 'E-Service Center', title: 'บริการออนไลน์',                      visible: true,  bg: '#f8fafc', bg2: '#e2e8f0', bg_type: 'solid', order: 5 },
   { key: 'cta',             label: 'CTA Banner',      subtitle: '',                 title: 'ระบบกลุ่มนิเทศ ติดตามและประเมินผล', visible: true,  bg: '#ffffff', bg2: '#f1f5f9', bg_type: 'solid', order: 6 },
 ]
-// image_gallery: เพิ่มได้เองผ่านปุ่ม "+ เพิ่มเซกชันภาพลิงค์" ใน AdminHomeSectionsView.vue — ไม่ fix ไว้ล่วงหน้า
+// image_gallery: เพิ่มได้เองผ่านปุ่ม "+ เพิ่มเซกชันภาพลิงก์" ใน AdminHomeSectionsView.vue — ไม่ fix ไว้ล่วงหน้า
 // เพราะเพิ่มได้หลายชุด แต่ละ entry มี key ไม่ซ้ำ (image_gallery_<timestamp>) + field gallery:{layout,title,items} ฝังในตัว
 
 // ── Default page headers (ว่างเปล่า = ทุกหน้าใช้ icon/title default ของไฟล์ตัวเอง) ──
@@ -81,7 +81,7 @@ const DEFAULTS = {
     { key:'nitet',    label:'กลุ่มนิเทศติดตามฯ',   icon:'eye',       type:'internal', url:'/nithet',    visible:true, order:1 },
     { key:'download', label:'ดาวน์โหลดเอกสาร',     icon:'download',  type:'internal', url:'/download',  visible:true, order:2 },
     { key:'qrcode',   label:'สร้าง QR Code',        icon:'qrcode',    type:'internal', url:'/qrcode',    visible:true, order:3 },
-    { key:'urlshort', label:'ย่อลิงค์',             icon:'link',      type:'internal', url:'/url-short', visible:true, order:4 },
+    { key:'urlshort', label:'ย่อลิงก์',             icon:'link',      type:'internal', url:'/url-short', visible:true, order:4 },
     { key:'sar',      label:'ระบบ SAR Online',       icon:'chart-bar', type:'external', url:'',           visible:true, order:5 },
     { key:'media',    label:'คลังสื่อนวัตกรรม',     icon:'beaker',    type:'external', url:'',           visible:true, order:6 },
     { key:'training', label:'ลงทะเบียนอบรม',        icon:'clipboard', type:'external', url:'',           visible:true, order:7 },

@@ -339,7 +339,7 @@ function validateQuestions(qList) {
       const needUpload = ['upload','both'].includes(q.evidence_type)
       const needLink   = ['url','both'].includes(q.evidence_type)
       if (needUpload && !evidenceFileUrls.value[q.id]) return `กรุณาอัปโหลดหลักฐานคำถาม "${q.question_text}"`
-      if (needLink   && !evidenceLinks.value[q.id]?.trim()) return `กรุณาใส่ลิงค์หลักฐานคำถาม "${q.question_text}"`
+      if (needLink   && !evidenceLinks.value[q.id]?.trim()) return `กรุณาใส่ลิงก์หลักฐานคำถาม "${q.question_text}"`
     }
   }
   return null
@@ -782,14 +782,14 @@ onMounted(() => { fetchConfig(); loadForm() })
                 </div>
               </div>
 
-              <!-- ลิงค์ URL -->
+              <!-- ลิงก์ URL -->
               <div v-if="['url','both'].includes(q.evidence_type)">
                 <div class="relative">
                   <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244"/>
                   </svg>
                   <input v-model="evidenceLinks[q.id]" type="url"
-                    placeholder="https://drive.google.com/... หรือลิงค์หลักฐานอื่น ๆ"
+                    placeholder="https://drive.google.com/... หรือลิงก์หลักฐานอื่น ๆ"
                     class="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-primary"/>
                 </div>
               </div>

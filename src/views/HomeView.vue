@@ -243,7 +243,7 @@ const quickLinks = [
     fill: 'none',
   },
   {
-    label: 'ย่อลิงค์', href: '#/url-short',
+    label: 'ย่อลิงก์', href: '#/url-short',
     path: 'M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244',
     fill: 'none',
   },
@@ -430,7 +430,7 @@ const stats = [
                 <p v-if="slide.subtitle" class="text-white/75 mt-2 text-sm md:text-lg">{{ slide.subtitle }}</p>
               </div>
             </div>
-            <!-- คลิกแบนเนอร์เพื่อเปิดลิงค์ (image/video เท่านั้น — youtube มี play button ของตัวเอง) -->
+            <!-- คลิกแบนเนอร์เพื่อเปิดลิงก์ (image/video เท่านั้น — youtube มี play button ของตัวเอง) -->
             <component v-if="slide.banner_type !== 'youtube' && slide.link_type && slide.link_type !== 'none' && slide.link_url"
               :is="slide.link_type === 'external' ? 'a' : 'router-link'"
               :href="slide.link_type === 'external' ? slide.link_url : undefined"
@@ -948,7 +948,7 @@ const stats = [
           <div class="max-w-7xl mx-auto px-4">
             <div class="text-center mb-12">
               <span v-if="sec.subtitle" class="text-secondary font-bold uppercase text-xs tracking-[0.18em] mb-2 block">{{ sec.subtitle }}</span>
-              <h2 class="text-3xl md:text-4xl font-extrabold text-slate-900 accent-line-center">{{ sec.title || 'ภาพลิงค์' }}</h2>
+              <h2 class="text-3xl md:text-4xl font-extrabold text-slate-900 accent-line-center">{{ sec.title || 'ภาพลิงก์' }}</h2>
             </div>
             <ImageLinkGallery :layout="sec.gallery.layout" :items="sec.gallery.items"/>
           </div>

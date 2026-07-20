@@ -12,7 +12,7 @@ const router = useRouter()
 const { fetchConfig } = useAreaConfig()
 onMounted(fetchConfig)
 const header = usePageHeader('urlShort', {
-  icon: 'link', title: 'ย่อลิงค์', subtitle: 'ย่อ URL ยาวให้สั้นและจำง่าย เหมาะสำหรับแชร์ใน LINE หรือ QR Code',
+  icon: 'link', title: 'ย่อลิงก์', subtitle: 'ย่อ URL ยาวให้สั้นและจำง่าย เหมาะสำหรับแชร์ใน LINE หรือ QR Code',
   align: 'center',
 })
 
@@ -90,7 +90,7 @@ async function shorten() {
   if (!row) {
     return Swal.fire({
       icon: 'error',
-      title: lastError?.code === '23505' ? 'ชื่อย่อนี้ถูกใช้ไปแล้ว' : 'สร้างลิงค์ไม่สำเร็จ',
+      title: lastError?.code === '23505' ? 'ชื่อย่อนี้ถูกใช้ไปแล้ว' : 'สร้างลิงก์ไม่สำเร็จ',
       text: lastError?.code === '23505' ? 'กรุณาเลือกชื่อย่ออื่น' : 'ลองใหม่อีกครั้ง',
       confirmButtonColor: '#4f46e5',
     })
@@ -161,7 +161,7 @@ onMounted(async () => {
       <div v-else-if="!user" class="bg-white rounded-3xl border border-slate-100 shadow-sm p-8 text-center">
         <div class="text-4xl mb-3">🔒</div>
         <p class="font-bold text-slate-700 mb-1">ต้องเข้าสู่ระบบก่อนใช้งาน</p>
-        <p class="text-sm text-slate-400 mb-5">เครื่องมือย่อลิงค์เปิดให้สำหรับครูและศึกษานิเทศก์ที่เป็นสมาชิกของระบบ</p>
+        <p class="text-sm text-slate-400 mb-5">เครื่องมือย่อลิงก์เปิดให้สำหรับครูและศึกษานิเทศก์ที่เป็นสมาชิกของระบบ</p>
         <router-link to="/login"
           class="inline-flex items-center gap-2 px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-xl shadow-md transition-all">
           เข้าสู่ระบบ / สมัครสมาชิก
@@ -186,7 +186,7 @@ onMounted(async () => {
           <div>
             <label class="block text-sm font-bold text-slate-700 mb-1.5">
               ชื่อเรื่อง
-              <span class="text-slate-400 font-normal ml-1">— ไม่บังคับ ใช้ช่วยให้จำว่าลิงค์นี้คืออะไร</span>
+              <span class="text-slate-400 font-normal ml-1">— ไม่บังคับ ใช้ช่วยให้จำว่าลิงก์นี้คืออะไร</span>
             </label>
             <input v-model="title" type="text" placeholder="เช่น แผนนิเทศ 2567"
               class="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400 bg-white transition-all"/>
@@ -213,7 +213,7 @@ onMounted(async () => {
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
               <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
             </svg>
-            <span v-if="!loading">🔗 ย่อลิงค์</span>
+            <span v-if="!loading">🔗 ย่อลิงก์</span>
             <span v-else>กำลังสร้าง...</span>
           </button>
         </div>
@@ -221,7 +221,7 @@ onMounted(async () => {
         <!-- Result -->
         <Transition enter-active-class="transition duration-300" enter-from-class="opacity-0 translate-y-2" enter-to-class="opacity-100 translate-y-0">
           <div v-if="result" class="mt-6 bg-indigo-50 border border-indigo-200 rounded-2xl p-5">
-            <p class="text-xs font-bold text-indigo-600 uppercase tracking-wider mb-3">✅ สร้างลิงค์สำเร็จ</p>
+            <p class="text-xs font-bold text-indigo-600 uppercase tracking-wider mb-3">✅ สร้างลิงก์สำเร็จ</p>
             <div class="flex items-center gap-3 bg-white rounded-xl border border-indigo-100 px-4 py-3 mb-3">
               <span class="font-mono text-sm font-bold text-indigo-700 flex-1 truncate">{{ result.short }}</span>
               <button @click="copyShort"
@@ -234,7 +234,7 @@ onMounted(async () => {
             <p class="text-xs text-slate-500 truncate">→ {{ result.target }}</p>
             <div class="flex items-center gap-4 mt-4">
               <button @click="goToQr(result.short)" class="text-xs font-bold text-emerald-600 hover:underline">📱 สร้าง QR Code</button>
-              <button @click="reset" class="text-xs font-bold text-indigo-600 hover:underline">+ ย่อลิงค์ใหม่</button>
+              <button @click="reset" class="text-xs font-bold text-indigo-600 hover:underline">+ ย่อลิงก์ใหม่</button>
             </div>
           </div>
         </Transition>
@@ -243,12 +243,12 @@ onMounted(async () => {
       <!-- History -->
       <div class="bg-white rounded-3xl border border-slate-100 shadow-sm p-6">
         <h2 class="font-extrabold text-slate-800 mb-4 flex items-center gap-2">
-          <span>📋</span> ลิงค์ของฉัน
+          <span>📋</span> ลิงก์ของฉัน
         </h2>
         <div v-if="historyLoading" class="space-y-2">
           <div v-for="i in 3" :key="i" class="h-16 bg-slate-100 rounded-xl animate-pulse"></div>
         </div>
-        <p v-else-if="history.length === 0" class="text-center text-sm text-slate-400 py-6">ยังไม่มีลิงค์ที่สร้างไว้</p>
+        <p v-else-if="history.length === 0" class="text-center text-sm text-slate-400 py-6">ยังไม่มีลิงก์ที่สร้างไว้</p>
         <div v-else class="space-y-3">
           <div v-for="h in history" :key="h.id"
             class="flex items-center gap-3 p-3 bg-slate-50 rounded-xl hover:bg-indigo-50 transition-colors group">

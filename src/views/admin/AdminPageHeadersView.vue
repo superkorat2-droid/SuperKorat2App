@@ -29,7 +29,7 @@ const KNOWN_ROUTES = [
   { key: 'school-documents', label: 'หนังสือถึงโรงเรียน' },
   { key: 'contact',        label: 'ติดต่อสอบถาม' },
   { key: 'download',       label: 'ดาวน์โหลดเอกสาร' },
-  { key: 'urlShort',       label: 'ย่อลิงค์' },
+  { key: 'urlShort',       label: 'ย่อลิงก์' },
   { key: 'qrcode',         label: 'สร้าง QR Code' },
 ]
 function routeLabel(key) { return KNOWN_ROUTES.find(r => r.key === key)?.label || key }

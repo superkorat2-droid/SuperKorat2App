@@ -10,7 +10,7 @@ const route = useRoute()
 const { fetchConfig } = useAreaConfig()
 onMounted(fetchConfig)
 const header = usePageHeader('qrcode', {
-  icon: 'qrcode', title: 'สร้าง QR Code', subtitle: 'สร้าง QR Code จากข้อความหรือลิงค์ พร้อมปรับแต่งสี ขนาด และดาวน์โหลดได้ทันที',
+  icon: 'qrcode', title: 'สร้าง QR Code', subtitle: 'สร้าง QR Code จากข้อความหรือลิงก์ พร้อมปรับแต่งสี ขนาด และดาวน์โหลดได้ทันที',
   align: 'center',
 })
 

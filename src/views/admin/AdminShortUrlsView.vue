@@ -83,7 +83,7 @@ async function toggleActive(h) {
 
 async function deleteLink(h) {
   const res = await Swal.fire({
-    title: 'ลบลิงค์นี้?', icon: 'warning',
+    title: 'ลบลิงก์นี้?', icon: 'warning',
     showCancelButton: true, confirmButtonColor: '#ef4444',
     confirmButtonText: 'ลบ', cancelButtonText: 'ยกเลิก',
   })
@@ -123,9 +123,9 @@ function formatDate(iso) {
     <div class="flex flex-wrap items-center justify-between gap-3">
       <div>
         <h1 class="text-2xl font-extrabold text-slate-800 flex items-center gap-2">🔗 จัดการ URL ย่อ</h1>
-        <p class="text-sm text-slate-500 mt-0.5">ลิงค์ย่อทั้งหมดที่สมาชิกสร้างไว้ในระบบ</p>
+        <p class="text-sm text-slate-500 mt-0.5">ลิงก์ย่อทั้งหมดที่สมาชิกสร้างไว้ในระบบ</p>
       </div>
-      <input v-model="searchQ" type="text" placeholder="ค้นหาชื่อเรื่อง / slug / ลิงค์..."
+      <input v-model="searchQ" type="text" placeholder="ค้นหาชื่อเรื่อง / slug / ลิงก์..."
         class="px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 w-64"/>
     </div>
 
@@ -133,7 +133,7 @@ function formatDate(iso) {
     <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
       <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 flex items-center gap-3">
         <div class="text-2xl">🔗</div>
-        <div><p class="text-xl font-extrabold text-slate-800">{{ list.length }}</p><p class="text-xs text-slate-500">ลิงค์ทั้งหมด</p></div>
+        <div><p class="text-xl font-extrabold text-slate-800">{{ list.length }}</p><p class="text-xs text-slate-500">ลิงก์ทั้งหมด</p></div>
       </div>
       <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 flex items-center gap-3">
         <div class="text-2xl">✅</div>
@@ -154,8 +154,8 @@ function formatDate(iso) {
     <div v-else-if="filtered.length === 0"
       class="flex flex-col items-center justify-center py-20 bg-white rounded-3xl border-2 border-dashed border-slate-200">
       <div class="text-5xl mb-3">🔗</div>
-      <p class="font-bold text-slate-600 mb-1">ไม่มีลิงค์ย่อ</p>
-      <p class="text-sm text-slate-400">{{ searchQ ? 'ไม่พบลิงค์ที่ค้นหา' : 'สมาชิกสามารถสร้างได้ที่หน้า "ย่อลิงค์"' }}</p>
+      <p class="font-bold text-slate-600 mb-1">ไม่มีลิงก์ย่อ</p>
+      <p class="text-sm text-slate-400">{{ searchQ ? 'ไม่พบลิงก์ที่ค้นหา' : 'สมาชิกสามารถสร้างได้ที่หน้า "ย่อลิงก์"' }}</p>
     </div>
 
     <!-- List -->
@@ -163,7 +163,7 @@ function formatDate(iso) {
       <table class="w-full text-sm">
         <thead>
           <tr class="border-b border-slate-100 bg-slate-50">
-            <th class="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">ลิงค์</th>
+            <th class="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">ลิงก์</th>
             <th class="px-4 py-3 text-center text-xs font-bold text-slate-500 uppercase tracking-wider hidden sm:table-cell">QR</th>
             <th class="px-4 py-3 text-center text-xs font-bold text-slate-500 uppercase tracking-wider hidden lg:table-cell">คลิก</th>
             <th class="px-4 py-3 text-center text-xs font-bold text-slate-500 uppercase tracking-wider hidden md:table-cell">สร้างเมื่อ</th>
@@ -193,7 +193,7 @@ function formatDate(iso) {
             </td>
             <td class="px-4 py-3 text-right">
               <div class="flex items-center justify-end gap-1.5">
-                <button @click="copyLink(h)" title="คัดลอกลิงค์" class="px-3 py-1.5 bg-slate-50 text-slate-600 text-xs font-bold rounded-xl hover:bg-slate-100 transition-all">📋</button>
+                <button @click="copyLink(h)" title="คัดลอกลิงก์" class="px-3 py-1.5 bg-slate-50 text-slate-600 text-xs font-bold rounded-xl hover:bg-slate-100 transition-all">📋</button>
                 <button @click="downloadQr(h)" title="ดาวน์โหลด QR" class="px-3 py-1.5 bg-emerald-50 text-emerald-600 text-xs font-bold rounded-xl hover:bg-emerald-100 transition-all">📥</button>
                 <button @click="openEdit(h)" title="แก้ไข" class="px-3 py-1.5 bg-blue-50 text-blue-600 text-xs font-bold rounded-xl hover:bg-blue-100 transition-all">✏️</button>
                 <button @click="deleteLink(h)" title="ลบ" class="px-3 py-1.5 bg-red-50 text-red-500 text-xs font-bold rounded-xl hover:bg-red-100 transition-all">🗑️</button>
@@ -212,12 +212,12 @@ function formatDate(iso) {
           class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <div class="bg-white rounded-3xl shadow-2xl w-full max-w-lg max-h-[92vh] flex flex-col overflow-hidden">
             <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100 flex-shrink-0">
-              <h3 class="font-extrabold text-slate-800 text-lg">✏️ แก้ไขลิงค์ย่อ</h3>
+              <h3 class="font-extrabold text-slate-800 text-lg">✏️ แก้ไขลิงก์ย่อ</h3>
               <button @click="showModal = false" class="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-slate-100 text-slate-400 text-lg">✕</button>
             </div>
             <div class="flex-1 overflow-y-auto p-6 space-y-4">
               <div>
-                <label class="block text-xs font-bold text-slate-600 mb-1">ลิงค์สั้น</label>
+                <label class="block text-xs font-bold text-slate-600 mb-1">ลิงก์สั้น</label>
                 <p class="font-mono text-sm font-bold text-indigo-600">{{ BASE }}{{ form.slug }}</p>
               </div>
               <div>

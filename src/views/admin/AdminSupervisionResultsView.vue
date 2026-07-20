@@ -476,7 +476,7 @@ function formatDate(d) {
               </span>
               <span v-if="q.evidence_type && q.evidence_type !== 'none'"
                 class="text-xs bg-amber-100 text-amber-700 font-bold px-2 py-0.5 rounded-full">
-                {{ { upload:'📎 อัปโหลด', url:'🔗 ลิงค์', both:'📎🔗 ทั้งสอง' }[q.evidence_type] }}
+                {{ { upload:'📎 อัปโหลด', url:'🔗 ลิงก์', both:'📎🔗 ทั้งสอง' }[q.evidence_type] }}
                 {{ evidenceCount(q) > 0 ? `(${evidenceCount(q)})` : '' }}
               </span>
             </div>
@@ -598,7 +598,7 @@ function formatDate(d) {
                       <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244"/>
                       </svg>
-                      🔗 ลิงค์อ้างอิง
+                      🔗 ลิงก์อ้างอิง
                     </a>
                   </div>
                 </div>
@@ -621,7 +621,7 @@ function formatDate(d) {
                       <a v-if="ansObj.evidence_file_url" :href="ansObj.evidence_file_url" target="_blank"
                         class="text-blue-600 hover:underline">📎 ดูไฟล์</a>
                       <a v-if="ansObj.evidence_link_url" :href="ansObj.evidence_link_url" target="_blank"
-                        class="text-purple-600 hover:underline">🔗 ลิงค์</a>
+                        class="text-purple-600 hover:underline">🔗 ลิงก์</a>
                     </div>
                   </div>
                 </template>

@@ -88,7 +88,7 @@ async function changeStatus(form, status) {
 
 function copyPublicLink(form) {
   if (!form.allow_public) {
-    Swal.fire({ icon: 'warning', title: 'ยังไม่ได้เปิดลิงค์สาธารณะ', text: 'แก้ไขฟอร์มและเปิด "อนุญาตลิงค์สาธารณะ" ก่อน' })
+    Swal.fire({ icon: 'warning', title: 'ยังไม่ได้เปิดลิงก์สาธารณะ', text: 'แก้ไขฟอร์มและเปิด "อนุญาตลิงก์สาธารณะ" ก่อน' })
     return
   }
   const url = `${window.location.origin}${window.location.pathname}#/supervision/${form.public_token}`
@@ -98,7 +98,7 @@ function copyPublicLink(form) {
 
 async function downloadQR(form) {
   if (!form.allow_public) {
-    Swal.fire({ icon: 'warning', title: 'ยังไม่ได้เปิดลิงค์สาธารณะ', text: 'แก้ไขฟอร์มและเปิด "อนุญาตลิงค์สาธารณะ" ก่อน' })
+    Swal.fire({ icon: 'warning', title: 'ยังไม่ได้เปิดลิงก์สาธารณะ', text: 'แก้ไขฟอร์มและเปิด "อนุญาตลิงก์สาธารณะ" ก่อน' })
     return
   }
   const url = `${window.location.origin}${window.location.pathname}#/supervision/${form.public_token}`
@@ -143,7 +143,7 @@ onMounted(async () => {
           <SvgIcon name="clipboard" class="w-6 h-6 text-primary"/>
           แบบนิเทศติดตาม
         </h1>
-        <p class="text-sm text-slate-500 mt-0.5">สร้างและจัดการแบบนิเทศ — โรงเรียนกรอกผ่านระบบหรือลิงค์สาธารณะ</p>
+        <p class="text-sm text-slate-500 mt-0.5">สร้างและจัดการแบบนิเทศ — โรงเรียนกรอกผ่านระบบหรือลิงก์สาธารณะ</p>
       </div>
       <button @click="router.push('/dashboard/supervision/new')"
         class="flex items-center gap-1.5 px-5 py-2.5 text-sm font-bold bg-primary text-white rounded-2xl shadow-md hover:-translate-y-0.5 transition-all">
@@ -199,7 +199,7 @@ onMounted(async () => {
                 {{ STATUS_LABEL[form.status] }}
               </span>
               <span v-if="form.allow_public" class="text-xs bg-blue-100 text-blue-700 font-bold px-2.5 py-0.5 rounded-full">
-                🔗 ลิงค์สาธารณะ
+                🔗 ลิงก์สาธารณะ
               </span>
               <span v-if="form.deadline && new Date(form.deadline) < new Date()"
                 class="text-xs bg-amber-100 text-amber-700 font-bold px-2.5 py-0.5 rounded-full">
@@ -241,7 +241,7 @@ onMounted(async () => {
               :class="['flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl transition-colors',
                 form.allow_public ? 'bg-blue-100 text-blue-700 hover:bg-blue-200' : 'bg-slate-100 text-slate-400 hover:bg-slate-200']">
               <SvgIcon name="link" class="w-3.5 h-3.5"/>
-              ลิงค์
+              ลิงก์
             </button>
             <!-- Download QR -->
             <button @click="downloadQR(form)"

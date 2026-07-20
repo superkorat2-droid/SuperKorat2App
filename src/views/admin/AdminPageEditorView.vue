@@ -55,7 +55,7 @@ const BLOCK_TYPES = [
   { type: 'embed',   label: 'Embed URL', iconName: 'globe'     },
   { type: 'html',    label: 'HTML',      iconName: 'beaker'    },
   { type: 'divider', label: 'เส้นแบ่ง', iconName: 'plus'      },
-  { type: 'gallery',    label: 'ภาพลิงค์',        iconName: 'link'         },
+  { type: 'gallery',    label: 'ภาพลิงก์',        iconName: 'link'         },
   { type: 'media-text', label: 'ภาพ+ข้อความ',    iconName: 'presentation' },
   { type: 'button',     label: 'ปุ่ม CTA',        iconName: 'star'         },
   { type: 'accordion',  label: 'Accordion/FAQ',   iconName: 'clipboard'    },

@@ -25,7 +25,7 @@ const savingGroups = ref(false)
 // nav_groups state (local copy for editing)
 const navGroups = ref([])
 
-const TYPE_LABELS  = { cms:'CMS', system:'ระบบ', link:'ลิงค์' }
+const TYPE_LABELS  = { cms:'CMS', system:'ระบบ', link:'ลิงก์' }
 
 // routes ทั้งหมดที่มีใน system
 const SYSTEM_ROUTES = [
@@ -34,7 +34,7 @@ const SYSTEM_ROUTES = [
   { route: '/schools',        label: 'ทำเนียบโรงเรียน' },
   { route: '/news',           label: 'ข่าวสาร' },
   { route: '/download',       label: 'ดาวน์โหลดเอกสาร' },
-  { route: '/url-short',      label: 'ย่อลิงค์' },
+  { route: '/url-short',      label: 'ย่อลิงก์' },
   { route: '/qrcode',         label: 'สร้าง QR Code' },
   { route: '/contact',        label: 'ติดต่อสอบถาม' },
   { route: '/nithet',         label: 'กลุ่มนิเทศ' },
@@ -448,7 +448,7 @@ function goHeaderSettings(p) {
                 class="mt-1 w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-primary bg-white">
                 <option value="cms">CMS (แก้เนื้อหาเอง)</option>
                 <option value="system">ระบบ (Vue component)</option>
-                <option value="link">ลิงค์ภายนอก</option>
+                <option value="link">ลิงก์ภายนอก</option>
               </select>
             </div>
             <div>
