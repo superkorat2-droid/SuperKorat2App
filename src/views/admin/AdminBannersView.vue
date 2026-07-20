@@ -50,6 +50,7 @@ const emptyForm = () => ({
   is_active:   true,
   is_pinned:   false,
   sort_order:  0,
+  duration_seconds: 7,
 })
 const form = ref(emptyForm())
 
@@ -150,6 +151,7 @@ async function saveBanner() {
     is_active:   form.value.is_active,
     is_pinned:   form.value.is_pinned,
     sort_order:  Number(form.value.sort_order) || 0,
+    duration_seconds: Math.max(Number(form.value.duration_seconds) || 7, 1),
   }
   let error
   if (form.value.id) {
@@ -618,6 +620,16 @@ const LINK_OPTIONS = [
                     {{ t.label }}
                   </button>
                 </div>
+              </div>
+
+              <!-- ─ ระยะเวลาแสดง ─ -->
+              <div>
+                <label class="section-label">แสดงนานกี่วินาที</label>
+                <input v-model.number="form.duration_seconds" type="number" min="1" step="1"
+                  class="input-field mt-2 w-28"/>
+                <p class="text-xs text-slate-400 mt-1">
+                  ค่าเริ่มต้น 7 วินาที — แนะนำเพิ่มถ้าเป็นวิดีโอ ให้มีเวลาดูจบก่อนเปลี่ยนไปแบนเนอร์ถัดไป
+                </p>
               </div>
 
               <!-- ─ Size recommendation ─ -->

@@ -36,7 +36,7 @@ function getBgStyle(sec) {
 const currentSlide   = ref(0)
 const banners        = ref([])
 const loadingBanners = ref(true)
-let slideInterval = null
+let slideTimer = null
 
 function extractYoutubeId(url) {
   if (!url) return ''
@@ -87,6 +87,18 @@ const prevSlide = () => {
     currentSlide.value = (currentSlide.value - 1 + banners.value.length) % banners.value.length
 }
 
+// ── ตัวจับเวลาเลื่อนสไลด์ — อ่านระยะเวลาต่อแบนเนอร์ (duration_seconds) แทนค่าคงที่เดียวกันหมด ──
+function scheduleNextSlide() {
+  clearTimeout(slideTimer)
+  if (banners.value.length <= 1) return
+  const seconds = banners.value[currentSlide.value]?.duration_seconds || 7
+  slideTimer = setTimeout(() => { nextSlide(); scheduleNextSlide() }, Math.max(seconds, 1) * 1000)
+}
+function goToSlide(i) {
+  currentSlide.value = i
+  scheduleNextSlide()
+}
+
 // ── ปัดซ้าย/ขวาเปลี่ยนแบนเนอร์ (มือถือ) ────────────────────────────
 // swiping = true เฉพาะตอนลากจริง (ระยะทางแนวนอน > แนวตั้ง และเกิน threshold)
 // ใช้กันไม่ให้ลิงก์ทับแบนเนอร์ทำงานตอนปัด แต่แตะเฉยๆ (ไม่ลาก) ลิงก์ยังทำงานปกติ
@@ -108,7 +120,7 @@ function onBannerTouchMove(e) {
 function onBannerTouchEnd(e) {
   if (!swiping.value) return
   const dx = e.changedTouches[0].clientX - touchStartX.value
-  if (Math.abs(dx) > 40) { dx < 0 ? nextSlide() : prevSlide() }
+  if (Math.abs(dx) > 40) { dx < 0 ? nextSlide() : prevSlide(); scheduleNextSlide() }
   // เผื่อ browser ยิง click ตามหลัง touchend ให้ onBannerLinkClick กันไว้อีกชั้น
   clearTimeout(swipeResetTimer)
   swipeResetTimer = setTimeout(() => { swiping.value = false }, 300)
@@ -194,8 +206,7 @@ onMounted(async () => {
   const { data: { session: s } } = await supabase.auth.getSession()
   userSession.value = s
   await Promise.all([fetchBanners(), fetchLatestNews()])
-  if (banners.value.length > 1)
-    slideInterval = setInterval(nextSlide, 7000)
+  scheduleNextSlide()
   if (needsSupervisionSection.value) fetchSupervisionForms()
   if (needsEduNewsSection.value) fetchEduNews()
   if (needsNithetCalendarSection.value) fetchNithetEvents()
@@ -210,7 +221,7 @@ onMounted(async () => {
   })
 })
 onUnmounted(() => {
-  if (slideInterval) clearInterval(slideInterval)
+  clearTimeout(slideTimer)
   clearTimeout(swipeResetTimer)
 })
 
@@ -436,17 +447,17 @@ const stats = [
 
         <!-- ตัวเลื่อนสไลด์ — อยู่ใต้แบนเนอร์ ไม่บังคลิก -->
         <div v-if="banners.length > 1" class="flex items-center justify-center gap-3 py-3 bg-slate-50 dark:bg-slate-950">
-          <button @click="prevSlide"
+          <button @click="prevSlide(); scheduleNextSlide()"
             class="w-7 h-7 rounded-full border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-400 hover:text-primary hover:border-primary transition-colors">
             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3">
               <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
             </svg>
           </button>
           <div class="flex gap-1.5">
-            <button v-for="(_, i) in banners" :key="i" @click="currentSlide = i"
+            <button v-for="(_, i) in banners" :key="i" @click="goToSlide(i)"
               :class="['rounded-full transition-all', i === currentSlide ? 'bg-primary w-5 h-1.5' : 'bg-slate-300 dark:bg-slate-600 w-1.5 h-1.5 hover:bg-slate-400']"/>
           </div>
-          <button @click="nextSlide"
+          <button @click="nextSlide(); scheduleNextSlide()"
             class="w-7 h-7 rounded-full border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-400 hover:text-primary hover:border-primary transition-colors">
             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3">
               <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
