@@ -66,7 +66,7 @@ function itemTag(item) {
           <img v-if="item.image_url" :src="item.image_url" :alt="item.title"
             class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"/>
         </div>
-        <div class="p-4">
+        <div class="p-4 text-center">
           <p v-if="item.title" class="font-bold text-slate-800 dark:text-slate-100 group-hover:text-primary transition-colors leading-snug break-words">{{ item.title }}</p>
           <p v-if="item.caption" class="text-xs text-slate-400 mt-1 break-words">{{ item.caption }}</p>
         </div>

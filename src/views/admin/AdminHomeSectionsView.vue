@@ -65,8 +65,12 @@ onMounted(async () => {
   const maxOrder   = Math.max(...raw.map(s => s.order || 0))
   const merged = [
     ...raw.map(s => {
-      const def = DEFAULT_HOME_SECTIONS.find(d => d.key === s.key)
-      const withSubtitle = { subtitle: def?.subtitle ?? '', ...s }  // backfill subtitle
+      // JSON round-trip ตัดขาดจาก readonly(config) ของ useAreaConfig ทั้ง object รวมถึง field ซ้อนอย่าง gallery —
+      // ถ้าใช้ { ...s } เฉยๆ (shallow) field ซ้อนจะยังอ้างอิง object เดิมที่เป็น readonly proxy อยู่ ทำให้แก้ไข/เพิ่มรูปในเซกชันภาพลิงก์ที่โหลดมาจาก DB ไม่ได้เลย (เงียบๆ ไม่มี error)
+      // (ใช้ structuredClone ไม่ได้ — โยน error กับ Vue reactive Proxy โดยตรง)
+      const plain = JSON.parse(JSON.stringify(s))
+      const def = DEFAULT_HOME_SECTIONS.find(d => d.key === plain.key)
+      const withSubtitle = { subtitle: def?.subtitle ?? '', ...plain }  // backfill subtitle
       // เซกชันภาพลิงก์เก่าที่อาจยังไม่มี field gallery (ข้อมูลก่อนอัปเดต) — เติมค่าว่างให้
       if (isGallerySection(withSubtitle) && !withSubtitle.gallery) {
         withSubtitle.gallery = { layout: 'card', title: '', items: [] }

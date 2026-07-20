@@ -91,25 +91,24 @@ async function onCropped({ blob }) {
 
       <div v-for="group in LAYOUT_GROUPS" :key="group">
         <p class="text-[11px] font-bold text-slate-400 mb-1.5">{{ group }}</p>
-        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-3">
-          <button v-for="l in LAYOUTS.filter(x => x.group === group)" :key="l.value" type="button" @click="gallery.layout = l.value"
-            :class="['text-left p-3 rounded-2xl border-2 transition-all',
+        <div class="grid grid-cols-3 sm:grid-cols-4 gap-2 mb-2">
+          <button v-for="l in LAYOUTS.filter(x => x.group === group)" :key="l.value" type="button" @click="gallery.layout = l.value" :title="l.hint"
+            :class="['text-left p-2 rounded-xl border-2 transition-all',
               gallery.layout === l.value ? 'border-primary bg-primary/5' : 'border-slate-200 hover:border-slate-300']">
             <!-- Preview swatch -->
-            <div v-if="l.value === 'list'" class="h-14 mb-2 flex flex-col gap-1 justify-center">
+            <div v-if="l.value === 'list'" class="h-8 mb-1.5 flex flex-col gap-0.5 justify-center">
               <div v-for="n in 3" :key="n" class="flex-1 flex items-center gap-1">
-                <div class="w-4 h-full rounded bg-slate-300 flex-shrink-0"></div>
-                <div class="flex-1 h-1.5 bg-slate-200 rounded-sm"></div>
+                <div class="w-3 h-full rounded bg-slate-300 flex-shrink-0"></div>
+                <div class="flex-1 h-1 bg-slate-200 rounded-sm"></div>
               </div>
             </div>
-            <div v-else class="h-14 mb-2 flex items-end gap-1">
-              <div v-for="n in 3" :key="n" class="flex-1 relative rounded bg-slate-200 overflow-hidden" :style="{ aspectRatio: l.ratio }">
-                <div v-if="l.caption === 'below' && n === 1" class="absolute inset-x-0 bottom-0 h-1.5 bg-slate-300"></div>
-                <div v-if="(l.caption === 'overlay' || l.caption === 'overlay-always') && n === 1" class="absolute inset-x-0 bottom-0 h-2.5 bg-slate-400/60"></div>
+            <div v-else class="h-8 mb-1.5 flex items-end gap-0.5">
+              <div v-for="n in 3" :key="n" class="flex-1 relative rounded-sm bg-slate-200 overflow-hidden" :style="{ aspectRatio: l.ratio }">
+                <div v-if="l.caption === 'below' && n === 1" class="absolute inset-x-0 bottom-0 h-1 bg-slate-300"></div>
+                <div v-if="(l.caption === 'overlay' || l.caption === 'overlay-always') && n === 1" class="absolute inset-x-0 bottom-0 h-1.5 bg-slate-400/60"></div>
               </div>
             </div>
-            <p class="text-xs font-bold text-slate-700">{{ l.label }}</p>
-            <p class="text-[10px] text-slate-400">{{ l.hint }}</p>
+            <p class="text-[11px] font-bold text-slate-700 leading-tight">{{ l.label }}</p>
           </button>
         </div>
       </div>
