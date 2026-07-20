@@ -1,27 +1,16 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed } from 'vue'
 import { supabase } from '../supabase'
 import ImageCropperModal from './ImageCropperModal.vue'
 import { useExternalUpload, externalUploadEnabled } from '../composables/useExternalUpload'
+import { useInternalPages } from '../composables/useInternalPages'
 
 // mutate โดยตรง (แบบเดียวกับ blocks.value[idx].url = url ใน AdminPageEditorView.vue)
 const props = defineProps({
   gallery: { type: Object, required: true }, // { layout, title, items }
 })
 
-// ── รายชื่อหน้าในเว็บ สำหรับเลือกลิงก์ภายในแทนการพิมพ์เอง (กันพิมพ์ path ผิด เช่นลืม /page/ นำหน้า) ──
-const internalPages = ref([])
-onMounted(async () => {
-  const { data } = await supabase.from('pages')
-    .select('slug, title, page_type, system_route')
-    .eq('is_published', true).order('title')
-  internalPages.value = (data || [])
-    .filter(p => p.page_type !== 'link')
-    .map(p => ({
-      title: p.title,
-      path: p.page_type === 'system' ? (p.system_route || `/${p.slug}`) : `/page/${p.slug}`,
-    }))
-})
+const { internalPages } = useInternalPages()
 
 const LAYOUTS = [
   { value: 'card',      group: 'การ์ด/รายการ', label: 'การ์ดแนวนอน 2:1',        hint: 'ภาพเต็มการ์ด + ข้อความซ้อนล่าง เสมอ', ratio: 2/1, size: '1200×600 px (2:1)', caption: 'overlay-always' },

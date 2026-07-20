@@ -32,6 +32,18 @@ function internalPath(url) {
   return url.startsWith('#') ? url.slice(1) : url
 }
 
+// v-bind object แทนการ bind :href/:to แยกทีละตัว — ถ้า bind :href="undefined" ตรงๆ บน <component :is="'router-link'">
+// จะไปทับ href ที่ RouterLink คำนวณเองผ่านกลไก fallthrough attribute ทำให้ href หายไป (แต่ยังคลิกได้เพราะ onClick ยังทำงาน)
+function linkAttrs(block) {
+  if (block.link_type === 'external' && block.link_url) {
+    return { href: block.link_url, target: '_blank', rel: 'noopener' }
+  }
+  if (block.link_type === 'internal' && block.link_url) {
+    return { to: internalPath(block.link_url) }
+  }
+  return {}
+}
+
 // ── Embed URL transform ───────────────────────────────────────────
 function toEmbedUrl(url, type) {
   if (!url) return url
@@ -132,8 +144,12 @@ watch(() => route.params.slug, s => { if (s) load(s) })
           <!-- IMAGE -->
           <figure v-else-if="block.type === 'image' && block.url"
             :class="['', block.align==='center' ? 'text-center' : block.align==='right' ? 'text-right' : 'text-left']">
-            <img :src="block.url" :class="['rounded-2xl shadow-md max-w-full',
-              block.align==='center' ? 'mx-auto' : block.align==='right' ? 'ml-auto' : '']"/>
+            <component :is="block.link_type === 'external' ? 'a' : block.link_type === 'internal' ? 'router-link' : 'div'"
+              v-bind="linkAttrs(block)"
+              class="inline-block">
+              <img :src="block.url" :class="['rounded-2xl shadow-md max-w-full',
+                block.align==='center' ? 'mx-auto' : block.align==='right' ? 'ml-auto' : '']"/>
+            </component>
             <figcaption v-if="block.caption"
               class="text-xs text-slate-400 mt-2 italic">{{ block.caption }}</figcaption>
           </figure>
@@ -183,10 +199,7 @@ watch(() => route.params.slug, s => { if (s) load(s) })
           <div v-else-if="block.type === 'button' && block.text"
             :class="['flex', block.align==='center' ? 'justify-center' : block.align==='right' ? 'justify-end' : 'justify-start']">
             <component :is="block.link_type === 'external' ? 'a' : 'router-link'"
-              :href="block.link_type === 'external' ? (block.link_url || '#') : undefined"
-              :to="block.link_type === 'internal' ? internalPath(block.link_url) : undefined"
-              :target="block.link_type === 'external' ? '_blank' : undefined"
-              :rel="block.link_type === 'external' ? 'noopener' : undefined"
+              v-bind="linkAttrs(block)"
               class="inline-block px-6 py-3 bg-primary hover:bg-primary-dark text-white font-bold rounded-2xl shadow-md hover:-translate-y-0.5 transition-all">
               {{ block.text }}
             </component>

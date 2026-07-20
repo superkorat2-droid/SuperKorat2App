@@ -291,6 +291,13 @@ const SERVICE_COLORS = [
   { chip:'bg-orange-100',  chipHover:'group-hover:bg-orange-600',  icon:'text-orange-600',  iconHover:'group-hover:text-white' },
 ]
 function serviceColor(i) { return SERVICE_COLORS[i % SERVICE_COLORS.length] }
+// v-bind object แทนการ bind :href/:to แยกทีละตัว — ถ้า bind :href="undefined" ตรงๆ บน <component :is="'router-link'">
+// จะไปทับ href ที่ RouterLink คำนวณเองผ่านกลไก fallthrough attribute ทำให้ href หายไป (แต่ยังคลิกได้เพราะ onClick ยังทำงาน)
+function serviceLinkAttrs(svc) {
+  return svc.type === 'external'
+    ? { href: svc.url || '#', target: '_blank', rel: 'noopener' }
+    : { to: svc.url || '#' }
+}
 
 function serviceHref(svc) {
   if (!svc.url) return '#'
@@ -923,10 +930,7 @@ const stats = [
                 <component
                   v-for="(svc, si) in configServices" :key="svc.key || svc.label"
                   :is="svc.type === 'external' ? 'a' : 'router-link'"
-                  :href="svc.type === 'external' ? (svc.url || '#') : undefined"
-                  :to="svc.type !== 'external' ? (svc.url || '#') : undefined"
-                  :target="svc.type === 'external' ? '_blank' : undefined"
-                  :rel="svc.type === 'external' ? 'noopener' : undefined"
+                  v-bind="serviceLinkAttrs(svc)"
                   class="group flex flex-col items-center p-6 bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1 hover:border-slate-200 transition-all duration-300 w-[calc(50%-8px)] md:w-[calc(25%-12px)]">
                   <div :class="['w-14 h-14 rounded-2xl flex items-center justify-center mb-4 transition-colors duration-300', serviceColor(si).chip, serviceColor(si).chipHover]">
                     <svg :class="['w-6 h-6 group-hover:scale-110 transition-all duration-300', serviceColor(si).icon, serviceColor(si).iconHover]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">

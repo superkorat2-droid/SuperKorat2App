@@ -23,16 +23,20 @@ const LAYOUT_META = {
 }
 function meta(layout) { return LAYOUT_META[layout] || LAYOUT_META.card }
 
-function itemHref(item) {
-  return item.link_type === 'external' ? item.link_url : undefined
-}
-function itemTo(item) {
-  if (item.link_type !== 'internal' || !item.link_url) return undefined
-  return item.link_url.startsWith('#') ? item.link_url.slice(1) : item.link_url
-}
 function itemTag(item) {
   if (!item.link_type || item.link_type === 'none' || !item.link_url) return 'div'
   return item.link_type === 'external' ? 'a' : 'router-link'
+}
+// v-bind object แทนการ bind :href/:to แยกทีละตัว — ถ้า bind :href="undefined" ตรงๆ บน <component :is="'router-link'">
+// จะไปทับ href ที่ RouterLink คำนวณเองผ่านกลไก fallthrough attribute ทำให้ href หายไป (แต่ยังคลิกได้เพราะ onClick ยังทำงาน)
+function linkAttrs(item) {
+  if (item.link_type === 'external' && item.link_url) {
+    return { href: item.link_url, target: '_blank', rel: 'noopener' }
+  }
+  if (item.link_type === 'internal' && item.link_url) {
+    return { to: item.link_url.startsWith('#') ? item.link_url.slice(1) : item.link_url }
+  }
+  return {}
 }
 </script>
 
@@ -43,9 +47,7 @@ function itemTag(item) {
     <!-- Pattern: full (ภาพเต็มการ์ด + ข้อความซ้อนทับด้านล่างเสมอ ไม่มี zoom hover) -->
     <div v-if="meta(layout).pattern === 'full'" class="grid gap-5" :class="meta(layout).cols">
       <component :is="itemTag(item)" v-for="item in items" :key="item.id"
-        :href="itemHref(item)" :to="itemTo(item)"
-        :target="item.link_type === 'external' ? '_blank' : undefined"
-        :rel="item.link_type === 'external' ? 'noopener' : undefined"
+        v-bind="linkAttrs(item)"
         :class="['group relative block bg-slate-100 dark:bg-slate-700 rounded-2xl overflow-hidden shadow-sm border border-slate-100 dark:border-slate-700 transition-all hover:shadow-lg hover:-translate-y-1', meta(layout).aspect]">
         <img v-if="item.image_url" :src="item.image_url" :alt="item.title" class="w-full h-full object-cover"/>
         <div v-if="item.title || item.caption" class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent p-3 pt-6">
@@ -58,9 +60,7 @@ function itemTag(item) {
     <!-- Pattern: card (ภาพ + หัวข้อใต้ภาพ เสมอ) -->
     <div v-else-if="meta(layout).pattern === 'card'" class="grid gap-5" :class="meta(layout).cols">
       <component :is="itemTag(item)" v-for="item in items" :key="item.id"
-        :href="itemHref(item)" :to="itemTo(item)"
-        :target="item.link_type === 'external' ? '_blank' : undefined"
-        :rel="item.link_type === 'external' ? 'noopener' : undefined"
+        v-bind="linkAttrs(item)"
         class="group block bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm overflow-hidden transition-all hover:shadow-lg hover:-translate-y-1">
         <div :class="['bg-slate-100 dark:bg-slate-700 overflow-hidden', meta(layout).aspect]">
           <img v-if="item.image_url" :src="item.image_url" :alt="item.title"
@@ -76,9 +76,7 @@ function itemTag(item) {
     <!-- Pattern: plain (ภาพล้วน ไม่มีข้อความเลย) -->
     <div v-else-if="meta(layout).pattern === 'plain'" class="grid gap-3" :class="meta(layout).cols">
       <component :is="itemTag(item)" v-for="item in items" :key="item.id"
-        :href="itemHref(item)" :to="itemTo(item)"
-        :target="item.link_type === 'external' ? '_blank' : undefined"
-        :rel="item.link_type === 'external' ? 'noopener' : undefined"
+        v-bind="linkAttrs(item)"
         :class="['group relative block bg-slate-100 dark:bg-slate-700 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-all', meta(layout).aspect]">
         <img v-if="item.image_url" :src="item.image_url" :alt="item.title"
           class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"/>
@@ -88,9 +86,7 @@ function itemTag(item) {
     <!-- Pattern: caption (ภาพ + ข้อความซ้อนทับ แสดงตอน hover) -->
     <div v-else-if="meta(layout).pattern === 'caption'" class="grid gap-3" :class="meta(layout).cols">
       <component :is="itemTag(item)" v-for="item in items" :key="item.id"
-        :href="itemHref(item)" :to="itemTo(item)"
-        :target="item.link_type === 'external' ? '_blank' : undefined"
-        :rel="item.link_type === 'external' ? 'noopener' : undefined"
+        v-bind="linkAttrs(item)"
         :class="['group relative block bg-slate-100 dark:bg-slate-700 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-all', meta(layout).aspect]">
         <img v-if="item.image_url" :src="item.image_url" :alt="item.title"
           class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"/>
@@ -103,9 +99,7 @@ function itemTag(item) {
     <!-- Pattern: list (ภาพสี่เหลี่ยมซ้าย + ข้อความขวา) -->
     <div v-else class="space-y-3">
       <component :is="itemTag(item)" v-for="item in items" :key="item.id"
-        :href="itemHref(item)" :to="itemTo(item)"
-        :target="item.link_type === 'external' ? '_blank' : undefined"
-        :rel="item.link_type === 'external' ? 'noopener' : undefined"
+        v-bind="linkAttrs(item)"
         class="group flex items-center gap-4 bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm p-3 transition-all hover:shadow-md hover:border-primary/30">
         <div class="w-16 h-16 flex-shrink-0 bg-slate-100 dark:bg-slate-700 rounded-xl overflow-hidden">
           <img v-if="item.image_url" :src="item.image_url" :alt="item.title" class="w-full h-full object-cover"/>

@@ -8,7 +8,9 @@ import { useExternalUpload, externalUploadEnabled, deleteUploadedFile } from '..
 import IconPicker from '../../components/IconPicker.vue'
 import ImageLinkGalleryEditor from '../../components/ImageLinkGalleryEditor.vue'
 import { BG_TYPES, BG_PRESETS, GRADIENT_PRESETS, getBgStyle } from '../../composables/useBgStyle'
+import { useInternalPages } from '../../composables/useInternalPages'
 
+const { internalPages } = useInternalPages()
 const route  = useRoute()
 const router = useRouter()
 
@@ -66,7 +68,7 @@ function newBlock(type) {
   switch (type) {
     case 'heading':     return { ...base, level: 'h2', text: '', size: '', align: 'left', color: '' }
     case 'text':        return { ...base, text: '' }
-    case 'image':       return { ...base, url: '', caption: '', align: 'center' }
+    case 'image':       return { ...base, url: '', caption: '', align: 'center', link_type: 'none', link_url: '' }
     case 'embed':       return { ...base, url: '', embed_type: 'youtube', aspect: '16/9' }
     case 'html':        return { ...base, code: '' }
     case 'divider':     return { ...base }
@@ -542,6 +544,21 @@ async function clearHeaderMedia() {
                   <option value="right">ขวา</option>
                 </select>
               </div>
+              <div class="flex gap-2 mb-2">
+                <select v-model="block.link_type" class="px-2 py-1.5 border border-slate-200 rounded-xl text-xs bg-white">
+                  <option value="none">ไม่มีลิงก์</option>
+                  <option value="internal">ลิงก์ภายใน</option>
+                  <option value="external">ลิงก์ภายนอก</option>
+                </select>
+                <input v-if="block.link_type !== 'none'" v-model="block.link_url" type="text"
+                  :placeholder="block.link_type === 'internal' ? '/page/xxx' : 'https://...'"
+                  class="flex-1 px-3 py-1.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-primary font-mono"/>
+              </div>
+              <select v-if="block.link_type === 'internal'" @change="block.link_url = $event.target.value; $event.target.value = ''"
+                class="w-full px-2.5 py-1.5 mb-2 border border-slate-200 rounded-xl text-xs bg-white text-slate-500 focus:outline-none focus:border-primary">
+                <option value="">— หรือเลือกจากหน้าที่มีอยู่ —</option>
+                <option v-for="p in internalPages" :key="p.path" :value="p.path">{{ p.title }} ({{ p.path }})</option>
+              </select>
               <img v-if="block.url" :src="block.url" :class="['max-h-48 rounded-xl border border-slate-200',
                 block.align==='center' ? 'mx-auto' : block.align==='right' ? 'ml-auto' : '']"/>
             </template>
@@ -620,6 +637,11 @@ async function clearHeaderMedia() {
                   :placeholder="block.link_type === 'internal' ? '/page/xxx' : 'https://...'"
                   class="flex-1 px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-primary font-mono"/>
               </div>
+              <select v-if="block.link_type === 'internal'" @change="block.link_url = $event.target.value; $event.target.value = ''"
+                class="w-full px-2.5 py-1.5 mb-2 border border-slate-200 rounded-xl text-xs bg-white text-slate-500 focus:outline-none focus:border-primary">
+                <option value="">— หรือเลือกจากหน้าที่มีอยู่ —</option>
+                <option v-for="p in internalPages" :key="p.path" :value="p.path">{{ p.title }} ({{ p.path }})</option>
+              </select>
               <select v-model="block.align" class="px-2 py-1 border border-slate-200 rounded-xl text-xs bg-white">
                 <option value="left">ชิดซ้าย</option>
                 <option value="center">กึ่งกลาง</option>
