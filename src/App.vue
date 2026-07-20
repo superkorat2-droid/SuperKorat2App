@@ -37,8 +37,40 @@ const areaShort = computed(() => {
   const n = config.value?.area_number || ''
   return (t || p || n) ? `${t}${p ? ' ' + p : ''}${n ? ' ' + n : ''}` : 'สำนักงานเขตพื้นที่การศึกษา'
 })
-const contactPhone = computed(() => config.value?.contact_phone || '')
-const contactEmail = computed(() => config.value?.contact_email || '')
+const contactPhone   = computed(() => config.value?.contact_phone || '')
+const contactEmail   = computed(() => config.value?.contact_email || '')
+const contactAddress = computed(() => config.value?.contact_address || '')
+const contactFax     = computed(() => config.value?.contact_fax || '')
+const siteWebsite    = computed(() => config.value?.website_url || '')
+const currentYear    = computed(() => new Date().getFullYear())
+
+// ── Footer: โซเชียล — SVG path เดียวกับที่ ContactView.vue ใช้ ──────────
+const FOOTER_ICONS = {
+  facebook: 'M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244',
+  line:     'M12 20.25c4.97 0 9-3.694 9-8.25s-4.03-8.25-9-8.25S3 7.444 3 12c0 2.104.859 4.023 2.273 5.48.432.447.74 1.04.586 1.641a4.483 4.483 0 01-.923 1.785A5.969 5.969 0 006 21c1.282 0 2.47-.402 3.445-1.087.81.22 1.668.337 2.555.337z',
+  youtube:  'M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347a1.125 1.125 0 01-1.667-.985V5.653z',
+}
+const socialLinks = computed(() => {
+  const c = config.value || {}
+  const items = []
+  if (c.facebook_url) items.push({ svgPath: FOOTER_ICONS.facebook, label: 'Facebook', url: c.facebook_url })
+  if (c.line_url)     items.push({ svgPath: FOOTER_ICONS.line,     label: 'LINE',     url: c.line_url })
+  if (c.youtube_url)  items.push({ svgPath: FOOTER_ICONS.youtube,  label: 'YouTube',  url: c.youtube_url })
+  return items
+})
+
+// ── Footer: ลิงก์ด่วน — ใช้เมนูจริงชุดเดียวกับ navbar (navItems) ไม่ดึงข้อมูลซ้ำ ──
+const footerQuickLinks = computed(() => {
+  const flat = []
+  navItems.value.forEach(item => {
+    if (item.children) item.children.forEach(c => flat.push({ label: c.label, to: c.to, external: c.external }))
+    else if (item.to) flat.push({ label: item.label, to: item.to, external: false })
+  })
+  const home    = flat.find(l => l.to === '/')
+  const contact = flat.find(l => l.to === '/contact')
+  const middle  = flat.filter(l => l.to !== '/' && l.to !== '/contact').slice(0, 5)
+  return [home, ...middle, contact].filter(Boolean)
+})
 
 // ── ฟอนต์ชื่อระบบใน navbar: คำนวณตามความยาวข้อความจริง เพื่อไม่ให้ตัดบรรทัด ──
 // ใช้หน่วย cqw (container query width) แทน vw เพราะพื้นที่ว่างจริงถูกกินโดยโลโก้/ปุ่มต่างๆ
@@ -387,46 +419,83 @@ const handleLogout = async () => {
     </main>
 
     <!-- ── Footer (hidden in school portal) ─────────────────────────── -->
-    <footer v-if="!isSchoolRoute" class="bg-white border-t border-slate-200 mt-16">
-      <div class="max-w-7xl mx-auto px-6 py-10">
-        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-          <!-- Brand -->
-          <div class="flex items-center gap-3">
-            <div v-if="config?.logo_url"
-              class="w-9 h-9 rounded-lg overflow-hidden flex-shrink-0 border border-slate-200">
-              <img :src="config.logo_url" class="w-full h-full object-contain" alt="logo"/>
+    <footer v-if="!isSchoolRoute" class="relative overflow-hidden gradient-primary mt-16 font-sarabun">
+      <!-- ลายจุดจางๆ แบบเดียวกับ PageHero ให้พื้นดูมีมิติ ไม่แบนเรียบ -->
+      <div class="absolute inset-0 opacity-[0.07] pointer-events-none">
+        <svg width="100%" height="100%"><defs><pattern id="footer-dots" width="24" height="24" patternUnits="userSpaceOnUse"><circle cx="12" cy="12" r="1" fill="white"/></pattern></defs><rect width="100%" height="100%" fill="url(#footer-dots)"/></svg>
+      </div>
+
+      <div class="relative max-w-7xl mx-auto px-6 pt-12 pb-20 sm:pb-8">
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-10">
+
+          <!-- แบรนด์ -->
+          <div class="sm:col-span-2 md:col-span-1">
+            <div class="flex items-center gap-3">
+              <div v-if="config?.logo_url" class="w-10 h-10 rounded-xl overflow-hidden flex-shrink-0 bg-white/10 ring-1 ring-white/20">
+                <img :src="config.logo_url" class="w-full h-full object-contain" alt="logo"/>
+              </div>
+              <div v-else class="w-10 h-10 rounded-xl bg-white/15 backdrop-blur ring-1 ring-white/20 flex items-center justify-center flex-shrink-0">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0012 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75z"/>
+                </svg>
+              </div>
+              <div>
+                <p class="text-sm font-extrabold text-white leading-snug">{{ areaName }}</p>
+                <p class="text-xs text-white/60 mt-0.5">{{ areaShort }}</p>
+              </div>
             </div>
-            <div v-else class="w-9 h-9 bg-primary rounded-lg flex items-center justify-center flex-shrink-0">
-              <svg style="width:16px;height:16px" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" class="text-white">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0012 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75z"/>
-              </svg>
-            </div>
-            <div>
-              <p class="text-[13px] font-bold text-slate-800">{{ areaName }}</p>
-              <p class="text-xs text-slate-400 mt-0.5">{{ areaShort }}</p>
-            </div>
+            <p class="text-xs text-white/50 mt-4 leading-relaxed">
+              เว็บไซต์ทางการสำหรับให้บริการข้อมูลข่าวสาร งานนิเทศติดตาม และบริการออนไลน์ของเขตพื้นที่การศึกษา
+            </p>
           </div>
 
-          <!-- Contact + copyright -->
-          <div class="flex flex-col items-start md:items-end gap-1.5">
-            <div class="flex flex-wrap gap-x-4 gap-y-1 text-[13px] text-slate-500">
-              <a v-if="contactPhone" :href="`tel:${contactPhone}`"
-                class="flex items-center gap-1.5 hover:text-primary transition-colors">
-                <svg style="width:14px;height:14px" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z"/>
+          <!-- ลิงก์ด่วน -->
+          <div>
+            <p class="text-xs font-bold text-white/40 uppercase tracking-widest mb-4">ลิงก์ด่วน</p>
+            <ul class="space-y-2.5">
+              <li v-for="l in footerQuickLinks" :key="l.to">
+                <a v-if="l.external" :href="l.to" target="_blank" rel="noopener noreferrer"
+                  class="text-sm text-white/70 hover:text-white transition-colors">{{ l.label }}</a>
+                <RouterLink v-else :to="l.to" class="text-sm text-white/70 hover:text-white transition-colors">{{ l.label }}</RouterLink>
+              </li>
+            </ul>
+          </div>
+
+          <!-- ติดต่อเรา -->
+          <div>
+            <p class="text-xs font-bold text-white/40 uppercase tracking-widest mb-4">ติดต่อเรา</p>
+            <ul class="space-y-2.5 text-sm text-white/70">
+              <li v-if="contactAddress" class="leading-relaxed">{{ contactAddress }}</li>
+              <li v-if="contactPhone">
+                <a :href="`tel:${contactPhone}`" class="hover:text-white transition-colors">โทร. {{ contactPhone }}</a>
+                <span v-if="contactFax"> · แฟกซ์ {{ contactFax }}</span>
+              </li>
+              <li v-if="contactEmail">
+                <a :href="`mailto:${contactEmail}`" class="hover:text-white transition-colors">{{ contactEmail }}</a>
+              </li>
+              <li v-if="siteWebsite">
+                <a :href="siteWebsite" target="_blank" rel="noopener noreferrer" class="hover:text-white transition-colors">{{ siteWebsite.replace(/^https?:\/\//, '') }}</a>
+              </li>
+            </ul>
+          </div>
+
+          <!-- ติดตามเรา -->
+          <div v-if="socialLinks.length">
+            <p class="text-xs font-bold text-white/40 uppercase tracking-widest mb-4">ติดตามเรา</p>
+            <div class="flex gap-2.5">
+              <a v-for="s in socialLinks" :key="s.label" :href="s.url" target="_blank" rel="noopener noreferrer" :title="s.label"
+                class="w-9 h-9 rounded-full bg-white/10 backdrop-blur ring-1 ring-white/20 flex items-center justify-center hover:bg-white/20 transition-colors">
+                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" :d="s.svgPath"/>
                 </svg>
-                {{ contactPhone }}
-              </a>
-              <a v-if="contactEmail" :href="`mailto:${contactEmail}`"
-                class="flex items-center gap-1.5 hover:text-primary transition-colors">
-                <svg style="width:14px;height:14px" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75"/>
-                </svg>
-                {{ contactEmail }}
               </a>
             </div>
-            <p class="text-xs text-slate-400">© 2026 Developed by Winai · Educational Supervisor</p>
           </div>
+        </div>
+
+        <!-- แถบล่างสุด — ไม่ใส่อะไรชิดขวาสุด กันซ้อนกับปุ่มลอย "กลับขึ้นบน" -->
+        <div class="mt-10 pt-6 border-t border-white/10 text-center sm:text-left">
+          <p class="text-xs text-white/40">© {{ currentYear }} {{ areaName }} · สงวนลิขสิทธิ์</p>
         </div>
       </div>
     </footer>
