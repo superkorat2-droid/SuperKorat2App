@@ -69,6 +69,8 @@ const DEFAULTS = {
   line_url:        '',
   youtube_url:     '',
   website_url:     '',
+  footer_extra_title: '',
+  footer_extra_links: [],
   logo_url:                '',
   default_school_password: 'Korat2@2569',
   banner_aspect_ratio:     '21:9',

@@ -22,6 +22,7 @@ const tabs = [
   { key: 'brand',    icon: 'settings',  label: 'โลโก้และสี' },
   { key: 'contact',  icon: 'phone',     label: 'ข้อมูลติดต่อ' },
   { key: 'social',   icon: 'globe',     label: 'โซเชียลมีเดีย' },
+  { key: 'footer',   icon: 'link',      label: 'ลิงก์ท้ายเว็บไซต์' },
   { key: 'storage',  icon: 'folder',    label: 'จัดการไฟล์' },
   { key: 'features', icon: 'wrench',    label: 'ฟีเจอร์' },
 ]
@@ -69,10 +70,23 @@ const SYSTEM_ROUTES = [
   { route:'/contact',   label:'ติดต่อเรา' },
 ]
 
+// ── ลิงก์เพิ่มเติมท้ายเว็บไซต์ (footer คอลัมน์ที่ 5 admin กำหนดเอง) ──────
+function moveFooterLinkUp(i)   { const l = config.value.footer_extra_links; if (i>0) { [l[i-1],l[i]]=[l[i],l[i-1]]; l.forEach((x,idx)=>x.order=idx+1) } }
+function moveFooterLinkDown(i) { const l = config.value.footer_extra_links; if (i<l.length-1) { [l[i],l[i+1]]=[l[i+1],l[i]]; l.forEach((x,idx)=>x.order=idx+1) } }
+function addFooterLink() {
+  if (!config.value.footer_extra_links) config.value.footer_extra_links = []
+  config.value.footer_extra_links.push({ label:'ลิงก์ใหม่', type:'internal', url:'', order: config.value.footer_extra_links.length+1 })
+}
+function removeFooterLink(i) {
+  config.value.footer_extra_links.splice(i,1)
+  config.value.footer_extra_links.forEach((x,idx)=>x.order=idx+1)
+}
+
 onMounted(async () => {
   const { data, error } = await supabase.from('area_config').select('*').eq('id', 1).single()
   if (!error && data) {
     config.value = { ...data }
+    config.value.footer_extra_links = (data.footer_extra_links || []).map(l => ({ ...l }))
     services.value = (data.services || DEFAULT_SERVICES).map(s => ({ ...s }))
   }
   loading.value = false
@@ -584,6 +598,92 @@ function resetToDefault() {
             <input v-model="config[s.key]" type="url" :placeholder="s.ph"
               class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400"/>
           </div>
+        </div>
+
+        <!-- ── Tab: ลิงก์ท้ายเว็บไซต์ ───────────────────────────────── -->
+        <div v-if="activeTab === 'footer'" class="space-y-4">
+          <div class="flex items-center gap-2 p-3.5 bg-blue-50 rounded-2xl border border-blue-100 text-sm text-blue-700">
+            <SvgIcon name="link" class="w-4 h-4 flex-shrink-0"/>
+            <span>คอลัมน์เพิ่มเติมท้ายเว็บไซต์ (footer) — ตั้งหัวข้อและสร้างลิงก์เองได้ ทั้งลิงก์ภายในเว็บ (route) และภายนอก (URL) ถ้าไม่มีลิงก์เลยคอลัมน์นี้จะไม่แสดง</span>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">หัวข้อคอลัมน์</label>
+            <input v-model="config.footer_extra_title" type="text" placeholder="เช่น ลิงก์เพิ่มเติม, หน่วยงานที่เกี่ยวข้อง"
+              class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400"/>
+          </div>
+
+          <div class="space-y-3">
+            <div v-for="(link, i) in config.footer_extra_links" :key="i"
+              class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 flex flex-wrap items-start gap-4">
+
+              <!-- up/down -->
+              <div class="flex flex-col gap-0.5 flex-shrink-0">
+                <button @click="moveFooterLinkUp(i)" :disabled="i===0" type="button"
+                  class="w-6 h-6 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 disabled:opacity-20 transition-colors">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 15.75l7.5-7.5 7.5 7.5"/>
+                  </svg>
+                </button>
+                <button @click="moveFooterLinkDown(i)" :disabled="i===config.footer_extra_links.length-1" type="button"
+                  class="w-6 h-6 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 disabled:opacity-20 transition-colors">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/>
+                  </svg>
+                </button>
+              </div>
+
+              <!-- fields -->
+              <div class="flex-1 min-w-0 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">ชื่อลิงก์</label>
+                  <input v-model="link.label" type="text"
+                    class="mt-1 w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-primary"/>
+                </div>
+                <div>
+                  <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">ประเภท</label>
+                  <select v-model="link.type"
+                    class="mt-1 w-full px-3 py-2 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:border-primary">
+                    <option value="internal">ภายใน (route)</option>
+                    <option value="external">ภายนอก (URL)</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                    {{ link.type === 'internal' ? 'Route' : 'URL ปลายทาง' }}
+                  </label>
+                  <input v-model="link.url" type="text"
+                    :placeholder="link.type==='internal' ? '/personnel' : 'https://...'"
+                    class="mt-1 w-full px-3 py-2 border border-slate-200 rounded-xl text-sm font-mono focus:outline-none focus:border-primary"/>
+                  <div v-if="link.type==='internal'" class="flex flex-wrap gap-1 mt-1.5">
+                    <button v-for="r in SYSTEM_ROUTES" :key="r.route" type="button"
+                      @click="link.url = r.route"
+                      :class="['text-[9px] px-1.5 py-0.5 rounded-md transition-colors',
+                        link.url===r.route ? 'bg-primary text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200']">
+                      {{ r.route }}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <button @click="removeFooterLink(i)" type="button"
+                class="flex items-center gap-1 px-3 py-1.5 text-xs font-bold rounded-xl bg-slate-50 text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors flex-shrink-0">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+                ลบ
+              </button>
+            </div>
+
+            <p v-if="!config.footer_extra_links || config.footer_extra_links.length === 0" class="text-center text-slate-400 py-6">
+              ยังไม่มีลิงก์ — กด "เพิ่มลิงก์" เพื่อเริ่มต้น
+            </p>
+          </div>
+
+          <button @click="addFooterLink" type="button"
+            class="flex items-center gap-1.5 px-4 py-2.5 text-sm font-bold bg-slate-100 text-slate-600 rounded-2xl hover:bg-slate-200 transition-colors">
+            <SvgIcon name="plus" class="w-4 h-4"/> เพิ่มลิงก์
+          </button>
         </div>
 
         <!-- ── Tab: จัดการไฟล์ ───────────────────────────────── -->

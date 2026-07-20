@@ -72,6 +72,12 @@ const footerQuickLinks = computed(() => {
   return [home, ...middle, contact].filter(Boolean)
 })
 
+// ── Footer: คอลัมน์เพิ่มเติมที่ admin สร้างเอง (ตั้งค่าเขต → ลิงก์ท้ายเว็บไซต์) ──
+const footerExtraTitle = computed(() => config.value?.footer_extra_title || '')
+const footerExtraLinks = computed(() =>
+  [...(config.value?.footer_extra_links || [])].sort((a, b) => (a.order ?? 99) - (b.order ?? 99))
+)
+
 // ── ฟอนต์ชื่อระบบใน navbar: คำนวณตามความยาวข้อความจริง เพื่อไม่ให้ตัดบรรทัด ──
 // ใช้หน่วย cqw (container query width) แทน vw เพราะพื้นที่ว่างจริงถูกกินโดยโลโก้/ปุ่มต่างๆ
 // ไม่ใช่สัดส่วนคงที่ของ viewport — cqw จะอิงความกว้าง container ที่ layout คำนวณให้แล้ว
@@ -426,7 +432,7 @@ const handleLogout = async () => {
       </div>
 
       <div class="relative max-w-7xl mx-auto px-6 pt-12 pb-20 sm:pb-8">
-        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-[1.7fr_1fr_1.3fr_1fr] gap-10">
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-[1.5fr_0.9fr_1.1fr_0.8fr_0.9fr] gap-10">
 
           <!-- แบรนด์ -->
           <div class="sm:col-span-2 md:col-span-1">
@@ -444,9 +450,6 @@ const handleLogout = async () => {
                 <p class="text-xs text-white/60 mt-0.5">{{ areaShort }}</p>
               </div>
             </div>
-            <p class="text-xs text-white/50 mt-4 leading-relaxed">
-              เว็บไซต์ทางการสำหรับให้บริการข้อมูลข่าวสาร งานนิเทศติดตาม และบริการออนไลน์ของเขตพื้นที่การศึกษา
-            </p>
           </div>
 
           <!-- ลิงก์ด่วน -->
@@ -490,6 +493,18 @@ const handleLogout = async () => {
                 </svg>
               </a>
             </div>
+          </div>
+
+          <!-- ลิงก์เพิ่มเติม (คอลัมน์ที่ admin กำหนดเอง จากตั้งค่าเขต → ลิงก์ท้ายเว็บไซต์) -->
+          <div v-if="footerExtraLinks.length">
+            <p class="text-xs font-bold text-white/40 uppercase tracking-widest mb-4">{{ footerExtraTitle || 'ลิงก์เพิ่มเติม' }}</p>
+            <ul class="space-y-2.5">
+              <li v-for="(l, i) in footerExtraLinks" :key="i">
+                <a v-if="l.type === 'external'" :href="l.url" target="_blank" rel="noopener noreferrer"
+                  class="text-sm text-white/70 hover:text-white transition-colors">{{ l.label }}</a>
+                <RouterLink v-else :to="l.url" class="text-sm text-white/70 hover:text-white transition-colors">{{ l.label }}</RouterLink>
+              </li>
+            </ul>
           </div>
         </div>
 
