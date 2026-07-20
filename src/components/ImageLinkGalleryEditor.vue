@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { supabase } from '../supabase'
 import ImageCropperModal from './ImageCropperModal.vue'
 import { useExternalUpload, externalUploadEnabled } from '../composables/useExternalUpload'
@@ -7,6 +7,20 @@ import { useExternalUpload, externalUploadEnabled } from '../composables/useExte
 // mutate โดยตรง (แบบเดียวกับ blocks.value[idx].url = url ใน AdminPageEditorView.vue)
 const props = defineProps({
   gallery: { type: Object, required: true }, // { layout, title, items }
+})
+
+// ── รายชื่อหน้าในเว็บ สำหรับเลือกลิงก์ภายในแทนการพิมพ์เอง (กันพิมพ์ path ผิด เช่นลืม /page/ นำหน้า) ──
+const internalPages = ref([])
+onMounted(async () => {
+  const { data } = await supabase.from('pages')
+    .select('slug, title, page_type, system_route')
+    .eq('is_published', true).order('title')
+  internalPages.value = (data || [])
+    .filter(p => p.page_type !== 'link')
+    .map(p => ({
+      title: p.title,
+      path: p.page_type === 'system' ? (p.system_route || `/${p.slug}`) : `/page/${p.slug}`,
+    }))
 })
 
 const LAYOUTS = [
@@ -163,6 +177,12 @@ async function onCropped({ blob }) {
               :placeholder="item.link_type === 'internal' ? '/page/xxx' : 'https://...'"
               class="flex-1 px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg bg-white focus:outline-none focus:border-primary"/>
           </div>
+          <!-- เลือกจากหน้าที่มีอยู่จริง กันพิมพ์ path เองแล้วผิด (เช่นลืม /page/ นำหน้า) -->
+          <select v-if="item.link_type === 'internal'" @change="item.link_url = $event.target.value; $event.target.value = ''"
+            class="w-full px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg bg-white text-slate-500 focus:outline-none focus:border-primary">
+            <option value="">— หรือเลือกจากหน้าที่มีอยู่ —</option>
+            <option v-for="p in internalPages" :key="p.path" :value="p.path">{{ p.title }} ({{ p.path }})</option>
+          </select>
         </div>
 
         <button @click="removeItem(i)" type="button" class="flex-shrink-0 text-slate-300 hover:text-red-500 self-start">
