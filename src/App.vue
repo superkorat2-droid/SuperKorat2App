@@ -432,7 +432,7 @@ const handleLogout = async () => {
       </div>
 
       <div class="relative max-w-7xl mx-auto px-6 pt-12 pb-20 sm:pb-8">
-        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-[1.5fr_0.9fr_1.1fr_0.8fr_0.9fr] gap-10">
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-[2.6fr_0.75fr_0.95fr_0.65fr_0.65fr] gap-10">
 
           <!-- แบรนด์ -->
           <div class="sm:col-span-2 md:col-span-1">
