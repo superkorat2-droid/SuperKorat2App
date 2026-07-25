@@ -10,6 +10,7 @@ import { useEducationNews } from '../composables/useEducationNews'
 import { TYPE_LABEL, TYPE_COLOR, formatEventDateRange } from '../composables/useNithetEventMeta'
 import BgLayers from '../components/BgLayers.vue'
 import MonthCalendar from '../components/calendar/MonthCalendar.vue'
+import EventDetailModal from '../components/calendar/EventDetailModal.vue'
 import { getBgStyle as getBgStyleRaw, bgTextClass } from '../composables/useBgStyle'
 
 const router = useRouter()
@@ -152,6 +153,13 @@ const NITHET_HOME_LIMIT = 4
 const now = new Date()
 const calYear  = ref(now.getFullYear())
 const calMonth = ref(now.getMonth())
+const selectedEvent = ref(null)   // กิจกรรมที่เปิดดูใน modal
+
+// คลิกช่องวัน: ถ้าวันนั้นมีกิจกรรมเดียวเปิดเลย ถ้าหลายอันให้เลื่อนไปดูรายการแทน
+function onCalendarDay(dateKey) {
+  const inDay = allNithetEvents.value.filter(e => e.start_date <= dateKey && dateKey <= e.end_date)
+  if (inDay.length === 1) selectedEvent.value = inDay[0]
+}
 
 const nithetEvents = computed(() => {
   const today = new Date().toISOString().slice(0, 10)
@@ -794,8 +802,8 @@ const stats = [
               <MonthCalendar
                 :events="allNithetEvents"
                 v-model:year="calYear" v-model:month="calMonth"
-                @select-event="router.push('/nithet')"
-                @select-day="router.push('/nithet')"/>
+                @select-event="selectedEvent = $event"
+                @select-day="onCalendarDay"/>
 
               <!-- คำอธิบายสีประเภทกิจกรรม -->
               <div class="flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 mt-4">
@@ -809,8 +817,8 @@ const stats = [
               <template v-if="nithetEvents.length">
                 <p class="text-sm font-bold text-slate-700 mt-8 mb-3">กำหนดการที่ใกล้ถึง</p>
                 <div class="space-y-3">
-                  <RouterLink v-for="event in nithetEvents" :key="event.id" to="/nithet"
-                    class="block glass-card glass-card-hover p-4">
+                  <button v-for="event in nithetEvents" :key="event.id" @click="selectedEvent = event" type="button"
+                    class="block w-full text-left glass-card glass-card-hover p-4">
                     <div class="flex flex-wrap items-center gap-2 mb-1.5">
                       <span :class="['text-xs font-bold px-2.5 py-0.5 rounded-full', TYPE_COLOR[event.type]?.bg, TYPE_COLOR[event.type]?.text]">
                         {{ TYPE_LABEL[event.type] }}
@@ -819,7 +827,7 @@ const stats = [
                     </div>
                     <h3 class="font-bold text-slate-800">{{ event.title }}</h3>
                     <p v-if="event.schools?.length" class="text-xs text-slate-500 mt-1">โรงเรียน: {{ event.schools.map(s => s.name).join(', ') }}</p>
-                  </RouterLink>
+                  </button>
                 </div>
               </template>
               <p v-else class="text-center text-sm text-slate-500 mt-6">ไม่มีกำหนดการที่ใกล้ถึงในขณะนี้</p>
@@ -989,6 +997,9 @@ const stats = [
       </template>
     </template>
     <!-- ── /DYNAMIC SECTIONS ────────────────────────────────────── -->
+
+    <!-- รายละเอียดกิจกรรม — ใช้ modal ตัวเดียวกับหน้า /nithet -->
+    <EventDetailModal :event="selectedEvent" @close="selectedEvent = null"/>
 
   </div>
 </template>

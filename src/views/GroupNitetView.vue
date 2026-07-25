@@ -4,6 +4,7 @@ import { useAreaConfig } from '../composables/useAreaConfig'
 import { usePageHeader } from '../composables/usePageHeader'
 import PageHero from '../components/PageHero.vue'
 import MonthCalendar from '../components/calendar/MonthCalendar.vue'
+import EventDetailModal from '../components/calendar/EventDetailModal.vue'
 import { supabase } from '../supabase'
 import { TYPE_LABEL, TYPE_COLOR, formatEventDateRange, formatResponsible } from '../composables/useNithetEventMeta'
 
@@ -157,38 +158,8 @@ onMounted(async () => {
       </template>
     </div>
 
-    <!-- Detail Modal (read-only) -->
-    <Teleport to="body">
-      <Transition enter-active-class="transition duration-200 ease-out" enter-from-class="opacity-0 scale-95"
-        leave-active-class="transition duration-150 ease-in" leave-to-class="opacity-0 scale-95">
-        <div v-if="selectedEvent" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
-          @click.self="selectedEvent = null">
-          <div class="glass-panel rounded-3xl w-full max-w-md overflow-hidden">
-            <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100">
-              <span :class="['text-xs font-bold px-2.5 py-0.5 rounded-full', TYPE_COLOR[selectedEvent.type]?.bg, TYPE_COLOR[selectedEvent.type]?.text]">
-                {{ TYPE_LABEL[selectedEvent.type] }}
-              </span>
-              <button @click="selectedEvent = null"
-                class="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-slate-100 text-slate-400 transition-colors">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
-                </svg>
-              </button>
-            </div>
-            <div class="px-6 py-5 space-y-3">
-              <h2 class="text-lg font-extrabold text-slate-900 leading-snug">{{ selectedEvent.title }}</h2>
-              <p v-if="selectedEvent.description" class="text-sm text-slate-600">{{ selectedEvent.description }}</p>
-              <div class="border-t border-slate-100 pt-3 space-y-2 text-sm text-slate-600">
-                <p>📅 {{ formatEventDateRange(selectedEvent) }}</p>
-                <p v-for="s in (selectedEvent.schools || [])" :key="s.id">🏫 {{ s.name }} <span class="text-slate-400">(อ.{{ s.district }})</span></p>
-                <p v-if="selectedEvent.location">📍 {{ selectedEvent.location }}</p>
-                <p v-if="selectedEvent.responsible_group || selectedEvent.responsible_names?.length">👤 {{ responsibleText(selectedEvent) }}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </Transition>
-    </Teleport>
+    <!-- Detail Modal (read-only) — ใช้ component ร่วมกับหน้าแรก -->
+    <EventDetailModal :event="selectedEvent" @close="selectedEvent = null"/>
   </div>
 </template>
 
