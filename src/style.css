@@ -13,11 +13,16 @@
   --color-secondary:      #b8922a;
   --color-secondary-light: rgba(184,146,42,0.12);
 
+  --color-primary-deep:   #0d1c2f;   /* เข้มกว่า -dark ใช้เป็นต้นทางของ gradient ให้มีมิติ */
+
   /* Aurora — สีเรืองของพื้นหลังเว็บ คำนวณจากสีแบรนด์เดียวกัน (ดู applyTheme ใน useAreaConfig) */
-  --aurora-base:      #fbfcfe;
-  --aurora-primary:   rgba(30,58,95,0.10);
-  --aurora-secondary: rgba(184,146,42,0.09);
-  --aurora-primary-2: rgba(30,58,95,0.06);
+  --aurora-base:        #f4f7fb;
+  --aurora-base-2:      #e9eef6;
+  --aurora-primary:     rgba(30,58,95,0.20);
+  --aurora-secondary:   rgba(184,146,42,0.16);
+  --aurora-primary-2:   rgba(30,58,95,0.13);
+  --aurora-secondary-2: rgba(184,146,42,0.10);
+  --aurora-veil:        rgba(30,58,95,0.07);
 }
 
 /* ── Brand utility classes ──────────────────────────────────── */
@@ -48,9 +53,16 @@
   .text-primary.hover\:text-white:hover,
   .text-secondary.hover\:text-white:hover { color: #fff !important; }
 
-  /* gradient solid (ไม่ใช้ multi-color ดูหรูกว่า) */
+  /* gradient แบรนด์ — ไล่ 3 สเต็ปในโทนกรมท่าเพื่อให้มีความลึก
+     แล้วซ้อนแสงทองจางๆ มุมขวาบนเป็นไฮไลต์ ไม่ใช่พื้นแบนสีเดียว
+     ใช้กับ footer / PageHero / CTA / hero หน้าแรก */
   .gradient-primary {
-    background: linear-gradient(135deg, var(--color-primary-dark) 0%, var(--color-primary) 100%);
+    background:
+      radial-gradient(75% 130% at 88% 6%, var(--color-secondary-light) 0%, transparent 58%),
+      linear-gradient(135deg,
+        var(--color-primary-deep) 0%,
+        var(--color-primary-dark) 48%,
+        var(--color-primary) 100%);
   }
 
   /* accent line — เส้นทองใต้ heading */
@@ -87,7 +99,9 @@
    จะบัง aurora ทั้งหมด — ห้ามใส่ bg ทึบที่ body / root wrapper / root ของ view
    ─────────────────────────────────────────────────────────────── */
 body {
-  background-color: var(--aurora-base);
+  /* พื้นฐานไล่สีเอียง ไม่ใช่สีเดียวแบน — ให้ขอบบนสว่างกว่าขอบล่างเล็กน้อย */
+  background: linear-gradient(168deg, var(--aurora-base) 0%, var(--aurora-base-2) 100%);
+  background-attachment: fixed;
 }
 body::before {
   content: '';
@@ -96,9 +110,16 @@ body::before {
   z-index: -1;
   pointer-events: none;
   background:
-    radial-gradient(60rem 40rem at 12% -8%,  var(--aurora-primary),   transparent 62%),
-    radial-gradient(45rem 34rem at 96%   6%, var(--aurora-secondary), transparent 62%),
-    radial-gradient(52rem 40rem at 48% 108%, var(--aurora-primary-2), transparent 62%);
+    /* กรมท่ามุมซ้ายบน — จุดเด่นหลัก */
+    radial-gradient(65rem 46rem at  8% -12%, var(--aurora-primary),     transparent 58%),
+    /* ทองมุมขวาบน — สีตัดให้ไม่จมโทนเดียว */
+    radial-gradient(52rem 40rem at 99%   0%, var(--aurora-secondary),   transparent 58%),
+    /* กรมท่าล่างกลาง — ถ่วงน้ำหนักท้ายหน้า */
+    radial-gradient(58rem 44rem at 42% 110%, var(--aurora-primary-2),   transparent 60%),
+    /* ทองกลางขวา — จุดที่ 4 กันไล่สีดูซ้ำเวลาเลื่อนยาวๆ */
+    radial-gradient(40rem 32rem at 82%  52%, var(--aurora-secondary-2), transparent 64%),
+    /* ม่านบางไล่ลงล่าง — ให้ทั้งหน้ามีทิศทางแสงเดียวกัน */
+    linear-gradient(180deg, transparent 35%, var(--aurora-veil) 100%);
 }
 
 /* ── Glass surfaces ───────────────────────────────────────────────
@@ -107,50 +128,66 @@ body::before {
 
    ⚠️ อยู่ใน @layer components ซึ่งมาก่อน utilities — ถ้า element ยังมี
    `bg-white` ติดอยู่ Tailwind จะชนะและกระจกจะไม่ทำงาน เวลาแปลงการ์ด
-   ต้องลบ bg-*/border-*/shadow-*/rounded-* ของเดิมออกด้วยเสมอ
+   ต้องลบ utility เดิมออกด้วยเสมอ ได้แก่ bg- , border- , shadow- , rounded-
    ─────────────────────────────────────────────────────────────── */
 @layer components {
-  /* การ์ดมาตรฐาน — ใช้กับ grid/panel ที่มีจำนวนไม่มาก (< ~20 ใบต่อหน้า) */
+  /* การ์ดมาตรฐาน — ใช้กับ grid/panel ที่มีจำนวนไม่มาก (< ~20 ใบต่อหน้า)
+     พื้นเป็น gradient ทแยง ไม่ใช่สีแบน — จำลองแสงตกมุมบนซ้ายเหมือนกระจกจริง */
   .glass-card {
-    background: rgba(255,255,255,0.68);
-    backdrop-filter: blur(20px) saturate(160%);
-    -webkit-backdrop-filter: blur(20px) saturate(160%);
-    border: 1px solid rgba(255,255,255,0.75);
+    background: linear-gradient(148deg,
+      rgba(255,255,255,0.86) 0%,
+      rgba(255,255,255,0.70) 46%,
+      rgba(255,255,255,0.60) 100%);
+    backdrop-filter: blur(20px) saturate(165%);
+    -webkit-backdrop-filter: blur(20px) saturate(165%);
+    border: 1px solid rgba(255,255,255,0.8);
     border-radius: 1.25rem;
     box-shadow:
-      0 8px 32px rgba(15,23,42,0.08),
-      inset 0 1px 0 rgba(255,255,255,0.9);
+      0 1px 2px rgba(15,23,42,0.04),
+      0 10px 34px rgba(30,58,95,0.10),
+      inset 0 1px 0 rgba(255,255,255,0.95);
   }
 
   /* ใส่คู่กับ .glass-card / .glass-tile บนการ์ดที่คลิกได้ */
   .glass-card-hover {
-    transition: transform .25s ease, box-shadow .25s ease, background-color .25s ease;
+    transition: transform .25s ease, box-shadow .25s ease, background .25s ease;
   }
   .glass-card-hover:hover {
-    background: rgba(255,255,255,0.82);
+    background: linear-gradient(148deg,
+      rgba(255,255,255,0.95) 0%,
+      rgba(255,255,255,0.84) 46%,
+      rgba(255,255,255,0.76) 100%);
     transform: translateY(-2px);
     box-shadow:
-      0 16px 44px rgba(15,23,42,0.12),
+      0 2px 4px rgba(15,23,42,0.05),
+      0 18px 48px rgba(30,58,95,0.15),
       inset 0 1px 0 #fff;
   }
 
-  /* navbar — ทึบกว่าการ์ดเพราะเนื้อหาเลื่อนผ่านใต้ตลอดเวลา */
+  /* navbar — ทึบกว่าการ์ดมากเพราะเนื้อหาเลื่อนผ่านใต้ตลอดเวลา
+     ไล่จากขาวเกือบทึบด้านบน → โปร่งขึ้นตรงขอบล่าง ให้รอยต่อกับเนื้อหานุ่ม */
   .glass-nav {
-    background: rgba(255,255,255,0.72);
+    background: linear-gradient(180deg,
+      rgba(255,255,255,0.95) 0%,
+      rgba(255,255,255,0.88) 100%);
     backdrop-filter: blur(24px) saturate(180%);
     -webkit-backdrop-filter: blur(24px) saturate(180%);
-    border-bottom: 1px solid rgba(255,255,255,0.6);
-    box-shadow: 0 1px 24px rgba(15,23,42,0.06);
+    border-bottom: 1px solid var(--color-primary-light);
+    box-shadow:
+      0 1px 3px rgba(15,23,42,0.04),
+      0 8px 28px rgba(30,58,95,0.07);
   }
 
   /* modal / dropdown / กล่องลอยที่ต้องอ่านทับเนื้อหาข้างหลัง */
   .glass-panel {
-    background: rgba(255,255,255,0.82);
-    backdrop-filter: blur(28px) saturate(170%);
-    -webkit-backdrop-filter: blur(28px) saturate(170%);
-    border: 1px solid rgba(255,255,255,0.8);
+    background: linear-gradient(160deg,
+      rgba(255,255,255,0.96) 0%,
+      rgba(255,255,255,0.88) 100%);
+    backdrop-filter: blur(28px) saturate(175%);
+    -webkit-backdrop-filter: blur(28px) saturate(175%);
+    border: 1px solid rgba(255,255,255,0.85);
     box-shadow:
-      0 24px 64px rgba(15,23,42,0.16),
+      0 24px 64px rgba(15,23,42,0.18),
       inset 0 1px 0 #fff;
   }
 
@@ -158,12 +195,15 @@ body::before {
      backdrop-filter แต่ละตัวสร้าง compositing layer แยก บนพื้น aurora นุ่มๆ
      แทบแยกไม่ออกจาก .glass-card ด้วยตาเปล่า */
   .glass-tile {
-    background: rgba(255,255,255,0.86);
-    border: 1px solid rgba(255,255,255,0.75);
+    background: linear-gradient(148deg,
+      rgba(255,255,255,0.94) 0%,
+      rgba(255,255,255,0.86) 100%);
+    border: 1px solid rgba(255,255,255,0.8);
     border-radius: 1.25rem;
     box-shadow:
-      0 6px 24px rgba(15,23,42,0.07),
-      inset 0 1px 0 rgba(255,255,255,0.9);
+      0 1px 2px rgba(15,23,42,0.04),
+      0 8px 28px rgba(30,58,95,0.09),
+      inset 0 1px 0 rgba(255,255,255,0.95);
   }
 
   /* กล่องย่อย "ข้างใน" การ์ดกระจก — ห้ามซ้อน .glass-card ใน .glass-card
@@ -178,15 +218,15 @@ body::before {
 /* Fallback: เบราว์เซอร์เก่า / Android WebView ที่ไม่รองรับ backdrop-filter
    → เพิ่มความทึบแทน ไม่งั้นจะได้พื้นโปร่งจางๆ ที่อ่านไม่ออก */
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .glass-card  { background: rgba(255,255,255,0.92); }
-  .glass-nav   { background: rgba(255,255,255,0.95); }
-  .glass-panel { background: rgba(255,255,255,0.95); }
+  .glass-card  { background: linear-gradient(148deg, rgba(255,255,255,0.97), rgba(255,255,255,0.90)); }
+  .glass-nav   { background: linear-gradient(180deg, rgba(255,255,255,0.99), rgba(255,255,255,0.96)); }
+  .glass-panel { background: linear-gradient(160deg, rgba(255,255,255,0.99), rgba(255,255,255,0.95)); }
 }
 
 /* ผู้ใช้ที่ตั้งค่าระบบว่าไม่ต้องการพื้นผิวโปร่ง (accessibility) */
 @media (prefers-reduced-transparency: reduce) {
   .glass-card, .glass-nav, .glass-panel, .glass-tile {
-    background: rgba(255,255,255,0.96);
+    background: rgba(255,255,255,0.97);
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
   }

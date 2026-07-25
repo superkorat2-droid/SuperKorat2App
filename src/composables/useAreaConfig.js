@@ -138,6 +138,7 @@ export function applyTheme(cfg) {
 
   root.style.setProperty('--color-primary',          primary)
   root.style.setProperty('--color-primary-dark',     darken(primary, 25))
+  root.style.setProperty('--color-primary-deep',     darken(primary, 52))
   root.style.setProperty('--color-primary-light',    alphaOf(primary, 0.08))
   root.style.setProperty('--color-primary-ring',     alphaOf(primary, 0.22))
   root.style.setProperty('--color-secondary',        secondary)
@@ -145,10 +146,12 @@ export function applyTheme(cfg) {
 
   // Aurora — พื้นหลังเรืองของทั้งเว็บ ผูกกับสีแบรนด์เดียวกัน
   // เปลี่ยนธีมใน AdminAreaSettingsView แล้วพื้นหลังเปลี่ยนตามทันที
-  // ค่า alpha ต่ำมากโดยตั้งใจ — พอให้กระจกมีอะไรให้เบลอ แต่ไม่แย่งความสนใจจากเนื้อหา
-  root.style.setProperty('--aurora-primary',   alphaOf(primary,   0.10))
-  root.style.setProperty('--aurora-secondary', alphaOf(secondary, 0.09))
-  root.style.setProperty('--aurora-primary-2', alphaOf(primary,   0.06))
+  // ปรับความเข้มของพื้นหลังทั้งเว็บได้ที่ตัวเลข alpha ชุดนี้จุดเดียว
+  root.style.setProperty('--aurora-primary',     alphaOf(primary,   0.20))
+  root.style.setProperty('--aurora-secondary',   alphaOf(secondary, 0.16))
+  root.style.setProperty('--aurora-primary-2',   alphaOf(primary,   0.13))
+  root.style.setProperty('--aurora-secondary-2', alphaOf(secondary, 0.10))
+  root.style.setProperty('--aurora-veil',        alphaOf(primary,   0.07))
 }
 
 // ── Composable ─────────────────────────────────────────────────
