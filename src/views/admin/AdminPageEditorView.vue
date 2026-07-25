@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { supabase } from '../../supabase'
 import Swal from 'sweetalert2'
@@ -7,7 +7,9 @@ import ImageCropperModal from '../../components/ImageCropperModal.vue'
 import { useExternalUpload, externalUploadEnabled, deleteUploadedFile } from '../../composables/useExternalUpload'
 import IconPicker from '../../components/IconPicker.vue'
 import ImageLinkGalleryEditor from '../../components/ImageLinkGalleryEditor.vue'
-import { BG_TYPES, BG_PRESETS, GRADIENT_PRESETS, getBgStyle } from '../../composables/useBgStyle'
+import { BG_TYPES, BG_PRESETS, GRADIENT_PRESETS, getBgStyle,
+         BG_POSITIONS, OVERLAY_COLORS, IMAGE_PRESETS, IMAGE_DEFAULTS } from '../../composables/useBgStyle'
+import { useUploadGc } from '../../composables/useUploadGc'
 import { useInternalPages } from '../../composables/useInternalPages'
 
 const { internalPages } = useInternalPages()
@@ -110,7 +112,10 @@ onMounted(async () => {
 
 function addBlock(type) { blocks.value.push(newBlock(type)) }
 
-function removeBlock(idx) { blocks.value.splice(idx, 1) }
+function removeBlock(idx) {
+  gc.trackReplaced(blocks.value[idx]?.bg_image)   // รูปพื้นหลังของบล็อกที่ถูกลบ เข้าคิวรอลบบน server
+  blocks.value.splice(idx, 1)
+}
 
 function moveUp(idx) {
   if (idx === 0) return
@@ -139,7 +144,14 @@ async function save(publish = null) {
     Swal.fire({ icon: 'error', title: 'บันทึกไม่สำเร็จ', text: error.message })
   } else {
     if (publish !== null) page.value.is_published = publish
-    Swal.fire({ icon: 'success', title: 'บันทึกแล้ว', showConfirmButton: false, timer: 900 })
+    savedOnce.value = true
+    // ลบรูปพื้นหลังเก่าบน server หลังบันทึกสำเร็จ (กรองตัวที่ยังมีบล็อกอื่นใช้อยู่ออก)
+    const removed = await gc.commit(blocks.value.map(b => b.bg_image).filter(Boolean))
+    Swal.fire({
+      icon: 'success', title: 'บันทึกแล้ว',
+      text: removed ? `ลบรูปพื้นหลังเดิมบนเซิร์ฟเวอร์ ${removed} ไฟล์` : '',
+      showConfirmButton: false, timer: removed ? 1600 : 900,
+    })
   }
 }
 
@@ -207,6 +219,67 @@ async function onImageCropped({ blob }) {
   }
   imgUploading.value = false
 }
+
+// ── พื้นหลังรูปภาพของบล็อก ────────────────────────────────────────
+// แยก cropper จาก "รูปในบล็อก" ข้างบน เพราะ output ต่างกัน
+// (พื้นหลังใช้ 1920px JPEG ให้ไฟล์เล็กและกว้างพอเต็มจอ)
+const gc            = useUploadGc()
+const showBgCropper = ref(false)
+const bgCropIdx     = ref(null)
+const bgUploading   = ref(false)
+const savedOnce     = ref(false)
+
+function openBgCropper(idx) {
+  bgCropIdx.value     = idx
+  showBgCropper.value = true
+}
+
+async function onBgCropped({ blob }) {
+  const b = blocks.value[bgCropIdx.value]
+  showBgCropper.value = false
+  if (!b) return
+  bgUploading.value = true
+  try {
+    const url = await uploadImgExternal(blob, 'section-bg')
+    gc.trackReplaced(b.bg_image)
+    gc.trackUploaded(url)
+    b.bg_image = url
+    Object.entries(IMAGE_DEFAULTS).forEach(([k, v]) => { if (b[k] === undefined) b[k] = v })
+  } catch (e) {
+    Swal.fire({ icon: 'error', title: 'อัปโหลดไม่สำเร็จ', text: e.message })
+  }
+  bgUploading.value = false
+}
+
+function removeBgImage(b) {
+  gc.trackReplaced(b.bg_image)
+  b.bg_image = ''
+}
+
+function applyImagePreset(b, p) {
+  b.bg_overlay = p.bg_overlay; b.bg_overlay_color = p.bg_overlay_color
+  b.bg_blur = p.bg_blur; b.bg_text = p.bg_text
+}
+function activePreset(b) {
+  return IMAGE_PRESETS.find(p =>
+    p.bg_overlay === b.bg_overlay && p.bg_overlay_color === b.bg_overlay_color &&
+    p.bg_blur === b.bg_blur && p.bg_text === b.bg_text
+  )?.key || ''
+}
+// ตัวอย่างย่อในแผงตั้งค่า — ไม่ใส่ blur จริงเพราะกรอบเล็กมาก
+function bgPreviewStyle(b) {
+  if (b.bg_type !== 'image' || !b.bg_image) return getBgStyle(b)
+  const c = OVERLAY_COLORS.find(c => c.value === (b.bg_overlay_color || 'white'))
+  const a = (b.bg_overlay ?? IMAGE_DEFAULTS.bg_overlay) / 100
+  const veil = c?.rgb ? `rgba(${c.rgb},${a})` : `color-mix(in srgb, var(--color-primary) ${(a*100)|0}%, transparent)`
+  return {
+    backgroundImage: `linear-gradient(${veil},${veil}), url("${b.bg_image}")`,
+    backgroundSize: 'cover',
+    backgroundPosition: b.bg_position || IMAGE_DEFAULTS.bg_position,
+  }
+}
+
+onUnmounted(() => { if (!savedOnce.value) gc.discard() })
 
 // ── Header media upload (แยกจาก block image — ไม่ครอปสำหรับ gif/video เพื่อไม่ให้ animation หาย) ──
 const showHeaderCropper  = ref(false)
@@ -701,21 +774,88 @@ async function clearHeaderMedia() {
                   </button>
                 </div>
 
+                <!-- ══ พื้นหลังรูปภาพ ══ -->
+                <div v-if="block.bg_type === 'image'" class="space-y-2 pt-1">
+                  <div class="flex items-center gap-2">
+                    <div class="w-20 h-12 rounded-lg overflow-hidden flex-shrink-0 border border-slate-200 bg-slate-100"
+                      :style="block.bg_image ? bgPreviewStyle(block) : {}"></div>
+                    <div class="flex-1 min-w-0">
+                      <button @click="openBgCropper(idx)" type="button" :disabled="bgUploading"
+                        class="px-2.5 py-1 rounded-lg text-[11px] font-bold border-2 border-primary text-primary hover:bg-primary hover:text-white transition-all disabled:opacity-50">
+                        {{ bgUploading ? 'กำลังอัปโหลด…' : (block.bg_image ? 'เปลี่ยนรูป' : 'เลือกรูป') }}
+                      </button>
+                      <button v-if="block.bg_image" @click="removeBgImage(block)" type="button"
+                        class="ml-2 text-[11px] font-bold text-slate-400 hover:text-red-500 transition-colors">ลบรูป</button>
+                    </div>
+                  </div>
+
+                  <template v-if="block.bg_image">
+                    <div class="flex flex-wrap gap-1">
+                      <button v-for="p in IMAGE_PRESETS" :key="p.key" type="button"
+                        @click="applyImagePreset(block, p)" :title="p.desc"
+                        :class="['px-2 py-1 rounded-lg text-[11px] font-bold border-2 transition-all',
+                          activePreset(block) === p.key ? 'border-primary bg-primary text-white' : 'border-slate-200 text-slate-500 hover:border-primary/50']">
+                        {{ p.label }}
+                      </button>
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                      <span class="text-[10px] font-bold text-slate-400 w-10">ม่าน</span>
+                      <input type="range" min="0" max="90" step="5" :value="block.bg_overlay ?? 60"
+                        @input="block.bg_overlay = +$event.target.value" class="flex-1 accent-[var(--color-primary)]"/>
+                      <span class="text-[10px] font-mono text-slate-400 w-8">{{ block.bg_overlay ?? 60 }}%</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                      <span class="text-[10px] font-bold text-slate-400 w-10">เบลอ</span>
+                      <input type="range" min="0" max="24" step="2" :value="block.bg_blur ?? 8"
+                        @input="block.bg_blur = +$event.target.value" class="flex-1 accent-[var(--color-primary)]"/>
+                      <span class="text-[10px] font-mono text-slate-400 w-8">{{ block.bg_blur ?? 8 }}px</span>
+                    </div>
+
+                    <div class="flex flex-wrap items-center gap-1.5">
+                      <span class="text-[10px] font-bold text-slate-400">สีม่าน:</span>
+                      <button v-for="c in OVERLAY_COLORS" :key="c.value" type="button" @click="block.bg_overlay_color = c.value"
+                        :class="['px-2 py-0.5 rounded text-[10px] font-bold border-2 transition-all',
+                          (block.bg_overlay_color || 'white') === c.value ? 'border-primary text-primary' : 'border-slate-200 text-slate-500']">
+                        {{ c.label }}
+                      </button>
+                      <span class="text-[10px] font-bold text-slate-400 ml-1">ตัวอักษร:</span>
+                      <button v-for="t in [{v:'dark',l:'เข้ม'},{v:'light',l:'สว่าง'}]" :key="t.v" type="button" @click="block.bg_text = t.v"
+                        :class="['px-2 py-0.5 rounded text-[10px] font-bold border-2 transition-all',
+                          (block.bg_text || 'dark') === t.v ? 'border-primary text-primary' : 'border-slate-200 text-slate-500']">
+                        {{ t.l }}
+                      </button>
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                      <span class="text-[10px] font-bold text-slate-400">ตำแหน่ง:</span>
+                      <div class="grid grid-cols-3 gap-0.5 w-[72px]">
+                        <button v-for="pos in BG_POSITIONS" :key="pos.value" type="button"
+                          @click="block.bg_position = pos.value" :title="pos.value"
+                          :class="['w-5 h-5 rounded text-[10px] border transition-all',
+                            (block.bg_position || 'center center') === pos.value ? 'border-primary bg-primary text-white' : 'border-slate-200 text-slate-400']">
+                          {{ pos.label }}
+                        </button>
+                      </div>
+                    </div>
+                  </template>
+                </div>
+
                 <!-- Gradient สำเร็จรูป: กดแล้วตั้งทั้งสีและ type ให้ทันที ไม่ต้องเลือก type ก่อน -->
-                <div class="flex flex-wrap gap-1">
+                <div v-if="block.bg_type !== 'image'" class="flex flex-wrap gap-1">
                   <button v-for="gp in GRADIENT_PRESETS" :key="gp.label"
                     @click="block.bg = gp.bg; block.bg2 = gp.bg2; block.bg_type = gp.bg_type"
                     :title="gp.label" class="w-6 h-6 rounded-md border border-white shadow-sm hover:scale-110 transition-transform flex-shrink-0"
                     :style="`background: linear-gradient(to right, ${gp.bg}, ${gp.bg2})`"/>
                 </div>
-                <div v-if="block.bg_type" class="flex items-center gap-1.5 flex-wrap">
+                <div v-if="block.bg_type && block.bg_type !== 'image'" class="flex items-center gap-1.5 flex-wrap">
                   <span class="text-[10px] font-bold text-slate-400">สี 1:</span>
                   <button v-for="p in BG_PRESETS" :key="p.value" @click="block.bg = p.value" :title="p.label"
                     :class="['w-5 h-5 rounded-full border-2', block.bg === p.value ? 'border-primary' : 'border-slate-200']"
                     :style="{ backgroundColor: p.value }"/>
                   <input type="color" :value="block.bg || '#ffffff'" @input="block.bg = $event.target.value" class="w-5 h-5 rounded-full cursor-pointer border border-slate-200"/>
                 </div>
-                <div v-if="block.bg_type && block.bg_type !== 'solid'" class="flex items-center gap-1.5 flex-wrap">
+                <div v-if="block.bg_type && !['solid','image'].includes(block.bg_type)" class="flex items-center gap-1.5 flex-wrap">
                   <span class="text-[10px] font-bold text-slate-400">สี 2:</span>
                   <button v-for="p in BG_PRESETS" :key="p.value" @click="block.bg2 = p.value" :title="p.label"
                     :class="['w-5 h-5 rounded-full border-2', block.bg2 === p.value ? 'border-primary' : 'border-slate-200']"
@@ -749,6 +889,18 @@ async function clearHeaderMedia() {
         :output-max-height="1200"
         @close="showCropper = false"
         @cropped="onImageCropped"
+      />
+      <!-- พื้นหลังบล็อก — 1920px JPEG q0.82 ให้ไฟล์เล็กและกว้างพอเต็มจอ -->
+      <ImageCropperModal
+        :show="showBgCropper"
+        :aspect-ratio="NaN"
+        title="รูปพื้นหลังบล็อก"
+        :output-max-width="1920"
+        :output-max-height="1920"
+        output-type="image/jpeg"
+        :output-quality="0.82"
+        @close="showBgCropper = false"
+        @cropped="onBgCropped"
       />
     </Teleport>
   </div>
