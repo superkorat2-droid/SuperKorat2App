@@ -4,7 +4,8 @@ import { useRoute, useRouter } from 'vue-router'
 import { supabase } from '../supabase'
 import PageHero from '../components/PageHero.vue'
 import ImageLinkGallery from '../components/ImageLinkGallery.vue'
-import { getBgStyle as getBgStyleRaw } from '../composables/useBgStyle'
+import { getBgStyle as getBgStyleRaw, bgTextClass } from '../composables/useBgStyle'
+import BgLayers from '../components/BgLayers.vue'
 
 const route   = useRoute()
 const router  = useRouter()
@@ -15,6 +16,14 @@ const loading = ref(true)
 function getBgStyle(block) {
   if (!block.bg_type) return {}
   return getBgStyleRaw(block)
+}
+// block ที่ตั้งพื้นหลังเอง = มีกรอบ; ถ้าเป็นรูปภาพต้องเพิ่มชั้นซ้อน + โทนตัวอักษร
+function blockBgClass(block) {
+  if (!block.bg_type || block.bg_type === 'none') return ''
+  const base = 'rounded-[1.25rem] p-5 sm:p-6 shadow-[0_8px_28px_rgba(30,58,95,0.09)]'
+  return block.bg_type === 'image'
+    ? `${base} relative overflow-hidden ${bgTextClass(block)}`
+    : base
 }
 
 // ── หัวข้อ: ขนาดตัวอักษร (แยกจาก level ซึ่งคุมแค่แท็ก h2/h3/h4 เพื่อ SEO) — ต้องตรงกับ AdminPageEditorView.vue ──
@@ -125,7 +134,9 @@ watch(() => route.params.slug, s => { if (s) load(s) })
         <template v-for="block in (page.blocks || [])" :key="block.id">
         <!-- block ที่ admin ตั้งพื้นหลังเอง = กล่องมีกรอบ (รัศมีตรงกับระบบกระจก)
              block ที่ไม่ได้ตั้ง = เนื้อหาวางบนพื้น aurora ตรงๆ ไม่มีกรอบ -->
-        <div :class="(block.bg_type && block.bg_type !== 'none') ? 'rounded-[1.25rem] p-5 sm:p-6 shadow-[0_8px_28px_rgba(30,58,95,0.09)]' : ''" :style="getBgStyle(block)">
+        <div :class="blockBgClass(block)" :style="getBgStyle(block)">
+          <BgLayers :cfg="block"/>
+          <div :class="block.bg_type === 'image' ? 'relative' : 'contents'">
 
           <!-- HEADING -->
           <component :is="block.level || 'h2'" v-if="block.type === 'heading'"
@@ -219,6 +230,7 @@ watch(() => route.params.slug, s => { if (s) load(s) })
             </details>
           </div>
 
+          </div><!-- /ชั้นเนื้อหา (contents เมื่อไม่ใช่พื้นหลังรูป จึงไม่กระทบ layout เดิม) -->
         </div>
         </template>
 

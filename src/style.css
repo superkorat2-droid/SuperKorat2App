@@ -215,6 +215,30 @@ body::before {
   }
 }
 
+/* ── โทนตัวอักษรบน section ที่ใช้พื้นหลังรูปภาพ ────────────────────
+   รูปภาพเดาความสว่างอัตโนมัติไม่ได้ (isDarkColor ใช้ได้กับ hex เท่านั้น)
+   admin จึงเลือกเองว่าจะให้ตัวหนังสือเป็นโทนเข้มหรือสว่าง
+
+   ⚠️ ต้องไม่ไปกลับสีตัวอักษร "ในการ์ดกระจก" ด้วย — การ์ดยังเป็นพื้นสว่าง
+   ตัวหนังสือข้างในต้องเข้มเหมือนเดิม จึงมีกฎ reset ตามหลังที่ specificity เท่ากัน
+   (ชนะด้วยลำดับ) ครอบพื้นผิวกระจกทุกชนิด
+   ─────────────────────────────────────────────────────────────── */
+.bg-image-on-dark h1, .bg-image-on-dark h2, .bg-image-on-dark h3, .bg-image-on-dark h4 {
+  color: #fff !important;
+  text-shadow: 0 1px 12px rgba(15,23,42,0.35);
+}
+.bg-image-on-dark p, .bg-image-on-dark li {
+  color: rgba(255,255,255,0.88) !important;
+}
+/* คืนค่าเดิมให้ทุกอย่างที่อยู่ในพื้นผิวกระจก */
+.glass-card h1,  .glass-card h2,  .glass-card h3,  .glass-card h4,  .glass-card p,  .glass-card li,
+.glass-tile h1,  .glass-tile h2,  .glass-tile h3,  .glass-tile h4,  .glass-tile p,  .glass-tile li,
+.glass-panel h1, .glass-panel h2, .glass-panel h3, .glass-panel h4, .glass-panel p, .glass-panel li,
+.glass-inset h1, .glass-inset h2, .glass-inset h3, .glass-inset h4, .glass-inset p, .glass-inset li {
+  color: revert !important;
+  text-shadow: none;
+}
+
 /* Fallback: เบราว์เซอร์เก่า / Android WebView ที่ไม่รองรับ backdrop-filter
    → เพิ่มความทึบแทน ไม่งั้นจะได้พื้นโปร่งจางๆ ที่อ่านไม่ออก */
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {

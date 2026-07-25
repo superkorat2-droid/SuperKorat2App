@@ -1,8 +1,12 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useAreaConfig, DEFAULT_HOME_SECTIONS } from '../../composables/useAreaConfig'
-import { BG_TYPES, BG_PRESETS, GRADIENT_PRESETS, getBgStyle, isDarkColor as isDark } from '../../composables/useBgStyle'
+import { BG_TYPES, BG_PRESETS, GRADIENT_PRESETS, getBgStyle, isDarkColor as isDark,
+         BG_POSITIONS, OVERLAY_COLORS, IMAGE_PRESETS, IMAGE_DEFAULTS } from '../../composables/useBgStyle'
 import ImageLinkGalleryEditor from '../../components/ImageLinkGalleryEditor.vue'
+import ImageCropperModal from '../../components/ImageCropperModal.vue'
+import { useExternalUpload, externalUploadEnabled } from '../../composables/useExternalUpload'
+import { useUploadGc } from '../../composables/useUploadGc'
 import Swal from 'sweetalert2'
 
 const { config, fetchConfig, updateConfig } = useAreaConfig()
@@ -10,6 +14,78 @@ const { config, fetchConfig, updateConfig } = useAreaConfig()
 const sections       = ref([])
 const saving         = ref(false)
 const editingSection = ref(null) // section object ที่กำลังจัดการรูปภาพอยู่ (เฉพาะ key ขึ้นต้นด้วย image_gallery)
+
+// ── พื้นหลังรูปภาพ ────────────────────────────────────────────────
+const { uploadImage } = useExternalUpload()
+const gc = useUploadGc()
+const cropTarget = ref(null)   // section ที่กำลังเลือกรูปให้
+const cropSrc    = ref('')
+const uploadingBg = ref(false)
+const saved      = ref(false)  // บันทึกไปแล้วในเซสชันนี้ (ใช้ตัดสินว่าจะเก็บกวาดตอนออกไหม)
+
+function pickBgImage(sec, ev) {
+  const file = ev.target.files?.[0]
+  if (!file) return
+  const reader = new FileReader()
+  reader.onload = e => { cropSrc.value = e.target.result; cropTarget.value = sec }
+  reader.readAsDataURL(file)
+  ev.target.value = ''   // เลือกไฟล์เดิมซ้ำได้
+}
+
+async function onBgCropped({ blob }) {
+  const sec = cropTarget.value
+  cropSrc.value = ''; cropTarget.value = null
+  if (!sec) return
+  uploadingBg.value = true
+  try {
+    const url = await uploadImage(blob, 'section-bg')
+    gc.trackReplaced(sec.bg_image)   // รูปเดิมเข้าคิวรอลบตอนบันทึกสำเร็จ
+    gc.trackUploaded(url)
+    sec.bg_image = url
+    // ตั้งค่าเริ่มต้นให้อ่านออกทันทีถ้ายังไม่เคยตั้ง
+    Object.entries(IMAGE_DEFAULTS).forEach(([k, v]) => { if (sec[k] === undefined) sec[k] = v })
+  } catch (e) {
+    Swal.fire({ icon: 'error', title: 'อัปโหลดไม่สำเร็จ', text: e.message })
+  } finally {
+    uploadingBg.value = false
+  }
+}
+
+function removeBgImage(sec) {
+  gc.trackReplaced(sec.bg_image)
+  sec.bg_image = ''
+}
+
+function applyImagePreset(sec, p) {
+  sec.bg_overlay = p.bg_overlay
+  sec.bg_overlay_color = p.bg_overlay_color
+  sec.bg_blur = p.bg_blur
+  sec.bg_text = p.bg_text
+}
+
+// preset ที่ค่าปัจจุบันตรงเป๊ะ (ไว้ไฮไลต์ปุ่ม)
+function activePreset(sec) {
+  return IMAGE_PRESETS.find(p =>
+    p.bg_overlay === sec.bg_overlay && p.bg_overlay_color === sec.bg_overlay_color &&
+    p.bg_blur === sec.bg_blur && p.bg_text === sec.bg_text
+  )?.key || ''
+}
+
+// style ตัวอย่างในการ์ด admin (ย่อส่วน — ไม่ใส่ blur จริงเพราะกรอบเล็กมาก)
+function bgPreviewStyle(sec) {
+  if (sec.bg_type !== 'image' || !sec.bg_image) return getBgStyle(sec)
+  const c = OVERLAY_COLORS.find(c => c.value === (sec.bg_overlay_color || 'white'))
+  const a = (sec.bg_overlay ?? IMAGE_DEFAULTS.bg_overlay) / 100
+  const veil = c?.rgb ? `rgba(${c.rgb},${a})` : `color-mix(in srgb, var(--color-primary) ${(a*100)|0}%, transparent)`
+  return {
+    backgroundImage: `linear-gradient(${veil},${veil}), url("${sec.bg_image}")`,
+    backgroundSize: 'cover',
+    backgroundPosition: sec.bg_position || IMAGE_DEFAULTS.bg_position,
+  }
+}
+
+// ออกจากหน้าโดยไม่บันทึก → ลบรูปที่เพิ่งอัปทิ้ง ไม่ให้ค้างกินพื้นที่
+onUnmounted(() => { if (!saved.value) gc.discard() })
 
 // ── Section icons ─────────────────────────────────────────────────
 const SECTION_ICONS = {
@@ -50,6 +126,7 @@ async function removeSection(i) {
     confirmButtonColor: '#ef4444', confirmButtonText: 'ลบ', cancelButtonText: 'ยกเลิก',
   })
   if (!res.isConfirmed) return
+  gc.trackReplaced(sections.value[i]?.bg_image)   // รูปพื้นหลังของเซกชันที่ถูกลบ เข้าคิวรอลบด้วย
   sections.value.splice(i, 1)
 }
 
@@ -108,7 +185,16 @@ async function save() {
   if (error) {
     Swal.fire({ icon: 'error', title: 'บันทึกไม่สำเร็จ', text: error.message })
   } else {
-    Swal.fire({ icon: 'success', title: 'บันทึกสำเร็จ', showConfirmButton: false, timer: 1000 })
+    saved.value = true
+    // ลบรูปเก่าบน server หลังบันทึกสำเร็จเท่านั้น — ส่งรายการรูปที่ยังใช้อยู่ไปด้วย
+    // กันเคสรูปเดียวถูกใช้หลายเซกชันแล้วลบอันหนึ่งไปทำให้อีกอันรูปหาย
+    const stillUsed = payload.map(s => s.bg_image).filter(Boolean)
+    const removed = await gc.commit(stillUsed)
+    Swal.fire({
+      icon: 'success', title: 'บันทึกสำเร็จ',
+      text: removed ? `ลบรูปพื้นหลังเดิมบนเซิร์ฟเวอร์ ${removed} ไฟล์` : '',
+      showConfirmButton: false, timer: removed ? 1600 : 1000,
+    })
   }
   saving.value = false
 }
@@ -258,7 +344,7 @@ async function save() {
         </div>
 
         <!-- BG Color picker — ซ่อนเมื่อเลือก "โปร่งใส" เพราะไม่มีสีให้เลือก -->
-        <div v-if="sec.bg_type !== 'none'" class="px-4 pb-3">
+        <div v-if="sec.bg_type !== 'none' && sec.bg_type !== 'image'" class="px-4 pb-3">
           <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">สีพื้นหลัง (สี 1)</p>
           <div class="flex flex-wrap items-center gap-2">
             <button v-for="preset in BG_PRESETS" :key="preset.value"
@@ -306,8 +392,124 @@ async function save() {
           </div>
         </div>
 
+        <!-- ══ พื้นหลังรูปภาพ ══ -->
+        <div v-if="sec.bg_type === 'image'" class="px-4 pb-4 space-y-3">
+
+          <!-- อัปโหลด / ตัวอย่าง -->
+          <div class="flex items-center gap-3">
+            <div class="w-28 h-16 rounded-xl overflow-hidden flex-shrink-0 border border-slate-200 bg-slate-100"
+              :style="sec.bg_image ? bgPreviewStyle(sec) : {}">
+              <div v-if="!sec.bg_image" class="w-full h-full flex items-center justify-center text-slate-300">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3 12V4.5A2.25 2.25 0 015.25 2.25h13.5A2.25 2.25 0 0121 4.5V12M3 12v7.5A2.25 2.25 0 005.25 21.75h13.5A2.25 2.25 0 0021 19.5V12"/>
+                </svg>
+              </div>
+            </div>
+            <div class="flex-1 min-w-0 space-y-1.5">
+              <label class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border-2 border-primary text-primary hover:bg-primary hover:text-white transition-all cursor-pointer">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z"/>
+                </svg>
+                {{ sec.bg_image ? 'เปลี่ยนรูป' : 'เลือกรูป' }}
+                <input type="file" accept="image/*" class="hidden" @change="e => pickBgImage(sec, e)"/>
+              </label>
+              <button v-if="sec.bg_image" @click="removeBgImage(sec)"
+                class="ml-2 text-xs font-bold text-slate-400 hover:text-red-500 transition-colors">ลบรูป</button>
+              <p v-if="uploadingBg" class="text-[11px] text-primary font-bold">กำลังอัปโหลด…</p>
+              <p v-else-if="!externalUploadEnabled" class="text-[11px] text-amber-600">
+                ยังไม่ได้ตั้งค่า VITE_UPLOAD_API_URL — จะอัปโหลดไม่ได้
+              </p>
+              <p v-else class="text-[11px] text-slate-400">รูปถูกย่อเป็น 1920px JPEG ก่อนอัปขึ้นเซิร์ฟเวอร์</p>
+            </div>
+          </div>
+
+          <template v-if="sec.bg_image">
+            <!-- Preset สำเร็จรูป -->
+            <div>
+              <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">รูปแบบสำเร็จรูป</p>
+              <div class="flex flex-wrap gap-1.5">
+                <button v-for="p in IMAGE_PRESETS" :key="p.key"
+                  @click="applyImagePreset(sec, p)" :title="p.desc"
+                  :class="['px-2.5 py-1.5 rounded-lg text-[11px] font-bold border-2 transition-all',
+                    activePreset(sec) === p.key ? 'border-primary bg-primary text-white' : 'border-slate-200 text-slate-600 hover:border-primary/50']">
+                  {{ p.label }}
+                </button>
+              </div>
+            </div>
+
+            <!-- ปรับเอง -->
+            <details class="group">
+              <summary class="flex items-center gap-1.5 text-[11px] font-bold text-slate-500 cursor-pointer select-none">
+                <svg class="w-3 h-3 transition-transform group-open:rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/></svg>
+                ปรับเอง
+              </summary>
+              <div class="mt-2 space-y-3 pl-1">
+
+                <!-- ม่าน -->
+                <div>
+                  <div class="flex items-center justify-between mb-1">
+                    <span class="text-[11px] font-bold text-slate-500">ความทึบของม่าน</span>
+                    <span class="text-[11px] font-mono text-slate-400">{{ sec.bg_overlay ?? 60 }}%</span>
+                  </div>
+                  <input type="range" min="0" max="90" step="5"
+                    :value="sec.bg_overlay ?? 60" @input="sec.bg_overlay = +$event.target.value"
+                    class="w-full accent-[var(--color-primary)]"/>
+                  <div class="flex gap-1.5 mt-1.5">
+                    <button v-for="c in OVERLAY_COLORS" :key="c.value"
+                      @click="sec.bg_overlay_color = c.value"
+                      :class="['px-2 py-1 rounded-lg text-[11px] font-bold border-2 transition-all',
+                        (sec.bg_overlay_color || 'white') === c.value ? 'border-primary text-primary' : 'border-slate-200 text-slate-500']">
+                      {{ c.label }}
+                    </button>
+                  </div>
+                </div>
+
+                <!-- เบลอ -->
+                <div>
+                  <div class="flex items-center justify-between mb-1">
+                    <span class="text-[11px] font-bold text-slate-500">เบลอภาพ</span>
+                    <span class="text-[11px] font-mono text-slate-400">{{ sec.bg_blur ?? 8 }}px</span>
+                  </div>
+                  <input type="range" min="0" max="24" step="2"
+                    :value="sec.bg_blur ?? 8" @input="sec.bg_blur = +$event.target.value"
+                    class="w-full accent-[var(--color-primary)]"/>
+                </div>
+
+                <!-- ตำแหน่งภาพ -->
+                <div>
+                  <p class="text-[11px] font-bold text-slate-500 mb-1.5">ตำแหน่งภาพ</p>
+                  <div class="grid grid-cols-3 gap-1 w-[104px]">
+                    <button v-for="pos in BG_POSITIONS" :key="pos.value"
+                      @click="sec.bg_position = pos.value" :title="pos.value"
+                      :class="['w-8 h-8 rounded-lg text-sm border-2 transition-all',
+                        (sec.bg_position || 'center center') === pos.value ? 'border-primary bg-primary text-white' : 'border-slate-200 text-slate-400 hover:border-primary/50']">
+                      {{ pos.label }}
+                    </button>
+                  </div>
+                </div>
+
+                <!-- โทนตัวอักษร -->
+                <div>
+                  <p class="text-[11px] font-bold text-slate-500 mb-1.5">
+                    โทนตัวอักษรบนภาพ
+                    <span class="font-normal text-slate-400">(เฉพาะหัวข้อ/ข้อความนอกการ์ด)</span>
+                  </p>
+                  <div class="flex gap-1.5">
+                    <button v-for="t in [{v:'dark',l:'เข้ม'},{v:'light',l:'สว่าง'}]" :key="t.v"
+                      @click="sec.bg_text = t.v"
+                      :class="['px-3 py-1 rounded-lg text-[11px] font-bold border-2 transition-all',
+                        (sec.bg_text || 'dark') === t.v ? 'border-primary bg-primary text-white' : 'border-slate-200 text-slate-500']">
+                      {{ t.l }}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </details>
+          </template>
+        </div>
+
         <!-- สี 2 (ปลายทาง) — แสดงเมื่อเลือก gradient -->
-        <div v-if="sec.bg_type && sec.bg_type !== 'solid' && sec.bg_type !== 'none'" class="px-4 pb-4">
+        <div v-if="sec.bg_type && !['solid','none','image'].includes(sec.bg_type)" class="px-4 pb-4">
           <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">สีปลายทาง (สี 2)</p>
           <div class="flex flex-wrap items-center gap-2">
             <button v-for="preset in BG_PRESETS" :key="preset.value"
@@ -395,6 +597,19 @@ async function save() {
         </div>
       </Transition>
     </Teleport>
+
+    <!-- ครอปรูปพื้นหลังเซกชัน — อิสระไม่บังคับสัดส่วน เพราะแต่ละเซกชันสูงไม่เท่ากัน
+         ย่อเป็น 1920px JPEG q0.82 (~200-400KB) ให้โหลดเร็วและไม่ชนลิมิต 5MB ของ upload.php -->
+    <ImageCropperModal
+      v-if="cropSrc"
+      :src="cropSrc"
+      :aspect-ratio="NaN"
+      :output-max-width="1920"
+      :output-max-height="1920"
+      output-type="image/jpeg"
+      :output-quality="0.82"
+      @close="cropSrc = ''; cropTarget = null"
+      @cropped="onBgCropped"/>
   </div>
 </template>
 

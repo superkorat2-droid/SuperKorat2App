@@ -1,5 +1,12 @@
-// useBgStyle — ระบบพื้นหลัง (สีเดียว/ไล่สี) ใช้ร่วมกันทั้ง section หน้าแรกและบล็อกหน้า CMS
-// object ที่รับเข้ามาต้องมี field: bg_type, bg, bg2
+// useBgStyle — ระบบพื้นหลังกลาง ใช้ร่วมกันทั้ง section หน้าแรกและบล็อกหน้า CMS
+//
+// field ที่ object ต้องมี: bg_type, bg, bg2
+// เฉพาะ bg_type='image' ใช้เพิ่ม: bg_image, bg_overlay, bg_overlay_color,
+//                                  bg_blur, bg_position, bg_text
+//
+// เดิม HomeView มีสำเนา getBgStyle ของตัวเอง (รองรับ gradient-rl ที่ตัวกลางไม่มี)
+// ทำให้หน้าแรกกับหน้า CMS ทำงานไม่เหมือนกัน — รวบมาไว้ที่นี่ที่เดียวแล้ว
+// (ตรวจข้อมูลจริงก่อนรวบ: ไม่มี section ไหนใช้ gradient-rl เลย จึงไม่ต้องย้ายค่ามา)
 
 export const BG_TYPES = [
   // 'none' = ไม่ทาสีพื้นเลย ปล่อยให้พื้นหลัง aurora ของเว็บทะลุขึ้นมา
@@ -11,15 +18,85 @@ export const BG_TYPES = [
   { value: 'gradient-lr', label: '→ ซ้าย→ขวา',    preview: (c1, c2) => `linear-gradient(to right, ${c1}, ${c2})` },
   { value: 'radial',      label: '◎ เรืองกลาง',   preview: (c1, c2) => `radial-gradient(ellipse at center, ${c1}, ${c2})` },
   { value: 'radial-in',  label: '◉ สี2กลาง-สี1ขอบ', preview: (c1, c2) => `radial-gradient(ellipse at center, ${c2} 0%, ${c1} 100%)` },
+  { value: 'image',       label: '🖼 รูปภาพ',      preview: ()       => 'transparent' },
 ]
 
+export function isImageBg(obj) {
+  return obj?.bg_type === 'image' && !!obj?.bg_image
+}
+
 export function getBgStyle(obj) {
+  if (!obj) return {}
   if (obj.bg_type === 'none') return {}
+  // ภาพวาดด้วย <BgLayers> (ต้องมีชั้นเบลอ + ชั้นม่านแยก ทำด้วย style object เดียวไม่ได้)
+  if (obj.bg_type === 'image') return {}
   const c1 = obj.bg  || '#ffffff'
   const c2 = obj.bg2 || '#f1f5f9'
   const t  = BG_TYPES.find(t => t.value === (obj.bg_type || 'solid'))
   if (!t || obj.bg_type === 'solid') return { backgroundColor: c1 }
   return { background: t.preview(c1, c2) }
+}
+
+// ── พื้นหลังรูปภาพ ────────────────────────────────────────────────
+
+export const BG_POSITIONS = [
+  { value: 'left top',      label: '↖' }, { value: 'center top',    label: '↑' }, { value: 'right top',    label: '↗' },
+  { value: 'left center',   label: '←' }, { value: 'center center', label: '•' }, { value: 'right center', label: '→' },
+  { value: 'left bottom',   label: '↙' }, { value: 'center bottom', label: '↓' }, { value: 'right bottom', label: '↘' },
+]
+
+// สีม่าน — 'brand' ผูกกับสีแบรนด์ใน DB ผ่าน CSS var จึงเปลี่ยนตามธีมอัตโนมัติ
+export const OVERLAY_COLORS = [
+  { value: 'white', label: 'ขาว',      rgb: '255,255,255' },
+  { value: 'black', label: 'ดำ',       rgb: '15,23,42'    },
+  { value: 'brand', label: 'สีแบรนด์', rgb: null          },
+]
+
+// preset ที่การันตีว่าอ่านออก — คนใช้ทั่วไปกดปุ่มเดียวจบ ไม่ต้องปรับ 5 ค่าเอง
+export const IMAGE_PRESETS = [
+  { key:'soft',  label:'ภาพนุ่ม',    desc:'ปลอดภัยสุด ใช้ได้กับภาพทุกแบบ', bg_overlay:60, bg_overlay_color:'white', bg_blur:8, bg_text:'dark'  },
+  { key:'sharp', label:'ภาพชัด',     desc:'เห็นรายละเอียดภาพ ใช้กับภาพสว่าง', bg_overlay:30, bg_overlay_color:'white', bg_blur:0, bg_text:'dark'  },
+  { key:'dark',  label:'ภาพเข้ม',    desc:'ดูมีพลัง ใช้กับภาพกิจกรรม',      bg_overlay:55, bg_overlay_color:'black', bg_blur:4, bg_text:'light' },
+  { key:'brand', label:'โทนแบรนด์',  desc:'กลืนกับธีมสีของเว็บ',            bg_overlay:65, bg_overlay_color:'brand', bg_blur:6, bg_text:'light' },
+]
+
+export const IMAGE_DEFAULTS = {
+  bg_overlay: 60, bg_overlay_color: 'white', bg_blur: 8,
+  bg_position: 'center center', bg_text: 'dark',
+}
+
+// style ของชั้นรูปภาพ (ชั้นล่างสุด)
+export function bgImageLayerStyle(obj) {
+  const blur = Number(obj.bg_blur ?? IMAGE_DEFAULTS.bg_blur) || 0
+  return {
+    backgroundImage:    `url("${obj.bg_image}")`,
+    backgroundSize:     'cover',
+    backgroundPosition: obj.bg_position || IMAGE_DEFAULTS.bg_position,
+    backgroundRepeat:   'no-repeat',
+    ...(blur ? {
+      filter: `blur(${blur}px)`,
+      // ขยายเผื่อ เพราะ blur ทำให้ขอบภาพจางจนเห็นพื้นหลังลอดตรงมุม
+      transform: `scale(${1 + blur / 100 + 0.04})`,
+    } : {}),
+  }
+}
+
+// style ของชั้นม่าน (ทับรูป อยู่ใต้เนื้อหา)
+export function bgOverlayLayerStyle(obj) {
+  const pct = Number(obj.bg_overlay ?? IMAGE_DEFAULTS.bg_overlay) || 0
+  if (!pct) return { display: 'none' }
+  const c = OVERLAY_COLORS.find(c => c.value === (obj.bg_overlay_color || 'white'))
+  const a = pct / 100
+  return c?.rgb
+    ? { backgroundColor: `rgba(${c.rgb},${a})` }
+    : { backgroundColor: `color-mix(in srgb, var(--color-primary) ${pct}%, transparent)` }
+}
+
+// class ของสีตัวอักษรบนพื้นภาพ — รูปภาพเดาความสว่างอัตโนมัติไม่ได้เหมือนสีเดียว
+// (isDarkColor ใช้กับ hex เท่านั้น) จึงให้ admin เลือกเอง
+export function bgTextClass(obj) {
+  if (!isImageBg(obj)) return ''
+  return (obj.bg_text || IMAGE_DEFAULTS.bg_text) === 'light' ? 'bg-image-on-dark' : 'bg-image-on-light'
 }
 
 export const BG_PRESETS = [

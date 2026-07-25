@@ -8,28 +8,23 @@ import NewsCard from '../components/NewsCard.vue'
 import { ICON_MAP } from '../composables/useIcons.js'
 import { useEducationNews } from '../composables/useEducationNews'
 import { TYPE_LABEL, TYPE_COLOR, formatEventDateRange } from '../composables/useNithetEventMeta'
+import BgLayers from '../components/BgLayers.vue'
+import { getBgStyle as getBgStyleRaw, bgTextClass } from '../composables/useBgStyle'
 
 const router = useRouter()
 
 const { config, fetchConfig } = useAreaConfig()
 
-// ── Section background style ─────────────────────────────────────
+// ── Section background ───────────────────────────────────────────
+// ใช้ตัวกลางจาก useBgStyle (เดิมไฟล์นี้มีสำเนาของตัวเอง ทำให้หน้าแรกกับหน้า CMS
+// ทำงานไม่เหมือนกัน) — ยังไม่เคยตั้งอะไรเลย = โปร่งใส ปล่อย aurora ทะลุขึ้นมา
 function getBgStyle(sec) {
-  // 'none' หรือยังไม่เคยตั้งสีเลย → โปร่งใส ปล่อยให้พื้นหลัง aurora ของเว็บทะลุขึ้นมา
-  // (ถ้าทุก section ทาสีทึบ จะบัง aurora ทั้งหน้าจนไม่เห็นว่าเป็นธีมกระจก)
-  if (sec.bg_type === 'none') return {}
   if (!sec.bg && !sec.bg_type) return {}
-  const c1 = sec.bg  || '#ffffff'
-  const c2 = sec.bg2 || '#f1f5f9'
-  switch (sec.bg_type) {
-    case 'gradient-tb': return { background: `linear-gradient(to bottom, ${c1}, ${c2})` }
-    case 'gradient-bt': return { background: `linear-gradient(to top, ${c1}, ${c2})` }
-    case 'gradient-lr': return { background: `linear-gradient(to right, ${c1}, ${c2})` }
-    case 'gradient-rl': return { background: `linear-gradient(to left, ${c1}, ${c2})` }
-    case 'radial':      return { background: `radial-gradient(ellipse at center, ${c1} 0%, ${c2} 100%)` }
-    case 'radial-in':   return { background: `radial-gradient(ellipse at center, ${c2} 0%, ${c1} 100%)` }
-    default:            return { backgroundColor: c1 }
-  }
+  return getBgStyleRaw(sec)
+}
+// class ที่ต้องแปะบน section เมื่อพื้นหลังเป็นรูปภาพ
+function secBgClass(sec) {
+  return sec.bg_type === 'image' ? ['relative', 'overflow-hidden', bgTextClass(sec)] : []
 }
 
 // ── Banners ─────────────────────────────────────────────────────
@@ -552,9 +547,10 @@ const stats = [
 
         <!-- ══ NEWS ══ -->
         <section v-if="sec.key === 'news'"
-          :style="getBgStyle(sec)"
+          :style="getBgStyle(sec)" :class="secBgClass(sec)"
           class="py-8 md:py-12">
-          <div class="max-w-7xl mx-auto px-4">
+          <BgLayers :cfg="sec"/>
+          <div class="relative max-w-7xl mx-auto px-4">
             <div class="flex items-end justify-between mb-8">
               <div>
                 <span v-if="sec.subtitle || sec.key === 'news'" class="text-secondary font-bold uppercase text-xs tracking-[0.18em] block mb-1">{{ sec.subtitle || 'Latest News' }}</span>
@@ -602,8 +598,9 @@ const stats = [
         </section>
 
         <!-- ══ SUPERVISION LIST ══ -->
-        <section v-else-if="sec.key === 'supervision_list'" :style="getBgStyle(sec)" class="py-8 md:py-12">
-          <div class="max-w-4xl mx-auto px-4">
+        <section v-else-if="sec.key === 'supervision_list'" :style="getBgStyle(sec)" :class="secBgClass(sec)" class="py-8 md:py-12">
+          <BgLayers :cfg="sec"/>
+          <div class="relative max-w-4xl mx-auto px-4">
             <h2 class="text-2xl md:text-3xl font-extrabold text-slate-800 mb-2 text-center">{{ sec.title }}</h2>
             <p class="text-slate-500 text-sm mb-8 text-center">แบบนิเทศและแบบสอบถามที่เปิดรับอยู่</p>
 
@@ -771,8 +768,9 @@ const stats = [
         </section>
 
         <!-- ══ NITHET CALENDAR ══ -->
-        <section v-else-if="sec.key === 'nithet_calendar'" :style="getBgStyle(sec)" class="py-8 md:py-12">
-          <div class="max-w-4xl mx-auto px-4">
+        <section v-else-if="sec.key === 'nithet_calendar'" :style="getBgStyle(sec)" :class="secBgClass(sec)" class="py-8 md:py-12">
+          <BgLayers :cfg="sec"/>
+          <div class="relative max-w-4xl mx-auto px-4">
             <h2 class="text-2xl md:text-3xl font-extrabold text-slate-800 mb-2 text-center">{{ sec.title }}</h2>
             <p class="text-slate-500 text-sm mb-8 text-center">กำหนดการนิเทศโรงเรียนและกิจกรรมของกลุ่มนิเทศที่ใกล้ถึง</p>
 
@@ -815,8 +813,9 @@ const stats = [
         </section>
 
         <!-- ══ EDUCATION NEWS (Google RSS) ══ -->
-        <section v-else-if="sec.key === 'education_news'" :style="getBgStyle(sec)" class="py-8 md:py-10">
-          <div class="max-w-7xl mx-auto px-4">
+        <section v-else-if="sec.key === 'education_news'" :style="getBgStyle(sec)" :class="secBgClass(sec)" class="py-8 md:py-10">
+          <BgLayers :cfg="sec"/>
+          <div class="relative max-w-7xl mx-auto px-4">
             <!-- Header -->
             <div class="flex items-end justify-between mb-6">
               <div>
@@ -881,8 +880,9 @@ const stats = [
         </section>
 
         <!-- ══ SERVICES (e-services) ══ -->
-        <section v-else-if="sec.key === 'services'" :style="getBgStyle(sec)">
-          <div class="py-8 md:py-12">
+        <section v-else-if="sec.key === 'services'" :style="getBgStyle(sec)" :class="secBgClass(sec)">
+          <BgLayers :cfg="sec"/>
+          <div class="relative py-8 md:py-12">
             <div class="max-w-7xl mx-auto px-4">
               <div class="text-center mb-12">
                 <span v-if="sec.subtitle || sec.key === 'services'" class="text-secondary font-bold uppercase text-xs tracking-[0.18em] mb-2 block">{{ sec.subtitle || 'E-Service Center' }}</span>
@@ -910,8 +910,9 @@ const stats = [
 
         <!-- ══ IMAGE GALLERY (เพิ่มได้หลายเซกชัน key ขึ้นต้นด้วย image_gallery ข้อมูลฝังในตัว sec.gallery) ══ -->
         <section v-else-if="sec.key.startsWith('image_gallery') && sec.gallery?.items?.length"
-          :style="getBgStyle(sec)" class="py-8 md:py-12">
-          <div class="max-w-7xl mx-auto px-4">
+          :style="getBgStyle(sec)" :class="secBgClass(sec)" class="py-8 md:py-12">
+          <BgLayers :cfg="sec"/>
+          <div class="relative max-w-7xl mx-auto px-4">
             <div class="text-center mb-12">
               <span v-if="sec.subtitle" class="text-secondary font-bold uppercase text-xs tracking-[0.18em] mb-2 block">{{ sec.subtitle }}</span>
               <h2 class="text-3xl md:text-4xl font-extrabold text-slate-900 accent-line-center">{{ sec.title || 'ภาพลิงก์' }}</h2>
@@ -922,9 +923,10 @@ const stats = [
 
         <!-- ══ CTA ══ -->
         <section v-else-if="sec.key === 'cta'"
-          :style="getBgStyle(sec)"
+          :style="getBgStyle(sec)" :class="secBgClass(sec)"
           class="pb-16">
-          <div class="max-w-7xl mx-auto px-4">
+          <BgLayers :cfg="sec"/>
+          <div class="relative max-w-7xl mx-auto px-4">
             <div class="gradient-primary rounded-3xl p-8 md:p-12 text-center text-white relative overflow-hidden">
               <div class="absolute inset-0 opacity-[0.06]">
                 <svg width="100%" height="100%">
