@@ -9,6 +9,7 @@ import { ICON_MAP } from '../composables/useIcons.js'
 import { useEducationNews } from '../composables/useEducationNews'
 import { TYPE_LABEL, TYPE_COLOR, formatEventDateRange } from '../composables/useNithetEventMeta'
 import BgLayers from '../components/BgLayers.vue'
+import MonthCalendar from '../components/calendar/MonthCalendar.vue'
 import { getBgStyle as getBgStyleRaw, bgTextClass } from '../composables/useBgStyle'
 
 const router = useRouter()
@@ -142,9 +143,22 @@ const needsEduNewsSection = computed(() =>
 )
 
 // ── Nithet calendar (home section) ────────────────────────────────
-const nithetEvents        = ref([])
+// ปฏิทินต้องใช้กิจกรรม "ทุกเดือน" (เดินย้อน/ไปข้างหน้าได้) ส่วนรายการด้านล่าง
+// ใช้เฉพาะที่ใกล้ถึง จึงเก็บชุดเต็มไว้แล้วค่อย derive รายการสั้นออกมา
+const allNithetEvents     = ref([])
 const loadingNithetEvents = ref(false)
 const NITHET_HOME_LIMIT = 4
+
+const now = new Date()
+const calYear  = ref(now.getFullYear())
+const calMonth = ref(now.getMonth())
+
+const nithetEvents = computed(() => {
+  const today = new Date().toISOString().slice(0, 10)
+  return allNithetEvents.value
+    .filter(e => e.end_date >= today)
+    .slice(0, NITHET_HOME_LIMIT)
+})
 
 const needsNithetCalendarSection = computed(() =>
   orderedSections.value.some(s => s.key === 'nithet_calendar' && s.visible)
@@ -153,11 +167,8 @@ const needsNithetCalendarSection = computed(() =>
 async function fetchNithetEvents() {
   loadingNithetEvents.value = true
   const { data } = await supabase.rpc('get_nithet_events_public')
-  const today = new Date().toISOString().slice(0, 10)
-  nithetEvents.value = (Array.isArray(data) ? data : [])
-    .filter(e => e.end_date >= today)
+  allNithetEvents.value = (Array.isArray(data) ? data : [])
     .sort((a, b) => a.start_date.localeCompare(b.start_date) || (a.start_time || '').localeCompare(b.start_time || ''))
-    .slice(0, NITHET_HOME_LIMIT)
   loadingNithetEvents.value = false
 }
 
@@ -772,33 +783,47 @@ const stats = [
           <BgLayers :cfg="sec"/>
           <div class="relative max-w-4xl mx-auto px-4">
             <h2 class="text-2xl md:text-3xl font-extrabold text-slate-800 mb-2 text-center">{{ sec.title }}</h2>
-            <p class="text-slate-500 text-sm mb-8 text-center">กำหนดการนิเทศโรงเรียนและกิจกรรมของกลุ่มนิเทศที่ใกล้ถึง</p>
+            <p class="text-slate-500 text-sm mb-6 text-center">กำหนดการนิเทศโรงเรียนและกิจกรรมของกลุ่มนิเทศ — เลื่อนดูเดือนอื่นได้</p>
 
             <div v-if="loadingNithetEvents" class="flex justify-center py-12">
               <div class="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin"/>
             </div>
 
-            <div v-else-if="nithetEvents.length === 0"
-              class="text-center py-12 glass-card text-slate-500">
-              <svg class="w-12 h-12 mx-auto mb-3 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5m-9-6h.008v.008H12v-.008z"/>
-              </svg>
-              <p class="font-medium">ยังไม่มีกำหนดการในขณะนี้</p>
-            </div>
+            <template v-else>
+              <!-- ปฏิทินจริง — เดินดูย้อนหลัง/ล่วงหน้าได้ คลิกกิจกรรมไปหน้าปฏิทินเต็ม -->
+              <MonthCalendar
+                :events="allNithetEvents"
+                v-model:year="calYear" v-model:month="calMonth"
+                @select-event="router.push('/nithet')"
+                @select-day="router.push('/nithet')"/>
 
-            <div v-else class="space-y-3">
-              <RouterLink v-for="event in nithetEvents" :key="event.id" to="/nithet"
-                class="block glass-card glass-card-hover p-4">
-                <div class="flex flex-wrap items-center gap-2 mb-1.5">
-                  <span :class="['text-xs font-bold px-2.5 py-0.5 rounded-full', TYPE_COLOR[event.type]?.bg, TYPE_COLOR[event.type]?.text]">
-                    {{ TYPE_LABEL[event.type] }}
-                  </span>
-                  <span class="text-xs text-slate-400">{{ formatEventDateRange(event) }}</span>
+              <!-- คำอธิบายสีประเภทกิจกรรม -->
+              <div class="flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 mt-4">
+                <span v-for="(label, key) in TYPE_LABEL" :key="key" class="flex items-center gap-1.5 text-xs text-slate-600">
+                  <span :class="['w-2.5 h-2.5 rounded-full', TYPE_COLOR[key]?.dot]"></span>
+                  {{ label }}
+                </span>
+              </div>
+
+              <!-- กำหนดการที่ใกล้ถึง -->
+              <template v-if="nithetEvents.length">
+                <p class="text-sm font-bold text-slate-700 mt-8 mb-3">กำหนดการที่ใกล้ถึง</p>
+                <div class="space-y-3">
+                  <RouterLink v-for="event in nithetEvents" :key="event.id" to="/nithet"
+                    class="block glass-card glass-card-hover p-4">
+                    <div class="flex flex-wrap items-center gap-2 mb-1.5">
+                      <span :class="['text-xs font-bold px-2.5 py-0.5 rounded-full', TYPE_COLOR[event.type]?.bg, TYPE_COLOR[event.type]?.text]">
+                        {{ TYPE_LABEL[event.type] }}
+                      </span>
+                      <span class="text-xs text-slate-500">{{ formatEventDateRange(event) }}</span>
+                    </div>
+                    <h3 class="font-bold text-slate-800">{{ event.title }}</h3>
+                    <p v-if="event.schools?.length" class="text-xs text-slate-500 mt-1">โรงเรียน: {{ event.schools.map(s => s.name).join(', ') }}</p>
+                  </RouterLink>
                 </div>
-                <h3 class="font-bold text-slate-800">{{ event.title }}</h3>
-                <p v-if="event.schools?.length" class="text-xs text-slate-400 mt-1">โรงเรียน: {{ event.schools.map(s => s.name).join(', ') }}</p>
-              </RouterLink>
-            </div>
+              </template>
+              <p v-else class="text-center text-sm text-slate-500 mt-6">ไม่มีกำหนดการที่ใกล้ถึงในขณะนี้</p>
+            </template>
 
             <div class="text-center mt-8">
               <RouterLink to="/nithet"

@@ -10,6 +10,7 @@ const props = defineProps({
 })
 const emit = defineEmits(['update:year', 'update:month', 'select-event', 'select-day'])
 
+// มือถือช่องเล็กกว่ามาก แสดง pill ได้น้อยกว่า ที่เหลือสรุปเป็น "+N เพิ่มเติม"
 const MAX_PILLS = 3
 
 const weeks = computed(() => buildMonthWeeks(props.year, props.month))
@@ -37,15 +38,15 @@ function goNext() {
 </script>
 
 <template>
-  <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+  <div class="glass-card overflow-hidden">
     <!-- Header -->
-    <div class="flex items-center justify-between px-4 py-3 border-b border-slate-100">
+    <div class="flex items-center justify-between px-4 py-3 border-b border-slate-900/[0.06]">
       <button @click="goPrev" type="button" class="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 transition-colors">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5"/></svg>
       </button>
       <div class="flex items-center gap-3">
         <p class="font-extrabold text-slate-800">{{ MONTH_LABELS[month] }} {{ year + 543 }}</p>
-        <button @click="goToday" type="button" class="px-2.5 py-1 text-xs font-bold bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 transition-colors">
+        <button @click="goToday" type="button" class="px-2.5 py-1 text-xs font-bold bg-white/70 ring-1 ring-slate-900/[0.06] text-slate-600 rounded-lg hover:bg-white transition-colors">
           วันนี้
         </button>
       </div>
@@ -55,8 +56,8 @@ function goNext() {
     </div>
 
     <!-- Weekday row -->
-    <div class="grid grid-cols-7 border-b border-slate-100">
-      <div v-for="w in WEEKDAY_LABELS" :key="w" class="text-center text-[11px] font-bold text-slate-400 py-2">{{ w }}</div>
+    <div class="grid grid-cols-7 border-b border-slate-900/[0.06]">
+      <div v-for="w in WEEKDAY_LABELS" :key="w" class="text-center text-[11px] font-bold text-slate-500 py-2">{{ w }}</div>
     </div>
 
     <!-- Weeks -->
@@ -64,10 +65,10 @@ function goNext() {
       <template v-for="(week, wi) in weeks" :key="wi">
         <div v-for="cell in week" :key="toDateKey(cell.date)"
           @click="emit('select-day', toDateKey(cell.date))"
-          :class="['min-h-[86px] p-1.5 border-b border-r border-slate-100 cursor-pointer hover:bg-slate-50 transition-colors',
-            !cell.inMonth && 'bg-slate-50/50']">
+          :class="['min-h-[58px] sm:min-h-[86px] p-1 sm:p-1.5 border-b border-r border-slate-900/[0.06] cursor-pointer hover:bg-white/60 transition-colors',
+            !cell.inMonth && 'bg-slate-500/[0.03]']">
           <p :class="['text-xs font-bold w-5 h-5 flex items-center justify-center rounded-full mb-1',
-            toDateKey(cell.date) === todayKey ? 'bg-primary text-white' : (cell.inMonth ? 'text-slate-600' : 'text-slate-300')]">
+            toDateKey(cell.date) === todayKey ? 'bg-primary text-white' : (cell.inMonth ? 'text-slate-600' : 'text-slate-400')]">
             {{ cell.date.getDate() }}
           </p>
           <div class="space-y-0.5">
