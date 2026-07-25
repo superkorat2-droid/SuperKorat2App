@@ -18,23 +18,22 @@ const editingSection = ref(null) // section object ที่กำลังจ�
 // ── พื้นหลังรูปภาพ ────────────────────────────────────────────────
 const { uploadImage } = useExternalUpload()
 const gc = useUploadGc()
-const cropTarget = ref(null)   // section ที่กำลังเลือกรูปให้
-const cropSrc    = ref('')
-const uploadingBg = ref(false)
-const saved      = ref(false)  // บันทึกไปแล้วในเซสชันนี้ (ใช้ตัดสินว่าจะเก็บกวาดตอนออกไหม)
+// ImageCropperModal มี file input + drag&drop ของตัวเองอยู่ข้างใน
+// หน้าที่เราคือแค่เปิดมันขึ้นมาแล้วจำว่าเปิดให้ section ไหน
+const showBgCropper = ref(false)
+const cropTarget    = ref(null)
+const uploadingBg   = ref(false)
+const saved         = ref(false)  // บันทึกไปแล้วในเซสชันนี้ (ใช้ตัดสินว่าจะเก็บกวาดตอนออกไหม)
 
-function pickBgImage(sec, ev) {
-  const file = ev.target.files?.[0]
-  if (!file) return
-  const reader = new FileReader()
-  reader.onload = e => { cropSrc.value = e.target.result; cropTarget.value = sec }
-  reader.readAsDataURL(file)
-  ev.target.value = ''   // เลือกไฟล์เดิมซ้ำได้
+function pickBgImage(sec) {
+  cropTarget.value    = sec
+  showBgCropper.value = true
 }
 
 async function onBgCropped({ blob }) {
   const sec = cropTarget.value
-  cropSrc.value = ''; cropTarget.value = null
+  showBgCropper.value = false
+  cropTarget.value = null
   if (!sec) return
   uploadingBg.value = true
   try {
@@ -406,13 +405,13 @@ async function save() {
               </div>
             </div>
             <div class="flex-1 min-w-0 space-y-1.5">
-              <label class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border-2 border-primary text-primary hover:bg-primary hover:text-white transition-all cursor-pointer">
+              <button @click="pickBgImage(sec)" :disabled="uploadingBg"
+                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border-2 border-primary text-primary hover:bg-primary hover:text-white transition-all disabled:opacity-50">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z"/>
                 </svg>
                 {{ sec.bg_image ? 'เปลี่ยนรูป' : 'เลือกรูป' }}
-                <input type="file" accept="image/*" class="hidden" @change="e => pickBgImage(sec, e)"/>
-              </label>
+              </button>
               <button v-if="sec.bg_image" @click="removeBgImage(sec)"
                 class="ml-2 text-xs font-bold text-slate-400 hover:text-red-500 transition-colors">ลบรูป</button>
               <p v-if="uploadingBg" class="text-[11px] text-primary font-bold">กำลังอัปโหลด…</p>
@@ -601,14 +600,14 @@ async function save() {
     <!-- ครอปรูปพื้นหลังเซกชัน — อิสระไม่บังคับสัดส่วน เพราะแต่ละเซกชันสูงไม่เท่ากัน
          ย่อเป็น 1920px JPEG q0.82 (~200-400KB) ให้โหลดเร็วและไม่ชนลิมิต 5MB ของ upload.php -->
     <ImageCropperModal
-      v-if="cropSrc"
-      :src="cropSrc"
+      :show="showBgCropper"
       :aspect-ratio="NaN"
+      title="รูปพื้นหลังเซกชัน"
       :output-max-width="1920"
       :output-max-height="1920"
       output-type="image/jpeg"
       :output-quality="0.82"
-      @close="cropSrc = ''; cropTarget = null"
+      @close="showBgCropper = false; cropTarget = null"
       @cropped="onBgCropped"/>
   </div>
 </template>
