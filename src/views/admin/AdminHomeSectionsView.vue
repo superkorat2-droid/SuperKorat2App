@@ -307,7 +307,7 @@ async function save() {
         </div>
 
         <!-- สี 2 (ปลายทาง) — แสดงเมื่อเลือก gradient -->
-        <div v-if="sec.bg_type && sec.bg_type !== 'solid'" class="px-4 pb-4">
+        <div v-if="sec.bg_type && sec.bg_type !== 'solid' && sec.bg_type !== 'none'" class="px-4 pb-4">
           <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">สีปลายทาง (สี 2)</p>
           <div class="flex flex-wrap items-center gap-2">
             <button v-for="preset in BG_PRESETS" :key="preset.value"

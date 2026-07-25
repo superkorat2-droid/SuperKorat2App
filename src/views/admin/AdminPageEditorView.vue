@@ -684,7 +684,7 @@ async function clearHeaderMedia() {
               <summary class="flex items-center gap-1.5 text-xs font-bold text-slate-500 cursor-pointer select-none">
                 <svg class="w-3.5 h-3.5 transition-transform group-open:rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/></svg>
                 🎨 พื้นหลังบล็อก
-                <span v-if="block.bg_type" class="w-3 h-3 rounded-full border border-slate-300 ml-1" :style="getBgStyle(block)"></span>
+                <span v-if="block.bg_type && block.bg_type !== 'none'" class="w-3 h-3 rounded-full border border-slate-300 ml-1" :style="getBgStyle(block)"></span>
               </summary>
               <div class="mt-2 space-y-2 pl-1">
                 <div class="flex flex-wrap gap-1.5">
@@ -693,7 +693,8 @@ async function clearHeaderMedia() {
                       !block.bg_type ? 'border-primary bg-primary text-white' : 'border-slate-200 text-slate-500 hover:border-primary/50']">
                     ไม่มี
                   </button>
-                  <button v-for="t in BG_TYPES" :key="t.value" @click="block.bg_type = t.value" type="button"
+                  <!-- ตัด 'none' ออก — ที่นี่มีปุ่ม "ไม่มี" (bg_type = '') ที่ให้ผลเดียวกันอยู่แล้ว จะซ้ำซ้อน -->
+                  <button v-for="t in BG_TYPES.filter(t => t.value !== 'none')" :key="t.value" @click="block.bg_type = t.value" type="button"
                     :class="['px-2.5 py-1 rounded-lg text-[11px] font-bold border-2 transition-all',
                       block.bg_type === t.value ? 'border-primary bg-primary text-white' : 'border-slate-200 text-slate-500 hover:border-primary/50']">
                     {{ t.label }}
