@@ -125,7 +125,9 @@ watch(() => route.params.slug, s => { if (s) load(s) })
         page.layout === 'medium' ? 'max-w-5xl' : 'max-w-3xl'
       ]">
         <template v-for="block in (page.blocks || [])" :key="block.id">
-        <div :class="block.bg_type ? 'rounded-2xl p-5 sm:p-6' : ''" :style="getBgStyle(block)">
+        <!-- block ที่ admin ตั้งพื้นหลังเอง = กล่องมีกรอบ (รัศมีตรงกับระบบกระจก)
+             block ที่ไม่ได้ตั้ง = เนื้อหาวางบนพื้น aurora ตรงๆ ไม่มีกรอบ -->
+        <div :class="block.bg_type ? 'rounded-[1.25rem] p-5 sm:p-6 shadow-[0_8px_28px_rgba(30,58,95,0.09)]' : ''" :style="getBgStyle(block)">
 
           <!-- HEADING -->
           <component :is="block.level || 'h2'" v-if="block.type === 'heading'"

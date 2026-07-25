@@ -26,7 +26,7 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
   <Transition enter-active-class="transition duration-300 ease-out" enter-from-class="opacity-0 translate-y-3 scale-90"
     leave-active-class="transition duration-200 ease-in" leave-to-class="opacity-0 translate-y-3 scale-90">
     <button v-if="visible" @click="scrollToTop" aria-label="เลื่อนขึ้นด้านบน"
-      class="fixed bottom-5 right-4 sm:bottom-7 sm:right-7 z-40 w-12 h-12 rounded-full bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm shadow-lg hover:shadow-xl flex items-center justify-center group hover:scale-105 active:scale-95 transition-all">
+      class="fixed bottom-5 right-4 sm:bottom-7 sm:right-7 z-40 w-12 h-12 rounded-full glass-panel flex items-center justify-center group hover:scale-105 active:scale-95 transition-transform">
       <svg class="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 48 48">
         <circle cx="24" cy="24" :r="RADIUS" fill="none" stroke="currentColor" stroke-width="2.5"
           class="text-slate-200 dark:text-slate-700"/>

@@ -48,7 +48,7 @@ function linkAttrs(item) {
     <div v-if="meta(layout).pattern === 'full'" class="grid gap-5" :class="meta(layout).cols">
       <component :is="itemTag(item)" v-for="item in items" :key="item.id"
         v-bind="linkAttrs(item)"
-        :class="['group relative block bg-slate-100 dark:bg-slate-700 rounded-2xl overflow-hidden shadow-sm border border-slate-100 dark:border-slate-700 transition-all hover:shadow-lg hover:-translate-y-1', meta(layout).aspect]">
+        :class="['group relative block glass-card glass-card-hover overflow-hidden', meta(layout).aspect]">
         <img v-if="item.image_url" :src="item.image_url" :alt="item.title" class="w-full h-full object-cover"/>
         <div v-if="item.title || item.caption" class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent p-3 pt-6">
           <p v-if="item.title" class="text-white text-sm font-bold leading-snug break-words">{{ item.title }}</p>
@@ -61,8 +61,8 @@ function linkAttrs(item) {
     <div v-else-if="meta(layout).pattern === 'card'" class="grid gap-5" :class="meta(layout).cols">
       <component :is="itemTag(item)" v-for="item in items" :key="item.id"
         v-bind="linkAttrs(item)"
-        class="group block bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm overflow-hidden transition-all hover:shadow-lg hover:-translate-y-1">
-        <div :class="['bg-slate-100 dark:bg-slate-700 overflow-hidden', meta(layout).aspect]">
+        class="group block glass-card glass-card-hover overflow-hidden">
+        <div :class="['bg-slate-100/60 overflow-hidden', meta(layout).aspect]">
           <img v-if="item.image_url" :src="item.image_url" :alt="item.title"
             class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"/>
         </div>
@@ -77,7 +77,7 @@ function linkAttrs(item) {
     <div v-else-if="meta(layout).pattern === 'plain'" class="grid gap-3" :class="meta(layout).cols">
       <component :is="itemTag(item)" v-for="item in items" :key="item.id"
         v-bind="linkAttrs(item)"
-        :class="['group relative block bg-slate-100 dark:bg-slate-700 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-all', meta(layout).aspect]">
+        :class="['group relative block glass-card glass-card-hover overflow-hidden', meta(layout).aspect]">
         <img v-if="item.image_url" :src="item.image_url" :alt="item.title"
           class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"/>
       </component>
@@ -87,7 +87,7 @@ function linkAttrs(item) {
     <div v-else-if="meta(layout).pattern === 'caption'" class="grid gap-3" :class="meta(layout).cols">
       <component :is="itemTag(item)" v-for="item in items" :key="item.id"
         v-bind="linkAttrs(item)"
-        :class="['group relative block bg-slate-100 dark:bg-slate-700 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-all', meta(layout).aspect]">
+        :class="['group relative block glass-card glass-card-hover overflow-hidden', meta(layout).aspect]">
         <img v-if="item.image_url" :src="item.image_url" :alt="item.title"
           class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"/>
         <div v-if="item.title" class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-3 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -100,8 +100,8 @@ function linkAttrs(item) {
     <div v-else class="space-y-3">
       <component :is="itemTag(item)" v-for="item in items" :key="item.id"
         v-bind="linkAttrs(item)"
-        class="group flex items-center gap-4 bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm p-3 transition-all hover:shadow-md hover:border-primary/30">
-        <div class="w-16 h-16 flex-shrink-0 bg-slate-100 dark:bg-slate-700 rounded-xl overflow-hidden">
+        class="group flex items-center gap-4 glass-card glass-card-hover p-3">
+        <div class="w-16 h-16 flex-shrink-0 glass-inset overflow-hidden">
           <img v-if="item.image_url" :src="item.image_url" :alt="item.title" class="w-full h-full object-cover"/>
         </div>
         <div class="flex-1 min-w-0">

@@ -31,7 +31,7 @@ const mediaAspectRatio = computed(() => RATIO_CSS[props.aspectRatio] || '21 / 9'
 
   <!-- โหมดไอคอน (ค่าเริ่มต้น) -->
   <div v-else :class="align === 'center' ? 'text-center' : 'text-left'">
-    <div v-if="showIcon" :class="['w-16 h-16 rounded-2xl overflow-hidden flex items-center justify-center mb-4 bg-primary-light',
+    <div v-if="showIcon" :class="['w-16 h-16 rounded-2xl overflow-hidden flex items-center justify-center mb-4 bg-primary-light ring-1 ring-white/70 shadow-[0_6px_20px_rgba(30,58,95,0.10)]',
       align === 'center' ? 'mx-auto' : '']">
       <svg v-if="isIconKey(icon)" class="w-7 h-7 text-primary" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" :d="iconPath(icon)"/>
