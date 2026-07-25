@@ -4,6 +4,7 @@ import { useAreaConfig, DEFAULT_HOME_SECTIONS } from '../../composables/useAreaC
 import { BG_TYPES, BG_PRESETS, GRADIENT_PRESETS, getBgStyle, isDarkColor as isDark,
          BG_POSITIONS, OVERLAY_COLORS, IMAGE_PRESETS, IMAGE_DEFAULTS } from '../../composables/useBgStyle'
 import ImageLinkGalleryEditor from '../../components/ImageLinkGalleryEditor.vue'
+import YoutubeGridEditor from '../../components/YoutubeGridEditor.vue'
 import ImageCropperModal from '../../components/ImageCropperModal.vue'
 import { useExternalUpload, externalUploadEnabled } from '../../composables/useExternalUpload'
 import { useUploadGc } from '../../composables/useUploadGc'
@@ -93,6 +94,8 @@ const SECTION_ICONS = {
   supervision_list:'M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25zM6.75 12h.008v.008H6.75V12zm0 3h.008v.008H6.75V15zm0 3h.008v.008H6.75V18z',
   services:        'M13.5 16.875h3.375m0 0h3.375m-3.375 0V13.5m0 3.375v3.375M6 10.5h2.25a2.25 2.25 0 002.25-2.25V6a2.25 2.25 0 00-2.25-2.25H6A2.25 2.25 0 003.75 6v2.25A2.25 2.25 0 006 10.5zm0 9.75h2.25A2.25 2.25 0 0010.5 18v-2.25a2.25 2.25 0 00-2.25-2.25H6a2.25 2.25 0 00-2.25 2.25V18A2.25 2.25 0 006 20.25zm9.75-9.75H18a2.25 2.25 0 002.25-2.25V6A2.25 2.25 0 0018 3.75h-2.25A2.25 2.25 0 0013.5 6v2.25a2.25 2.25 0 002.25 2.25z',
   image_gallery:   'M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3 12V4.5A2.25 2.25 0 015.25 2.25h13.5A2.25 2.25 0 0121 4.5V12M3 12v7.5A2.25 2.25 0 005.25 21.75h13.5A2.25 2.25 0 0021 19.5V12M3 12l4.5-4.5',
+  youtube:         'M21.582 6.186a2.506 2.506 0 00-1.768-1.768C18.254 4 12 4 12 4s-6.254 0-7.814.418c-.86.23-1.538.908-1.768 1.768C2 7.746 2 12 2 12s0 4.254.418 5.814c.23.86.908 1.538 1.768 1.768C5.746 20 12 20 12 20s6.254 0 7.814-.418a2.506 2.506 0 001.768-1.768C22 16.254 22 12 22 12s0-4.254-.418-5.814zM10 15.5v-7l6 3.5-6 3.5z',
+  custom_html:     'M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3l-4.5 16.5',
   cta:             'M12 18v-5.25m0 0a6.01 6.01 0 001.5-.189m-1.5.189a6.01 6.01 0 01-1.5-.189m3.75 7.478a12.06 12.06 0 01-4.5 0m3.75 2.383a14.406 14.406 0 01-3 0M14.25 18v-.192c0-.983.658-1.823 1.508-2.316a7.5 7.5 0 10-7.517 0c.85.493 1.509 1.333 1.509 2.316V18',
 }
 
@@ -102,13 +105,41 @@ const SECTION_DESC = {
   supervision_list:'รายการแบบนิเทศ/สอบถามที่เปิดรับ + ดูสถานะโรงเรียน',
   services:        'สถิติเขต + เมนูบริการออนไลน์',
   image_gallery:   'ภาพลิงก์ — กำหนดรูปภาพ/ลิงก์ที่จะแสดงในหน้าแรกได้เอง',
+  youtube:         'การ์ดลิงก์ YouTube — กำหนดคอลัมน์/แถวได้ เกินแล้วแบ่งหน้าอัตโนมัติ',
+  custom_html:     'แทรกโค้ด HTML/CSS/JS เอง — เอกสารเต็มจะรันใน iframe แยก ปรับความสูงอัตโนมัติ',
   cta:             'แบนเนอร์เชิญชวน + ลิงก์หลัก',
 }
 
 // keys ของเซกชันภาพลิงก์ไม่คงที่ (image_gallery_<timestamp>) — ต้องเช็คด้วย prefix แทน exact match
 function isGallerySection(sec) { return sec.key.startsWith('image_gallery') }
-function sectionIcon(sec) { return isGallerySection(sec) ? SECTION_ICONS.image_gallery : (SECTION_ICONS[sec.key] || SECTION_ICONS.news) }
-function sectionDesc(sec) { return isGallerySection(sec) ? SECTION_DESC.image_gallery : (SECTION_DESC[sec.key] || '') }
+function isYoutubeSection(sec) { return sec.key.startsWith('youtube') }
+function isHtmlSection(sec)    { return sec.key.startsWith('custom_html') }
+// เซกชันที่เพิ่มเองได้จะมี key แบบ <ชนิด>_<timestamp> ต้องเช็คด้วย prefix ไม่ใช่ exact match
+function customKind(sec) {
+  if (isGallerySection(sec)) return 'image_gallery'
+  if (isYoutubeSection(sec)) return 'youtube'
+  if (isHtmlSection(sec))    return 'custom_html'
+  return ''
+}
+function isCustomSection(sec) { return !!customKind(sec) }
+function sectionIcon(sec) { return SECTION_ICONS[customKind(sec) || sec.key] || SECTION_ICONS.news }
+function sectionDesc(sec) { return SECTION_DESC[customKind(sec) || sec.key] || '' }
+
+function addYoutubeSection() {
+  sections.value.push({
+    key: `youtube_${Date.now()}`, label: 'การ์ด YouTube', subtitle: 'Video', title: 'วิดีโอแนะนำ', visible: true,
+    bg: '#ffffff', bg2: '#f1f5f9', bg_type: 'none', order: sections.value.length + 1,
+    youtube: { cols: 4, rows: 3, items: [] },
+  })
+}
+
+function addHtmlSection() {
+  sections.value.push({
+    key: `custom_html_${Date.now()}`, label: 'โค้ดกำหนดเอง', subtitle: '', title: '', visible: true,
+    bg: '#ffffff', bg2: '#f1f5f9', bg_type: 'none', order: sections.value.length + 1,
+    html_code: '', html_full_width: false,
+  })
+}
 
 function addGallerySection() {
   const key = `image_gallery_${Date.now()}`
@@ -219,6 +250,14 @@ async function save() {
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
         เพิ่มเซกชันภาพลิงก์
       </button>
+      <button @click="addYoutubeSection" type="button"
+        class="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold border-2 border-dashed border-slate-300 text-slate-500 hover:border-primary hover:text-primary transition-all">
+        + เพิ่มเซกชันการ์ด YouTube
+      </button>
+      <button @click="addHtmlSection" type="button"
+        class="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold border-2 border-dashed border-slate-300 text-slate-500 hover:border-primary hover:text-primary transition-all">
+        + เพิ่มเซกชันโค้ด HTML
+      </button>
       <button @click="save" :disabled="saving"
         class="flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary-dark text-white font-bold rounded-2xl shadow-md transition-all hover:-translate-y-0.5 disabled:opacity-50">
         <svg v-if="saving" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
@@ -282,13 +321,15 @@ async function save() {
           </div>
 
           <!-- จัดการรูปภาพ / ลบ (เฉพาะเซกชันภาพลิงก์) -->
-          <div v-if="isGallerySection(sec)" class="flex-shrink-0 flex items-center gap-2">
+          <div v-if="isCustomSection(sec)" class="flex-shrink-0 flex items-center gap-2">
             <button @click="editingSection = sec" type="button"
               class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border-2 border-primary/30 text-primary hover:bg-primary/5 transition-all">
               <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3 12V4.5A2.25 2.25 0 015.25 2.25h13.5A2.25 2.25 0 0121 4.5V12M3 12v7.5A2.25 2.25 0 005.25 21.75h13.5A2.25 2.25 0 0021 19.5V12M3 12l4.5-4.5"/>
               </svg>
-              จัดการรูปภาพ ({{ sec.gallery?.items?.length || 0 }})
+              <template v-if="isGallerySection(sec)">จัดการรูปภาพ ({{ sec.gallery?.items?.length || 0 }})</template>
+              <template v-else-if="isYoutubeSection(sec)">จัดการวิดีโอ ({{ sec.youtube?.items?.length || 0 }})</template>
+              <template v-else>แก้ไขโค้ด</template>
             </button>
             <button @click="removeSection(i)" type="button"
               class="p-1.5 rounded-xl text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all" title="ลบเซกชันนี้">
@@ -576,13 +617,35 @@ async function save() {
         <div v-if="editingSection" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <div class="glass-panel rounded-3xl w-full max-w-2xl max-h-[92vh] flex flex-col overflow-hidden">
             <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100 flex-shrink-0">
-              <h2 class="text-lg font-extrabold text-slate-800">จัดการรูปภาพ — ภาพลิงก์หน้าแรก</h2>
+              <h2 class="text-lg font-extrabold text-slate-800">
+                <template v-if="isGallerySection(editingSection)">จัดการรูปภาพ — ภาพลิงก์หน้าแรก</template>
+                <template v-else-if="isYoutubeSection(editingSection)">จัดการวิดีโอ — การ์ด YouTube</template>
+                <template v-else>แทรกโค้ด HTML / CSS / JS</template>
+              </h2>
               <button @click="editingSection = null" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 text-slate-400">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
               </button>
             </div>
             <div class="flex-1 overflow-y-auto px-6 py-5">
-              <ImageLinkGalleryEditor :gallery="editingSection.gallery"/>
+              <ImageLinkGalleryEditor v-if="isGallerySection(editingSection)" :gallery="editingSection.gallery"/>
+
+              <YoutubeGridEditor v-else-if="isYoutubeSection(editingSection)" :model-value="editingSection.youtube"/>
+
+              <div v-else class="space-y-3">
+                <textarea v-model="editingSection.html_code" rows="16" spellcheck="false"
+                  placeholder="วางโค้ดที่นี่ — ใส่เอกสารเต็ม (<!DOCTYPE html>…) หรือชิ้นส่วน HTML ก็ได้"
+                  class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-xs font-mono leading-relaxed bg-white focus:outline-none focus:border-primary"></textarea>
+                <label class="flex items-center gap-2 text-sm text-slate-600 cursor-pointer select-none">
+                  <input type="checkbox" v-model="editingSection.html_full_width" class="w-4 h-4 rounded accent-[var(--color-primary)]"/>
+                  แสดงเต็มความกว้างจอ (ไม่จำกัดขอบเหมือนเซกชันอื่น)
+                </label>
+                <div class="glass-inset p-3 text-[11px] text-slate-600 leading-relaxed space-y-1">
+                  <p><b>เอกสารเต็ม</b> (ขึ้นต้นด้วย <code>&lt;!DOCTYPE&gt;</code> หรือ <code>&lt;html&gt;</code>) จะรันใน iframe แยก —
+                     CSS/JS ข้างในไม่ชนกับเว็บหลัก และความสูงปรับตามเนื้อหาอัตโนมัติทุกครั้งที่ย่อ/ขยายจอ</p>
+                  <p><b>ชิ้นส่วน HTML</b> จะแทรกลงหน้าตรงๆ ใช้สไตล์ของเว็บได้เลย แต่ไม่รัน <code>&lt;script&gt;</code></p>
+                  <p class="text-amber-700">โค้ดที่แทรกทำงานบนเว็บจริง ใส่เฉพาะโค้ดที่ตรวจสอบแล้วเท่านั้น</p>
+                </div>
+              </div>
             </div>
             <div class="flex gap-3 px-6 py-4 border-t border-slate-100 flex-shrink-0">
               <button @click="editingSection = null" type="button" class="flex-1 py-2.5 rounded-2xl border border-slate-200 text-sm font-bold text-slate-600 hover:bg-slate-50">

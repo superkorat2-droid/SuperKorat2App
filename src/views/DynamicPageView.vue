@@ -4,6 +4,8 @@ import { useRoute, useRouter } from 'vue-router'
 import { supabase } from '../supabase'
 import PageHero from '../components/PageHero.vue'
 import ImageLinkGallery from '../components/ImageLinkGallery.vue'
+import YoutubeCardGrid from '../components/YoutubeCardGrid.vue'
+import CustomHtmlBlock from '../components/CustomHtmlBlock.vue'
 import { getBgStyle as getBgStyleRaw, bgTextClass } from '../composables/useBgStyle'
 import BgLayers from '../components/BgLayers.vue'
 
@@ -175,18 +177,12 @@ watch(() => route.params.slug, s => { if (s) load(s) })
           </div>
 
           <!-- HTML: full document → auto-height iframe | snippet → v-html -->
-          <template v-else-if="block.type === 'html' && block.code">
-            <div v-if="/<!DOCTYPE|<html/i.test(block.code)" class="rounded-2xl overflow-hidden w-full">
-              <iframe
-                :srcdoc="htmlWithHeightScript(block.code, block.id)"
-                sandbox="allow-scripts allow-same-origin"
-                class="w-full border-0 block"
-                :style="`height:${iframeHeights[block.id] || 200}px`"
-                scrolling="no"
-              />
-            </div>
-            <div v-else class="prose prose-slate max-w-none rounded-2xl overflow-hidden" v-html="block.code"/>
-          </template>
+          <CustomHtmlBlock v-else-if="block.type === 'html' && block.code"
+            :code="block.code" :block-id="block.id"/>
+
+          <!-- YOUTUBE CARDS -->
+          <YoutubeCardGrid v-else-if="block.type === 'youtube' && block.items?.length"
+            :items="block.items" :cols="block.cols || 4" :rows="block.rows || 3"/>
 
           <!-- DIVIDER -->
           <hr v-else-if="block.type === 'divider'"

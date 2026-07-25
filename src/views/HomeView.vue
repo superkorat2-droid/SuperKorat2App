@@ -10,6 +10,8 @@ import { useEducationNews } from '../composables/useEducationNews'
 import { TYPE_LABEL, TYPE_COLOR, formatEventDateRange } from '../composables/useNithetEventMeta'
 import BgLayers from '../components/BgLayers.vue'
 import MonthCalendar from '../components/calendar/MonthCalendar.vue'
+import YoutubeCardGrid from '../components/YoutubeCardGrid.vue'
+import CustomHtmlBlock from '../components/CustomHtmlBlock.vue'
 import EventDetailModal from '../components/calendar/EventDetailModal.vue'
 import { useHolidays } from '../composables/useHolidays'
 import { getBgStyle as getBgStyleRaw, bgTextClass } from '../composables/useBgStyle'
@@ -949,6 +951,32 @@ const stats = [
         </section>
 
         <!-- ══ IMAGE GALLERY (เพิ่มได้หลายเซกชัน key ขึ้นต้นด้วย image_gallery ข้อมูลฝังในตัว sec.gallery) ══ -->
+        <!-- ══ YOUTUBE CARDS ══ -->
+        <section v-else-if="sec.key.startsWith('youtube') && sec.youtube?.items?.length"
+          :style="getBgStyle(sec)" :class="secBgClass(sec)" class="py-8 md:py-12">
+          <BgLayers :cfg="sec"/>
+          <div class="relative max-w-7xl mx-auto px-4">
+            <div class="text-center mb-8">
+              <p v-if="sec.subtitle" class="text-secondary text-xs font-bold uppercase tracking-[0.18em] mb-2">{{ sec.subtitle }}</p>
+              <h2 class="text-2xl md:text-3xl font-extrabold text-slate-900 accent-line-center">{{ sec.title }}</h2>
+            </div>
+            <YoutubeCardGrid :items="sec.youtube.items" :cols="sec.youtube.cols || 4" :rows="sec.youtube.rows || 3"/>
+          </div>
+        </section>
+
+        <!-- ══ CUSTOM HTML/CSS/JS ══ -->
+        <section v-else-if="sec.key.startsWith('custom_html') && sec.html_code"
+          :style="getBgStyle(sec)" :class="secBgClass(sec)" class="py-8 md:py-12">
+          <BgLayers :cfg="sec"/>
+          <div :class="['relative mx-auto px-4', sec.html_full_width ? 'max-w-none px-0' : 'max-w-7xl']">
+            <div v-if="sec.title" class="text-center mb-8">
+              <p v-if="sec.subtitle" class="text-secondary text-xs font-bold uppercase tracking-[0.18em] mb-2">{{ sec.subtitle }}</p>
+              <h2 class="text-2xl md:text-3xl font-extrabold text-slate-900 accent-line-center">{{ sec.title }}</h2>
+            </div>
+            <CustomHtmlBlock :code="sec.html_code" :block-id="sec.key"/>
+          </div>
+        </section>
+
         <section v-else-if="sec.key.startsWith('image_gallery') && sec.gallery?.items?.length"
           :style="getBgStyle(sec)" :class="secBgClass(sec)" class="py-8 md:py-12">
           <BgLayers :cfg="sec"/>

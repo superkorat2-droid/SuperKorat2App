@@ -7,6 +7,7 @@ import ImageCropperModal from '../../components/ImageCropperModal.vue'
 import { useExternalUpload, externalUploadEnabled, deleteUploadedFile } from '../../composables/useExternalUpload'
 import IconPicker from '../../components/IconPicker.vue'
 import ImageLinkGalleryEditor from '../../components/ImageLinkGalleryEditor.vue'
+import YoutubeGridEditor from '../../components/YoutubeGridEditor.vue'
 import { BG_TYPES, BG_PRESETS, GRADIENT_PRESETS, getBgStyle,
          BG_POSITIONS, OVERLAY_COLORS, IMAGE_PRESETS, IMAGE_DEFAULTS } from '../../composables/useBgStyle'
 import { useUploadGc } from '../../composables/useUploadGc'
@@ -63,6 +64,7 @@ const BLOCK_TYPES = [
   { type: 'media-text', label: 'ภาพ+ข้อความ',    iconName: 'presentation' },
   { type: 'button',     label: 'ปุ่ม CTA',        iconName: 'star'         },
   { type: 'accordion',  label: 'Accordion/FAQ',   iconName: 'clipboard'    },
+  { type: 'youtube',    label: 'การ์ด YouTube',   iconName: 'presentation' },
 ]
 
 function newBlock(type) {
@@ -78,6 +80,7 @@ function newBlock(type) {
     case 'media-text':  return { ...base, url: '', side: 'left', heading: '', text: '' }
     case 'button':      return { ...base, text: '', link_type: 'internal', link_url: '', align: 'center' }
     case 'accordion':   return { ...base, items: [] }
+    case 'youtube':     return { ...base, cols: 4, rows: 3, items: [] }
     default:            return base
   }
 }
@@ -751,6 +754,9 @@ async function clearHeaderMedia() {
                 เพิ่มคำถาม
               </button>
             </template>
+
+            <!-- YOUTUBE CARDS -->
+            <YoutubeGridEditor v-else-if="block.type === 'youtube'" :model-value="block"/>
 
             <!-- พื้นหลังบล็อก — ใช้ได้กับทุก block type -->
             <details class="mt-3 pt-3 border-t border-slate-100 group">
