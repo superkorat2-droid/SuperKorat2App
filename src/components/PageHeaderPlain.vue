@@ -40,7 +40,7 @@ const mediaAspectRatio = computed(() => RATIO_CSS[props.aspectRatio] || '21 / 9'
     </div>
 
     <p v-if="eyebrow" class="text-xs text-primary font-bold uppercase tracking-widest mb-1">{{ eyebrow }}</p>
-    <h1 class="text-3xl font-extrabold text-slate-900 dark:text-slate-100">{{ title }}</h1>
-    <p v-if="subtitle" class="text-slate-500 dark:text-slate-400 mt-2 text-sm">{{ subtitle }}</p>
+    <h1 class="text-3xl font-extrabold text-slate-900">{{ title }}</h1>
+    <p v-if="subtitle" class="text-slate-500 mt-2 text-sm">{{ subtitle }}</p>
   </div>
 </template>

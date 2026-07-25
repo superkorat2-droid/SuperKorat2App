@@ -261,7 +261,7 @@ function visibleContact(p) {
               </svg>
             </button>
             <div class="absolute -bottom-12 left-1/2 -translate-x-1/2">
-              <div class="w-24 h-24 rounded-full overflow-hidden ring-4 ring-white dark:ring-slate-900 shadow-xl bg-slate-100 dark:bg-slate-700">
+              <div class="w-24 h-24 rounded-full overflow-hidden ring-4 ring-white shadow-xl bg-slate-100">
                 <img v-if="selected.avatar_url" :src="selected.avatar_url" class="w-full h-full object-cover object-top"/>
                 <div v-else class="w-full h-full flex items-center justify-center text-3xl font-extrabold text-primary">
                   {{ displayName(selected)[0] || '?' }}
@@ -271,7 +271,7 @@ function visibleContact(p) {
           </div>
           <div class="pt-16 pb-6 px-6">
             <div class="text-center mb-4">
-              <h2 class="text-lg font-extrabold text-slate-900 dark:text-slate-50 leading-tight break-keep break-words">{{ displayName(selected) }}</h2>
+              <h2 class="text-lg font-extrabold text-slate-900 leading-tight break-keep break-words">{{ displayName(selected) }}</h2>
               <p class="text-primary font-bold text-sm mt-0.5">{{ isExec(selected) ? selected.position : (selected.position_level || selected.position) }}</p>
               <p v-if="selected.department" class="text-slate-400 text-xs mt-0.5">{{ selected.department }}</p>
             </div>
@@ -279,14 +279,14 @@ function visibleContact(p) {
               <span v-for="s in selected.subjects" :key="s" class="text-xs font-bold px-2.5 py-1 bg-secondary/10 text-secondary rounded-full">{{ s }}</span>
             </div>
             <div v-if="(selected.expertise||[]).length" class="flex flex-wrap justify-center gap-1.5 mb-3">
-              <span v-for="e in selected.expertise" :key="e" class="text-xs px-2.5 py-1 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded-full">{{ e }}</span>
+              <span v-for="e in selected.expertise" :key="e" class="text-xs px-2.5 py-1 bg-slate-100 text-slate-500 rounded-full">{{ e }}</span>
             </div>
             <p v-if="selected.bio && selected.bio !== selected.position_level && selected.bio !== selected.position"
-              class="text-sm text-slate-600 dark:text-slate-300 leading-relaxed text-center mb-4 border-t border-slate-100 dark:border-slate-800 pt-3">{{ selected.bio }}</p>
-            <div v-if="visibleContact(selected).length" class="border-t border-slate-100 dark:border-slate-800 pt-3 mb-3 space-y-2">
+              class="text-sm text-slate-600 leading-relaxed text-center mb-4 border-t border-slate-100 pt-3">{{ selected.bio }}</p>
+            <div v-if="visibleContact(selected).length" class="border-t border-slate-100 pt-3 mb-3 space-y-2">
               <a v-for="c in visibleContact(selected)" :key="c.key" :href="c.href"
-                class="flex items-center gap-2.5 text-sm text-slate-600 dark:text-slate-300 hover:text-primary transition-colors group">
-                <div class="w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center flex-shrink-0 group-hover:bg-primary/10">
+                class="flex items-center gap-2.5 text-sm text-slate-600 hover:text-primary transition-colors group">
+                <div class="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center flex-shrink-0 group-hover:bg-primary/10">
                   <svg class="w-3.5 h-3.5 text-slate-500 group-hover:text-primary" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" :d="c.svgPath"/>
                   </svg>
@@ -294,9 +294,9 @@ function visibleContact(p) {
                 <span>{{ c.label }}</span>
               </a>
             </div>
-            <div v-if="visibleSocials(selected).length" class="border-t border-slate-100 dark:border-slate-800 pt-3 flex flex-wrap gap-2">
+            <div v-if="visibleSocials(selected).length" class="border-t border-slate-100 pt-3 flex flex-wrap gap-2">
               <a v-for="sc in visibleSocials(selected)" :key="sc.key" :href="sc.url" target="_blank" rel="noopener"
-                class="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-primary/10 hover:text-primary rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 transition-colors">
+                class="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-primary/10 hover:text-primary rounded-xl text-xs font-bold text-slate-600 transition-colors">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" :d="sc.svgPath"/>
                 </svg>
@@ -339,7 +339,7 @@ function visibleContact(p) {
 
 /* card-cover = ภาพเต็มบน aspect ratio แนวตั้ง */
 .card-cover {
-  @apply relative overflow-hidden flex-shrink-0 bg-slate-100 dark:bg-slate-700;
+  @apply relative overflow-hidden flex-shrink-0 bg-slate-100;
   aspect-ratio: 3.5 / 4;
 }
 .card-cover img {
@@ -353,9 +353,6 @@ function visibleContact(p) {
   background: linear-gradient(to bottom, transparent 65%, rgba(255,255,255,0.75) 100%);
   pointer-events: none;
 }
-.dark .card-cover::after {
-  background: linear-gradient(to bottom, transparent 65%, rgba(30,41,59,0.75) 100%);
-}
 /* avatar-wrap ไม่ใช้แล้วใน card */
 .card-avatar-wrap, .card-avatar { display: none; }
 .avatar-initial {
@@ -367,7 +364,7 @@ function visibleContact(p) {
   @apply pt-3 pb-4 px-3 text-center flex-1 flex flex-col items-center;
 }
 .card-name {
-  @apply w-full font-extrabold text-slate-800 dark:text-slate-100 leading-tight whitespace-nowrap overflow-hidden;
+  @apply w-full font-extrabold text-slate-800 leading-tight whitespace-nowrap overflow-hidden;
 }
 /* ใช้ var โดยตรงแทน @apply text-primary — @apply กับ custom class ของโปรเจค
    ในไฟล์ scoped พังได้ถ้า style.css ยังไม่ถูก process ก่อน (ดูหมายเหตุด้านบน) */
@@ -384,6 +381,6 @@ function visibleContact(p) {
   @apply relative flex flex-col items-center;
 }
 .org-h-line {
-  @apply h-px bg-slate-300 dark:bg-slate-600 absolute top-6;
+  @apply h-px bg-slate-300 absolute top-6;
 }
 </style>

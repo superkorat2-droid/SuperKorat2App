@@ -37,25 +37,25 @@ function goNext() {
 </script>
 
 <template>
-  <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+  <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden">
     <!-- Header -->
-    <div class="flex items-center justify-between px-4 py-3 border-b border-slate-100 dark:border-slate-700">
-      <button @click="goPrev" type="button" class="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+    <div class="flex items-center justify-between px-4 py-3 border-b border-slate-100">
+      <button @click="goPrev" type="button" class="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 transition-colors">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5"/></svg>
       </button>
       <div class="flex items-center gap-3">
-        <p class="font-extrabold text-slate-800 dark:text-slate-100">{{ MONTH_LABELS[month] }} {{ year + 543 }}</p>
-        <button @click="goToday" type="button" class="px-2.5 py-1 text-xs font-bold bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors">
+        <p class="font-extrabold text-slate-800">{{ MONTH_LABELS[month] }} {{ year + 543 }}</p>
+        <button @click="goToday" type="button" class="px-2.5 py-1 text-xs font-bold bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 transition-colors">
           วันนี้
         </button>
       </div>
-      <button @click="goNext" type="button" class="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+      <button @click="goNext" type="button" class="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 transition-colors">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/></svg>
       </button>
     </div>
 
     <!-- Weekday row -->
-    <div class="grid grid-cols-7 border-b border-slate-100 dark:border-slate-700">
+    <div class="grid grid-cols-7 border-b border-slate-100">
       <div v-for="w in WEEKDAY_LABELS" :key="w" class="text-center text-[11px] font-bold text-slate-400 py-2">{{ w }}</div>
     </div>
 
@@ -64,10 +64,10 @@ function goNext() {
       <template v-for="(week, wi) in weeks" :key="wi">
         <div v-for="cell in week" :key="toDateKey(cell.date)"
           @click="emit('select-day', toDateKey(cell.date))"
-          :class="['min-h-[86px] p-1.5 border-b border-r border-slate-100 dark:border-slate-700 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/40 transition-colors',
-            !cell.inMonth && 'bg-slate-50/50 dark:bg-slate-900/30']">
+          :class="['min-h-[86px] p-1.5 border-b border-r border-slate-100 cursor-pointer hover:bg-slate-50 transition-colors',
+            !cell.inMonth && 'bg-slate-50/50']">
           <p :class="['text-xs font-bold w-5 h-5 flex items-center justify-center rounded-full mb-1',
-            toDateKey(cell.date) === todayKey ? 'bg-primary text-white' : (cell.inMonth ? 'text-slate-600 dark:text-slate-300' : 'text-slate-300 dark:text-slate-600')]">
+            toDateKey(cell.date) === todayKey ? 'bg-primary text-white' : (cell.inMonth ? 'text-slate-600' : 'text-slate-300')]">
             {{ cell.date.getDate() }}
           </p>
           <div class="space-y-0.5">

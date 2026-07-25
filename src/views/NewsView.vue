@@ -102,7 +102,7 @@ const catMeta = {
 </script>
 
 <template>
-  <div class="font-sarabun dark:text-slate-100 min-h-screen">
+  <div class="font-sarabun min-h-screen">
 
     <!-- ── Hero bar ──────────────────────────────────────────────── -->
     <PageHero v-if="!header.hidden"

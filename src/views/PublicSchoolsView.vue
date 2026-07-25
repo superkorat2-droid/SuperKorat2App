@@ -92,7 +92,7 @@ function resetFilters() {
 </script>
 
 <template>
-  <div class="font-sarabun dark:text-slate-100 min-h-screen">
+  <div class="font-sarabun min-h-screen">
 
     <!-- ── Hero ── -->
     <PageHero v-if="!header.hidden"
@@ -111,7 +111,7 @@ function resetFilters() {
           <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/>
         </svg>
         <input v-model="searchQ" type="text" placeholder="ค้นหาชื่อโรงเรียน รหัส DMC ..."
-          class="w-full pl-11 pr-4 py-3 rounded-2xl border border-slate-200 dark:border-slate-700
+          class="w-full pl-11 pr-4 py-3 rounded-2xl border border-slate-200
                  bg-white/70 backdrop-blur text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"/>
       </div>
 
@@ -119,21 +119,21 @@ function resetFilters() {
       <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div class="glass-tile p-4 text-center">
           <p class="text-2xl font-extrabold text-primary transition-all duration-300">{{ stats.total }}</p>
-          <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">โรงเรียน</p>
+          <p class="text-xs text-slate-500 mt-0.5">โรงเรียน</p>
         </div>
         <div class="glass-tile p-4 text-center">
           <p class="text-2xl font-extrabold text-emerald-600 transition-all duration-300">{{ stats.withWebsite }}</p>
-          <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">มีเว็บไซต์</p>
+          <p class="text-xs text-slate-500 mt-0.5">มีเว็บไซต์</p>
         </div>
         <div class="glass-tile p-4 text-center">
           <p class="text-2xl font-extrabold text-blue-600 transition-all duration-300">{{ stats.withGps }}</p>
-          <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">มีพิกัด GPS</p>
+          <p class="text-xs text-slate-500 mt-0.5">มีพิกัด GPS</p>
         </div>
         <div class="glass-tile p-4 text-center">
           <p class="text-2xl font-extrabold text-amber-600 transition-all duration-300">
             {{ stats.avgDist ?? '—' }}<span v-if="stats.avgDist" class="text-sm font-normal ml-0.5">กม.</span>
           </p>
-          <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">ระยะทางเฉลี่ย</p>
+          <p class="text-xs text-slate-500 mt-0.5">ระยะทางเฉลี่ย</p>
         </div>
       </div>
 
@@ -209,12 +209,12 @@ function resetFilters() {
                 </svg>
               </div>
               <div class="flex-1 min-w-0">
-                <p class="font-extrabold text-slate-800 dark:text-slate-100 text-sm leading-snug line-clamp-2">{{ s.name }}</p>
+                <p class="font-extrabold text-slate-800 text-sm leading-snug line-clamp-2">{{ s.name }}</p>
                 <p class="text-[11px] text-slate-400 mt-0.5 font-mono">{{ s.dmc_code }}</p>
               </div>
             </div>
 
-            <div class="space-y-1.5 text-xs text-slate-500 dark:text-slate-400">
+            <div class="space-y-1.5 text-xs text-slate-500">
               <div class="flex items-center gap-1.5">
                 <svg class="w-3.5 h-3.5 flex-shrink-0 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z"/>
@@ -237,15 +237,15 @@ function resetFilters() {
           </div>
 
           <!-- Card actions -->
-          <div class="px-4 pb-4 pt-2 border-t border-slate-50 dark:border-slate-700 flex gap-2">
+          <div class="px-4 pb-4 pt-2 border-t border-slate-50 flex gap-2">
             <!-- นำทาง -->
             <button @click="navigateTo(s)"
               :disabled="!s.lat || !s.lng"
               :title="s.lat && s.lng ? 'เปิด Google Maps นำทาง' : 'ไม่มีพิกัด GPS'"
               :class="['flex items-center justify-center gap-1.5 flex-1 py-2 rounded-xl text-xs font-bold transition-all',
                 s.lat && s.lng
-                  ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400'
-                  : 'bg-slate-50 text-slate-300 cursor-not-allowed dark:bg-slate-700 dark:text-slate-500']">
+                  ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                  : 'bg-slate-50 text-slate-300 cursor-not-allowed']">
               <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498l4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 00-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0z"/>
               </svg>
@@ -253,7 +253,7 @@ function resetFilters() {
             </button>
             <!-- รายละเอียด -->
             <button @click="openModal(s)"
-              class="flex items-center justify-center gap-1.5 flex-1 py-2 rounded-xl text-xs font-bold bg-primary/10 text-primary hover:bg-primary/20 dark:bg-primary/20 dark:hover:bg-primary/30 transition-all">
+              class="flex items-center justify-center gap-1.5 flex-1 py-2 rounded-xl text-xs font-bold bg-primary/10 text-primary hover:bg-primary/20 transition-all">
               <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25"/>
               </svg>
@@ -301,12 +301,12 @@ function resetFilters() {
                   </svg>
                 </div>
                 <div>
-                  <h2 class="font-extrabold text-slate-800 dark:text-slate-100 leading-snug">{{ modalSchool.name }}</h2>
+                  <h2 class="font-extrabold text-slate-800 leading-snug">{{ modalSchool.name }}</h2>
                   <p class="text-xs text-slate-400 font-mono mt-0.5">{{ modalSchool.dmc_code }}</p>
                 </div>
               </div>
               <button @click="closeModal"
-                class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 transition-colors flex-shrink-0 ml-2">
+                class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 text-slate-400 transition-colors flex-shrink-0 ml-2">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
                 </svg>
@@ -338,7 +338,7 @@ function resetFilters() {
               </div>
               <div v-else class="space-y-3">
                 <div v-for="p in modalPrincipals" :key="p.id"
-                  class="flex items-center gap-4 p-3 bg-slate-50 dark:bg-slate-700/50 rounded-2xl">
+                  class="flex items-center gap-4 p-3 bg-slate-50 rounded-2xl">
                   <!-- Photo -->
                   <div class="w-12 h-12 rounded-full overflow-hidden bg-primary/10 flex items-center justify-center flex-shrink-0 shadow-sm">
                     <img v-if="p.photo_url" :src="p.photo_url" :alt="p.name" class="w-full h-full object-cover"/>
@@ -348,9 +348,9 @@ function resetFilters() {
                   </div>
                   <!-- Info -->
                   <div class="flex-1 min-w-0">
-                    <p class="font-bold text-slate-800 dark:text-slate-100">{{ p.name }}</p>
+                    <p class="font-bold text-slate-800">{{ p.name }}</p>
                     <span class="text-xs bg-primary/10 text-primary font-bold px-2 py-0.5 rounded-full">{{ p.position }}</span>
-                    <div class="flex flex-wrap gap-x-3 mt-1.5 text-xs text-slate-500 dark:text-slate-400">
+                    <div class="flex flex-wrap gap-x-3 mt-1.5 text-xs text-slate-500">
                       <a v-if="p.phone && p.visibility?.phone" :href="`tel:${p.phone}`"
                         class="flex items-center gap-1 hover:text-primary transition-colors">
                         📞 {{ p.phone }}
@@ -372,35 +372,35 @@ function resetFilters() {
             <div v-if="modalTab === 'info'" class="px-5 py-5 space-y-4">
 
               <!-- Location info -->
-              <div class="bg-slate-50 dark:bg-slate-700/50 rounded-2xl p-4 space-y-2.5">
-                <p class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">ที่ตั้ง</p>
+              <div class="bg-slate-50 rounded-2xl p-4 space-y-2.5">
+                <p class="text-xs font-bold text-slate-500 uppercase tracking-wider">ที่ตั้ง</p>
                 <div class="grid grid-cols-2 gap-2 text-sm">
                   <div>
                     <p class="text-[10px] text-slate-400 uppercase tracking-wide">ตำบล</p>
-                    <p class="font-semibold text-slate-700 dark:text-slate-200">{{ modalSchool.subdistrict || '—' }}</p>
+                    <p class="font-semibold text-slate-700">{{ modalSchool.subdistrict || '—' }}</p>
                   </div>
                   <div>
                     <p class="text-[10px] text-slate-400 uppercase tracking-wide">อำเภอ</p>
-                    <p class="font-semibold text-slate-700 dark:text-slate-200">{{ modalSchool.district || '—' }}</p>
+                    <p class="font-semibold text-slate-700">{{ modalSchool.district || '—' }}</p>
                   </div>
                   <div class="col-span-2">
                     <p class="text-[10px] text-slate-400 uppercase tracking-wide">ศูนย์เครือข่าย</p>
-                    <p class="font-semibold text-slate-700 dark:text-slate-200">{{ modalSchool.school_group || '—' }}</p>
+                    <p class="font-semibold text-slate-700">{{ modalSchool.school_group || '—' }}</p>
                   </div>
                   <div v-if="modalSchool.distance_km" class="col-span-2">
                     <p class="text-[10px] text-slate-400 uppercase tracking-wide">ระยะทางจาก สพป.</p>
-                    <p class="font-semibold text-slate-700 dark:text-slate-200">{{ modalSchool.distance_km }} กิโลเมตร</p>
+                    <p class="font-semibold text-slate-700">{{ modalSchool.distance_km }} กิโลเมตร</p>
                   </div>
                 </div>
               </div>
 
               <!-- Contact info -->
-              <div class="bg-slate-50 dark:bg-slate-700/50 rounded-2xl p-4 space-y-2.5">
-                <p class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">ข้อมูลติดต่อ</p>
+              <div class="bg-slate-50 rounded-2xl p-4 space-y-2.5">
+                <p class="text-xs font-bold text-slate-500 uppercase tracking-wider">ข้อมูลติดต่อ</p>
                 <div class="space-y-2 text-sm">
                   <div v-if="modalSchool.school_code" class="flex items-center gap-2">
                     <span class="text-xs text-slate-400 w-28 flex-shrink-0">รหัสสถานศึกษา</span>
-                    <span class="font-mono font-semibold text-slate-700 dark:text-slate-200">{{ modalSchool.school_code }}</span>
+                    <span class="font-mono font-semibold text-slate-700">{{ modalSchool.school_code }}</span>
                   </div>
                   <div v-if="modalSchool.email" class="flex items-center gap-2">
                     <span class="text-xs text-slate-400 w-28 flex-shrink-0">อีเมล</span>
@@ -418,15 +418,15 @@ function resetFilters() {
               </div>
 
               <!-- GPS -->
-              <div v-if="modalSchool.lat && modalSchool.lng" class="bg-emerald-50 dark:bg-emerald-900/30 rounded-2xl p-4">
+              <div v-if="modalSchool.lat && modalSchool.lng" class="bg-emerald-50 rounded-2xl p-4">
                 <div class="flex items-center justify-between mb-2">
-                  <p class="text-xs font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider">พิกัด GPS</p>
-                  <span class="text-xs font-mono text-emerald-600 dark:text-emerald-400">
+                  <p class="text-xs font-bold text-emerald-700 uppercase tracking-wider">พิกัด GPS</p>
+                  <span class="text-xs font-mono text-emerald-600">
                     {{ modalSchool.lat?.toFixed(6) }}, {{ modalSchool.lng?.toFixed(6) }}
                   </span>
                 </div>
                 <!-- Maps preview image -->
-                <div class="rounded-xl overflow-hidden border border-emerald-200 dark:border-emerald-700 h-36 bg-emerald-100">
+                <div class="rounded-xl overflow-hidden border border-emerald-200 h-36 bg-emerald-100">
                   <img
                     :src="`https://maps.googleapis.com/maps/api/staticmap?center=${modalSchool.lat},${modalSchool.lng}&zoom=14&size=480x160&markers=color:red%7C${modalSchool.lat},${modalSchool.lng}&key=`"
                     :alt="`แผนที่ ${modalSchool.name}`"
@@ -443,7 +443,7 @@ function resetFilters() {
                   </div>
                 </div>
               </div>
-              <div v-else class="bg-slate-50 dark:bg-slate-700/50 rounded-2xl p-4 text-center text-xs text-slate-400">
+              <div v-else class="bg-slate-50 rounded-2xl p-4 text-center text-xs text-slate-400">
                 ยังไม่มีข้อมูลพิกัด GPS
               </div>
 
@@ -468,7 +468,7 @@ function resetFilters() {
                 เว็บไซต์
               </a>
               <button @click="closeModal"
-                class="px-5 py-3 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold rounded-2xl hover:bg-slate-200 transition-all">
+                class="px-5 py-3 bg-slate-100 text-slate-600 font-bold rounded-2xl hover:bg-slate-200 transition-all">
                 ปิด
               </button>
             </div>

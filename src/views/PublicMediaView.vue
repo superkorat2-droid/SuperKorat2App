@@ -143,7 +143,7 @@ const isFiltered = computed(() =>
           <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/>
         </svg>
         <input v-model="searchQ" type="text" placeholder="ค้นหาชื่อสื่อ..."
-          class="w-full pl-11 pr-4 py-3 rounded-2xl border border-slate-200 dark:border-slate-700
+          class="w-full pl-11 pr-4 py-3 rounded-2xl border border-slate-200
                  bg-white/70 backdrop-blur text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"/>
       </div>
 
@@ -218,7 +218,7 @@ const isFiltered = computed(() =>
           @click="router.push(`/media/${item.id}`)">
 
           <!-- Preview -->
-          <div class="overflow-hidden bg-slate-100 dark:bg-slate-900 relative" style="aspect-ratio:3/4">
+          <div class="overflow-hidden bg-slate-100 relative" style="aspect-ratio:3/4">
 
             <!-- 1. thumbnail_url (อัปโหลด/ครอบ) — priority สูงสุด -->
             <img v-if="item.thumbnail_url"
@@ -267,7 +267,7 @@ const isFiltered = computed(() =>
 
           <!-- Info -->
           <div class="p-3">
-            <p class="font-bold text-slate-800 dark:text-slate-100 text-xs leading-snug line-clamp-2 mb-1">{{ item.title }}</p>
+            <p class="font-bold text-slate-800 text-xs leading-snug line-clamp-2 mb-1">{{ item.title }}</p>
             <p v-if="item.author_name" class="text-[11px] text-slate-400 truncate">
               <svg class="w-3 h-3 inline mr-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0"/></svg>
               {{ item.author_name }}
@@ -291,19 +291,19 @@ const isFiltered = computed(() =>
       <!-- Pagination -->
       <div v-if="totalPages > 1" class="flex items-center justify-center gap-1.5 py-4">
         <button @click="currentPage--" :disabled="currentPage===1"
-          class="w-9 h-9 flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-700 text-slate-500 hover:bg-primary hover:text-white hover:border-primary transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+          class="w-9 h-9 flex items-center justify-center rounded-xl border border-slate-200 text-slate-500 hover:bg-primary hover:text-white hover:border-primary transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5"/></svg>
         </button>
         <template v-for="p in pageRange()" :key="p">
           <span v-if="p==='...'" class="w-9 h-9 flex items-center justify-center text-slate-400 text-sm">…</span>
           <button v-else @click="currentPage=p"
             :class="['w-9 h-9 flex items-center justify-center rounded-xl text-sm font-bold transition-colors',
-              currentPage===p ? 'bg-primary text-white border border-primary' : 'border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-primary hover:text-white hover:border-primary']">
+              currentPage===p ? 'bg-primary text-white border border-primary' : 'border border-slate-200 text-slate-600 hover:bg-primary hover:text-white hover:border-primary']">
             {{ p }}
           </button>
         </template>
         <button @click="currentPage++" :disabled="currentPage===totalPages"
-          class="w-9 h-9 flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-700 text-slate-500 hover:bg-primary hover:text-white hover:border-primary transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+          class="w-9 h-9 flex items-center justify-center rounded-xl border border-slate-200 text-slate-500 hover:bg-primary hover:text-white hover:border-primary transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/></svg>
         </button>
       </div>

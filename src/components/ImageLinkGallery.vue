@@ -42,7 +42,7 @@ function linkAttrs(item) {
 
 <template>
   <div class="font-sarabun">
-    <h3 v-if="title" class="text-xl font-extrabold text-slate-800 dark:text-slate-100 mb-4">{{ title }}</h3>
+    <h3 v-if="title" class="text-xl font-extrabold text-slate-800 mb-4">{{ title }}</h3>
 
     <!-- Pattern: full (ภาพเต็มการ์ด + ข้อความซ้อนทับด้านล่างเสมอ ไม่มี zoom hover) -->
     <div v-if="meta(layout).pattern === 'full'" class="grid gap-5" :class="meta(layout).cols">
@@ -67,7 +67,7 @@ function linkAttrs(item) {
             class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"/>
         </div>
         <div class="p-4 text-center">
-          <p v-if="item.title" class="font-bold text-slate-800 dark:text-slate-100 group-hover:text-primary transition-colors leading-snug break-words">{{ item.title }}</p>
+          <p v-if="item.title" class="font-bold text-slate-800 group-hover:text-primary transition-colors leading-snug break-words">{{ item.title }}</p>
           <p v-if="item.caption" class="text-xs text-slate-400 mt-1 break-words">{{ item.caption }}</p>
         </div>
       </component>
@@ -105,7 +105,7 @@ function linkAttrs(item) {
           <img v-if="item.image_url" :src="item.image_url" :alt="item.title" class="w-full h-full object-cover"/>
         </div>
         <div class="flex-1 min-w-0">
-          <p v-if="item.title" class="font-bold text-slate-800 dark:text-slate-100 group-hover:text-primary transition-colors break-words">{{ item.title }}</p>
+          <p v-if="item.title" class="font-bold text-slate-800 group-hover:text-primary transition-colors break-words">{{ item.title }}</p>
           <p v-if="item.caption" class="text-xs text-slate-400 mt-0.5 break-words">{{ item.caption }}</p>
         </div>
       </component>

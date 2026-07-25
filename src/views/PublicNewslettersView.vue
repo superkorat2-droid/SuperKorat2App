@@ -90,7 +90,7 @@ function monthLabel(m) { return m ? MONTHS[m-1] : '' }
           <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/>
         </svg>
         <input v-model="searchQ" type="text" placeholder="ค้นหาชื่อเอกสาร โรงเรียน..."
-          class="w-full pl-11 pr-4 py-3 rounded-2xl border border-slate-200 dark:border-slate-700
+          class="w-full pl-11 pr-4 py-3 rounded-2xl border border-slate-200
                  bg-white/70 backdrop-blur text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"/>
       </div>
 
@@ -139,7 +139,7 @@ function monthLabel(m) { return m ? MONTHS[m-1] : '' }
           @click="previewItem = n">
 
           <!-- Embed preview (pointer-events-none = looks like static thumbnail) -->
-          <div class="aspect-[3/4] overflow-hidden bg-slate-100 dark:bg-slate-900 relative">
+          <div class="aspect-[3/4] overflow-hidden bg-slate-100 relative">
             <iframe v-if="n.file_id"
               :src="embedUrl(n.file_id)"
               class="w-full h-full pointer-events-none scale-[1.02]"
@@ -169,7 +169,7 @@ function monthLabel(m) { return m ? MONTHS[m-1] : '' }
             </span>
             <!-- Title as link -->
             <a :href="n.drive_url" target="_blank" rel="noopener"
-              class="block mt-1.5 text-sm font-bold text-slate-800 dark:text-slate-100 leading-snug hover:text-primary transition-colors line-clamp-2"
+              class="block mt-1.5 text-sm font-bold text-slate-800 leading-snug hover:text-primary transition-colors line-clamp-2"
               @click.stop>
               {{ n.title }} ↗
             </a>
@@ -182,7 +182,7 @@ function monthLabel(m) { return m ? MONTHS[m-1] : '' }
         </div>
       </div>
 
-      <p class="text-center text-xs text-slate-300 dark:text-slate-600 pb-6">{{ config?.area_name }}</p>
+      <p class="text-center text-xs text-slate-300 pb-6">{{ config?.area_name }}</p>
     </div>
   </div>
 
@@ -196,9 +196,9 @@ function monthLabel(m) { return m ? MONTHS[m-1] : '' }
           style="max-height: 92dvh">
 
           <!-- Modal header -->
-          <div class="px-5 py-3 border-b border-slate-100 dark:border-slate-700 flex items-center gap-3 flex-shrink-0">
+          <div class="px-5 py-3 border-b border-slate-100 flex items-center gap-3 flex-shrink-0">
             <div class="flex-1 min-w-0">
-              <p class="font-extrabold text-slate-800 dark:text-slate-100 truncate">{{ previewItem.title }}</p>
+              <p class="font-extrabold text-slate-800 truncate">{{ previewItem.title }}</p>
               <p class="text-xs text-slate-400">{{ previewItem.schools?.name || 'สพป.' }} · {{ monthLabel(previewItem.month) }} {{ previewItem.year }}</p>
             </div>
             <a :href="previewItem.drive_url" target="_blank" rel="noopener"
@@ -207,7 +207,7 @@ function monthLabel(m) { return m ? MONTHS[m-1] : '' }
               เปิดใน Drive
             </a>
             <button @click="previewItem=null"
-              class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 flex-shrink-0">
+              class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 text-slate-400 flex-shrink-0">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
             </button>
           </div>

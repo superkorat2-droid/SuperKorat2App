@@ -5,17 +5,15 @@ import { supabase } from '../supabase'
 import PageHero from '../components/PageHero.vue'
 import ImageLinkGallery from '../components/ImageLinkGallery.vue'
 import { getBgStyle as getBgStyleRaw } from '../composables/useBgStyle'
-import { useTheme } from '../composables/useTheme'
 
 const route   = useRoute()
 const router  = useRouter()
 const page    = ref(null)
 const loading = ref(true)
 
-// พื้นหลังบล็อกออกแบบไว้สำหรับโหมดสว่างเท่านั้น (เหมือน section หน้าแรก) — โหมดมืดไม่ใช้ กันตัวหนังสือกลืนพื้นหลัง
-const { isDark } = useTheme()
+// ไม่ได้ตั้งพื้นหลัง → โปร่งใส ปล่อยให้พื้นหลัง aurora ของเว็บทะลุขึ้นมา
 function getBgStyle(block) {
-  if (!block.bg_type || isDark.value) return {}
+  if (!block.bg_type) return {}
   return getBgStyleRaw(block)
 }
 
@@ -99,7 +97,7 @@ watch(() => route.params.slug, s => { if (s) load(s) })
 </script>
 
 <template>
-  <div class="font-sarabun min-h-screen dark:text-slate-100">
+  <div class="font-sarabun min-h-screen">
 
     <!-- Loading -->
     <div v-if="loading" class="max-w-3xl mx-auto px-4 py-16 space-y-4 animate-pulse">
@@ -131,7 +129,7 @@ watch(() => route.params.slug, s => { if (s) load(s) })
 
           <!-- HEADING -->
           <component :is="block.level || 'h2'" v-if="block.type === 'heading'"
-            :class="['font-extrabold', headingSizeClass(block), !block.color ? 'text-slate-900 dark:text-slate-50' : '',
+            :class="['font-extrabold', headingSizeClass(block), !block.color ? 'text-slate-900' : '',
               block.align==='center' ? 'text-center' : block.align==='right' ? 'text-right' : 'text-left']"
             :style="block.color ? { color: block.color } : {}">
             {{ block.text }}
@@ -139,7 +137,7 @@ watch(() => route.params.slug, s => { if (s) load(s) })
 
           <!-- TEXT -->
           <p v-else-if="block.type === 'text'"
-            class="text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap text-base">
+            class="text-slate-700 leading-relaxed whitespace-pre-wrap text-base">
             {{ block.text }}
           </p>
 
@@ -158,7 +156,7 @@ watch(() => route.params.slug, s => { if (s) load(s) })
 
           <!-- EMBED -->
           <div v-else-if="block.type === 'embed' && block.url"
-            class="rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-100 shadow-sm"
+            class="rounded-2xl overflow-hidden border border-slate-200 bg-slate-100 shadow-sm"
             :style="`aspect-ratio:${block.aspect || '16/9'}`">
             <iframe :src="toEmbedUrl(block.url, block.embed_type)"
               class="w-full h-full" frameborder="0" allowfullscreen
@@ -176,12 +174,12 @@ watch(() => route.params.slug, s => { if (s) load(s) })
                 scrolling="no"
               />
             </div>
-            <div v-else class="prose prose-slate dark:prose-invert max-w-none rounded-2xl overflow-hidden" v-html="block.code"/>
+            <div v-else class="prose prose-slate max-w-none rounded-2xl overflow-hidden" v-html="block.code"/>
           </template>
 
           <!-- DIVIDER -->
           <hr v-else-if="block.type === 'divider'"
-            class="border-slate-200 dark:border-slate-700"/>
+            class="border-slate-200"/>
 
           <!-- GALLERY -->
           <ImageLinkGallery v-else-if="block.type === 'gallery' && block.items?.length"
@@ -192,8 +190,8 @@ watch(() => route.params.slug, s => { if (s) load(s) })
             :class="['flex flex-col md:flex-row gap-6 items-center', block.side === 'right' ? 'md:flex-row-reverse' : '']">
             <img :src="block.url" class="w-full md:w-1/2 rounded-2xl shadow-md object-cover"/>
             <div class="w-full md:w-1/2">
-              <h3 v-if="block.heading" class="text-xl font-extrabold text-slate-900 dark:text-slate-50 mb-2">{{ block.heading }}</h3>
-              <p v-if="block.text" class="text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">{{ block.text }}</p>
+              <h3 v-if="block.heading" class="text-xl font-extrabold text-slate-900 mb-2">{{ block.heading }}</h3>
+              <p v-if="block.text" class="text-slate-700 leading-relaxed whitespace-pre-wrap">{{ block.text }}</p>
             </div>
           </div>
 
@@ -211,13 +209,13 @@ watch(() => route.params.slug, s => { if (s) load(s) })
           <div v-else-if="block.type === 'accordion' && block.items?.length" class="space-y-2">
             <details v-for="item in block.items" :key="item.id"
               class="group glass-card overflow-hidden">
-              <summary class="flex items-center justify-between gap-3 px-4 py-3 cursor-pointer font-bold text-slate-800 dark:text-slate-100 select-none">
+              <summary class="flex items-center justify-between gap-3 px-4 py-3 cursor-pointer font-bold text-slate-800 select-none">
                 {{ item.question }}
                 <svg class="w-4 h-4 flex-shrink-0 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/>
                 </svg>
               </summary>
-              <p class="px-4 pb-4 text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">{{ item.answer }}</p>
+              <p class="px-4 pb-4 text-slate-600 leading-relaxed whitespace-pre-wrap">{{ item.answer }}</p>
             </details>
           </div>
 

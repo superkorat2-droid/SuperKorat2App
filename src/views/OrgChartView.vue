@@ -194,7 +194,7 @@ const deptGroupRows = computed(() => {
 .chart-tier { @apply flex flex-wrap justify-center gap-6; }
 
 /* เส้นดิ่งเชื่อมระหว่างชั้น */
-.chart-connector { @apply w-0.5 h-8 bg-slate-300 dark:bg-slate-600; }
+.chart-connector { @apply w-0.5 h-8 bg-slate-300; }
 
 /* แถวลูก (มีเส้นแนวนอนคาดด้านบน + เส้นสต็มลงมาแต่ละกล่อง) */
 .chart-branch { @apply flex justify-center gap-6 flex-wrap; }
@@ -204,7 +204,6 @@ const deptGroupRows = computed(() => {
   content: ''; position: absolute; top: 0; left: 50%; width: 2px; height: 2rem;
   background: theme('colors.slate.300'); transform: translateX(-50%);
 }
-.dark .chart-branch-item::before { background: theme('colors.slate.600'); }
 .chart-branch-item::after {
   /* เส้นแนวนอนคาดด้านบน เชื่อมกล่องในแถวเดียวกัน — ยื่นเลยขอบกล่องออกไปครึ่งหนึ่งของช่องว่าง (gap-6=24px)
      ทั้งสองข้าง กันเส้นขาดเป็นช่วงๆ ตรงรอยต่อระหว่างกล่อง (ปกติ left/right:0 จะหยุดแค่ขอบกล่องตัวเอง
@@ -212,7 +211,6 @@ const deptGroupRows = computed(() => {
   content: ''; position: absolute; top: 0; left: -12px; right: -12px; height: 2px;
   background: theme('colors.slate.300');
 }
-.dark .chart-branch-item::after { background: theme('colors.slate.600'); }
 .chart-branch-item:first-child::after { left: 50%; }
 .chart-branch-item:last-child::after  { right: 50%; }
 .chart-branch-item:only-child::after  { display: none; }
@@ -238,11 +236,11 @@ const deptGroupRows = computed(() => {
 }
 .chart-card-sm { @apply w-36 pt-3 pb-2 px-1.5; }
 .chart-avatar {
-  @apply w-16 h-16 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-700 flex items-center justify-center mb-2 flex-shrink-0;
+  @apply w-16 h-16 rounded-full overflow-hidden bg-slate-100 flex items-center justify-center mb-2 flex-shrink-0;
 }
 .chart-avatar-sm { @apply w-12 h-12 mb-1.5; }
 .chart-avatar-initial { @apply text-2xl font-extrabold; color: var(--color-primary); }
-.chart-name { @apply w-full font-extrabold text-slate-800 dark:text-slate-100 leading-tight whitespace-nowrap overflow-hidden; }
+.chart-name { @apply w-full font-extrabold text-slate-800 leading-tight whitespace-nowrap overflow-hidden; }
 /* ใช้ var โดยตรงแทน @apply text-primary — @apply กับ custom class ของโปรเจค
    ในไฟล์ scoped พังได้ถ้า style.css ยังไม่ถูก process ก่อน (ดูหมายเหตุด้านบน) */
 .chart-pos  { @apply w-full font-bold mt-0.5 leading-tight whitespace-nowrap overflow-hidden; color: var(--color-primary); }
@@ -255,9 +253,9 @@ const deptGroupRows = computed(() => {
 .chart-roster { @apply flex flex-col gap-2; }
 .chart-roster-item { @apply flex items-center gap-2 text-left; }
 .chart-roster-avatar {
-  @apply w-7 h-7 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-700 flex items-center justify-center flex-shrink-0;
+  @apply w-7 h-7 rounded-full overflow-hidden bg-slate-100 flex items-center justify-center flex-shrink-0;
 }
 .chart-roster-initial { @apply text-[10px] font-extrabold; color: var(--color-primary); }
-.chart-roster-name { @apply text-xs font-bold text-slate-600 dark:text-slate-300 leading-tight; }
+.chart-roster-name { @apply text-xs font-bold text-slate-600 leading-tight; }
 .chart-box-empty { @apply text-xs text-slate-400 italic; }
 </style>

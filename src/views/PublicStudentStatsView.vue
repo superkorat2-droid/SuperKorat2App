@@ -146,11 +146,11 @@ function formatDate(d) {
       <div v-if="data && !loading" class="flex gap-3 flex-wrap">
         <div class="glass-tile px-4 py-2.5 text-center">
           <p class="text-2xl font-extrabold text-primary">{{ allUploads.length }}</p>
-          <p class="text-slate-500 dark:text-slate-400 text-xs">โรงเรียน</p>
+          <p class="text-slate-500 text-xs">โรงเรียน</p>
         </div>
         <div class="glass-tile px-4 py-2.5 text-center">
           <p class="text-2xl font-extrabold text-primary">{{ allUploads.reduce((s,u)=>s+u.total,0).toLocaleString() }}</p>
-          <p class="text-slate-500 dark:text-slate-400 text-xs">นักเรียนทั้งเขต</p>
+          <p class="text-slate-500 text-xs">นักเรียนทั้งเขต</p>
         </div>
       </div>
     </div>
@@ -202,15 +202,15 @@ function formatDate(d) {
           <p class="text-3xl font-extrabold text-primary">{{ totalStudents.toLocaleString() }}</p>
           <p class="text-xs text-slate-500 mt-1">นักเรียนทั้งหมด</p>
         </div>
-        <div v-if="vis.gender" class="bg-blue-50 dark:bg-blue-900/30 rounded-2xl border border-blue-100 dark:border-blue-800 shadow-sm p-4 text-center">
+        <div v-if="vis.gender" class="bg-blue-50 rounded-2xl border border-blue-100 shadow-sm p-4 text-center">
           <p class="text-3xl font-extrabold text-blue-600">{{ genderMale.toLocaleString() }}</p>
           <p class="text-xs text-slate-500 mt-1">ชาย</p>
         </div>
-        <div v-if="vis.gender" class="bg-pink-50 dark:bg-pink-900/30 rounded-2xl border border-pink-100 dark:border-pink-800 shadow-sm p-4 text-center">
+        <div v-if="vis.gender" class="bg-pink-50 rounded-2xl border border-pink-100 shadow-sm p-4 text-center">
           <p class="text-3xl font-extrabold text-pink-500">{{ genderFemale.toLocaleString() }}</p>
           <p class="text-xs text-slate-500 mt-1">หญิง</p>
         </div>
-        <div v-if="vis.disadvantaged" :class="['rounded-2xl border shadow-sm p-4 text-center', Number(disadvPct)>50?'bg-red-50 dark:bg-red-900/20 border-red-200':'bg-amber-50 dark:bg-amber-900/20 border-amber-100']">
+        <div v-if="vis.disadvantaged" :class="['rounded-2xl border shadow-sm p-4 text-center', Number(disadvPct)>50?'bg-red-50 border-red-200':'bg-amber-50 border-amber-100']">
           <p :class="['text-3xl font-extrabold', Number(disadvPct)>50?'text-red-600':'text-amber-600']">{{ disadvPct }}%</p>
           <p class="text-xs text-slate-500 mt-1">เด็กยากจน {{ disadvCount.toLocaleString() }} คน</p>
         </div>
@@ -218,7 +218,7 @@ function formatDate(d) {
 
       <!-- Grade chart -->
       <div v-if="vis.by_grade && Object.keys(gradeAgg).length > 0" class="glass-tile p-5">
-        <h3 class="font-bold text-slate-700 dark:text-slate-200 mb-4">จำนวนนักเรียนแยกตามระดับชั้น</h3>
+        <h3 class="font-bold text-slate-700 mb-4">จำนวนนักเรียนแยกตามระดับชั้น</h3>
         <apexchart type="bar" :height="240" :options="gradeOpts"
           :series="[{ name:'ชาย', data:Object.values(gradeAgg).map(g=>g.male) },{ name:'หญิง', data:Object.values(gradeAgg).map(g=>g.female) }]"
           :key="`grade-${filteredUploads.length}`"/>
@@ -226,30 +226,30 @@ function formatDate(d) {
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
         <div v-if="vis.bmi && bmiAgg.total > 0" class="glass-tile p-5">
-          <h3 class="font-bold text-slate-700 dark:text-slate-200 mb-4">ภาวะโภชนาการ (BMI)</h3>
+          <h3 class="font-bold text-slate-700 mb-4">ภาวะโภชนาการ (BMI)</h3>
           <apexchart type="donut" :height="200" :options="bmiOpts" :series="[bmiAgg.underweight,bmiAgg.normal,bmiAgg.overweight,bmiAgg.obese]" :key="`bmi-${filteredUploads.length}`"/>
           <div class="mt-3 space-y-1.5">
             <div v-for="(item,i) in [{ label:'ต่ำกว่าเกณฑ์',val:bmiAgg.underweight,color:'text-orange-500' },{ label:'ปกติ',val:bmiAgg.normal,color:'text-emerald-500' },{ label:'น้ำหนักเกิน',val:bmiAgg.overweight,color:'text-amber-500' },{ label:'อ้วน',val:bmiAgg.obese,color:'text-red-500' }]" :key="i" class="flex items-center gap-2 text-xs">
-              <span class="flex-1 text-slate-600 dark:text-slate-400">{{ item.label }}</span>
+              <span class="flex-1 text-slate-600">{{ item.label }}</span>
               <span :class="['font-bold', item.color]">{{ item.val.toLocaleString() }}</span>
               <span class="text-slate-400 w-12 text-right">{{ bmiAgg.total>0?((item.val/bmiAgg.total)*100).toFixed(1):0 }}%</span>
             </div>
           </div>
         </div>
         <div v-if="vis.guardian_relation && guardianAgg.length > 0" class="glass-tile p-5">
-          <h3 class="font-bold text-slate-700 dark:text-slate-200 mb-4">ผู้ปกครอง (ความสัมพันธ์)</h3>
+          <h3 class="font-bold text-slate-700 mb-4">ผู้ปกครอง (ความสัมพันธ์)</h3>
           <apexchart type="bar" :height="220" :options="guardianOpts" :series="[{ name:'จำนวน', data:guardianAgg.map(d=>d[1]) }]" :key="`guardian-${filteredUploads.length}`"/>
         </div>
       </div>
 
       <!-- School table -->
       <div class="glass-tile overflow-hidden">
-        <div class="px-5 py-4 border-b border-slate-50 dark:border-slate-700">
-          <h3 class="font-bold text-slate-700 dark:text-slate-200">ข้อมูลรายโรงเรียน ({{ filteredUploads.length }} โรง)</h3>
+        <div class="px-5 py-4 border-b border-slate-50">
+          <h3 class="font-bold text-slate-700">ข้อมูลรายโรงเรียน ({{ filteredUploads.length }} โรง)</h3>
         </div>
         <div class="overflow-x-auto">
           <table class="w-full text-xs">
-            <thead><tr class="bg-slate-50 dark:bg-slate-900 text-slate-500 text-left">
+            <thead><tr class="bg-slate-50 text-slate-500 text-left">
               <th class="px-4 py-3 font-bold">#</th>
               <th class="px-4 py-3 font-bold">โรงเรียน</th>
               <th v-if="vis.total" class="px-4 py-3 font-bold text-right">รวม</th>
@@ -258,13 +258,13 @@ function formatDate(d) {
               <th v-if="vis.disadvantaged" class="px-4 py-3 font-bold text-right">ยากจน%</th>
               <th v-if="vis.bmi" class="px-4 py-3 font-bold text-right">BMI ปกติ%</th>
             </tr></thead>
-            <tbody class="divide-y divide-slate-50 dark:divide-slate-700">
-              <tr v-for="(s,i) in schoolTableData" :key="s.id" class="hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors cursor-pointer" @click="filterSchool=s.id;filterDistrict='all'">
+            <tbody class="divide-y divide-slate-50">
+              <tr v-for="(s,i) in schoolTableData" :key="s.id" class="hover:bg-slate-50 transition-colors cursor-pointer" @click="filterSchool=s.id;filterDistrict='all'">
                 <td class="px-4 py-3 text-slate-400">{{ i+1 }}</td>
-                <td class="px-4 py-3 font-medium text-slate-700 dark:text-slate-200">
+                <td class="px-4 py-3 font-medium text-slate-700">
                   <div class="flex items-center gap-2">{{ s.name }}<svg v-if="filterSchool===s.id" class="w-3.5 h-3.5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div>
                 </td>
-                <td v-if="vis.total" class="px-4 py-3 text-right font-bold text-slate-700 dark:text-slate-200">{{ s.total.toLocaleString() }}</td>
+                <td v-if="vis.total" class="px-4 py-3 text-right font-bold text-slate-700">{{ s.total.toLocaleString() }}</td>
                 <td v-if="vis.gender" class="px-4 py-3 text-right text-blue-600">{{ s.male.toLocaleString() }}</td>
                 <td v-if="vis.gender" class="px-4 py-3 text-right text-pink-500">{{ s.female.toLocaleString() }}</td>
                 <td v-if="vis.disadvantaged" class="px-4 py-3 text-right"><span :class="['font-bold',Number(s.disadvPct)>50?'text-red-500':'text-amber-600']">{{ s.disadvPct }}%</span></td>
@@ -274,7 +274,7 @@ function formatDate(d) {
           </table>
         </div>
       </div>
-      <p class="text-center text-xs text-slate-300 dark:text-slate-600 pb-6">ข้อมูลจากระบบ DMC · {{ config?.area_name }}<span v-if="isFiltered"> · <button @click="resetFilter" class="text-primary hover:underline">ล้างตัวกรอง</button></span></p>
+      <p class="text-center text-xs text-slate-300 pb-6">ข้อมูลจากระบบ DMC · {{ config?.area_name }}<span v-if="isFiltered"> · <button @click="resetFilter" class="text-primary hover:underline">ล้างตัวกรอง</button></span></p>
     </div>
   </div>
 </template>

@@ -66,7 +66,7 @@ function formatDate(iso) {
           <input v-model="searchQ" type="text" placeholder="ค้นหาหนังสือ..."
             class="w-full pl-10 pr-4 py-2.5 border border-white/80 bg-white/70 backdrop-blur rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"/>
         </div>
-        <div class="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 bg-white/70 backdrop-blur border border-white/80 rounded-xl px-4 py-2.5 flex-shrink-0">
+        <div class="flex items-center gap-2 text-sm text-slate-500 bg-white/70 backdrop-blur border border-white/80 rounded-xl px-4 py-2.5 flex-shrink-0">
           <span class="font-bold text-primary">{{ filtered.length }}</span>
           <span>รายการ</span>
         </div>
@@ -78,19 +78,19 @@ function formatDate(iso) {
           :class="['flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold transition-all border',
             activeType === 'all' ? 'bg-primary text-white border-primary shadow-md' : 'bg-white/70 backdrop-blur text-slate-600 border-white/80 hover:border-primary hover:text-primary']">
           ทั้งหมด
-          <span :class="['text-[10px] px-1.5 py-0.5 rounded-full', activeType === 'all' ? 'bg-white/30 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400']">{{ typeCounts.all || 0 }}</span>
+          <span :class="['text-[10px] px-1.5 py-0.5 rounded-full', activeType === 'all' ? 'bg-white/30 text-white' : 'bg-slate-100 text-slate-500']">{{ typeCounts.all || 0 }}</span>
         </button>
         <button v-for="t in typeOptions" :key="t.key" @click="activeType = t.key"
           :class="['flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold transition-all border',
             activeType === t.key ? 'bg-primary text-white border-primary shadow-md' : 'bg-white/70 backdrop-blur text-slate-600 border-white/80 hover:border-primary hover:text-primary']">
           {{ t.label }}
-          <span :class="['text-[10px] px-1.5 py-0.5 rounded-full', activeType === t.key ? 'bg-white/30 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400']">{{ typeCounts[t.key] || 0 }}</span>
+          <span :class="['text-[10px] px-1.5 py-0.5 rounded-full', activeType === t.key ? 'bg-white/30 text-white' : 'bg-slate-100 text-slate-500']">{{ typeCounts[t.key] || 0 }}</span>
         </button>
       </div>
 
       <!-- Loading -->
       <div v-if="loading" class="space-y-3">
-        <div v-for="i in 4" :key="i" class="h-20 bg-slate-100 dark:bg-slate-800 rounded-2xl animate-pulse"></div>
+        <div v-for="i in 4" :key="i" class="h-20 bg-slate-100 rounded-2xl animate-pulse"></div>
       </div>
 
       <!-- Empty -->
@@ -103,9 +103,9 @@ function formatDate(iso) {
       <div v-else class="space-y-3">
         <div v-for="d in filtered" :key="d.id"
           class="flex flex-col sm:flex-row sm:items-center gap-3 glass-tile p-4 shadow-sm hover:shadow-md hover:border-primary/30 transition-all group">
-          <div class="w-12 h-12 bg-slate-50 dark:bg-slate-700 rounded-xl flex items-center justify-center text-2xl flex-shrink-0">📄</div>
+          <div class="w-12 h-12 bg-slate-50 rounded-xl flex items-center justify-center text-2xl flex-shrink-0">📄</div>
           <div class="flex-1 min-w-0">
-            <p class="font-bold text-slate-800 dark:text-slate-100 group-hover:text-primary transition-colors leading-snug break-words">{{ d.title }}</p>
+            <p class="font-bold text-slate-800 group-hover:text-primary transition-colors leading-snug break-words">{{ d.title }}</p>
             <p v-if="d.description" class="text-xs text-slate-400 mt-0.5 break-words">{{ d.description }}</p>
             <div class="flex items-center gap-3 mt-1.5 flex-wrap">
               <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-secondary/10 text-secondary">{{ typeLabel(d.task_type) }}</span>

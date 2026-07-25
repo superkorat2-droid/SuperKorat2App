@@ -29,7 +29,7 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
       class="fixed bottom-5 right-4 sm:bottom-7 sm:right-7 z-40 w-12 h-12 rounded-full glass-panel flex items-center justify-center group hover:scale-105 active:scale-95 transition-transform">
       <svg class="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 48 48">
         <circle cx="24" cy="24" :r="RADIUS" fill="none" stroke="currentColor" stroke-width="2.5"
-          class="text-slate-200 dark:text-slate-700"/>
+          class="text-slate-200"/>
         <circle cx="24" cy="24" :r="RADIUS" fill="none" stroke="url(#scrollTopGradient)" stroke-width="2.5"
           stroke-linecap="round" :stroke-dasharray="CIRC" :stroke-dashoffset="CIRC * (1 - progress)"
           class="transition-[stroke-dashoffset] duration-150"/>
@@ -40,7 +40,7 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
           </linearGradient>
         </defs>
       </svg>
-      <svg class="w-4 h-4 text-[var(--color-primary)] dark:text-white group-hover:-translate-y-0.5 transition-transform" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+      <svg class="w-4 h-4 text-[var(--color-primary)] group-hover:-translate-y-0.5 transition-transform" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 15.75l7.5-7.5 7.5 7.5"/>
       </svg>
     </button>

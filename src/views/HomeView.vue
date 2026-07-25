@@ -7,19 +7,14 @@ import ImageLinkGallery from '../components/ImageLinkGallery.vue'
 import NewsCard from '../components/NewsCard.vue'
 import { ICON_MAP } from '../composables/useIcons.js'
 import { useEducationNews } from '../composables/useEducationNews'
-import { useTheme } from '../composables/useTheme'
 import { TYPE_LABEL, TYPE_COLOR, formatEventDateRange } from '../composables/useNithetEventMeta'
 
 const router = useRouter()
 
 const { config, fetchConfig } = useAreaConfig()
-const { isDark } = useTheme()
 
 // ── Section background style ─────────────────────────────────────
-// สีพื้นหลังที่ admin ตั้งไว้เป็นโทนสว่างเสมอ (ออกแบบไว้สำหรับโหมดสว่างเท่านั้น)
-// โหมดมืดเลยไม่ใช้สีนี้ ปล่อยให้ใช้พื้นหลังเข้มมาตรฐานแทน ไม่งั้นตัวหนังสือสีขาว (dark:text-*) จะกลืนกับพื้นสว่างจนมองไม่เห็น
 function getBgStyle(sec) {
-  if (isDark.value) return {}
   // 'none' หรือยังไม่เคยตั้งสีเลย → โปร่งใส ปล่อยให้พื้นหลัง aurora ของเว็บทะลุขึ้นมา
   // (ถ้าทุก section ทาสีทึบ จะบัง aurora ทั้งหน้าจนไม่เห็นว่าเป็นธีมกระจก)
   if (sec.bg_type === 'none') return {}
@@ -397,7 +392,7 @@ const stats = [
 </script>
 
 <template>
-  <div class="font-sarabun text-slate-800 dark:text-slate-100">
+  <div class="font-sarabun text-slate-800">
 
     <!-- ── SECTION 1: BANNER / HERO (full-width) ─────────────────── -->
     <section class="w-full">
@@ -461,17 +456,17 @@ const stats = [
         <!-- ตัวเลื่อนสไลด์ — อยู่ใต้แบนเนอร์ ไม่บังคลิก -->
         <div v-if="banners.length > 1" class="flex items-center justify-center gap-3 py-3">
           <button @click="prevSlide(); scheduleNextSlide()"
-            class="w-7 h-7 rounded-full border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-400 hover:text-primary hover:border-primary transition-colors">
+            class="w-7 h-7 rounded-full border border-slate-200 flex items-center justify-center text-slate-400 hover:text-primary hover:border-primary transition-colors">
             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3">
               <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
             </svg>
           </button>
           <div class="flex gap-1.5">
             <button v-for="(_, i) in banners" :key="i" @click="goToSlide(i)"
-              :class="['rounded-full transition-all', i === currentSlide ? 'bg-primary w-5 h-1.5' : 'bg-slate-300 dark:bg-slate-600 w-1.5 h-1.5 hover:bg-slate-400']"/>
+              :class="['rounded-full transition-all', i === currentSlide ? 'bg-primary w-5 h-1.5' : 'bg-slate-300 w-1.5 h-1.5 hover:bg-slate-400']"/>
           </div>
           <button @click="nextSlide(); scheduleNextSlide()"
-            class="w-7 h-7 rounded-full border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-400 hover:text-primary hover:border-primary transition-colors">
+            class="w-7 h-7 rounded-full border border-slate-200 flex items-center justify-center text-slate-400 hover:text-primary hover:border-primary transition-colors">
             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3">
               <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
             </svg>
@@ -609,8 +604,8 @@ const stats = [
         <!-- ══ SUPERVISION LIST ══ -->
         <section v-else-if="sec.key === 'supervision_list'" :style="getBgStyle(sec)" class="py-8 md:py-12">
           <div class="max-w-4xl mx-auto px-4">
-            <h2 class="text-2xl md:text-3xl font-extrabold text-slate-800 dark:text-slate-100 mb-2 text-center">{{ sec.title }}</h2>
-            <p class="text-slate-500 dark:text-slate-400 text-sm mb-8 text-center">แบบนิเทศและแบบสอบถามที่เปิดรับอยู่</p>
+            <h2 class="text-2xl md:text-3xl font-extrabold text-slate-800 mb-2 text-center">{{ sec.title }}</h2>
+            <p class="text-slate-500 text-sm mb-8 text-center">แบบนิเทศและแบบสอบถามที่เปิดรับอยู่</p>
 
             <div v-if="loadingSupervision" class="flex justify-center py-12">
               <div class="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin"/>
@@ -651,8 +646,8 @@ const stats = [
                           {{ formatDeadline(form.deadline)?.label }}
                         </span>
                       </div>
-                      <h3 class="font-extrabold text-slate-800 dark:text-slate-100 leading-snug">{{ form.title }}</h3>
-                      <p v-if="form.description" class="text-sm text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-2">{{ form.description }}</p>
+                      <h3 class="font-extrabold text-slate-800 leading-snug">{{ form.title }}</h3>
+                      <p v-if="form.description" class="text-sm text-slate-500 mt-0.5 line-clamp-2">{{ form.description }}</p>
 
                       <!-- Progress bar (school mode) -->
                       <div v-if="form.respondent_type === 'school' && form.target_count > 0" class="mt-3">
@@ -705,7 +700,7 @@ const stats = [
 
                   <!-- Status button row -->
                   <div v-if="form.status_visibility !== 'hidden' && (form.status_visibility === 'public' || (form.status_visibility === 'authenticated' && userSession))"
-                    class="mt-3 pt-3 border-t border-slate-100 dark:border-slate-700">
+                    class="mt-3 pt-3 border-t border-slate-100">
                     <button @click="loadFormStatus(form)"
                       :disabled="loadingStatus[form.id]"
                       class="flex items-center gap-1.5 text-sm text-slate-500 hover:text-primary font-medium transition-colors">
@@ -778,8 +773,8 @@ const stats = [
         <!-- ══ NITHET CALENDAR ══ -->
         <section v-else-if="sec.key === 'nithet_calendar'" :style="getBgStyle(sec)" class="py-8 md:py-12">
           <div class="max-w-4xl mx-auto px-4">
-            <h2 class="text-2xl md:text-3xl font-extrabold text-slate-800 dark:text-slate-100 mb-2 text-center">{{ sec.title }}</h2>
-            <p class="text-slate-500 dark:text-slate-400 text-sm mb-8 text-center">กำหนดการนิเทศโรงเรียนและกิจกรรมของกลุ่มนิเทศที่ใกล้ถึง</p>
+            <h2 class="text-2xl md:text-3xl font-extrabold text-slate-800 mb-2 text-center">{{ sec.title }}</h2>
+            <p class="text-slate-500 text-sm mb-8 text-center">กำหนดการนิเทศโรงเรียนและกิจกรรมของกลุ่มนิเทศที่ใกล้ถึง</p>
 
             <div v-if="loadingNithetEvents" class="flex justify-center py-12">
               <div class="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin"/>
@@ -802,7 +797,7 @@ const stats = [
                   </span>
                   <span class="text-xs text-slate-400">{{ formatEventDateRange(event) }}</span>
                 </div>
-                <h3 class="font-bold text-slate-800 dark:text-slate-100">{{ event.title }}</h3>
+                <h3 class="font-bold text-slate-800">{{ event.title }}</h3>
                 <p v-if="event.schools?.length" class="text-xs text-slate-400 mt-1">โรงเรียน: {{ event.schools.map(s => s.name).join(', ') }}</p>
               </RouterLink>
             </div>

@@ -262,14 +262,6 @@ body::before {
   color: transparent;
   animation: brand-title-shine-move 7s linear infinite;
 }
-.dark .brand-title-shine {
-  background-image: linear-gradient(90deg,
-    color-mix(in srgb, var(--color-primary) 45%, white) 0%,
-    var(--color-secondary) 28%,
-    color-mix(in srgb, var(--color-primary) 45%, white) 55%,
-    var(--color-secondary) 80%,
-    color-mix(in srgb, var(--color-primary) 45%, white) 100%);
-}
 @keyframes brand-title-shine-move {
   0%   { background-position: 0% center; }
   100% { background-position: 250% center; }

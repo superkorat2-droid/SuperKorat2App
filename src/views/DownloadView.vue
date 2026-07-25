@@ -78,7 +78,7 @@ function formatDate(iso) {
 </script>
 
 <template>
-  <div class="font-sarabun text-slate-800 dark:text-slate-100 py-10">
+  <div class="font-sarabun text-slate-800 py-10">
     <div class="max-w-5xl mx-auto px-4">
 
       <!-- Header -->
@@ -97,7 +97,7 @@ function formatDate(iso) {
           <input v-model="searchQ" type="text" placeholder="ค้นหาเอกสาร..."
             class="w-full pl-10 pr-4 py-2.5 border border-white/80 bg-white/70 backdrop-blur rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"/>
         </div>
-        <div class="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 bg-white/70 backdrop-blur border border-white/80 rounded-xl px-4 py-2.5 flex-shrink-0">
+        <div class="flex items-center gap-2 text-sm text-slate-500 bg-white/70 backdrop-blur border border-white/80 rounded-xl px-4 py-2.5 flex-shrink-0">
           <span class="font-bold text-primary">{{ filtered.length }}</span>
           <span>รายการ</span>
         </div>
@@ -113,7 +113,7 @@ function formatDate(iso) {
               : 'bg-white/70 backdrop-blur text-slate-600 border-white/80 hover:border-primary hover:text-primary']">
           {{ cat.icon }} {{ cat.label }}
           <span :class="['text-[10px] px-1.5 py-0.5 rounded-full',
-            activeCategory === cat.key ? 'bg-white/30 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400']">
+            activeCategory === cat.key ? 'bg-white/30 text-white' : 'bg-slate-100 text-slate-500']">
             {{ catCounts[cat.key] || 0 }}
           </span>
         </button>
@@ -121,7 +121,7 @@ function formatDate(iso) {
 
       <!-- Loading -->
       <div v-if="loading" class="space-y-3">
-        <div v-for="i in 5" :key="i" class="h-20 bg-slate-100 dark:bg-slate-800 rounded-2xl animate-pulse"></div>
+        <div v-for="i in 5" :key="i" class="h-20 bg-slate-100 rounded-2xl animate-pulse"></div>
       </div>
 
       <!-- File list -->
@@ -133,11 +133,11 @@ function formatDate(iso) {
         <div v-for="file in filtered" :key="file.id"
           class="flex flex-col sm:flex-row sm:items-center gap-3 glass-tile p-4 shadow-sm hover:shadow-md hover:border-primary/30 transition-all group">
           <div class="flex items-center gap-4 flex-1 min-w-0">
-            <div class="w-12 h-12 bg-slate-50 dark:bg-slate-700 rounded-xl flex items-center justify-center text-2xl flex-shrink-0">
+            <div class="w-12 h-12 bg-slate-50 rounded-xl flex items-center justify-center text-2xl flex-shrink-0">
               {{ typeIcon[file.file_type] || '📎' }}
             </div>
             <div class="flex-1 min-w-0">
-              <p class="font-bold text-slate-800 dark:text-slate-100 group-hover:text-primary transition-colors leading-snug break-words">{{ file.title }}</p>
+              <p class="font-bold text-slate-800 group-hover:text-primary transition-colors leading-snug break-words">{{ file.title }}</p>
               <p v-if="file.description" class="text-xs text-slate-400 mt-0.5 break-words">{{ file.description }}</p>
               <div class="flex items-center gap-3 mt-1.5 flex-wrap">
                 <span :class="['text-[10px] font-bold px-2 py-0.5 rounded font-mono', typeColor[file.file_type] || 'bg-slate-100 text-slate-600']">{{ file.file_type }}</span>

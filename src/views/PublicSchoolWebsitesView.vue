@@ -118,7 +118,7 @@ function resetFilters() {
 </script>
 
 <template>
-  <div class="font-sarabun dark:text-slate-100 min-h-screen">
+  <div class="font-sarabun min-h-screen">
 
     <PageHero v-if="!header.hidden" :title="header.title" :subtitle="header.subtitle"
       :mode="header.mode" :icon="header.icon"
@@ -134,7 +134,7 @@ function resetFilters() {
           <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/>
         </svg>
         <input v-model="searchQ" type="text" placeholder="ค้นหาชื่อโรงเรียน หรือศูนย์เครือข่าย..."
-          class="w-full pl-11 pr-4 py-3 rounded-2xl border border-slate-200 dark:border-slate-700
+          class="w-full pl-11 pr-4 py-3 rounded-2xl border border-slate-200
                  bg-white/70 backdrop-blur text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"/>
       </div>
 
@@ -142,11 +142,11 @@ function resetFilters() {
       <div class="grid grid-cols-2 gap-3 max-w-md mx-auto">
         <div class="glass-tile p-4 text-center">
           <p class="text-2xl font-extrabold text-primary transition-all duration-300">{{ stats.total }}</p>
-          <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">โรงเรียน</p>
+          <p class="text-xs text-slate-500 mt-0.5">โรงเรียน</p>
         </div>
         <div class="glass-tile p-4 text-center">
           <p class="text-2xl font-extrabold text-emerald-600 transition-all duration-300">{{ stats.withWebsite }}</p>
-          <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">มีเว็บไซต์</p>
+          <p class="text-xs text-slate-500 mt-0.5">มีเว็บไซต์</p>
         </div>
       </div>
 
@@ -194,7 +194,7 @@ function resetFilters() {
         <div class="hidden md:block glass-tile overflow-hidden">
           <table class="w-full text-sm">
             <thead>
-              <tr class="border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/30">
+              <tr class="border-b border-slate-100 bg-slate-50/50">
                 <th class="text-left px-5 py-3 cursor-pointer select-none hover:text-primary transition-colors" @click="toggleSort('school_group')">
                   <span class="inline-flex items-center gap-1">
                     ศูนย์เครือข่าย
@@ -218,16 +218,16 @@ function resetFilters() {
             </thead>
             <tbody>
               <tr v-for="(s, i) in paginated" :key="s.id"
-                :class="['border-b border-slate-50 dark:border-slate-700/50 last:border-0 hover:bg-primary/5 dark:hover:bg-primary/10 transition-colors',
-                  i % 2 === 1 ? 'bg-slate-50/70 dark:bg-slate-900/20' : '']">
-                <td class="px-5 py-3 text-slate-500 dark:text-slate-400">{{ s.school_group }}</td>
-                <td class="px-5 py-3 font-bold text-slate-800 dark:text-slate-100">{{ s.name }}</td>
+                :class="['border-b border-slate-50 last:border-0 hover:bg-primary/5 transition-colors',
+                  i % 2 === 1 ? 'bg-slate-50/70' : '']">
+                <td class="px-5 py-3 text-slate-500">{{ s.school_group }}</td>
+                <td class="px-5 py-3 font-bold text-slate-800">{{ s.name }}</td>
                 <td class="px-5 py-3 text-center">
                   <a v-if="s.website_url" :href="s.website_url" target="_blank" rel="noopener noreferrer"
                     class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary/10 text-primary text-xs font-bold hover:bg-primary/20 transition-colors">
                     <SvgIcon name="globe" class="w-3.5 h-3.5"/> เยี่ยมชมเว็บไซต์
                   </a>
-                  <span v-else class="inline-flex items-center px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-400 text-xs font-bold">
+                  <span v-else class="inline-flex items-center px-3 py-1.5 rounded-xl bg-slate-100 text-slate-400 text-xs font-bold">
                     ยังไม่มีเว็บไซต์
                   </span>
                 </td>
@@ -239,15 +239,15 @@ function resetFilters() {
         <!-- ── Mobile card list ── -->
         <div class="md:hidden space-y-3">
           <div v-for="(s, i) in paginated" :key="s.id"
-            :class="['rounded-2xl border border-slate-100 dark:border-slate-700 p-4 shadow-sm',
+            :class="['rounded-2xl border border-slate-100 p-4 shadow-sm',
               i % 2 === 1 ? 'bg-slate-500/[0.04]' : 'bg-transparent']">
             <p class="text-[11px] text-slate-400 font-semibold uppercase tracking-wide">{{ s.school_group }}</p>
-            <p class="font-extrabold text-slate-800 dark:text-slate-100 mt-0.5 mb-3">{{ s.name }}</p>
+            <p class="font-extrabold text-slate-800 mt-0.5 mb-3">{{ s.name }}</p>
             <a v-if="s.website_url" :href="s.website_url" target="_blank" rel="noopener noreferrer"
               class="flex items-center justify-center gap-1.5 w-full py-2.5 rounded-xl bg-primary/10 text-primary text-sm font-bold hover:bg-primary/20 transition-colors">
               <SvgIcon name="globe" class="w-4 h-4"/> เยี่ยมชมเว็บไซต์
             </a>
-            <span v-else class="flex items-center justify-center w-full py-2.5 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-400 text-sm font-bold">
+            <span v-else class="flex items-center justify-center w-full py-2.5 rounded-xl bg-slate-100 text-slate-400 text-sm font-bold">
               ยังไม่มีเว็บไซต์
             </span>
           </div>
@@ -260,7 +260,7 @@ function resetFilters() {
           </p>
           <div class="flex items-center gap-1 order-1 sm:order-2">
             <button @click="goToPage(currentPage - 1)" :disabled="currentPage === 1"
-              class="w-9 h-9 flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-600 text-slate-500 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+              class="w-9 h-9 flex items-center justify-center rounded-xl border border-slate-200 text-slate-500 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-slate-50 transition-colors">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5"/>
               </svg>
@@ -269,12 +269,12 @@ function resetFilters() {
               <span v-if="p === '...'" class="w-9 h-9 flex items-center justify-center text-slate-300 text-sm">…</span>
               <button v-else @click="goToPage(p)"
                 :class="['w-9 h-9 flex items-center justify-center rounded-xl text-sm font-bold transition-colors',
-                  p === currentPage ? 'bg-primary text-white shadow-sm' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700']">
+                  p === currentPage ? 'bg-primary text-white shadow-sm' : 'text-slate-500 hover:bg-slate-100']">
                 {{ p }}
               </button>
             </template>
             <button @click="goToPage(currentPage + 1)" :disabled="currentPage === totalPages"
-              class="w-9 h-9 flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-600 text-slate-500 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+              class="w-9 h-9 flex items-center justify-center rounded-xl border border-slate-200 text-slate-500 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-slate-50 transition-colors">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
               </svg>

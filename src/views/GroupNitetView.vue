@@ -69,7 +69,7 @@ onMounted(async () => {
       <template v-else>
         <!-- ══ SECTION 1: กิจกรรมที่กำลังจะถึง ══════════════════════ -->
         <section class="space-y-4">
-          <h2 class="text-xl font-extrabold text-slate-800 dark:text-slate-100">กิจกรรมที่กำลังจะถึง</h2>
+          <h2 class="text-xl font-extrabold text-slate-800">กิจกรรมที่กำลังจะถึง</h2>
 
           <div v-if="upcomingEvents.length === 0"
             class="text-center py-16 glass-tile text-slate-400">
@@ -88,7 +88,7 @@ onMounted(async () => {
                 </span>
                 <span class="text-xs text-slate-400">{{ formatEventDateRange(event) }}</span>
               </div>
-              <h3 class="font-bold text-slate-800 dark:text-slate-100">{{ event.title }}</h3>
+              <h3 class="font-bold text-slate-800">{{ event.title }}</h3>
               <div class="flex flex-wrap gap-3 mt-1 text-xs text-slate-400">
                 <span v-if="event.schools?.length">โรงเรียน: {{ event.schools.map(s => s.name).join(', ') }}</span>
                 <span v-if="event.location">สถานที่: {{ event.location }}</span>
@@ -101,25 +101,25 @@ onMounted(async () => {
         <!-- ══ SECTION 2: ปฏิทินทั้งหมด (ล่าสุด + ที่ผ่านมา) ═══════════ -->
         <section class="space-y-4">
           <div>
-            <h2 class="text-xl font-extrabold text-slate-800 dark:text-slate-100">ปฏิทินทั้งหมด</h2>
+            <h2 class="text-xl font-extrabold text-slate-800">ปฏิทินทั้งหมด</h2>
             <p class="text-sm text-slate-400 mt-0.5">ดูและตรวจสอบกำหนดการทั้งหมด รวมกิจกรรมที่ผ่านมาแล้ว</p>
           </div>
 
           <div class="flex flex-wrap items-center gap-2">
             <select v-model="allTypeFilter"
-              class="px-3 py-2 text-sm bg-white/70 backdrop-blur border border-white/80 rounded-xl font-medium text-slate-600 dark:text-slate-300">
+              class="px-3 py-2 text-sm bg-white/70 backdrop-blur border border-white/80 rounded-xl font-medium text-slate-600">
               <option value="all">ทุกประเภท</option>
               <option v-for="(label, key) in TYPE_LABEL" :key="key" :value="key">{{ label }}</option>
             </select>
             <div class="flex gap-1 bg-white/70 backdrop-blur border border-white/80 p-1 rounded-xl ml-auto">
               <button @click="allViewMode = 'list'"
                 :class="['px-4 py-1.5 text-sm font-bold rounded-lg transition-colors',
-                  allViewMode === 'list' ? 'bg-primary text-white shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700']">
+                  allViewMode === 'list' ? 'bg-primary text-white shadow-sm' : 'text-slate-500 hover:text-slate-700']">
                 รายการ
               </button>
               <button @click="allViewMode = 'month'"
                 :class="['px-4 py-1.5 text-sm font-bold rounded-lg transition-colors',
-                  allViewMode === 'month' ? 'bg-primary text-white shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700']">
+                  allViewMode === 'month' ? 'bg-primary text-white shadow-sm' : 'text-slate-500 hover:text-slate-700']">
                 ปฏิทิน
               </button>
             </div>
@@ -145,7 +145,7 @@ onMounted(async () => {
                 </span>
                 <span class="text-xs text-slate-400">{{ formatEventDateRange(event) }}</span>
               </div>
-              <h3 class="font-bold text-slate-800 dark:text-slate-100">{{ event.title }}</h3>
+              <h3 class="font-bold text-slate-800">{{ event.title }}</h3>
               <div class="flex flex-wrap gap-3 mt-1 text-xs text-slate-400">
                 <span v-if="event.schools?.length">โรงเรียน: {{ event.schools.map(s => s.name).join(', ') }}</span>
                 <span v-if="event.location">สถานที่: {{ event.location }}</span>
@@ -164,21 +164,21 @@ onMounted(async () => {
         <div v-if="selectedEvent" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
           @click.self="selectedEvent = null">
           <div class="glass-panel rounded-3xl w-full max-w-md overflow-hidden">
-            <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100">
               <span :class="['text-xs font-bold px-2.5 py-0.5 rounded-full', TYPE_COLOR[selectedEvent.type]?.bg, TYPE_COLOR[selectedEvent.type]?.text]">
                 {{ TYPE_LABEL[selectedEvent.type] }}
               </span>
               <button @click="selectedEvent = null"
-                class="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 transition-colors">
+                class="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-slate-100 text-slate-400 transition-colors">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
                 </svg>
               </button>
             </div>
             <div class="px-6 py-5 space-y-3">
-              <h2 class="text-lg font-extrabold text-slate-900 dark:text-slate-50 leading-snug">{{ selectedEvent.title }}</h2>
-              <p v-if="selectedEvent.description" class="text-sm text-slate-600 dark:text-slate-300">{{ selectedEvent.description }}</p>
-              <div class="border-t border-slate-100 dark:border-slate-800 pt-3 space-y-2 text-sm text-slate-600 dark:text-slate-300">
+              <h2 class="text-lg font-extrabold text-slate-900 leading-snug">{{ selectedEvent.title }}</h2>
+              <p v-if="selectedEvent.description" class="text-sm text-slate-600">{{ selectedEvent.description }}</p>
+              <div class="border-t border-slate-100 pt-3 space-y-2 text-sm text-slate-600">
                 <p>📅 {{ formatEventDateRange(selectedEvent) }}</p>
                 <p v-for="s in (selectedEvent.schools || [])" :key="s.id">🏫 {{ s.name }} <span class="text-slate-400">(อ.{{ s.district }})</span></p>
                 <p v-if="selectedEvent.location">📍 {{ selectedEvent.location }}</p>

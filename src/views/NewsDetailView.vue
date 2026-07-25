@@ -157,7 +157,7 @@ onUnmounted(() => window.removeEventListener('message', onHtmlMessage))
 </script>
 
 <template>
-  <div class="font-sarabun dark:text-slate-100 min-h-screen">
+  <div class="font-sarabun min-h-screen">
 
     <!-- Loading -->
     <div v-if="loading" class="max-w-3xl mx-auto px-4 py-16 space-y-4 animate-pulse">
@@ -206,11 +206,11 @@ onUnmounted(() => window.removeEventListener('message', onHtmlMessage))
       <div class="max-w-3xl mx-auto px-4 pt-8 pb-4">
         <div v-if="news.show_title ?? true" class="flex items-start gap-2.5">
           <span class="flex-shrink-0 text-lg leading-snug">📌</span>
-          <h1 class="text-lg md:text-2xl font-extrabold text-slate-900 dark:text-slate-50 leading-snug">
+          <h1 class="text-lg md:text-2xl font-extrabold text-slate-900 leading-snug">
             {{ news.title }}
           </h1>
         </div>
-        <p class="text-xs text-slate-400 dark:text-slate-500 mt-2 pl-8">{{ fmtDate(news.published_at) }}</p>
+        <p class="text-xs text-slate-400 mt-2 pl-8">{{ fmtDate(news.published_at) }}</p>
       </div>
 
       <!-- ── Cover image ───────────────────────────────────────────── -->
@@ -232,7 +232,7 @@ onUnmounted(() => window.removeEventListener('message', onHtmlMessage))
 
         <!-- Content (plain text) -->
         <div v-if="news.content"
-          class="prose prose-slate max-w-none text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap text-sm md:text-base">
+          class="prose prose-slate max-w-none text-slate-700 leading-relaxed whitespace-pre-wrap text-sm md:text-base">
           {{ news.content }}
         </div>
 
@@ -266,7 +266,7 @@ onUnmounted(() => window.removeEventListener('message', onHtmlMessage))
 
         <!-- ── File / Link attachment ───────────────────────────────── -->
         <div v-if="news.file_url"
-          class="mt-8 p-4 bg-primary-light dark:bg-slate-800 border border-primary/20 dark:border-slate-700 rounded-2xl flex items-center gap-4">
+          class="mt-8 p-4 bg-primary-light border border-primary/20 rounded-2xl flex items-center gap-4">
           <!-- Icon -->
           <div class="w-10 h-10 rounded-xl bg-primary flex items-center justify-center flex-shrink-0">
             <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
@@ -314,7 +314,7 @@ onUnmounted(() => window.removeEventListener('message', onHtmlMessage))
                 </div>
               </div>
               <div class="p-3">
-                <p class="text-xs font-bold text-slate-700 dark:text-slate-200 line-clamp-2 group-hover:text-primary transition-colors">
+                <p class="text-xs font-bold text-slate-700 line-clamp-2 group-hover:text-primary transition-colors">
                   {{ r.title }}
                 </p>
                 <div class="flex items-center justify-between mt-1">

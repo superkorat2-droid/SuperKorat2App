@@ -128,8 +128,8 @@ function extractDriveId(url) {
               </span>
               <span v-for="g in item.grade_levels" :key="g" class="text-xs bg-indigo-50 text-indigo-600 font-bold px-2 py-0.5 rounded-full">{{ g }}</span>
             </div>
-            <h1 class="text-xl md:text-2xl font-extrabold text-slate-800 dark:text-slate-100">{{ item.title }}</h1>
-            <p v-if="item.description" class="text-slate-500 dark:text-slate-400 text-sm mt-1">{{ item.description }}</p>
+            <h1 class="text-xl md:text-2xl font-extrabold text-slate-800">{{ item.title }}</h1>
+            <p v-if="item.description" class="text-slate-500 text-sm mt-1">{{ item.description }}</p>
             <div class="flex flex-wrap gap-4 mt-2 text-xs text-slate-400">
               <span v-if="item.author_name" class="flex items-center gap-1">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0"/></svg>
@@ -182,7 +182,7 @@ function extractDriveId(url) {
 
         <!-- Tags -->
         <div v-if="item.tags?.length" class="flex flex-wrap gap-2">
-          <span v-for="tag in item.tags" :key="tag" class="text-xs bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-3 py-1 rounded-full">#{{ tag }}</span>
+          <span v-for="tag in item.tags" :key="tag" class="text-xs bg-slate-100 text-slate-600 px-3 py-1 rounded-full">#{{ tag }}</span>
         </div>
 
         <!-- ── Block content ────────────────────────────────────────────────── -->
@@ -192,14 +192,14 @@ function extractDriveId(url) {
             <!-- heading -->
             <component :is="`h${block.level || 2}`"
               v-if="block.type === 'heading' && block.text"
-              :class="['font-extrabold text-slate-800 dark:text-slate-100',
+              :class="['font-extrabold text-slate-800',
                 block.level===2?'text-xl':block.level===3?'text-lg':'text-base']">
               {{ block.text }}
             </component>
 
             <!-- text -->
             <div v-else-if="block.type === 'text' && block.text"
-              class="text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-line">
+              class="text-slate-600 leading-relaxed whitespace-pre-line">
               {{ block.text }}
             </div>
 
@@ -210,8 +210,8 @@ function extractDriveId(url) {
             </figure>
 
             <!-- drive embed -->
-            <div v-else-if="block.type === 'drive' && block.url" class="rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700">
-              <p v-if="block.label" class="text-xs font-bold text-slate-500 px-4 py-2 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">📄 {{ block.label }}</p>
+            <div v-else-if="block.type === 'drive' && block.url" class="rounded-2xl overflow-hidden border border-slate-200">
+              <p v-if="block.label" class="text-xs font-bold text-slate-500 px-4 py-2 border-b border-slate-100 bg-slate-50">📄 {{ block.label }}</p>
               <div class="aspect-video bg-slate-900">
                 <iframe :src="`https://drive.google.com/file/d/${extractDriveId(block.url)}/preview`"
                   class="w-full h-full border-0" allow="autoplay" loading="lazy"/>
@@ -219,8 +219,8 @@ function extractDriveId(url) {
             </div>
 
             <!-- embed URL -->
-            <div v-else-if="block.type === 'embed' && block.url" class="rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700">
-              <p v-if="block.label" class="text-xs font-bold text-slate-500 px-4 py-2 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">🔗 {{ block.label }}</p>
+            <div v-else-if="block.type === 'embed' && block.url" class="rounded-2xl overflow-hidden border border-slate-200">
+              <p v-if="block.label" class="text-xs font-bold text-slate-500 px-4 py-2 border-b border-slate-100 bg-slate-50">🔗 {{ block.label }}</p>
               <div class="aspect-video bg-slate-900">
                 <iframe v-if="extractYtId(block.url)"
                   :src="`https://www.youtube.com/embed/${extractYtId(block.url)}`"
@@ -241,7 +241,7 @@ function extractDriveId(url) {
             </div>
 
             <!-- divider -->
-            <hr v-else-if="block.type === 'divider'" class="border-slate-200 dark:border-slate-700"/>
+            <hr v-else-if="block.type === 'divider'" class="border-slate-200"/>
           </div>
         </div>
 

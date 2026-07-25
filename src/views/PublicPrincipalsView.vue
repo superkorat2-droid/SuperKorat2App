@@ -82,7 +82,7 @@ function initials(name) {
 </script>
 
 <template>
-  <div class="font-sarabun dark:text-slate-100 min-h-screen">
+  <div class="font-sarabun min-h-screen">
 
     <!-- ── Hero ───────────────────────────────────────────────────────────────── -->
     <PageHero v-if="!header.hidden"
@@ -100,7 +100,7 @@ function initials(name) {
           <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/>
         </svg>
         <input v-model="searchQ" type="text" placeholder="ค้นหาชื่อผู้บริหาร ตำแหน่ง หรือโรงเรียน..."
-          class="w-full pl-11 pr-4 py-3 rounded-2xl border border-slate-200 dark:border-slate-700
+          class="w-full pl-11 pr-4 py-3 rounded-2xl border border-slate-200
                  bg-white/70 backdrop-blur text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"/>
       </div>
 
@@ -111,7 +111,7 @@ function initials(name) {
           <p class="text-xs text-slate-500 mt-0.5">ผู้บริหาร</p>
         </div>
         <div class="glass-tile p-4 text-center">
-          <p class="text-2xl font-extrabold text-slate-700 dark:text-slate-200 transition-all duration-300">
+          <p class="text-2xl font-extrabold text-slate-700 transition-all duration-300">
             {{ new Set(filtered.map(p=>p.school_id)).size }}
           </p>
           <p class="text-xs text-slate-500 mt-0.5">โรงเรียน</p>
@@ -194,11 +194,11 @@ function initials(name) {
 
           <!-- Info -->
           <div class="flex-1 min-w-0">
-            <p class="font-bold text-slate-800 dark:text-slate-100 text-sm leading-snug truncate">{{ p.name }}</p>
+            <p class="font-bold text-slate-800 text-sm leading-snug truncate">{{ p.name }}</p>
             <span class="inline-block text-[10px] bg-primary/10 text-primary font-bold px-2 py-0.5 rounded-full mt-0.5">
               {{ p.position }}
             </span>
-            <p class="text-[11px] text-slate-400 dark:text-slate-500 truncate mt-0.5">{{ p.schools?.name }}</p>
+            <p class="text-[11px] text-slate-400 truncate mt-0.5">{{ p.schools?.name }}</p>
             <!-- Contact (visible only) -->
             <div class="flex gap-2 mt-1">
               <a v-if="p.phone && p.visibility?.phone" :href="`tel:${p.phone}`"
@@ -219,7 +219,7 @@ function initials(name) {
       </div>
 
       <!-- Credit -->
-      <p class="text-center text-xs text-slate-300 dark:text-slate-600 pb-6">
+      <p class="text-center text-xs text-slate-300 pb-6">
         ข้อมูลจากระบบ · {{ config?.area_name }}
       </p>
     </div>
