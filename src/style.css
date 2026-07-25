@@ -326,6 +326,9 @@ body {
      ไม่งั้นจะมีสีเรืองติดไปในหน้าที่พิมพ์ */
   body { background: #fff !important; }
   body::before { display: none !important; }
+  /* ตารางที่ยาวเกิน 1 แผ่น ให้หัวตารางซ้ำทุกหน้า อ่านต่อได้ไม่งง */
+  #print-report-root thead { display: table-header-group; }
+  #print-report-root tr    { page-break-inside: avoid; }
   /* กระจกไม่มีความหมายบนกระดาษ — พิมพ์เป็นกล่องขอบเรียบแทน */
   .glass-card, .glass-tile, .glass-panel, .glass-nav, .glass-inset {
     background: #fff !important;
