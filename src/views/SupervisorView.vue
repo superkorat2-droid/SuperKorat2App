@@ -50,7 +50,7 @@ onMounted(async () => {
 
   <div v-else class="space-y-10 animate-in fade-in duration-500">
     <!-- Header Profile Section -->
-    <section class="bg-white rounded-3xl p-8 border border-gray-100 shadow-sm flex flex-col md:flex-row items-center md:items-start gap-8">
+    <section class="glass-card !rounded-3xl p-8 flex flex-col md:flex-row items-center md:items-start gap-8">
       <div class="w-32 h-32 md:w-40 md:h-40 rounded-3xl overflow-hidden bg-gray-50 flex-shrink-0 border-4 border-blue-50 shadow-inner">
         <img v-if="supervisor.avatar_url" :src="supervisor.avatar_url" class="w-full h-full object-cover" />
         <div v-else class="w-full h-full flex items-center justify-center bg-blue-50 text-blue-300">
@@ -79,12 +79,12 @@ onMounted(async () => {
         ผลงานและเนื้อหาเผยแพร่
       </h2>
 
-      <div v-if="contents.length === 0" class="bg-white rounded-3xl p-20 text-center border border-gray-100">
+      <div v-if="contents.length === 0" class="glass-card !rounded-3xl p-20 text-center">
         <p class="text-gray-400">ยังไม่มีเนื้อหาเผยแพร่ในขณะนี้</p>
       </div>
 
       <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div v-for="content in contents" :key="content.id" class="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition-all">
+        <div v-for="content in contents" :key="content.id" class="glass-card glass-card-hover p-6">
           <div class="flex items-start justify-between mb-4">
             <span class="px-3 py-1 rounded-full text-xs font-bold" 
               :class="content.content_type === 'News' ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700'">

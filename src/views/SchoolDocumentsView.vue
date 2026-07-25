@@ -64,9 +64,9 @@ function formatDate(iso) {
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0"/>
           </svg>
           <input v-model="searchQ" type="text" placeholder="ค้นหาหนังสือ..."
-            class="w-full pl-10 pr-4 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary bg-white dark:bg-slate-800"/>
+            class="w-full pl-10 pr-4 py-2.5 border border-white/80 bg-white/70 backdrop-blur rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"/>
         </div>
-        <div class="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 flex-shrink-0">
+        <div class="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 bg-white/70 backdrop-blur border border-white/80 rounded-xl px-4 py-2.5 flex-shrink-0">
           <span class="font-bold text-primary">{{ filtered.length }}</span>
           <span>รายการ</span>
         </div>
@@ -76,13 +76,13 @@ function formatDate(iso) {
       <div class="flex flex-wrap gap-2 mb-6">
         <button @click="activeType = 'all'"
           :class="['flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold transition-all border',
-            activeType === 'all' ? 'bg-primary text-white border-primary shadow-md' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-primary hover:text-primary']">
+            activeType === 'all' ? 'bg-primary text-white border-primary shadow-md' : 'bg-white/70 backdrop-blur text-slate-600 border-white/80 hover:border-primary hover:text-primary']">
           ทั้งหมด
           <span :class="['text-[10px] px-1.5 py-0.5 rounded-full', activeType === 'all' ? 'bg-white/30 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400']">{{ typeCounts.all || 0 }}</span>
         </button>
         <button v-for="t in typeOptions" :key="t.key" @click="activeType = t.key"
           :class="['flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold transition-all border',
-            activeType === t.key ? 'bg-primary text-white border-primary shadow-md' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-primary hover:text-primary']">
+            activeType === t.key ? 'bg-primary text-white border-primary shadow-md' : 'bg-white/70 backdrop-blur text-slate-600 border-white/80 hover:border-primary hover:text-primary']">
           {{ t.label }}
           <span :class="['text-[10px] px-1.5 py-0.5 rounded-full', activeType === t.key ? 'bg-white/30 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400']">{{ typeCounts[t.key] || 0 }}</span>
         </button>
@@ -102,7 +102,7 @@ function formatDate(iso) {
       <!-- List -->
       <div v-else class="space-y-3">
         <div v-for="d in filtered" :key="d.id"
-          class="flex flex-col sm:flex-row sm:items-center gap-3 bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 p-4 shadow-sm hover:shadow-md hover:border-primary/30 transition-all group">
+          class="flex flex-col sm:flex-row sm:items-center gap-3 glass-tile p-4 shadow-sm hover:shadow-md hover:border-primary/30 transition-all group">
           <div class="w-12 h-12 bg-slate-50 dark:bg-slate-700 rounded-xl flex items-center justify-center text-2xl flex-shrink-0">📄</div>
           <div class="flex-1 min-w-0">
             <p class="font-bold text-slate-800 dark:text-slate-100 group-hover:text-primary transition-colors leading-snug break-words">{{ d.title }}</p>

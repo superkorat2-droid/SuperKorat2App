@@ -112,24 +112,24 @@ function resetFilters() {
         </svg>
         <input v-model="searchQ" type="text" placeholder="ค้นหาชื่อโรงเรียน รหัส DMC ..."
           class="w-full pl-11 pr-4 py-3 rounded-2xl border border-slate-200 dark:border-slate-700
-                 bg-white dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"/>
+                 bg-white/70 backdrop-blur text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"/>
       </div>
 
       <!-- ── Realtime stats ──────────────────────────────────────── -->
       <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 p-4 text-center shadow-sm">
+        <div class="glass-tile p-4 text-center">
           <p class="text-2xl font-extrabold text-primary transition-all duration-300">{{ stats.total }}</p>
           <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">โรงเรียน</p>
         </div>
-        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 p-4 text-center shadow-sm">
+        <div class="glass-tile p-4 text-center">
           <p class="text-2xl font-extrabold text-emerald-600 transition-all duration-300">{{ stats.withWebsite }}</p>
           <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">มีเว็บไซต์</p>
         </div>
-        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 p-4 text-center shadow-sm">
+        <div class="glass-tile p-4 text-center">
           <p class="text-2xl font-extrabold text-blue-600 transition-all duration-300">{{ stats.withGps }}</p>
           <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">มีพิกัด GPS</p>
         </div>
-        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 p-4 text-center shadow-sm">
+        <div class="glass-tile p-4 text-center">
           <p class="text-2xl font-extrabold text-amber-600 transition-all duration-300">
             {{ stats.avgDist ?? '—' }}<span v-if="stats.avgDist" class="text-sm font-normal ml-0.5">กม.</span>
           </p>
@@ -140,18 +140,18 @@ function resetFilters() {
       <!-- ── Filters ─────────────────────────────────────────────── -->
       <div class="flex flex-wrap items-center gap-2">
         <select v-model="filterDistrict" @change="filterGroup='all'"
-          class="px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-xl text-sm focus:outline-none focus:border-primary bg-white dark:bg-slate-800">
+          class="px-3 py-2 border border-white/80 bg-white/70 backdrop-blur rounded-xl text-sm focus:outline-none focus:border-primary">
           <option value="all">ทุกอำเภอ</option>
           <option v-for="d in districts" :key="d" :value="d">อ.{{ d }}</option>
         </select>
         <select v-model="filterGroup"
-          class="px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-xl text-sm focus:outline-none focus:border-primary bg-white dark:bg-slate-800">
+          class="px-3 py-2 border border-white/80 bg-white/70 backdrop-blur rounded-xl text-sm focus:outline-none focus:border-primary">
           <option value="all">ทุกศูนย์เครือข่าย</option>
           <option v-for="g in groups" :key="g" :value="g">{{ g }}</option>
         </select>
         <button @click="filterWebsite = !filterWebsite"
           :class="['flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border-2 transition-all',
-            filterWebsite ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-slate-200 text-slate-500 bg-white dark:bg-slate-800']">
+            filterWebsite ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-white/80 text-slate-600 bg-white/70 backdrop-blur']">
           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3"/>
           </svg>
@@ -159,7 +159,7 @@ function resetFilters() {
         </button>
         <button @click="filterGps = !filterGps"
           :class="['flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border-2 transition-all',
-            filterGps ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-slate-200 text-slate-500 bg-white dark:bg-slate-800']">
+            filterGps ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-white/80 text-slate-600 bg-white/70 backdrop-blur']">
           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
             <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z"/>
           </svg>
@@ -177,7 +177,7 @@ function resetFilters() {
 
       <!-- ── Loading skeleton ───────────────────────────────────── -->
       <div v-if="loading" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-        <div v-for="i in 8" :key="i" class="bg-white rounded-2xl border border-slate-100 p-4 animate-pulse">
+        <div v-for="i in 8" :key="i" class="glass-card p-4 animate-pulse">
           <div class="h-4 bg-slate-100 rounded w-3/4 mb-2"></div>
           <div class="h-3 bg-slate-100 rounded w-1/2 mb-3"></div>
           <div class="h-3 bg-slate-100 rounded w-full mb-2"></div>
@@ -197,7 +197,7 @@ function resetFilters() {
       <!-- ── Cards ──────────────────────────────────────────────── -->
       <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         <div v-for="s in filtered" :key="s.id"
-          class="group bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm
+          class="group glass-tile
                  hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex flex-col">
 
           <!-- Card body -->
@@ -285,7 +285,7 @@ function resetFilters() {
           leave-active-class="transition duration-200"
           leave-from-class="translate-y-0 sm:opacity-100"
           leave-to-class="translate-y-full sm:opacity-0">
-          <div class="bg-white dark:bg-slate-800 rounded-t-3xl sm:rounded-2xl shadow-2xl w-full sm:max-w-lg max-h-[92dvh] overflow-y-auto">
+          <div class="glass-panel rounded-t-3xl sm:rounded-[1.25rem] w-full sm:max-w-lg max-h-[92dvh] overflow-y-auto">
 
             <!-- Handle (mobile) -->
             <div class="flex justify-center pt-3 pb-1 sm:hidden">
@@ -293,7 +293,7 @@ function resetFilters() {
             </div>
 
             <!-- Modal header -->
-            <div class="sticky top-0 bg-white dark:bg-slate-800 px-5 py-4 border-b border-slate-100 dark:border-slate-700 flex items-start justify-between z-10">
+            <div class="sticky top-0 bg-white/90 backdrop-blur px-5 py-4 border-b border-white/70 flex items-start justify-between z-10">
               <div class="flex items-start gap-3 flex-1 min-w-0">
                 <div class="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
                   <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
@@ -314,7 +314,7 @@ function resetFilters() {
             </div>
 
             <!-- Modal tabs -->
-            <div class="px-5 pt-3 flex gap-1 bg-white dark:bg-slate-800">
+            <div class="px-5 pt-3 flex gap-1">
               <button @click="modalTab='info'"
                 :class="['px-4 py-2 text-sm font-bold rounded-xl transition-colors',
                   modalTab==='info' ? 'bg-primary/10 text-primary' : 'text-slate-500 hover:bg-slate-100']">
@@ -450,7 +450,7 @@ function resetFilters() {
             </div>
 
             <!-- Modal footer: action buttons -->
-            <div class="sticky bottom-0 bg-white dark:bg-slate-800 border-t border-slate-100 dark:border-slate-700 px-5 py-4 flex gap-3">
+            <div class="sticky bottom-0 bg-white/90 backdrop-blur border-t border-white/70 px-5 py-4 flex gap-3">
               <button v-if="modalSchool.lat && modalSchool.lng"
                 @click="navigateTo(modalSchool)"
                 class="flex-1 flex items-center justify-center gap-2 py-3 bg-emerald-600 text-white font-bold rounded-2xl hover:-translate-y-0.5 shadow-md shadow-emerald-200 transition-all">

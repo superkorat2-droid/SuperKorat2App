@@ -72,7 +72,7 @@ onMounted(async () => {
           <h2 class="text-xl font-extrabold text-slate-800 dark:text-slate-100">กิจกรรมที่กำลังจะถึง</h2>
 
           <div v-if="upcomingEvents.length === 0"
-            class="text-center py-16 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 text-slate-400">
+            class="text-center py-16 glass-tile text-slate-400">
             <svg class="w-12 h-12 mx-auto mb-3 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
               <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5m-9-6h.008v.008H12v-.008z"/>
             </svg>
@@ -81,7 +81,7 @@ onMounted(async () => {
 
           <div v-else class="space-y-3">
             <button v-for="event in upcomingEvents" :key="event.id" @click="selectedEvent = event" type="button"
-              class="w-full text-left bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-4 hover:shadow-md transition-shadow">
+              class="w-full text-left glass-tile p-4 hover:shadow-md transition-shadow">
               <div class="flex flex-wrap items-center gap-2 mb-1.5">
                 <span :class="['text-xs font-bold px-2.5 py-0.5 rounded-full', TYPE_COLOR[event.type]?.bg, TYPE_COLOR[event.type]?.text]">
                   {{ TYPE_LABEL[event.type] }}
@@ -107,11 +107,11 @@ onMounted(async () => {
 
           <div class="flex flex-wrap items-center gap-2">
             <select v-model="allTypeFilter"
-              class="px-3 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-medium text-slate-600 dark:text-slate-300">
+              class="px-3 py-2 text-sm bg-white/70 backdrop-blur border border-white/80 rounded-xl font-medium text-slate-600 dark:text-slate-300">
               <option value="all">ทุกประเภท</option>
               <option v-for="(label, key) in TYPE_LABEL" :key="key" :value="key">{{ label }}</option>
             </select>
-            <div class="flex gap-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-1 rounded-xl ml-auto">
+            <div class="flex gap-1 bg-white/70 backdrop-blur border border-white/80 p-1 rounded-xl ml-auto">
               <button @click="allViewMode = 'list'"
                 :class="['px-4 py-1.5 text-sm font-bold rounded-lg transition-colors',
                   allViewMode === 'list' ? 'bg-primary text-white shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700']">
@@ -131,14 +131,14 @@ onMounted(async () => {
 
           <!-- Empty -->
           <div v-else-if="allSortedEvents.length === 0"
-            class="text-center py-16 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 text-slate-400">
+            class="text-center py-16 glass-tile text-slate-400">
             <p class="font-medium">ไม่พบกำหนดการ</p>
           </div>
 
           <!-- List view -->
           <div v-else class="space-y-3">
             <button v-for="event in allSortedEvents" :key="event.id" @click="selectedEvent = event" type="button"
-              class="w-full text-left bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-4 hover:shadow-md transition-shadow">
+              class="w-full text-left glass-tile p-4 hover:shadow-md transition-shadow">
               <div class="flex flex-wrap items-center gap-2 mb-1.5">
                 <span :class="['text-xs font-bold px-2.5 py-0.5 rounded-full', TYPE_COLOR[event.type]?.bg, TYPE_COLOR[event.type]?.text]">
                   {{ TYPE_LABEL[event.type] }}
@@ -163,7 +163,7 @@ onMounted(async () => {
         leave-active-class="transition duration-150 ease-in" leave-to-class="opacity-0 scale-95">
         <div v-if="selectedEvent" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
           @click.self="selectedEvent = null">
-          <div class="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden">
+          <div class="glass-panel rounded-3xl w-full max-w-md overflow-hidden">
             <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800">
               <span :class="['text-xs font-bold px-2.5 py-0.5 rounded-full', TYPE_COLOR[selectedEvent.type]?.bg, TYPE_COLOR[selectedEvent.type]?.text]">
                 {{ TYPE_LABEL[selectedEvent.type] }}

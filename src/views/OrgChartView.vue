@@ -231,7 +231,7 @@ const deptGroupRows = computed(() => {
 
 /* ── การ์ดผู้บริหาร (ผอ.เขต/รองผอ.เขต/ผอ.กลุ่ม) ───────────────── */
 .chart-card {
-  @apply w-44 bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-100 dark:border-slate-700
+  @apply w-44 glass-card
          overflow-hidden flex flex-col items-center pt-4 pb-3 px-2 text-center;
 }
 .chart-card-sm { @apply w-36 pt-3 pb-2 px-1.5; }
@@ -245,7 +245,7 @@ const deptGroupRows = computed(() => {
 
 /* ── กล่องกลุ่มงาน (แสดงทุกคนในกลุ่มเป็นรูปเล็ก+ชื่อ เรียงตามลำดับ) ── */
 .chart-box {
-  @apply w-64 bg-white dark:bg-slate-800/60 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700
+  @apply w-64 glass-card
          p-4 text-center;
 }
 .chart-box-title { @apply font-extrabold leading-tight break-keep break-words mb-3; color: var(--color-primary); }

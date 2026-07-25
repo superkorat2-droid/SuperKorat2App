@@ -465,7 +465,7 @@ onMounted(() => { fetchConfig(); loadForm() })
       </div>
 
       <!-- Cover page (ก่อนเริ่มทำแบบสอบถาม) -->
-      <div v-else-if="form && !started" class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+      <div v-else-if="form && !started" class="glass-card overflow-hidden">
         <img v-if="form.cover_image_url" :src="form.cover_image_url" class="w-full h-auto block"/>
         <div class="p-8 text-center">
           <span class="text-xs bg-primary/10 text-primary font-bold px-3 py-1 rounded-full">แบบนิเทศ</span>
@@ -499,7 +499,7 @@ onMounted(() => { fetchConfig(); loadForm() })
       <template v-else-if="form">
 
         <!-- Form header card -->
-        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 mb-6">
+        <div class="glass-card p-6 mb-6">
           <div class="flex items-center gap-2 mb-1">
             <span class="text-xs bg-primary/10 text-primary font-bold px-3 py-1 rounded-full">แบบนิเทศ</span>
             <span v-if="form.deadline" class="text-xs text-slate-400">
@@ -535,7 +535,7 @@ onMounted(() => { fetchConfig(); loadForm() })
 
         <!-- Respondent info section (individual mode) -->
         <div v-if="isIndividual && !isAnonymous"
-          class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 mb-4 space-y-3">
+          class="glass-card p-5 mb-4 space-y-3">
           <p class="text-sm font-extrabold text-slate-700 flex items-center gap-2">
             <svg class="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
               <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/>
@@ -567,7 +567,7 @@ onMounted(() => { fetchConfig(); loadForm() })
             <div v-if="showField('age_range')">
               <label class="block text-xs font-bold text-slate-500 mb-1">ช่วงอายุ<span v-if="fieldRequired('age_range')" class="text-red-500 ml-0.5">*</span></label>
               <select v-model="respondentAgeRange"
-                class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:border-primary">
+                class="w-full px-3 py-2.5 border border-white/80 bg-white/70 backdrop-blur rounded-xl text-sm focus:outline-none focus:border-primary">
                 <option value="">-- เลือกช่วงอายุ --</option>
                 <option v-for="r in AGE_RANGES" :key="r" :value="r">{{ r }}</option>
               </select>
@@ -575,7 +575,7 @@ onMounted(() => { fetchConfig(); loadForm() })
             <div v-if="showField('school')" class="sm:col-span-2">
               <label class="block text-xs font-bold text-slate-500 mb-1">โรงเรียน<span v-if="fieldRequired('school')" class="text-red-500 ml-0.5">*</span><span v-else class="text-slate-400 font-normal ml-1">(ไม่บังคับ)</span></label>
               <select v-model="respondentSchoolId"
-                class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:border-primary">
+                class="w-full px-3 py-2.5 border border-white/80 bg-white/70 backdrop-blur rounded-xl text-sm focus:outline-none focus:border-primary">
                 <option :value="null">— ไม่ระบุ —</option>
                 <optgroup v-for="dist in [...new Set(availableSchools.map(s=>s.district))].sort()" :key="dist" :label="`อ.${dist}`">
                   <option v-for="s in availableSchools.filter(x=>x.district===dist)" :key="s.id" :value="s.id">{{ s.name }}</option>
@@ -596,12 +596,12 @@ onMounted(() => { fetchConfig(); loadForm() })
         </div>
 
         <!-- School selector (school mode only) -->
-        <div v-if="!isIndividual" class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 mb-4">
+        <div v-if="!isIndividual" class="glass-card p-5 mb-4">
           <label class="block text-sm font-bold text-slate-700 mb-2">
             โรงเรียน <span class="text-red-500">*</span>
           </label>
           <select v-model="selectedSchool"
-            class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:border-primary">
+            class="w-full px-4 py-3 border border-white/80 bg-white/70 backdrop-blur rounded-xl text-sm focus:outline-none focus:border-primary">
             <option value="" disabled selected>-- เลือกโรงเรียน --</option>
             <optgroup v-for="dist in [...new Set(availableSchools.map(s=>s.district))].sort()" :key="dist" :label="`อ.${dist}`">
               <option v-for="s in availableSchools.filter(x=>x.district===dist)" :key="s.id" :value="s.id">{{ s.name }}</option>
@@ -627,7 +627,7 @@ onMounted(() => { fetchConfig(); loadForm() })
 
           <!-- Question card -->
           <div v-else
-            class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
+            class="glass-card p-5">
 
             <!-- Question label -->
             <div class="mb-3">
@@ -803,7 +803,7 @@ onMounted(() => { fetchConfig(); loadForm() })
         <div class="mt-6 pb-8">
           <div v-if="isPaginated" class="flex gap-3">
             <button v-if="currentPageIndex > 0" @click="prevPage" type="button"
-              class="flex-1 py-3.5 bg-white border-2 border-slate-200 text-slate-600 font-bold rounded-2xl hover:border-slate-300 transition-all">
+              class="flex-1 py-3.5 bg-white/70 backdrop-blur border-2 border-white/80 text-slate-600 font-bold rounded-2xl hover:border-primary/40 transition-all">
               ย้อนกลับ
             </button>
             <button v-if="!isLastPage" @click="nextPage" type="button"
@@ -838,7 +838,7 @@ onMounted(() => { fetchConfig(); loadForm() })
         class="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 font-sarabun"
         @click.self="cancelCrop">
 
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg flex flex-col overflow-hidden"
+        <div class="glass-panel rounded-[1.25rem] w-full max-w-lg flex flex-col overflow-hidden"
           style="max-height: 92dvh">
 
           <!-- Modal header: ratio presets -->

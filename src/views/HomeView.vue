@@ -284,15 +284,16 @@ const configServices = computed(() => {
 
 // สีประจำแต่ละบริการ — ระบบวนสีให้อัตโนมัติตามลำดับ (i % length) ให้ไอคอนมีสีสัน ไม่จำเจ
 // ต้องเป็น class string เต็มตัวอักษร (Tailwind JIT ถึงจะไม่ purge ทิ้ง)
+// chip ใช้สีแบบโปร่ง (/15) แทนเฉด -100 ทึบ ให้กลืนกับพื้นผิวกระจกของการ์ด
 const SERVICE_COLORS = [
-  { chip:'bg-blue-100',    chipHover:'group-hover:bg-blue-600',    icon:'text-blue-600',    iconHover:'group-hover:text-white' },
-  { chip:'bg-emerald-100', chipHover:'group-hover:bg-emerald-600', icon:'text-emerald-600', iconHover:'group-hover:text-white' },
-  { chip:'bg-amber-100',   chipHover:'group-hover:bg-amber-600',   icon:'text-amber-600',   iconHover:'group-hover:text-white' },
-  { chip:'bg-violet-100',  chipHover:'group-hover:bg-violet-600',  icon:'text-violet-600',  iconHover:'group-hover:text-white' },
-  { chip:'bg-rose-100',    chipHover:'group-hover:bg-rose-600',    icon:'text-rose-600',    iconHover:'group-hover:text-white' },
-  { chip:'bg-cyan-100',    chipHover:'group-hover:bg-cyan-600',    icon:'text-cyan-600',    iconHover:'group-hover:text-white' },
-  { chip:'bg-indigo-100',  chipHover:'group-hover:bg-indigo-600',  icon:'text-indigo-600',  iconHover:'group-hover:text-white' },
-  { chip:'bg-orange-100',  chipHover:'group-hover:bg-orange-600',  icon:'text-orange-600',  iconHover:'group-hover:text-white' },
+  { chip:'bg-blue-500/15',    chipHover:'group-hover:bg-blue-600',    icon:'text-blue-700',    iconHover:'group-hover:text-white' },
+  { chip:'bg-emerald-500/15', chipHover:'group-hover:bg-emerald-600', icon:'text-emerald-700', iconHover:'group-hover:text-white' },
+  { chip:'bg-amber-500/15',   chipHover:'group-hover:bg-amber-600',   icon:'text-amber-700',   iconHover:'group-hover:text-white' },
+  { chip:'bg-violet-500/15',  chipHover:'group-hover:bg-violet-600',  icon:'text-violet-700',  iconHover:'group-hover:text-white' },
+  { chip:'bg-rose-500/15',    chipHover:'group-hover:bg-rose-600',    icon:'text-rose-700',    iconHover:'group-hover:text-white' },
+  { chip:'bg-cyan-500/15',    chipHover:'group-hover:bg-cyan-600',    icon:'text-cyan-700',    iconHover:'group-hover:text-white' },
+  { chip:'bg-indigo-500/15',  chipHover:'group-hover:bg-indigo-600',  icon:'text-indigo-700',  iconHover:'group-hover:text-white' },
+  { chip:'bg-orange-500/15',  chipHover:'group-hover:bg-orange-600',  icon:'text-orange-700',  iconHover:'group-hover:text-white' },
 ]
 function serviceColor(i) { return SERVICE_COLORS[i % SERVICE_COLORS.length] }
 // v-bind object แทนการ bind :href/:to แยกทีละตัว — ถ้า bind :href="undefined" ตรงๆ บน <component :is="'router-link'">
@@ -457,7 +458,7 @@ const stats = [
         </div>
 
         <!-- ตัวเลื่อนสไลด์ — อยู่ใต้แบนเนอร์ ไม่บังคลิก -->
-        <div v-if="banners.length > 1" class="flex items-center justify-center gap-3 py-3 bg-slate-50 dark:bg-slate-950">
+        <div v-if="banners.length > 1" class="flex items-center justify-center gap-3 py-3">
           <button @click="prevSlide(); scheduleNextSlide()"
             class="w-7 h-7 rounded-full border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-400 hover:text-primary hover:border-primary transition-colors">
             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3">
@@ -572,11 +573,11 @@ const stats = [
             </div>
             <!-- Loading -->
             <div v-if="loadingNews" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5">
-              <div v-for="i in 8" :key="i" class="rounded-2xl overflow-hidden animate-pulse">
-                <div class="h-40 bg-slate-100"></div>
-                <div class="p-4 space-y-2 bg-white border border-t-0 border-slate-100">
-                  <div class="h-4 bg-slate-100 rounded w-3/4"></div>
-                  <div class="h-3 bg-slate-100 rounded w-full"></div>
+              <div v-for="i in 8" :key="i" class="glass-card overflow-hidden animate-pulse">
+                <div class="h-40 bg-slate-200/50"></div>
+                <div class="p-4 space-y-2">
+                  <div class="h-4 bg-slate-200/60 rounded w-3/4"></div>
+                  <div class="h-3 bg-slate-200/60 rounded w-full"></div>
                 </div>
               </div>
             </div>
@@ -615,7 +616,7 @@ const stats = [
             </div>
 
             <div v-else-if="supervisionForms.length === 0"
-              class="text-center py-12 bg-white/60 dark:bg-slate-800/60 rounded-2xl border border-slate-200 dark:border-slate-700 text-slate-400">
+              class="text-center py-12 glass-card text-slate-500">
               <svg class="w-12 h-12 mx-auto mb-3 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25zM6.75 12h.008v.008H6.75V12zm0 3h.008v.008H6.75V15zm0 3h.008v.008H6.75V18z"/>
               </svg>
@@ -624,7 +625,7 @@ const stats = [
 
             <div v-else class="space-y-4">
               <div v-for="form in supervisionForms" :key="form.id"
-                class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+                class="glass-card overflow-hidden">
                 <div class="p-5">
                   <div class="flex flex-col sm:flex-row gap-4">
                     <div class="flex items-start gap-4 flex-1 min-w-0">
@@ -658,7 +659,7 @@ const stats = [
                           <span>{{ form.response_count }} / {{ form.target_count }} โรงเรียน</span>
                           <span>{{ Math.round(form.response_count / form.target_count * 100) }}%</span>
                         </div>
-                        <div class="h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                        <div class="h-2 bg-slate-200/70 rounded-full overflow-hidden">
                           <div class="h-full bg-gradient-to-r from-primary to-blue-400 rounded-full transition-all"
                             :style="`width:${Math.min(100, Math.round(form.response_count / form.target_count * 100))}%`"/>
                         </div>
@@ -731,7 +732,7 @@ const stats = [
                   leave-from-class="opacity-100"
                   leave-to-class="opacity-0">
                   <div v-if="expandedStatus === form.id && supervisionStatus[form.id]"
-                    class="border-t border-slate-100 dark:border-slate-700 px-5 py-4 bg-slate-50 dark:bg-slate-900">
+                    class="border-t border-white/60 px-5 py-4 bg-white/40">
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <!-- ส่งแล้ว -->
                       <div>
@@ -784,7 +785,7 @@ const stats = [
             </div>
 
             <div v-else-if="nithetEvents.length === 0"
-              class="text-center py-12 bg-white/60 dark:bg-slate-800/60 rounded-2xl border border-slate-200 dark:border-slate-700 text-slate-400">
+              class="text-center py-12 glass-card text-slate-500">
               <svg class="w-12 h-12 mx-auto mb-3 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5m-9-6h.008v.008H12v-.008z"/>
               </svg>
@@ -793,7 +794,7 @@ const stats = [
 
             <div v-else class="space-y-3">
               <RouterLink v-for="event in nithetEvents" :key="event.id" to="/nithet"
-                class="block bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-4 hover:shadow-md transition-shadow">
+                class="block glass-card glass-card-hover p-4">
                 <div class="flex flex-wrap items-center gap-2 mb-1.5">
                   <span :class="['text-xs font-bold px-2.5 py-0.5 rounded-full', TYPE_COLOR[event.type]?.bg, TYPE_COLOR[event.type]?.text]">
                     {{ TYPE_LABEL[event.type] }}
@@ -835,20 +836,20 @@ const stats = [
             </div>
             <!-- Loading skeleton -->
             <div v-if="loadingEduNews" class="space-y-2">
-              <div v-for="i in 5" :key="i" class="h-12 bg-slate-100 rounded-xl animate-pulse"/>
+              <div v-for="i in 5" :key="i" class="h-12 bg-white/50 rounded-xl animate-pulse"/>
             </div>
             <!-- Error -->
             <div v-else-if="eduNewsError"
-              class="text-center py-8 text-slate-400 text-sm bg-white rounded-2xl border border-slate-100">
+              class="text-center py-8 text-slate-500 text-sm glass-card">
               ไม่สามารถโหลดข่าวได้ในขณะนี้
             </div>
             <!-- Empty -->
             <div v-else-if="educationNews.length === 0"
-              class="text-center py-8 text-slate-400 text-sm bg-white rounded-2xl border border-slate-100">
+              class="text-center py-8 text-slate-500 text-sm glass-card">
               ยังไม่มีข้อมูลข่าว
             </div>
             <!-- Link list (max 8) -->
-            <ul v-else class="divide-y divide-slate-100 bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+            <ul v-else class="divide-y divide-slate-900/[0.06] glass-card overflow-hidden">
               <li v-for="item in educationNews.slice(0, 8)" :key="item.link"
                 class="group flex items-start gap-3 px-4 py-3 hover:bg-primary/5 transition-colors">
                 <span class="mt-2.5 w-1.5 h-1.5 rounded-full bg-primary/40 flex-shrink-0 group-hover:bg-primary transition-colors"/>
@@ -896,7 +897,7 @@ const stats = [
                   v-for="(svc, si) in configServices" :key="svc.key || svc.label"
                   :is="svc.type === 'external' ? 'a' : 'router-link'"
                   v-bind="serviceLinkAttrs(svc)"
-                  class="group flex flex-col items-center p-6 bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1 hover:border-slate-200 transition-all duration-300 w-[calc(50%-8px)] md:w-[calc(25%-12px)]">
+                  class="group flex flex-col items-center p-6 glass-card glass-card-hover w-[calc(50%-8px)] md:w-[calc(25%-12px)]">
                   <div :class="['w-14 h-14 rounded-2xl flex items-center justify-center mb-4 transition-colors duration-300', serviceColor(si).chip, serviceColor(si).chipHover]">
                     <svg :class="['w-6 h-6 group-hover:scale-110 transition-all duration-300', serviceColor(si).icon, serviceColor(si).iconHover]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
                       <path stroke-linecap="round" stroke-linejoin="round"

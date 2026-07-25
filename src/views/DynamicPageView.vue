@@ -210,7 +210,7 @@ watch(() => route.params.slug, s => { if (s) load(s) })
           <!-- ACCORDION -->
           <div v-else-if="block.type === 'accordion' && block.items?.length" class="space-y-2">
             <details v-for="item in block.items" :key="item.id"
-              class="group bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl overflow-hidden">
+              class="group glass-card overflow-hidden">
               <summary class="flex items-center justify-between gap-3 px-4 py-3 cursor-pointer font-bold text-slate-800 dark:text-slate-100 select-none">
                 {{ item.question }}
                 <svg class="w-4 h-4 flex-shrink-0 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">

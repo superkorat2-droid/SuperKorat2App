@@ -91,20 +91,20 @@ function monthLabel(m) { return m ? MONTHS[m-1] : '' }
         </svg>
         <input v-model="searchQ" type="text" placeholder="ค้นหาชื่อเอกสาร โรงเรียน..."
           class="w-full pl-11 pr-4 py-3 rounded-2xl border border-slate-200 dark:border-slate-700
-                 bg-white dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"/>
+                 bg-white/70 backdrop-blur text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"/>
       </div>
 
       <!-- ── Filters ─────────────────────────────────────────────────────────── -->
       <div class="flex flex-wrap gap-2 items-center justify-center">
-        <select v-model="filterCat" class="px-3 py-2.5 border border-slate-200 dark:border-slate-600 rounded-xl text-sm bg-white dark:bg-slate-800 focus:outline-none focus:border-primary">
+        <select v-model="filterCat" class="px-3 py-2.5 border border-white/80 bg-white/70 backdrop-blur rounded-xl text-sm focus:outline-none focus:border-primary">
           <option value="all">ทุกประเภท</option>
           <option v-for="c in CATEGORIES" :key="c.value" :value="c.value">{{ c.label }}</option>
         </select>
-        <select v-model="filterYear" class="px-3 py-2.5 border border-slate-200 dark:border-slate-600 rounded-xl text-sm bg-white dark:bg-slate-800 focus:outline-none focus:border-primary">
+        <select v-model="filterYear" class="px-3 py-2.5 border border-white/80 bg-white/70 backdrop-blur rounded-xl text-sm focus:outline-none focus:border-primary">
           <option value="all">ทุกปี</option>
           <option v-for="y in years" :key="y" :value="String(y)">{{ y }}</option>
         </select>
-        <select v-model="filterSchool" class="px-3 py-2.5 border border-slate-200 dark:border-slate-600 rounded-xl text-sm bg-white dark:bg-slate-800 focus:outline-none focus:border-primary min-w-[160px]">
+        <select v-model="filterSchool" class="px-3 py-2.5 border border-white/80 bg-white/70 backdrop-blur rounded-xl text-sm focus:outline-none focus:border-primary min-w-[160px]">
           <option value="all">ทุกหน่วย</option>
           <option value="spp">สพป. (ส่วนกลาง)</option>
           <option v-for="s in schools" :key="s.id" :value="s.id">{{ s.name }}</option>
@@ -117,7 +117,7 @@ function monthLabel(m) { return m ? MONTHS[m-1] : '' }
 
       <!-- ── Loading ────────────────────────────────────────────────────────── -->
       <div v-if="loading" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        <div v-for="i in 8" :key="i" class="bg-white rounded-2xl border border-slate-100 overflow-hidden animate-pulse">
+        <div v-for="i in 8" :key="i" class="glass-card overflow-hidden animate-pulse">
           <div class="aspect-[3/4] bg-slate-100"/>
           <div class="p-3 space-y-2"><div class="h-3 bg-slate-100 rounded w-3/4"/><div class="h-2.5 bg-slate-100 rounded w-1/2"/></div>
         </div>
@@ -133,7 +133,7 @@ function monthLabel(m) { return m ? MONTHS[m-1] : '' }
       <!-- ── Card grid ──────────────────────────────────────────────────────── -->
       <div v-else class="flex flex-wrap justify-center gap-4">
         <div v-for="n in filtered" :key="n.id"
-          class="group bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm
+          class="group glass-tile
                  hover:shadow-lg hover:-translate-y-1 transition-all duration-200 overflow-hidden cursor-pointer
                  w-full sm:w-[calc(50%-8px)] md:w-[calc(33.333%-11px)] lg:w-[calc(25%-12px)]"
           @click="previewItem = n">
@@ -192,7 +192,7 @@ function monthLabel(m) { return m ? MONTHS[m-1] : '' }
       <div v-if="previewItem"
         class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 font-sarabun"
         @click.self="previewItem=null">
-        <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-3xl flex flex-col overflow-hidden"
+        <div class="glass-panel rounded-[1.25rem] w-full max-w-3xl flex flex-col overflow-hidden"
           style="max-height: 92dvh">
 
           <!-- Modal header -->

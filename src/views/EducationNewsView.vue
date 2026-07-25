@@ -57,19 +57,19 @@ onMounted(() => { fetchNews(); fetchConfig() })
           </svg>
           <input v-model="searchQ" type="search"
             placeholder="ค้นหาข่าวหรือแหล่งข่าว..."
-            class="w-full pl-10 pr-4 py-2.5 text-sm bg-white border border-slate-200 rounded-2xl
+            class="w-full pl-10 pr-4 py-2.5 text-sm bg-white/70 backdrop-blur border border-white/80 rounded-2xl shadow-[0_4px_16px_rgba(30,58,95,0.06)]
                    focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all"/>
         </div>
 
         <!-- Loading -->
         <div v-if="loading" class="space-y-3">
           <div v-for="i in 8" :key="i"
-            class="h-16 bg-white rounded-2xl border border-slate-100 animate-pulse"/>
+            class="h-16 glass-card animate-pulse"/>
         </div>
 
         <!-- Error -->
         <div v-else-if="error"
-          class="text-center py-16 bg-white rounded-2xl border border-slate-100 text-slate-400">
+          class="text-center py-16 glass-card text-slate-500">
           <svg class="w-10 h-10 mx-auto mb-3 opacity-40" fill="none" stroke="currentColor"
             viewBox="0 0 24 24" stroke-width="1.5">
             <path stroke-linecap="round" stroke-linejoin="round"
@@ -92,8 +92,7 @@ onMounted(() => { fetchNews(); fetchConfig() })
         <!-- News list -->
         <ul v-else class="space-y-2">
           <li v-for="item in filtered" :key="item.link"
-            class="group bg-white rounded-2xl border border-slate-100 shadow-sm
-                   hover:border-primary/20 hover:shadow-md transition-all">
+            class="group glass-tile glass-card-hover">
             <a :href="item.link" target="_blank" rel="noopener noreferrer"
               class="flex items-start gap-3 px-5 py-4">
               <div class="flex-1 min-w-0">

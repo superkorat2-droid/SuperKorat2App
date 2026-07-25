@@ -144,19 +144,19 @@ const isFiltered = computed(() =>
         </svg>
         <input v-model="searchQ" type="text" placeholder="ค้นหาชื่อสื่อ..."
           class="w-full pl-11 pr-4 py-3 rounded-2xl border border-slate-200 dark:border-slate-700
-                 bg-white dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"/>
+                 bg-white/70 backdrop-blur text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"/>
       </div>
 
       <!-- Type tabs -->
       <div class="flex flex-wrap gap-2 justify-center">
         <button @click="filterType='all'; currentPage=1"
           :class="['flex items-center gap-1.5 px-3 py-2 text-xs font-bold rounded-xl border-2 transition-colors',
-            filterType==='all' ? 'border-primary bg-primary text-white' : 'border-slate-200 bg-white text-slate-600 hover:border-primary/50']">
+            filterType==='all' ? 'border-primary bg-primary text-white' : 'border-white/80 bg-white/70 backdrop-blur text-slate-600 hover:border-primary/50']">
           ทั้งหมด
         </button>
         <button v-for="t in MEDIA_TYPES" :key="t.value" @click="filterType=t.value; currentPage=1"
           :class="['flex items-center gap-2 px-3 py-2 text-xs font-bold rounded-xl border-2 transition-colors',
-            filterType===t.value ? 'border-primary bg-primary/10 text-primary' : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300']">
+            filterType===t.value ? 'border-primary bg-primary/10 text-primary' : 'border-white/80 bg-white/70 backdrop-blur text-slate-600 hover:border-slate-300']">
           <div :class="['w-5 h-5 rounded-lg flex items-center justify-center flex-shrink-0', t.color]">
             <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
               <path stroke-linecap="round" stroke-linejoin="round" :d="t.icon"/>
@@ -169,17 +169,17 @@ const isFiltered = computed(() =>
       <!-- Filter row -->
       <div class="flex flex-wrap gap-2 items-center justify-center">
         <select v-model="filterSubject"
-          class="px-3 py-2.5 border border-slate-200 dark:border-slate-600 rounded-xl text-sm bg-white dark:bg-slate-800 focus:outline-none focus:border-primary">
+          class="px-3 py-2.5 border border-white/80 bg-white/70 backdrop-blur rounded-xl text-sm focus:outline-none focus:border-primary">
           <option value="all">ทุกกลุ่มสาระ</option>
           <option v-for="s in SUBJECTS" :key="s" :value="s">{{ s }}</option>
         </select>
         <select v-model="filterGrade"
-          class="px-3 py-2.5 border border-slate-200 dark:border-slate-600 rounded-xl text-sm bg-white dark:bg-slate-800 focus:outline-none focus:border-primary">
+          class="px-3 py-2.5 border border-white/80 bg-white/70 backdrop-blur rounded-xl text-sm focus:outline-none focus:border-primary">
           <option value="all">ทุกระดับชั้น</option>
           <option v-for="g in GRADES" :key="g" :value="g">{{ g }}</option>
         </select>
         <select v-model="sortBy"
-          class="px-3 py-2.5 border border-slate-200 dark:border-slate-600 rounded-xl text-sm bg-white dark:bg-slate-800 focus:outline-none focus:border-primary">
+          class="px-3 py-2.5 border border-white/80 bg-white/70 backdrop-blur rounded-xl text-sm focus:outline-none focus:border-primary">
           <option v-for="s in SORT_OPTIONS" :key="s.value" :value="s.value">{{ s.label }}</option>
         </select>
         <button v-if="isFiltered" @click="resetFilter"
@@ -197,7 +197,7 @@ const isFiltered = computed(() =>
 
       <!-- Loading -->
       <div v-if="loading" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-        <div v-for="i in 8" :key="i" class="bg-white rounded-2xl border border-slate-100 overflow-hidden animate-pulse">
+        <div v-for="i in 8" :key="i" class="glass-card overflow-hidden animate-pulse">
           <div class="aspect-[4/3] bg-slate-100"/>
           <div class="p-3 space-y-2"><div class="h-3 bg-slate-100 rounded w-3/4"/><div class="h-2.5 bg-slate-100 rounded w-1/2"/></div>
         </div>
@@ -213,7 +213,7 @@ const isFiltered = computed(() =>
       <!-- Cards -->
       <div v-else class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
         <div v-for="item in items" :key="item.id"
-          class="group bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm
+          class="group glass-tile
                  hover:shadow-lg hover:-translate-y-1 transition-all duration-200 overflow-hidden cursor-pointer"
           @click="router.push(`/media/${item.id}`)">
 

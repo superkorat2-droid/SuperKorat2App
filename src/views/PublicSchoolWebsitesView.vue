@@ -135,16 +135,16 @@ function resetFilters() {
         </svg>
         <input v-model="searchQ" type="text" placeholder="ค้นหาชื่อโรงเรียน หรือศูนย์เครือข่าย..."
           class="w-full pl-11 pr-4 py-3 rounded-2xl border border-slate-200 dark:border-slate-700
-                 bg-white dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"/>
+                 bg-white/70 backdrop-blur text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"/>
       </div>
 
       <!-- ── Stats ── -->
       <div class="grid grid-cols-2 gap-3 max-w-md mx-auto">
-        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 p-4 text-center shadow-sm">
+        <div class="glass-tile p-4 text-center">
           <p class="text-2xl font-extrabold text-primary transition-all duration-300">{{ stats.total }}</p>
           <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">โรงเรียน</p>
         </div>
-        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 p-4 text-center shadow-sm">
+        <div class="glass-tile p-4 text-center">
           <p class="text-2xl font-extrabold text-emerald-600 transition-all duration-300">{{ stats.withWebsite }}</p>
           <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">มีเว็บไซต์</p>
         </div>
@@ -153,17 +153,17 @@ function resetFilters() {
       <!-- ── Filters ── -->
       <div class="flex flex-wrap items-center justify-center gap-2">
         <select v-model="filterDistrict" @change="filterGroup = 'all'"
-          class="px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-xl text-sm focus:outline-none focus:border-primary bg-white dark:bg-slate-800">
+          class="px-3 py-2 border border-white/80 bg-white/70 backdrop-blur rounded-xl text-sm focus:outline-none focus:border-primary">
           <option value="all">ทุกอำเภอ</option>
           <option v-for="d in districts" :key="d" :value="d">อ.{{ d }}</option>
         </select>
         <select v-model="filterGroup"
-          class="px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-xl text-sm focus:outline-none focus:border-primary bg-white dark:bg-slate-800">
+          class="px-3 py-2 border border-white/80 bg-white/70 backdrop-blur rounded-xl text-sm focus:outline-none focus:border-primary">
           <option value="all">ทุกศูนย์เครือข่าย</option>
           <option v-for="g in groups" :key="g" :value="g">{{ g }}</option>
         </select>
         <select v-model="pageSize"
-          class="px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-xl text-sm focus:outline-none focus:border-primary bg-white dark:bg-slate-800">
+          class="px-3 py-2 border border-white/80 bg-white/70 backdrop-blur rounded-xl text-sm focus:outline-none focus:border-primary">
           <option v-for="n in PAGE_SIZE_OPTIONS" :key="n" :value="n">{{ n === 'all' ? 'แสดงทั้งหมด' : `แสดง ${n} รายการ` }}</option>
         </select>
         <button v-if="hasActiveFilter" @click="resetFilters"
@@ -177,7 +177,7 @@ function resetFilters() {
 
       <!-- ── Loading skeleton ── -->
       <div v-if="loading" class="space-y-2">
-        <div v-for="i in 8" :key="i" class="h-14 bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 animate-pulse"></div>
+        <div v-for="i in 8" :key="i" class="h-14 glass-tile animate-pulse"></div>
       </div>
 
       <!-- ── Empty ── -->
@@ -191,7 +191,7 @@ function resetFilters() {
 
       <template v-else>
         <!-- ── Desktop/tablet table ── -->
-        <div class="hidden md:block bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm overflow-hidden">
+        <div class="hidden md:block glass-tile overflow-hidden">
           <table class="w-full text-sm">
             <thead>
               <tr class="border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/30">
@@ -240,7 +240,7 @@ function resetFilters() {
         <div class="md:hidden space-y-3">
           <div v-for="(s, i) in paginated" :key="s.id"
             :class="['rounded-2xl border border-slate-100 dark:border-slate-700 p-4 shadow-sm',
-              i % 2 === 1 ? 'bg-slate-50 dark:bg-slate-900/30' : 'bg-white dark:bg-slate-800']">
+              i % 2 === 1 ? 'bg-slate-500/[0.04]' : 'bg-transparent']">
             <p class="text-[11px] text-slate-400 font-semibold uppercase tracking-wide">{{ s.school_group }}</p>
             <p class="font-extrabold text-slate-800 dark:text-slate-100 mt-0.5 mb-3">{{ s.name }}</p>
             <a v-if="s.website_url" :href="s.website_url" target="_blank" rel="noopener noreferrer"

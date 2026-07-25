@@ -250,12 +250,12 @@ function visibleContact(p) {
       leave-active-class="transition duration-150 ease-in" leave-to-class="opacity-0 scale-95">
       <div v-if="selected" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
         @click.self="selected = null">
-        <div class="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden">
+        <div class="glass-panel rounded-3xl w-full max-w-sm overflow-hidden">
           <!-- Modal: gradient + วงกลม -->
           <div class="h-28 relative flex-shrink-0"
             style="background:linear-gradient(135deg,var(--color-primary),var(--color-secondary))">
             <button @click="selected = null"
-              class="absolute top-3 right-3 w-9 h-9 bg-white hover:bg-slate-100 rounded-full flex items-center justify-center shadow-lg transition-colors">
+              class="absolute top-3 right-3 w-9 h-9 glass-panel !rounded-full flex items-center justify-center transition-transform hover:scale-105">
               <svg class="w-4 h-4 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
               </svg>
@@ -316,7 +316,7 @@ function visibleContact(p) {
 
 /* ── กรอบบล็อกแยกแต่ละกลุ่ม (ผู้บริหาร/กลุ่มงาน) ให้เป็นสัดส่วน ──── */
 .group-panel {
-  @apply bg-white dark:bg-slate-800/60 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm p-6 md:p-8 mb-6;
+  @apply glass-card !rounded-3xl p-6 md:p-8 mb-6;
 }
 
 /* ── หัวข้อกลุ่ม — อยู่กลาง ฟอนต์น้ำเงินเข้ม ──────────────────── */
@@ -326,7 +326,7 @@ function visibleContact(p) {
 
 /* ── Unified card — height เท่ากันทุกใบ ───────────────────────── */
 .personnel-card {
-  @apply w-60 bg-white dark:bg-slate-800 rounded-2xl shadow-lg hover:shadow-2xl overflow-hidden text-left cursor-pointer flex flex-col;
+  @apply w-60 glass-card glass-card-hover overflow-hidden text-left cursor-pointer flex flex-col;
   min-height: 280px;
 }
 .personnel-card-sm {

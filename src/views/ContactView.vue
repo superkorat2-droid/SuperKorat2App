@@ -122,7 +122,7 @@ onMounted(() => { fetchConfig(); fetchSupervisors() })
         <div class="lg:col-span-1 space-y-6">
 
           <!-- Contact info -->
-          <div class="bg-white dark:bg-slate-800 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-sm p-6 space-y-4">
+          <div class="glass-card !rounded-3xl p-6 space-y-4">
             <h2 class="font-extrabold text-slate-800 dark:text-slate-100 text-lg">ข้อมูลการติดต่อ</h2>
             <div v-for="info in contactInfo" :key="info.label" class="flex items-start gap-3">
               <div class="w-9 h-9 rounded-xl bg-primary-light flex items-center justify-center flex-shrink-0">
@@ -161,7 +161,7 @@ onMounted(() => { fetchConfig(); fetchSupervisors() })
         <div class="lg:col-span-2 space-y-6">
 
           <!-- Contact Form -->
-          <div class="bg-white dark:bg-slate-800 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-sm p-6 md:p-8">
+          <div class="glass-card !rounded-3xl p-6 md:p-8">
             <h2 class="font-extrabold text-slate-800 dark:text-slate-100 text-lg mb-5 flex items-center gap-2">
               <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" :d="ICONS.send"/>
@@ -190,30 +190,30 @@ onMounted(() => { fetchConfig(); fetchSupervisors() })
                 <div>
                   <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1.5 uppercase tracking-wide">ชื่อ-สกุล *</label>
                   <input v-model="form.name" type="text" required placeholder="นายสมชาย ใจดี"
-                    class="w-full px-4 py-2.5 border border-slate-200 dark:border-slate-700 dark:bg-slate-900 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"/>
+                    class="w-full px-4 py-2.5 border border-white/80 bg-white/70 backdrop-blur rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"/>
                 </div>
                 <div>
                   <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1.5 uppercase tracking-wide">ตำแหน่ง/โรงเรียน</label>
                   <input v-model="form.position" type="text" placeholder="ครู / โรงเรียน..."
-                    class="w-full px-4 py-2.5 border border-slate-200 dark:border-slate-700 dark:bg-slate-900 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"/>
+                    class="w-full px-4 py-2.5 border border-white/80 bg-white/70 backdrop-blur rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"/>
                 </div>
               </div>
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1.5 uppercase tracking-wide">โทรศัพท์</label>
                   <input v-model="form.phone" type="tel" placeholder="08X-XXX-XXXX"
-                    class="w-full px-4 py-2.5 border border-slate-200 dark:border-slate-700 dark:bg-slate-900 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"/>
+                    class="w-full px-4 py-2.5 border border-white/80 bg-white/70 backdrop-blur rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"/>
                 </div>
                 <div>
                   <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1.5 uppercase tracking-wide">อีเมล *</label>
                   <input v-model="form.email" type="email" required placeholder="example@school.ac.th"
-                    class="w-full px-4 py-2.5 border border-slate-200 dark:border-slate-700 dark:bg-slate-900 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"/>
+                    class="w-full px-4 py-2.5 border border-white/80 bg-white/70 backdrop-blur rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"/>
                 </div>
               </div>
               <div>
                 <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1.5 uppercase tracking-wide">หัวข้อ *</label>
                 <select v-model="form.subject" required
-                  class="w-full px-4 py-2.5 border border-slate-200 dark:border-slate-700 dark:bg-slate-900 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary bg-white">
+                  class="w-full px-4 py-2.5 border border-white/80 bg-white/70 backdrop-blur rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary bg-white">
                   <option value="" disabled>-- เลือกหัวข้อ --</option>
                   <option>ขอรับการนิเทศ</option>
                   <option>สอบถามเกี่ยวกับการประเมิน</option>
@@ -226,7 +226,7 @@ onMounted(() => { fetchConfig(); fetchSupervisors() })
               <div>
                 <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1.5 uppercase tracking-wide">ข้อความ *</label>
                 <textarea v-model="form.message" required rows="4" placeholder="รายละเอียดที่ต้องการสอบถาม..."
-                  class="w-full px-4 py-2.5 border border-slate-200 dark:border-slate-700 dark:bg-slate-900 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary resize-none"></textarea>
+                  class="w-full px-4 py-2.5 border border-white/80 bg-white/70 backdrop-blur rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary resize-none"></textarea>
               </div>
               <p v-if="sendError" class="text-sm text-red-500 font-bold">{{ sendError }}</p>
               <button type="submit" :disabled="sending"
@@ -244,7 +244,7 @@ onMounted(() => { fetchConfig(); fetchSupervisors() })
           </div>
 
           <!-- Supervisors directory -->
-          <div class="bg-white dark:bg-slate-800 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-sm p-6">
+          <div class="glass-card !rounded-3xl p-6">
             <h2 class="font-extrabold text-slate-800 dark:text-slate-100 text-lg mb-5 flex items-center gap-2">
               <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" :d="ICONS.users"/>
@@ -287,10 +287,10 @@ onMounted(() => { fetchConfig(); fetchSupervisors() })
         leave-active-class="transition duration-150" leave-from-class="opacity-100" leave-to-class="opacity-0">
         <div v-if="selected" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
           @click.self="selected = null">
-          <div class="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden">
+          <div class="glass-panel rounded-3xl w-full max-w-sm overflow-hidden">
             <div class="h-28 relative flex-shrink-0" style="background:linear-gradient(135deg,var(--color-primary),var(--color-secondary))">
               <button @click="selected = null"
-                class="absolute top-3 right-3 w-9 h-9 bg-white hover:bg-slate-100 rounded-full flex items-center justify-center shadow-lg transition-colors">
+                class="absolute top-3 right-3 w-9 h-9 glass-panel !rounded-full flex items-center justify-center transition-transform hover:scale-105">
                 <svg class="w-4 h-4 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
                 </svg>

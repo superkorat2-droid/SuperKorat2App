@@ -158,7 +158,7 @@ onMounted(async () => {
       <div v-if="checkingAuth" class="text-center text-slate-400 text-sm py-10">กำลังตรวจสอบสิทธิ์...</div>
 
       <!-- ยังไม่ login -->
-      <div v-else-if="!user" class="bg-white rounded-3xl border border-slate-100 shadow-sm p-8 text-center">
+      <div v-else-if="!user" class="glass-card !rounded-3xl p-8 text-center">
         <div class="text-4xl mb-3">🔒</div>
         <p class="font-bold text-slate-700 mb-1">ต้องเข้าสู่ระบบก่อนใช้งาน</p>
         <p class="text-sm text-slate-400 mb-5">เครื่องมือย่อลิงก์เปิดให้สำหรับครูและศึกษานิเทศก์ที่เป็นสมาชิกของระบบ</p>
@@ -170,7 +170,7 @@ onMounted(async () => {
 
       <template v-else>
       <!-- Input card -->
-      <div class="bg-white rounded-3xl border border-slate-100 shadow-sm p-6 md:p-8 mb-6">
+      <div class="glass-card !rounded-3xl p-6 md:p-8 mb-6">
         <div class="space-y-4">
           <div>
             <label class="block text-sm font-bold text-slate-700 mb-1.5">URL ต้นฉบับ <span class="text-red-500">*</span></label>
@@ -189,7 +189,7 @@ onMounted(async () => {
               <span class="text-slate-400 font-normal ml-1">— ไม่บังคับ ใช้ช่วยให้จำว่าลิงก์นี้คืออะไร</span>
             </label>
             <input v-model="title" type="text" placeholder="เช่น แผนนิเทศ 2567"
-              class="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400 bg-white transition-all"/>
+              class="w-full px-4 py-3 rounded-xl border border-white/80 bg-white/70 backdrop-blur text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400 transition-all"/>
           </div>
 
           <div>
@@ -197,7 +197,7 @@ onMounted(async () => {
               ชื่อย่อ (Custom alias)
               <span class="text-slate-400 font-normal ml-1">— ไม่บังคับ</span>
             </label>
-            <div class="flex items-center gap-0 rounded-xl border border-slate-200 focus-within:ring-2 focus-within:ring-blue-200 focus-within:border-blue-400 overflow-hidden bg-white transition-all">
+            <div class="flex items-center gap-0 rounded-xl border border-white/80 bg-white/70 backdrop-blur focus-within:ring-2 focus-within:ring-blue-200 focus-within:border-blue-400 overflow-hidden bg-white transition-all">
               <span class="px-3 py-3 bg-slate-50 text-slate-500 text-sm border-r border-slate-200 flex-shrink-0 truncate max-w-[40%]">{{ BASE }}</span>
               <input v-model="alias" type="text" placeholder="plan67"
                 class="flex-1 px-3 py-3 text-sm focus:outline-none bg-transparent min-w-0"/>
@@ -222,7 +222,7 @@ onMounted(async () => {
         <Transition enter-active-class="transition duration-300" enter-from-class="opacity-0 translate-y-2" enter-to-class="opacity-100 translate-y-0">
           <div v-if="result" class="mt-6 bg-indigo-50 border border-indigo-200 rounded-2xl p-5">
             <p class="text-xs font-bold text-indigo-600 uppercase tracking-wider mb-3">✅ สร้างลิงก์สำเร็จ</p>
-            <div class="flex items-center gap-3 bg-white rounded-xl border border-indigo-100 px-4 py-3 mb-3">
+            <div class="flex items-center gap-3 glass-inset px-4 py-3 mb-3">
               <span class="font-mono text-sm font-bold text-indigo-700 flex-1 truncate">{{ result.short }}</span>
               <button @click="copyShort"
                 :class="['flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg transition-all flex-shrink-0',
@@ -241,7 +241,7 @@ onMounted(async () => {
       </div>
 
       <!-- History -->
-      <div class="bg-white rounded-3xl border border-slate-100 shadow-sm p-6">
+      <div class="glass-card !rounded-3xl p-6">
         <h2 class="font-extrabold text-slate-800 mb-4 flex items-center gap-2">
           <span>📋</span> ลิงก์ของฉัน
         </h2>
@@ -264,7 +264,7 @@ onMounted(async () => {
                 <p class="text-[10px] text-slate-400">{{ new Date(h.created_at).toLocaleDateString('th-TH') }}</p>
               </div>
               <button @click="downloadHistoryQr(h)" title="ดาวน์โหลด QR"
-                class="px-2 py-1.5 bg-white border border-slate-200 rounded-lg text-xs hover:bg-emerald-50 hover:border-emerald-300 transition-all">
+                class="px-2 py-1.5 bg-white/70 backdrop-blur border border-white/80 rounded-lg text-xs hover:bg-emerald-50 hover:border-emerald-300 transition-all">
                 📥
               </button>
             </div>

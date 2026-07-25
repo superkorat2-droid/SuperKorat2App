@@ -89,7 +89,7 @@ onMounted(() => {
         <div class="space-y-5">
 
           <!-- Presets -->
-          <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+          <div class="glass-card p-5">
             <p class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">เลือก Preset</p>
             <div class="grid grid-cols-2 gap-2">
               <button v-for="p in presets" :key="p.label" @click="usePreset(p.value)"
@@ -100,7 +100,7 @@ onMounted(() => {
           </div>
 
           <!-- Input -->
-          <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 space-y-4">
+          <div class="glass-card p-5 space-y-4">
             <div>
               <label class="block text-sm font-bold text-slate-700 mb-1.5">ข้อความหรือ URL <span class="text-red-500">*</span></label>
               <textarea v-model="inputText" rows="3"
@@ -138,7 +138,7 @@ onMounted(() => {
             <!-- Error correction -->
             <div>
               <label class="block text-xs font-bold text-slate-600 mb-1.5">ระดับแก้ไขข้อผิดพลาด</label>
-              <select v-model="errorLevel" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-200 bg-white">
+              <select v-model="errorLevel" class="w-full px-3 py-2 border border-white/80 bg-white/70 backdrop-blur rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-200">
                 <option v-for="e in errorLevels" :key="e.value" :value="e.value">{{ e.label }}</option>
               </select>
             </div>
@@ -155,7 +155,7 @@ onMounted(() => {
 
         <!-- Right: Preview panel -->
         <div class="flex flex-col gap-5">
-          <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 flex-1 flex flex-col items-center justify-center">
+          <div class="glass-card p-6 flex-1 flex flex-col items-center justify-center">
             <template v-if="generated && inputText.trim()">
               <img :src="qrSrc" :alt="inputText" class="rounded-xl shadow-md max-w-full" :style="`width:${Math.min(size, 280)}px`"/>
               <p class="text-xs text-slate-400 mt-4 text-center truncate max-w-full px-4">{{ inputText }}</p>

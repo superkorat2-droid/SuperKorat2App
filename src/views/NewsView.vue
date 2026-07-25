@@ -122,8 +122,8 @@ const catMeta = {
             d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/>
         </svg>
         <input v-model="searchQ" @input="page=1" type="text" placeholder="ค้นหาข่าว..."
-          class="w-full pl-10 pr-4 py-2.5 rounded-2xl border border-slate-200 dark:border-slate-700
-                 bg-white dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"/>
+          class="w-full pl-10 pr-4 py-2.5 rounded-2xl border border-white/80 bg-white/70 backdrop-blur
+                 shadow-[0_4px_16px_rgba(30,58,95,0.06)] text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"/>
       </div>
 
       <!-- ── Category tabs ─────────────────────────────────────── -->
@@ -133,7 +133,7 @@ const catMeta = {
           :class="['flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-bold border transition-all',
             activeCategory === cat.value
               ? 'bg-primary text-white border-primary shadow-md'
-              : 'bg-white text-slate-500 border-slate-200 hover:border-primary/40 hover:text-primary']">
+              : 'bg-white/70 backdrop-blur text-slate-600 border-white/80 hover:border-primary/40 hover:text-primary']">
           <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
             <path stroke-linecap="round" stroke-linejoin="round" :d="cat.icon"/>
           </svg>
@@ -144,7 +144,7 @@ const catMeta = {
 
       <!-- ── Loading ───────────────────────────────────────────── -->
       <div v-if="loading" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5">
-        <div v-for="i in 8" :key="i" class="bg-white rounded-2xl overflow-hidden animate-pulse">
+        <div v-for="i in 8" :key="i" class="glass-card overflow-hidden animate-pulse">
           <div class="aspect-video bg-slate-200"></div>
           <div class="p-4 space-y-2">
             <div class="h-4 bg-slate-100 rounded w-3/4"></div>
@@ -184,7 +184,7 @@ const catMeta = {
           <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div v-for="n in paginated.filter(x=>x.is_pinned)" :key="'pin-'+n.id"
               @click="router.push(`/news/${n.id}`)"
-              class="group flex gap-4 bg-white rounded-2xl border-2 border-amber-200 shadow-sm
+              class="group flex gap-4 glass-card !border-2 !border-amber-300/70
                      p-4 cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all">
               <img v-if="n.cover_url" :src="n.cover_url"
                 class="w-28 h-20 rounded-xl object-cover flex-shrink-0 group-hover:opacity-90"/>
@@ -226,7 +226,7 @@ const catMeta = {
         <!-- Pagination -->
         <div v-if="totalPages > 1" class="flex items-center justify-center gap-2 mt-10">
           <button @click="page--" :disabled="page===1"
-            class="w-9 h-9 flex items-center justify-center rounded-xl border border-slate-200
+            class="w-9 h-9 flex items-center justify-center rounded-xl border border-white/80 bg-white/60 backdrop-blur
                    text-slate-500 hover:bg-primary hover:text-white hover:border-primary
                    transition-all disabled:opacity-30">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
@@ -235,11 +235,11 @@ const catMeta = {
           </button>
           <button v-for="p in totalPages" :key="p" @click="page=p"
             :class="['w-9 h-9 rounded-xl text-sm font-bold border transition-all',
-              page===p ? 'bg-primary text-white border-primary shadow-md' : 'border-slate-200 text-slate-600 hover:border-primary/40']">
+              page===p ? 'bg-primary text-white border-primary shadow-md' : 'border-white/80 bg-white/60 backdrop-blur text-slate-600 hover:border-primary/40']">
             {{ p }}
           </button>
           <button @click="page++" :disabled="page===totalPages"
-            class="w-9 h-9 flex items-center justify-center rounded-xl border border-slate-200
+            class="w-9 h-9 flex items-center justify-center rounded-xl border border-white/80 bg-white/60 backdrop-blur
                    text-slate-500 hover:bg-primary hover:text-white hover:border-primary
                    transition-all disabled:opacity-30">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">

@@ -101,23 +101,23 @@ function initials(name) {
         </svg>
         <input v-model="searchQ" type="text" placeholder="ค้นหาชื่อผู้บริหาร ตำแหน่ง หรือโรงเรียน..."
           class="w-full pl-11 pr-4 py-3 rounded-2xl border border-slate-200 dark:border-slate-700
-                 bg-white dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"/>
+                 bg-white/70 backdrop-blur text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"/>
       </div>
 
       <!-- ── Stats ──────────────────────────────────────────────────────────── -->
       <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm p-4 text-center">
+        <div class="glass-tile p-4 text-center">
           <p class="text-2xl font-extrabold text-primary transition-all duration-300">{{ filtered.length }}</p>
           <p class="text-xs text-slate-500 mt-0.5">ผู้บริหาร</p>
         </div>
-        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm p-4 text-center">
+        <div class="glass-tile p-4 text-center">
           <p class="text-2xl font-extrabold text-slate-700 dark:text-slate-200 transition-all duration-300">
             {{ new Set(filtered.map(p=>p.school_id)).size }}
           </p>
           <p class="text-xs text-slate-500 mt-0.5">โรงเรียน</p>
         </div>
         <div v-for="pos in ['ผู้อำนวยการ','รองผู้อำนวยการ']" :key="pos"
-          class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm p-4 text-center">
+          class="glass-tile p-4 text-center">
           <p class="text-2xl font-extrabold text-indigo-600 transition-all duration-300">
             {{ filtered.filter(p => p.position?.includes(pos.includes('รอง') ? 'รอง' : 'อำนวยการ') && !p.position?.includes('รอง') === !pos.includes('รอง')).length }}
           </p>
@@ -128,22 +128,22 @@ function initials(name) {
       <!-- ── Filters ────────────────────────────────────────────────────────── -->
       <div class="flex flex-wrap gap-2 items-center">
         <select v-model="filterDistrict" @change="onDistrictChange"
-          class="px-3 py-2.5 border border-slate-200 dark:border-slate-600 rounded-xl text-sm bg-white dark:bg-slate-800 focus:outline-none focus:border-primary">
+          class="px-3 py-2.5 border border-white/80 bg-white/70 backdrop-blur rounded-xl text-sm focus:outline-none focus:border-primary">
           <option value="all">ทุกอำเภอ</option>
           <option v-for="d in districts" :key="d" :value="d">อ.{{ d }}</option>
         </select>
         <select v-model="filterGroup" @change="onGroupChange"
-          class="px-3 py-2.5 border border-slate-200 dark:border-slate-600 rounded-xl text-sm bg-white dark:bg-slate-800 focus:outline-none focus:border-primary">
+          class="px-3 py-2.5 border border-white/80 bg-white/70 backdrop-blur rounded-xl text-sm focus:outline-none focus:border-primary">
           <option value="all">ทุกศูนย์เครือข่าย</option>
           <option v-for="g in groups" :key="g" :value="g">{{ g }}</option>
         </select>
         <select v-model="filterSchool"
-          class="px-3 py-2.5 border border-slate-200 dark:border-slate-600 rounded-xl text-sm bg-white dark:bg-slate-800 focus:outline-none focus:border-primary min-w-[180px]">
+          class="px-3 py-2.5 border border-white/80 bg-white/70 backdrop-blur rounded-xl text-sm focus:outline-none focus:border-primary min-w-[180px]">
           <option value="all">ทุกโรงเรียน</option>
           <option v-for="s in schoolsInFilter" :key="s.id" :value="s.id">{{ s.name }}</option>
         </select>
         <select v-model="filterPosition"
-          class="px-3 py-2.5 border border-slate-200 dark:border-slate-600 rounded-xl text-sm bg-white dark:bg-slate-800 focus:outline-none focus:border-primary">
+          class="px-3 py-2.5 border border-white/80 bg-white/70 backdrop-blur rounded-xl text-sm focus:outline-none focus:border-primary">
           <option value="all">ทุกตำแหน่ง</option>
           <option v-for="pos in positions" :key="pos" :value="pos">{{ pos }}</option>
         </select>
@@ -161,7 +161,7 @@ function initials(name) {
 
       <!-- ── Loading ────────────────────────────────────────────────────────── -->
       <div v-if="loading" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-        <div v-for="i in 8" :key="i" class="bg-white rounded-2xl border border-slate-100 p-3 animate-pulse flex gap-3">
+        <div v-for="i in 8" :key="i" class="glass-card p-3 animate-pulse flex gap-3">
           <div class="w-10 h-10 rounded-full bg-slate-100 flex-shrink-0"/>
           <div class="flex-1 space-y-2">
             <div class="h-3 bg-slate-100 rounded w-3/4"/>
@@ -183,7 +183,7 @@ function initials(name) {
       <!-- ── Card grid ──────────────────────────────────────────────────────── -->
       <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
         <div v-for="p in filtered" :key="p.id"
-          class="group bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm
+          class="group glass-tile
                  hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 p-3 flex items-center gap-3">
 
           <!-- Photo circle -->

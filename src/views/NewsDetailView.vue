@@ -169,7 +169,7 @@ onUnmounted(() => window.removeEventListener('message', onHtmlMessage))
     <template v-else-if="news">
 
       <!-- ── Top bar: back + category + date (sticky) ─────────────── -->
-      <div class="sticky top-0 z-20 bg-white/90 dark:bg-slate-900/90 backdrop-blur border-b border-slate-100 dark:border-slate-800 shadow-sm">
+      <div class="sticky top-0 z-20 glass-nav">
         <div class="max-w-3xl mx-auto px-4 h-12 flex items-center gap-3">
           <button @click="router.push('/news')"
             class="flex items-center gap-1.5 text-sm font-bold text-slate-500 hover:text-primary transition-colors flex-shrink-0">
@@ -238,7 +238,7 @@ onUnmounted(() => window.removeEventListener('message', onHtmlMessage))
 
         <!-- ── Embed (PDF / Slides / YouTube / Drive / Canva) ──────── -->
         <div v-if="news.embed_url && news.embed_type" class="mt-8">
-          <div class="rounded-2xl overflow-hidden border border-slate-200 bg-slate-100 shadow-sm"
+          <div class="rounded-[1.25rem] overflow-hidden border border-white/80 bg-slate-100/70 shadow-[0_8px_28px_rgba(30,58,95,0.09)]"
             style="aspect-ratio:16/9">
             <iframe
               :src="toEmbedUrl(news.embed_url, news.embed_type)"
@@ -303,8 +303,8 @@ onUnmounted(() => window.removeEventListener('message', onHtmlMessage))
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div v-for="r in related" :key="r.id"
               @click="router.push(`/news/${r.id}`)"
-              class="group bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 overflow-hidden cursor-pointer hover:shadow-md transition-all">
-              <div class="h-28 bg-slate-100 overflow-hidden">
+              class="group glass-card glass-card-hover overflow-hidden cursor-pointer">
+              <div class="h-28 bg-slate-100/60 overflow-hidden">
                 <img v-if="r.cover_url" :src="r.cover_url"
                   class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"/>
                 <div v-else class="w-full h-full flex items-center justify-center">

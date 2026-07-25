@@ -144,11 +144,11 @@ function formatDate(d) {
     <div v-if="period || (data && !loading)" class="max-w-5xl mx-auto px-4 pt-6">
       <p v-if="period" class="text-slate-400 text-xs mb-3">{{ period.title }} · เผยแพร่ {{ formatDate(period.archived_at) }}</p>
       <div v-if="data && !loading" class="flex gap-3 flex-wrap">
-        <div class="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl px-4 py-2.5 text-center shadow-sm">
+        <div class="glass-tile px-4 py-2.5 text-center">
           <p class="text-2xl font-extrabold text-primary">{{ allUploads.length }}</p>
           <p class="text-slate-500 dark:text-slate-400 text-xs">โรงเรียน</p>
         </div>
-        <div class="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl px-4 py-2.5 text-center shadow-sm">
+        <div class="glass-tile px-4 py-2.5 text-center">
           <p class="text-2xl font-extrabold text-primary">{{ allUploads.reduce((s,u)=>s+u.total,0).toLocaleString() }}</p>
           <p class="text-slate-500 dark:text-slate-400 text-xs">นักเรียนทั้งเขต</p>
         </div>
@@ -168,20 +168,20 @@ function formatDate(d) {
       </div>
 
       <!-- Filter -->
-      <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm p-4">
+      <div class="glass-tile p-4">
         <div class="flex flex-wrap items-center gap-3">
           <div class="relative flex-1 min-w-[200px]">
             <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/></svg>
             <input v-model="searchQ" type="text" placeholder="ค้นหาชื่อโรงเรียน..."
-              class="w-full pl-9 pr-4 py-2.5 border border-slate-200 dark:border-slate-600 rounded-xl text-sm bg-white dark:bg-slate-700 focus:outline-none focus:border-primary"/>
+              class="w-full pl-9 pr-4 py-2.5 border border-white/80 bg-white/70 backdrop-blur rounded-xl text-sm focus:outline-none focus:border-primary"/>
           </div>
           <select v-model="filterDistrict" @change="onDistrictChange"
-            class="px-3 py-2.5 border border-slate-200 dark:border-slate-600 rounded-xl text-sm bg-white dark:bg-slate-700 focus:outline-none focus:border-primary">
+            class="px-3 py-2.5 border border-white/80 bg-white/70 backdrop-blur rounded-xl text-sm focus:outline-none focus:border-primary">
             <option value="all">ทุกอำเภอ</option>
             <option v-for="d in districts" :key="d" :value="d">อ.{{ d }}</option>
           </select>
           <select v-model="filterSchool"
-            class="px-3 py-2.5 border border-slate-200 dark:border-slate-600 rounded-xl text-sm bg-white dark:bg-slate-700 focus:outline-none focus:border-primary min-w-[180px]">
+            class="px-3 py-2.5 border border-white/80 bg-white/70 backdrop-blur rounded-xl text-sm focus:outline-none focus:border-primary min-w-[180px]">
             <option value="all">ทุกโรงเรียน</option>
             <option v-for="u in schoolsInDistrict" :key="u.school_id" :value="u.school_id">{{ u.school_name }}</option>
           </select>
@@ -198,7 +198,7 @@ function formatDate(d) {
 
       <!-- Stats cards -->
       <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div v-if="vis.total || vis.gender" class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm p-4 text-center">
+        <div v-if="vis.total || vis.gender" class="glass-tile p-4 text-center">
           <p class="text-3xl font-extrabold text-primary">{{ totalStudents.toLocaleString() }}</p>
           <p class="text-xs text-slate-500 mt-1">นักเรียนทั้งหมด</p>
         </div>
@@ -217,7 +217,7 @@ function formatDate(d) {
       </div>
 
       <!-- Grade chart -->
-      <div v-if="vis.by_grade && Object.keys(gradeAgg).length > 0" class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm p-5">
+      <div v-if="vis.by_grade && Object.keys(gradeAgg).length > 0" class="glass-tile p-5">
         <h3 class="font-bold text-slate-700 dark:text-slate-200 mb-4">จำนวนนักเรียนแยกตามระดับชั้น</h3>
         <apexchart type="bar" :height="240" :options="gradeOpts"
           :series="[{ name:'ชาย', data:Object.values(gradeAgg).map(g=>g.male) },{ name:'หญิง', data:Object.values(gradeAgg).map(g=>g.female) }]"
@@ -225,7 +225,7 @@ function formatDate(d) {
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-        <div v-if="vis.bmi && bmiAgg.total > 0" class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm p-5">
+        <div v-if="vis.bmi && bmiAgg.total > 0" class="glass-tile p-5">
           <h3 class="font-bold text-slate-700 dark:text-slate-200 mb-4">ภาวะโภชนาการ (BMI)</h3>
           <apexchart type="donut" :height="200" :options="bmiOpts" :series="[bmiAgg.underweight,bmiAgg.normal,bmiAgg.overweight,bmiAgg.obese]" :key="`bmi-${filteredUploads.length}`"/>
           <div class="mt-3 space-y-1.5">
@@ -236,14 +236,14 @@ function formatDate(d) {
             </div>
           </div>
         </div>
-        <div v-if="vis.guardian_relation && guardianAgg.length > 0" class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm p-5">
+        <div v-if="vis.guardian_relation && guardianAgg.length > 0" class="glass-tile p-5">
           <h3 class="font-bold text-slate-700 dark:text-slate-200 mb-4">ผู้ปกครอง (ความสัมพันธ์)</h3>
           <apexchart type="bar" :height="220" :options="guardianOpts" :series="[{ name:'จำนวน', data:guardianAgg.map(d=>d[1]) }]" :key="`guardian-${filteredUploads.length}`"/>
         </div>
       </div>
 
       <!-- School table -->
-      <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm overflow-hidden">
+      <div class="glass-tile overflow-hidden">
         <div class="px-5 py-4 border-b border-slate-50 dark:border-slate-700">
           <h3 class="font-bold text-slate-700 dark:text-slate-200">ข้อมูลรายโรงเรียน ({{ filteredUploads.length }} โรง)</h3>
         </div>
