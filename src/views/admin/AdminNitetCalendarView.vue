@@ -20,6 +20,7 @@ const loading       = ref(true)
 const saving        = ref(false)
 const showModal     = ref(false)
 const showHolidays  = ref(false)
+const duplicating   = ref(false)   // กำลังทำซ้ำอยู่ ใช้แสดงคำใบ้ในฟอร์ม
 const { holidays, fetchHolidays } = useHolidays()
 const viewMode      = ref('list') // 'list' | 'month'
 const currentYear   = ref(new Date().getFullYear())
@@ -108,12 +109,14 @@ async function load() {
 }
 
 function openAdd(dateKey) {
+  duplicating.value = false
   form.value = emptyForm()
   if (dateKey) { form.value.start_date = dateKey; form.value.end_date = dateKey }
   showModal.value = true
 }
 
 function openEdit(event) {
+  duplicating.value = false
   form.value = {
     id: event.id, type: event.type, title: event.title, description: event.description || '',
     start_date: event.start_date, end_date: event.end_date,
@@ -123,6 +126,17 @@ function openEdit(event) {
     status: event.status, show_public: event.show_public,
   }
   showModal.value = true
+}
+
+// ทำซ้ำ — นิเทศเรื่องเดิมแต่คนละโรงเรียน/คนละวัน เป็นเคสที่เจอบ่อยที่สุด
+// คัดลอกเนื้อหาทั้งหมด (เรื่อง/ประเภท/รายละเอียด/ผู้รับผิดชอบ/เวลา) แต่ล้าง id
+// เพื่อให้บันทึกเป็นรายการใหม่ และล้างโรงเรียนไว้ให้เลือกใหม่ (เป็นสิ่งที่ตั้งใจเปลี่ยน)
+function openDuplicate(event) {
+  openEdit(event)
+  duplicating.value = true
+  form.value.id = null
+  form.value.school_ids = []
+  form.value.status = 'scheduled'   // ของเดิมอาจ done แล้ว รายการใหม่ต้องเริ่มใหม่
 }
 
 async function save() {
@@ -335,6 +349,13 @@ onMounted(async () => {
               <SvgIcon name="wrench" class="w-3.5 h-3.5"/>
               แก้ไข
             </button>
+            <button @click="openDuplicate(event)" title="คัดลอกกิจกรรมนี้ไปสร้างรายการใหม่ (เปลี่ยนโรงเรียน/วันที่)"
+              class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-slate-100 text-slate-600 rounded-xl hover:bg-slate-200 transition-colors">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 011.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 00-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 01-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 00-3.375-3.375h-1.5a1.125 1.125 0 01-1.125-1.125v-1.5a3.375 3.375 0 00-3.375-3.375H9.75"/>
+              </svg>
+              ทำซ้ำ
+            </button>
             <button @click="deleteEvent(event)"
               class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-slate-50 text-slate-400 rounded-xl hover:text-red-500 hover:bg-red-50 transition-colors">
               <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
@@ -358,7 +379,10 @@ onMounted(async () => {
             <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100 flex-shrink-0">
               <h3 class="font-extrabold text-slate-800 text-lg flex items-center gap-2">
                 <SvgIcon name="calendar" class="w-5 h-5 text-primary"/>
-                {{ form.id ? 'แก้ไขกิจกรรม' : 'เพิ่มกิจกรรมใหม่' }}
+                {{ form.id ? 'แก้ไขกิจกรรม' : duplicating ? 'ทำซ้ำกิจกรรม' : 'เพิ่มกิจกรรมใหม่' }}
+                <span v-if="duplicating" class="block text-xs font-medium text-slate-500 mt-0.5">
+                  คัดลอกเนื้อหาเดิมมาแล้ว — เลือกโรงเรียนและปรับวันที่ใหม่
+                </span>
               </h3>
               <button @click="showModal = false"
                 class="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-slate-100 text-slate-400 transition-colors">
