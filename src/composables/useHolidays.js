@@ -63,14 +63,23 @@ export function parseHolidayDate(v) {
     return isNaN(d) ? null : d.toISOString().slice(0, 10)
   }
   if (v instanceof Date) {
-    return isNaN(v) ? null : new Date(v.getTime() - v.getTimezoneOffset() * 60000).toISOString().slice(0, 10)
+    if (isNaN(v)) return null
+    const local = new Date(v.getTime() - v.getTimezoneOffset() * 60000)
+    // Excel ตีความ "2569-01-01" เป็น Date ปี 2569 ตรงๆ ต้องดึงกลับเป็น ค.ศ.
+    if (local.getUTCFullYear() > 2400) local.setUTCFullYear(local.getUTCFullYear() - 543)
+    return local.toISOString().slice(0, 10)
   }
 
   const s = String(v).trim()
   if (!s) return null
 
-  // ISO อยู่แล้ว
-  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s
+  // yyyy-mm-dd — ปีอาจเป็น พ.ศ. ได้ (เช่น 2569-01-01) ต้องแปลงด้วย
+  const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})$/)
+  if (iso) {
+    let y = parseInt(iso[1], 10)
+    if (y > 2400) y -= 543
+    return `${y}-${iso[2]}-${iso[3]}`
+  }
 
   // d/m/yyyy หรือ d-m-yyyy (ปีเป็น พ.ศ. ได้)
   const m = s.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/)
