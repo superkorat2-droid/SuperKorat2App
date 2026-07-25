@@ -89,7 +89,7 @@ async function save() {
     <!-- Services list -->
     <div class="space-y-3">
       <div v-for="(svc, i) in services" :key="svc.key"
-        class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 flex flex-wrap items-start gap-4">
+        class="glass-card p-4 flex flex-wrap items-start gap-4">
 
         <!-- up/down + preview -->
         <div class="flex items-center gap-3 flex-shrink-0">
@@ -130,7 +130,7 @@ async function save() {
           <div>
             <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Icon</label>
             <select v-model="svc.icon"
-              class="mt-1 w-full px-3 py-2 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:border-primary">
+              class="mt-1 w-full px-3 py-2 border border-white/80 bg-white/70 backdrop-blur rounded-xl text-sm focus:outline-none focus:border-primary">
               <option v-for="(path, key) in ICON_MAP" :key="key" :value="key">
                 {{ ICON_LABELS[key] || key }}
               </option>
@@ -141,7 +141,7 @@ async function save() {
           <div>
             <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">ประเภท</label>
             <select v-model="svc.type"
-              class="mt-1 w-full px-3 py-2 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:border-primary">
+              class="mt-1 w-full px-3 py-2 border border-white/80 bg-white/70 backdrop-blur rounded-xl text-sm focus:outline-none focus:border-primary">
               <option value="internal">ภายใน (route)</option>
               <option value="external">ภายนอก (URL)</option>
             </select>

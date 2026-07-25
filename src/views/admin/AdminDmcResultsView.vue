@@ -298,15 +298,15 @@ async function exportCSV() {
     <template v-else>
       <!-- Summary stats -->
       <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 text-center">
+        <div class="glass-card p-4 text-center">
           <p class="text-3xl font-extrabold text-primary">{{ totalStudents.toLocaleString() }}</p>
           <p class="text-xs text-slate-500 mt-1">นักเรียนทั้งหมด</p>
         </div>
-        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 text-center">
+        <div class="glass-card p-4 text-center">
           <p class="text-3xl font-extrabold text-slate-700">{{ uploads.length }} / {{ schools.length }}</p>
           <p class="text-xs text-slate-500 mt-1">โรงเรียนส่งแล้ว</p>
         </div>
-        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 text-center">
+        <div class="glass-card p-4 text-center">
           <p class="text-3xl font-extrabold text-emerald-600">{{ pct }}%</p>
           <p class="text-xs text-slate-500 mt-1">ความสำเร็จ</p>
         </div>
@@ -320,7 +320,7 @@ async function exportCSV() {
       </div>
 
       <!-- Progress bar -->
-      <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4">
+      <div class="glass-card p-4">
         <div class="flex justify-between text-sm font-medium text-slate-600 mb-2">
           <span>ความคืบหน้า</span>
           <span>{{ uploads.length }} / {{ schools.length }} โรงเรียน</span>
@@ -344,7 +344,7 @@ async function exportCSV() {
       <template v-if="activeTab === 'overview'">
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
           <!-- Gender -->
-          <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+          <div class="glass-card p-5">
             <h3 class="font-bold text-slate-700 mb-4">จำนวนแยกตามเพศ</h3>
             <div class="flex gap-4 justify-center">
               <div class="text-center">
@@ -375,7 +375,7 @@ async function exportCSV() {
         </div>
 
         <!-- Grade chart -->
-        <div v-if="Object.keys(gradeAgg).length > 0" class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+        <div v-if="Object.keys(gradeAgg).length > 0" class="glass-card p-5">
           <h3 class="font-bold text-slate-700 mb-4">จำนวนแยกตามระดับชั้น</h3>
           <apexchart type="bar" :height="250" :options="gradeChartOpts" :series="gradeChartSeries"/>
         </div>
@@ -384,12 +384,12 @@ async function exportCSV() {
       <!-- ── Health ── -->
       <template v-else-if="activeTab === 'health'">
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
-          <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+          <div class="glass-card p-5">
             <h3 class="font-bold text-slate-700 mb-4">ภาวะโภชนาการ (BMI)</h3>
             <apexchart v-if="bmiAgg.total > 0" type="donut" :height="220" :options="bmiChartOpts" :series="bmiChartSeries"/>
             <p v-else class="text-center py-8 text-slate-400 text-sm">ยังไม่มีข้อมูล</p>
           </div>
-          <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+          <div class="glass-card p-5">
             <h3 class="font-bold text-slate-700 mb-4">สรุป BMI</h3>
             <div class="space-y-3">
               <div v-for="(item, idx) in [
@@ -420,14 +420,14 @@ async function exportCSV() {
       <template v-else-if="activeTab === 'family'">
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
           <!-- Guardian relation -->
-          <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+          <div class="glass-card p-5">
             <h3 class="font-bold text-slate-700 mb-4">ผู้ปกครอง (ความสัมพันธ์)</h3>
             <apexchart v-if="guardianAgg.length > 0" type="bar" :height="220"
               :options="guardianBarOpts(guardianAgg)"
               :series="[{ name: 'จำนวน', data: guardianAgg.map(d=>d[1]) }]"/>
           </div>
           <!-- Parent jobs -->
-          <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+          <div class="glass-card p-5">
             <h3 class="font-bold text-slate-700 mb-4">อาชีพผู้ปกครอง (Top 8)</h3>
             <apexchart v-if="parentJobsAgg.length > 0" type="bar" :height="220"
               :options="guardianBarOpts(parentJobsAgg)"
@@ -441,7 +441,7 @@ async function exportCSV() {
         <div class="space-y-5">
 
           <!-- ยังไม่ส่ง -->
-          <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+          <div class="glass-card overflow-hidden">
             <div class="px-5 py-4 border-b border-slate-50 flex items-center justify-between">
               <h3 class="font-bold text-amber-600 flex items-center gap-2">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
@@ -474,7 +474,7 @@ async function exportCSV() {
           </div>
 
           <!-- ส่งแล้ว -->
-          <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+          <div class="glass-card overflow-hidden">
             <div class="px-5 py-4 border-b border-slate-50">
               <h3 class="font-bold text-emerald-600 flex items-center gap-2">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
@@ -526,7 +526,7 @@ async function exportCSV() {
     <Transition name="fade">
       <div v-if="uploadModal.open"
         class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 font-sarabun">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg">
+        <div class="glass-panel rounded-[1.25rem] w-full max-w-lg">
 
           <!-- Header -->
           <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">

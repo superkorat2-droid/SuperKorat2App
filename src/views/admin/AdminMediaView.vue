@@ -94,7 +94,7 @@ function fmtDate(d) { return new Date(d).toLocaleDateString('th-TH', { year:'num
 
     <!-- Stats cards -->
     <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-      <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 text-center">
+      <div class="glass-card p-4 text-center">
         <p class="text-3xl font-extrabold text-primary">{{ stats.total }}</p>
         <p class="text-xs text-slate-500 mt-1">สื่อทั้งหมด</p>
       </div>
@@ -131,7 +131,7 @@ function fmtDate(d) { return new Date(d).toLocaleDateString('th-TH', { year:'num
     <div class="flex flex-wrap gap-3">
       <input v-model="searchQ" type="text" placeholder="ค้นหาชื่อสื่อ ผู้สร้าง..."
         class="flex-1 min-w-[200px] px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-primary bg-white"/>
-      <select v-model="filterStatus" class="px-3 py-2.5 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:border-primary">
+      <select v-model="filterStatus" class="px-3 py-2.5 border border-white/80 bg-white/70 backdrop-blur rounded-xl text-sm focus:outline-none focus:border-primary">
         <option value="all">ทุกสถานะ</option>
         <option value="published">เผยแพร่แล้ว</option>
         <option value="draft">ร่าง</option>
@@ -143,7 +143,7 @@ function fmtDate(d) { return new Date(d).toLocaleDateString('th-TH', { year:'num
     <div v-if="loading" class="flex justify-center py-12">
       <div class="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin"/>
     </div>
-    <div v-else class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+    <div v-else class="glass-card overflow-hidden">
       <div v-if="filtered.length===0" class="text-center py-12 text-slate-400 text-sm">ยังไม่มีสื่อ</div>
       <div v-else class="overflow-x-auto">
         <table class="w-full text-sm">

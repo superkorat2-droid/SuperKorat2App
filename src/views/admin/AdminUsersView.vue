@@ -169,7 +169,7 @@ function formatDate(iso) {
     </div>
 
     <!-- Table -->
-    <div class="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
+    <div class="glass-card !rounded-3xl overflow-hidden">
       <div v-if="loading" class="p-8 flex justify-center">
         <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
       </div>
@@ -246,7 +246,7 @@ function formatDate(iso) {
     <!-- Edit Modal -->
     <Transition enter-active-class="transition duration-200" enter-from-class="opacity-0" enter-to-class="opacity-100">
       <div v-if="showModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-lg p-6 md:p-8">
+        <div class="glass-panel rounded-3xl w-full max-w-lg p-6 md:p-8">
           <h2 class="text-xl font-extrabold text-slate-900 mb-5">{{ editUser?.id ? '✏️ แก้ไขผู้ใช้' : '➕ เพิ่มผู้ใช้' }}</h2>
           <div class="space-y-4">
             <div>

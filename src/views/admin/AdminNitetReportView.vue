@@ -149,7 +149,7 @@ onMounted(async () => {
     </div>
 
     <!-- Filters -->
-    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 flex flex-wrap items-end gap-3">
+    <div class="glass-card p-4 flex flex-wrap items-end gap-3">
       <div>
         <label class="block text-xs font-bold text-slate-600 mb-1">ตั้งแต่วันที่</label>
         <input v-model="dateFrom" type="date" class="input-field"/>
@@ -187,7 +187,7 @@ onMounted(async () => {
 
     <!-- Empty -->
     <div v-else-if="groupedBySchool.length === 0"
-      class="text-center py-16 bg-white rounded-2xl border border-slate-100 text-slate-400">
+      class="text-center py-16 glass-card text-slate-400">
       <SvgIcon name="calendar" class="w-12 h-12 mx-auto mb-3 opacity-30"/>
       <p class="font-medium">ไม่พบข้อมูลในช่วงเวลาที่เลือก</p>
     </div>
@@ -195,7 +195,7 @@ onMounted(async () => {
     <!-- Grouped web view -->
     <div v-else class="space-y-4">
       <div v-for="group in groupedBySchool" :key="group.key"
-        class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+        class="glass-card overflow-hidden">
         <div class="px-5 py-3 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
           <h3 class="font-extrabold text-slate-800">
             {{ group.name }} <span v-if="group.district" class="text-slate-400 font-normal text-sm">(อ.{{ group.district }})</span>

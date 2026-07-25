@@ -266,7 +266,7 @@ function resetToDefault() {
       <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
     </div>
 
-    <div v-else class="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
+    <div v-else class="glass-card !rounded-3xl overflow-hidden">
 
       <!-- Tabs — flex-wrap บนมือถือ, scroll บน desktop -->
       <div class="flex flex-wrap border-b border-slate-100 bg-slate-50">
@@ -408,7 +408,7 @@ function resetToDefault() {
           <!-- Preview -->
           <div class="bg-slate-50 rounded-2xl p-5 border border-slate-100">
             <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">ตัวอย่าง Navbar</p>
-            <div class="flex items-center gap-3 bg-white rounded-xl p-3 border border-slate-200 w-fit">
+            <div class="flex items-center gap-3 glass-inset p-3 w-fit">
               <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
                 :style="`background-color: ${config.primary_color || '#2563eb'}`">
                 <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -446,7 +446,7 @@ function resetToDefault() {
                   'relative flex items-center gap-4 p-4 rounded-2xl border-2 text-left transition-all',
                   isPresetActive(preset)
                     ? 'border-primary bg-primary-light shadow-md'
-                    : 'border-slate-100 bg-white hover:border-slate-300 hover:shadow-sm'
+                    : 'border-white/80 bg-white/70 hover:border-primary/40 hover:shadow-sm'
                 ]">
                 <!-- Color swatches -->
                 <div class="flex flex-col gap-1.5 flex-shrink-0">
@@ -615,7 +615,7 @@ function resetToDefault() {
 
           <div class="space-y-3">
             <div v-for="(link, i) in config.footer_extra_links" :key="i"
-              class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 flex flex-wrap items-start gap-4">
+              class="glass-card p-4 flex flex-wrap items-start gap-4">
 
               <!-- up/down -->
               <div class="flex flex-col gap-0.5 flex-shrink-0">
@@ -643,7 +643,7 @@ function resetToDefault() {
                 <div>
                   <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">ประเภท</label>
                   <select v-model="link.type"
-                    class="mt-1 w-full px-3 py-2 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:border-primary">
+                    class="mt-1 w-full px-3 py-2 border border-white/80 bg-white/70 backdrop-blur rounded-xl text-sm focus:outline-none focus:border-primary">
                     <option value="internal">ภายใน (route)</option>
                     <option value="external">ภายนอก (URL)</option>
                   </select>
@@ -721,7 +721,7 @@ function resetToDefault() {
               <button @click="config[feat.key] = !config[feat.key]"
                 :class="['relative w-12 h-6 rounded-full transition-colors flex-shrink-0 mt-0.5',
                   config[feat.key] ? 'bg-blue-600' : 'bg-slate-300']">
-                <span :class="['absolute w-5 h-5 bg-white rounded-full shadow-sm top-0.5 transition-all',
+                <span :class="['absolute w-5 h-5 bg-white/80 backdrop-blur rounded-full shadow-sm top-0.5 transition-all',
                   config[feat.key] ? 'left-6' : 'left-0.5']"></span>
               </button>
             </div>
@@ -739,7 +739,7 @@ function resetToDefault() {
               <button @click="config.register_code_enabled = !config.register_code_enabled"
                 :class="['relative w-12 h-6 rounded-full transition-colors flex-shrink-0',
                   config.register_code_enabled ? 'bg-blue-600' : 'bg-slate-300']">
-                <span :class="['absolute w-5 h-5 bg-white rounded-full shadow-sm top-0.5 transition-all',
+                <span :class="['absolute w-5 h-5 bg-white/80 backdrop-blur rounded-full shadow-sm top-0.5 transition-all',
                   config.register_code_enabled ? 'left-6' : 'left-0.5']"></span>
               </button>
             </div>
@@ -802,7 +802,7 @@ function resetToDefault() {
               <button @click="config.welcome_popup_enabled = !config.welcome_popup_enabled"
                 :class="['relative w-12 h-6 rounded-full transition-colors flex-shrink-0',
                   config.welcome_popup_enabled ? 'bg-blue-600' : 'bg-slate-300']">
-                <span :class="['absolute w-5 h-5 bg-white rounded-full shadow-sm top-0.5 transition-all',
+                <span :class="['absolute w-5 h-5 bg-white/80 backdrop-blur rounded-full shadow-sm top-0.5 transition-all',
                   config.welcome_popup_enabled ? 'left-6' : 'left-0.5']"></span>
               </button>
             </div>
@@ -850,7 +850,7 @@ function resetToDefault() {
 
           <div class="space-y-2">
             <div v-for="(svc, i) in services" :key="svc.key"
-              class="bg-white rounded-2xl border border-slate-100 shadow-sm p-3 flex flex-wrap items-start gap-3">
+              class="glass-card p-3 flex flex-wrap items-start gap-3">
 
               <!-- up/down -->
               <div class="flex flex-col gap-0.5 flex-shrink-0 mt-1">

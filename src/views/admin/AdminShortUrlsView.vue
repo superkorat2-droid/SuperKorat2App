@@ -131,15 +131,15 @@ function formatDate(iso) {
 
     <!-- Stats -->
     <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
-      <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 flex items-center gap-3">
+      <div class="glass-card p-4 flex items-center gap-3">
         <div class="text-2xl">🔗</div>
         <div><p class="text-xl font-extrabold text-slate-800">{{ list.length }}</p><p class="text-xs text-slate-500">ลิงก์ทั้งหมด</p></div>
       </div>
-      <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 flex items-center gap-3">
+      <div class="glass-card p-4 flex items-center gap-3">
         <div class="text-2xl">✅</div>
         <div><p class="text-xl font-extrabold text-emerald-600">{{ list.filter(h=>h.is_active).length }}</p><p class="text-xs text-slate-500">ใช้งานอยู่</p></div>
       </div>
-      <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 flex items-center gap-3">
+      <div class="glass-card p-4 flex items-center gap-3">
         <div class="text-2xl">📊</div>
         <div><p class="text-xl font-extrabold text-blue-600">{{ totalClicks.toLocaleString() }}</p><p class="text-xs text-slate-500">คลิกรวม</p></div>
       </div>
@@ -152,14 +152,14 @@ function formatDate(iso) {
 
     <!-- Empty -->
     <div v-else-if="filtered.length === 0"
-      class="flex flex-col items-center justify-center py-20 bg-white rounded-3xl border-2 border-dashed border-slate-200">
+      class="flex flex-col items-center justify-center py-20 glass-card !rounded-3xl !border-2 !border-dashed border-slate-200">
       <div class="text-5xl mb-3">🔗</div>
       <p class="font-bold text-slate-600 mb-1">ไม่มีลิงก์ย่อ</p>
       <p class="text-sm text-slate-400">{{ searchQ ? 'ไม่พบลิงก์ที่ค้นหา' : 'สมาชิกสามารถสร้างได้ที่หน้า "ย่อลิงก์"' }}</p>
     </div>
 
     <!-- List -->
-    <div v-else class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+    <div v-else class="glass-card overflow-hidden">
       <table class="w-full text-sm">
         <thead>
           <tr class="border-b border-slate-100 bg-slate-50">
@@ -210,7 +210,7 @@ function formatDate(iso) {
         leave-active-class="transition duration-150" leave-from-class="opacity-100" leave-to-class="opacity-0">
         <div v-if="showModal"
           class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div class="bg-white rounded-3xl shadow-2xl w-full max-w-lg max-h-[92vh] flex flex-col overflow-hidden">
+          <div class="glass-panel rounded-3xl w-full max-w-lg max-h-[92vh] flex flex-col overflow-hidden">
             <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100 flex-shrink-0">
               <h3 class="font-extrabold text-slate-800 text-lg">✏️ แก้ไขลิงก์ย่อ</h3>
               <button @click="showModal = false" class="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-slate-100 text-slate-400 text-lg">✕</button>

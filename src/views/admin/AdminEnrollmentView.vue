@@ -135,7 +135,7 @@ onMounted(async () => { await fetchSchools(); await fetchStats() })
     <template v-else>
 
       <!-- ── กราฟแนวโน้ม (SVG trend line + bars) ─────────────── -->
-      <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+      <div class="glass-card p-6">
         <h2 class="font-extrabold text-slate-800 mb-1">แนวโน้มจำนวนนักเรียนรวม</h2>
         <p class="text-xs text-slate-400 mb-5">รวมทุกโรงเรียนที่อัปโหลดสถิติ</p>
 
@@ -188,7 +188,7 @@ onMounted(async () => { await fetchSchools(); await fetchStats() })
       </div>
 
       <!-- ── สุขภาพรวม ───────────────────────────────────────── -->
-      <div v-if="healthSummary" class="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+      <div v-if="healthSummary" class="glass-card p-6">
         <h2 class="font-extrabold text-slate-800 mb-4">สุขภาพนักเรียน (ค่าเฉลี่ยรวม)</h2>
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
           <div class="bg-slate-50 rounded-xl p-4 text-center">
@@ -232,7 +232,7 @@ onMounted(async () => { await fetchSchools(); await fetchStats() })
       </div>
 
       <!-- ── รายโรงเรียน ────────────────────────────────────── -->
-      <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+      <div class="glass-card overflow-hidden">
         <div class="px-5 py-4 border-b border-slate-50">
           <h2 class="font-extrabold text-slate-800">รายโรงเรียน</h2>
           <p class="text-xs text-slate-400 mt-0.5">เรียงตามจำนวนนักเรียนมากไปน้อย</p>

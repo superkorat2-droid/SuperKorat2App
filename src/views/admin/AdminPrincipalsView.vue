@@ -211,7 +211,7 @@ function initials(name) {
 
     <!-- Stats -->
     <div class="grid grid-cols-3 gap-4">
-      <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 text-center">
+      <div class="glass-card p-4 text-center">
         <p class="text-3xl font-extrabold text-primary">{{ stats.total }}</p>
         <p class="text-xs text-slate-500 mt-1">ผู้บริหารทั้งหมด</p>
       </div>
@@ -235,12 +235,12 @@ function initials(name) {
           class="w-full pl-9 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-primary bg-white"/>
       </div>
       <select v-model="filterDistrict" @change="filterGroup='all'"
-        class="px-3 py-2.5 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:border-primary">
+        class="px-3 py-2.5 border border-white/80 bg-white/70 backdrop-blur rounded-xl text-sm focus:outline-none focus:border-primary">
         <option value="all">ทุกอำเภอ</option>
         <option v-for="d in districts" :key="d" :value="d">อ.{{ d }}</option>
       </select>
       <select v-model="filterGroup"
-        class="px-3 py-2.5 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:border-primary">
+        class="px-3 py-2.5 border border-white/80 bg-white/70 backdrop-blur rounded-xl text-sm focus:outline-none focus:border-primary">
         <option value="all">ทุกกลุ่มโรงเรียน</option>
         <option v-for="g in groups" :key="g" :value="g">{{ g }}</option>
       </select>
@@ -251,13 +251,13 @@ function initials(name) {
       <div class="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin"/>
     </div>
     <div v-else-if="filtered.length === 0"
-      class="text-center py-16 bg-white rounded-2xl border border-slate-100 text-slate-400">
+      class="text-center py-16 glass-card text-slate-400">
       <svg class="w-12 h-12 mx-auto mb-3 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
         <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0z"/>
       </svg>
       <p class="font-medium">ยังไม่มีข้อมูลผู้บริหาร</p>
     </div>
-    <div v-else class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+    <div v-else class="glass-card overflow-hidden">
       <div class="overflow-x-auto">
         <table class="w-full text-sm">
           <thead>
@@ -316,7 +316,7 @@ function initials(name) {
     <Transition name="fade">
       <div v-if="showModal"
         class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 font-sarabun">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden">
+        <div class="glass-panel rounded-[1.25rem] w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden">
 
           <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between flex-shrink-0">
             <h2 class="font-extrabold text-slate-800">{{ form.id ? 'แก้ไขผู้บริหาร' : 'เพิ่มผู้บริหาร' }}</h2>
@@ -349,7 +349,7 @@ function initials(name) {
             <div>
               <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">โรงเรียน <span class="text-red-500">*</span></label>
               <select v-model="form.school_id"
-                class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:border-primary">
+                class="w-full px-3 py-2.5 border border-white/80 bg-white/70 backdrop-blur rounded-xl text-sm focus:outline-none focus:border-primary">
                 <option value="">-- เลือกโรงเรียน --</option>
                 <optgroup v-for="d in districts" :key="d" :label="`อ.${d}`">
                   <option v-for="s in schools.filter(sc=>sc.district===d)" :key="s.id" :value="s.id">{{ s.name }}</option>
@@ -423,7 +423,7 @@ function initials(name) {
       <div v-if="cropModal.open"
         class="fixed inset-0 z-[60] flex items-center justify-center bg-black/75 p-4 font-sarabun"
         @click.self="cropModal.open=false">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm flex flex-col overflow-hidden">
+        <div class="glass-panel rounded-[1.25rem] w-full max-w-sm flex flex-col overflow-hidden">
           <div class="px-5 py-3 border-b border-slate-100 flex-shrink-0">
             <p class="text-sm font-extrabold text-slate-700">ครอบรูปโปรไฟล์ (วงกลม)</p>
           </div>

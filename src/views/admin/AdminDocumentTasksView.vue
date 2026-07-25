@@ -315,11 +315,11 @@ async function saveTypes() {
 
     <!-- Active list -->
     <div v-else-if="activeTab === 'active'" class="space-y-3">
-      <div v-if="!filteredActive.length" class="text-center py-16 bg-white rounded-2xl border border-slate-200 text-slate-400">
+      <div v-if="!filteredActive.length" class="text-center py-16 glass-card text-slate-400">
         ไม่พบงาน
       </div>
       <div v-for="t in filteredActive" :key="t.id"
-        class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 space-y-3">
+        class="glass-card p-4 space-y-3">
         <div class="flex flex-wrap items-start justify-between gap-2">
           <div class="min-w-0">
             <div class="flex flex-wrap items-center gap-2 mb-1">
@@ -397,11 +397,11 @@ async function saveTypes() {
 
     <!-- Archive -->
     <div v-else class="space-y-3">
-      <div v-if="!filteredArchive.length" class="text-center py-16 bg-white rounded-2xl border border-slate-200 text-slate-400">
+      <div v-if="!filteredArchive.length" class="text-center py-16 glass-card text-slate-400">
         ยังไม่มีเอกสารในคลัง
       </div>
       <div v-for="t in filteredArchive" :key="t.id"
-        class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 space-y-2">
+        class="glass-card p-4 space-y-2">
         <div class="flex flex-wrap items-center gap-2">
           <span class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-secondary/10 text-secondary">{{ typeLabel(t.task_type) }}</span>
           <span v-if="t.is_public" class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-sky-100 text-sky-700">ส่งโรงเรียนแล้ว</span>
@@ -433,7 +433,7 @@ async function saveTypes() {
       <Transition enter-active-class="transition duration-200" enter-from-class="opacity-0" enter-to-class="opacity-100"
         leave-active-class="transition duration-150" leave-from-class="opacity-100" leave-to-class="opacity-0">
         <div v-if="showModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div class="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[92vh] flex flex-col overflow-hidden">
+          <div class="glass-panel rounded-3xl w-full max-w-2xl max-h-[92vh] flex flex-col overflow-hidden">
             <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100 flex-shrink-0">
               <h2 class="text-lg font-extrabold text-slate-800">{{ form.id ? 'แก้ไขงาน' : 'เพิ่มงานเอกสาร' }}</h2>
               <button @click="showModal = false" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 text-slate-400">
@@ -444,14 +444,14 @@ async function saveTypes() {
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label class="text-xs font-bold text-slate-500 uppercase tracking-wider">ประเภทหนังสือ</label>
-                  <select v-model="form.task_type" class="mt-1 w-full px-3 py-2 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:border-primary">
+                  <select v-model="form.task_type" class="mt-1 w-full px-3 py-2 border border-white/80 bg-white/70 backdrop-blur rounded-xl text-sm focus:outline-none focus:border-primary">
                     <option value="">-- เลือก --</option>
                     <option v-for="t in taskTypeOptions" :key="t.key" :value="t.key">{{ t.label }}</option>
                   </select>
                 </div>
                 <div>
                   <label class="text-xs font-bold text-slate-500 uppercase tracking-wider">กลุ่มงาน</label>
-                  <select v-model="form.department" class="mt-1 w-full px-3 py-2 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:border-primary">
+                  <select v-model="form.department" class="mt-1 w-full px-3 py-2 border border-white/80 bg-white/70 backdrop-blur rounded-xl text-sm focus:outline-none focus:border-primary">
                     <option value="">-- ไม่ระบุ --</option>
                     <option v-for="d in deptOptions" :key="d" :value="d">{{ d }}</option>
                   </select>
@@ -474,7 +474,7 @@ async function saveTypes() {
               </div>
               <div>
                 <label class="text-xs font-bold text-slate-500 uppercase tracking-wider">มอบหมายให้ (ศึกษานิเทศก์)</label>
-                <select v-model="form.assigned_to" class="mt-1 w-full px-3 py-2 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:border-primary">
+                <select v-model="form.assigned_to" class="mt-1 w-full px-3 py-2 border border-white/80 bg-white/70 backdrop-blur rounded-xl text-sm focus:outline-none focus:border-primary">
                   <option value="">-- ยังไม่มอบหมาย --</option>
                   <option v-for="p in profiles" :key="p.id" :value="p.id">{{ displayName(p) }}</option>
                 </select>
@@ -498,7 +498,7 @@ async function saveTypes() {
       <Transition enter-active-class="transition duration-200" enter-from-class="opacity-0" enter-to-class="opacity-100"
         leave-active-class="transition duration-150" leave-from-class="opacity-100" leave-to-class="opacity-0">
         <div v-if="showCloseModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div class="bg-white rounded-3xl shadow-2xl w-full max-w-lg max-h-[92vh] flex flex-col overflow-hidden">
+          <div class="glass-panel rounded-3xl w-full max-w-lg max-h-[92vh] flex flex-col overflow-hidden">
             <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100 flex-shrink-0">
               <h2 class="text-lg font-extrabold text-slate-800">ปิดงาน</h2>
               <button @click="showCloseModal = false" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 text-slate-400">
@@ -544,7 +544,7 @@ async function saveTypes() {
       <Transition enter-active-class="transition duration-200" enter-from-class="opacity-0" enter-to-class="opacity-100"
         leave-active-class="transition duration-150" leave-from-class="opacity-100" leave-to-class="opacity-0">
         <div v-if="showTypesPanel" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div class="bg-white rounded-3xl shadow-2xl w-full max-w-lg max-h-[92vh] flex flex-col overflow-hidden">
+          <div class="glass-panel rounded-3xl w-full max-w-lg max-h-[92vh] flex flex-col overflow-hidden">
             <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100 flex-shrink-0">
               <h2 class="text-lg font-extrabold text-slate-800">จัดการประเภทหนังสือ</h2>
               <button @click="showTypesPanel = false" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 text-slate-400">
@@ -562,7 +562,7 @@ async function saveTypes() {
                     <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/></svg>
                   </button>
                 </div>
-                <input v-model="t.label" type="text" class="flex-1 px-2 py-1 text-sm font-bold border border-slate-200 rounded-lg bg-white focus:outline-none focus:border-primary"/>
+                <input v-model="t.label" type="text" class="flex-1 px-2 py-1 text-sm font-bold border border-slate-200 rounded-lg bg-white/70 backdrop-blur focus:outline-none focus:border-primary"/>
                 <button @click="t.visible = !t.visible" type="button"
                   :class="['px-2.5 py-1 text-xs font-bold rounded-lg transition-colors', t.visible ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-400']">
                   {{ t.visible ? 'แสดง' : 'ซ่อน' }}

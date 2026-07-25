@@ -277,7 +277,7 @@ function goHeaderSettings(p) {
     </div>
 
     <!-- Nav Groups manager (admin only) -->
-    <div v-else-if="isAdmin" class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4">
+    <div v-else-if="isAdmin" class="glass-card p-4">
       <div class="flex items-center justify-between mb-3">
         <p class="text-sm font-extrabold text-slate-700">กลุ่มเมนูนำทาง</p>
         <div class="flex items-center gap-2">
@@ -314,7 +314,7 @@ function goHeaderSettings(p) {
           </div>
           <!-- Label input -->
           <input v-model="g.label" type="text"
-            class="flex-1 px-2 py-1 text-sm font-bold border border-slate-200 rounded-lg bg-white focus:outline-none focus:border-primary"/>
+            class="flex-1 px-2 py-1 text-sm font-bold border border-slate-200 rounded-lg bg-white/70 backdrop-blur focus:outline-none focus:border-primary"/>
           <!-- key badge -->
           <span class="text-[10px] font-mono text-slate-400 bg-slate-200 px-1.5 py-0.5 rounded">{{ g.key }}</span>
           <!-- Toggle visible -->
@@ -340,7 +340,7 @@ function goHeaderSettings(p) {
         <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 px-1">{{ g.label }}</p>
         <div class="space-y-2">
           <div v-for="p in g.items" :key="p.id"
-            class="bg-white rounded-2xl border border-slate-100 shadow-sm px-4 py-3 flex flex-wrap items-center gap-3">
+            class="glass-card px-4 py-3 flex flex-wrap items-center gap-3">
             <!-- Icon + title -->
             <div class="w-8 h-8 flex-shrink-0 flex items-center justify-center rounded-lg bg-slate-100">
               <svg v-if="isIconKey(p.nav_icon)" class="w-4 h-4 text-primary" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
@@ -411,7 +411,7 @@ function goHeaderSettings(p) {
     <!-- Modal form -->
     <Transition enter-active-class="transition duration-200" enter-from-class="opacity-0" leave-to-class="opacity-0">
       <div v-if="showForm" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-lg flex flex-col" style="max-height:90vh">
+        <div class="glass-panel rounded-3xl w-full max-w-lg flex flex-col" style="max-height:90vh">
 
           <!-- Header sticky -->
           <div class="flex items-center justify-between px-6 pt-5 pb-4 border-b border-slate-100 flex-shrink-0">
@@ -521,7 +521,7 @@ function goHeaderSettings(p) {
     <!-- ── Permission Modal ──────────────────────────────────────── -->
     <Transition enter-active-class="transition duration-200" enter-from-class="opacity-0" leave-to-class="opacity-0">
       <div v-if="showPermModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md flex flex-col" style="max-height:85vh">
+        <div class="glass-panel rounded-3xl w-full max-w-md flex flex-col" style="max-height:85vh">
 
           <!-- Header -->
           <div class="flex items-center justify-between px-6 pt-5 pb-4 border-b border-slate-100 flex-shrink-0">

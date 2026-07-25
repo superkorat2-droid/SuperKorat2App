@@ -120,7 +120,7 @@ onMounted(async () => { await fetchSchools(); await fetchStudents() })
         { label: 'ชาย',               value: maleCount,   color: 'text-blue-600' },
         { label: 'หญิง',              value: femaleCount,  color: 'text-pink-500' },
         { label: 'ด้อยโอกาส',         value: disCount,     color: 'text-amber-600' },
-      ]" :key="i" class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4">
+      ]" :key="i" class="glass-card p-4">
         <p class="text-2xl font-extrabold" :class="item.color">{{ item.value.toLocaleString() }}</p>
         <p class="text-xs text-slate-500 mt-0.5">{{ item.label }}</p>
       </div>
@@ -162,7 +162,7 @@ onMounted(async () => { await fetchSchools(); await fetchStudents() })
     </div>
 
     <!-- Table -->
-    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+    <div class="glass-card overflow-hidden">
       <div v-if="loading" class="p-8 text-center text-slate-400 text-sm">กำลังโหลด...</div>
       <div v-else-if="!students.length" class="p-8 text-center text-slate-400 text-sm">ไม่พบข้อมูล</div>
       <div v-else class="overflow-x-auto">

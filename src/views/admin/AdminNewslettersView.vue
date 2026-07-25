@@ -154,11 +154,11 @@ function catLabel(c)  { return CATEGORIES.find(x=>x.value===c)?.label || c }
     <div class="flex flex-wrap gap-3">
       <input v-model="searchQ" type="text" placeholder="ค้นหาชื่อเอกสาร โรงเรียน..."
         class="flex-1 min-w-[200px] px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-primary bg-white"/>
-      <select v-model="filterCategory" class="px-3 py-2.5 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:border-primary">
+      <select v-model="filterCategory" class="px-3 py-2.5 border border-white/80 bg-white/70 backdrop-blur rounded-xl text-sm focus:outline-none focus:border-primary">
         <option value="all">ทุกประเภท</option>
         <option v-for="c in CATEGORIES" :key="c.value" :value="c.value">{{ c.label }}</option>
       </select>
-      <select v-model="filterYear" class="px-3 py-2.5 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:border-primary">
+      <select v-model="filterYear" class="px-3 py-2.5 border border-white/80 bg-white/70 backdrop-blur rounded-xl text-sm focus:outline-none focus:border-primary">
         <option value="all">ทุกปี</option>
         <option v-for="y in years" :key="y" :value="String(y)">{{ y }}</option>
       </select>
@@ -168,7 +168,7 @@ function catLabel(c)  { return CATEGORIES.find(x=>x.value===c)?.label || c }
     <div v-if="loading" class="flex justify-center py-12">
       <div class="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin"/>
     </div>
-    <div v-else class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+    <div v-else class="glass-card overflow-hidden">
       <div v-if="filtered.length === 0" class="text-center py-12 text-slate-400 text-sm">ยังไม่มีเอกสาร</div>
       <div v-else class="overflow-x-auto">
         <table class="w-full text-sm">
@@ -223,7 +223,7 @@ function catLabel(c)  { return CATEGORIES.find(x=>x.value===c)?.label || c }
   <Teleport to="body">
     <Transition name="fade">
       <div v-if="showModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 font-sarabun">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden">
+        <div class="glass-panel rounded-[1.25rem] w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden">
           <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between flex-shrink-0">
             <h2 class="font-extrabold text-slate-800">{{ form.id ? 'แก้ไขเอกสาร' : 'เพิ่มเอกสาร' }}</h2>
             <button @click="showModal=false" class="w-7 h-7 flex items-center justify-center rounded-full hover:bg-slate-100 text-slate-400">
@@ -272,13 +272,13 @@ function catLabel(c)  { return CATEGORIES.find(x=>x.value===c)?.label || c }
             <div class="grid grid-cols-2 gap-3">
               <div>
                 <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">ประเภท</label>
-                <select v-model="form.category" class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:border-primary">
+                <select v-model="form.category" class="w-full px-3 py-2.5 border border-white/80 bg-white/70 backdrop-blur rounded-xl text-sm focus:outline-none focus:border-primary">
                   <option v-for="c in CATEGORIES" :key="c.value" :value="c.value">{{ c.label }}</option>
                 </select>
               </div>
               <div>
                 <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">โรงเรียน</label>
-                <select v-model="form.school_id" class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:border-primary">
+                <select v-model="form.school_id" class="w-full px-3 py-2.5 border border-white/80 bg-white/70 backdrop-blur rounded-xl text-sm focus:outline-none focus:border-primary">
                   <option value="">สพป. (ทั้งเขต)</option>
                   <optgroup v-for="d in [...new Set(schools.map(s=>s.district))].sort()" :key="d" :label="`อ.${d}`">
                     <option v-for="s in schools.filter(x=>x.district===d)" :key="s.id" :value="s.id">{{ s.name }}</option>
@@ -291,7 +291,7 @@ function catLabel(c)  { return CATEGORIES.find(x=>x.value===c)?.label || c }
             <div class="grid grid-cols-3 gap-3">
               <div>
                 <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">เดือน</label>
-                <select v-model="form.month" class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:border-primary">
+                <select v-model="form.month" class="w-full px-3 py-2.5 border border-white/80 bg-white/70 backdrop-blur rounded-xl text-sm focus:outline-none focus:border-primary">
                   <option value="">-</option>
                   <option v-for="(m,i) in MONTHS" :key="i+1" :value="i+1">{{ m }}</option>
                 </select>

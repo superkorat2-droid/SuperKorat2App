@@ -163,7 +163,7 @@ function timeAgo(iso) {
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
       <!-- Recent users (admin only) -->
-      <div v-if="isAdminOrAbove" class="bg-white rounded-3xl border border-slate-100 shadow-sm p-6">
+      <div v-if="isAdminOrAbove" class="glass-card !rounded-3xl p-6">
         <div class="flex items-center justify-between mb-4">
           <h2 class="font-extrabold text-slate-800 flex items-center gap-2">
             <svg class="w-4 h-4 text-primary" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" :d="I.users"/></svg>
@@ -192,7 +192,7 @@ function timeAgo(iso) {
       </div>
 
       <!-- Pending works -->
-      <div v-if="isSupervisorOrAbove" class="bg-white rounded-3xl border border-slate-100 shadow-sm p-6">
+      <div v-if="isSupervisorOrAbove" class="glass-card !rounded-3xl p-6">
         <div class="flex items-center justify-between mb-4">
           <h2 class="font-extrabold text-slate-800 flex items-center gap-2">
             <svg class="w-4 h-4 text-primary" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" :d="I.clock"/></svg>
@@ -220,7 +220,7 @@ function timeAgo(iso) {
       </div>
 
       <!-- My profile quick -->
-      <div v-if="!isAdminOrAbove && !isSupervisorOrAbove" class="bg-white rounded-3xl border border-slate-100 shadow-sm p-6">
+      <div v-if="!isAdminOrAbove && !isSupervisorOrAbove" class="glass-card !rounded-3xl p-6">
         <h2 class="font-extrabold text-slate-800 mb-4">👤 ข้อมูลของฉัน</h2>
         <div v-if="profile" class="space-y-3">
           <div class="flex gap-3"><span class="text-slate-400 text-sm w-24">ชื่อ</span><span class="text-sm font-bold text-slate-800">{{ profile.full_name || '—' }}</span></div>

@@ -373,7 +373,7 @@ async function save() {
       <Transition enter-active-class="transition duration-200" enter-from-class="opacity-0" enter-to-class="opacity-100"
         leave-active-class="transition duration-150" leave-from-class="opacity-100" leave-to-class="opacity-0">
         <div v-if="editingSection" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div class="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[92vh] flex flex-col overflow-hidden">
+          <div class="glass-panel rounded-3xl w-full max-w-2xl max-h-[92vh] flex flex-col overflow-hidden">
             <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100 flex-shrink-0">
               <h2 class="text-lg font-extrabold text-slate-800">จัดการรูปภาพ — ภาพลิงก์หน้าแรก</h2>
               <button @click="editingSection = null" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 text-slate-400">

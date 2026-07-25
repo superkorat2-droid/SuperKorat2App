@@ -381,19 +381,19 @@ function formatDate(d) {
     <template v-else>
       <!-- Summary stats -->
       <div :class="['grid gap-4', overallScore ? 'grid-cols-2 sm:grid-cols-5' : 'grid-cols-2 sm:grid-cols-4']">
-        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 text-center">
+        <div class="glass-card p-4 text-center">
           <p class="text-3xl font-extrabold text-primary">{{ responseCount }}</p>
           <p class="text-xs text-slate-500 mt-1">ส่งแล้ว</p>
         </div>
-        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 text-center">
+        <div class="glass-card p-4 text-center">
           <p class="text-3xl font-extrabold text-slate-700">{{ totalSchools }}</p>
           <p class="text-xs text-slate-500 mt-1">เป้าหมาย</p>
         </div>
-        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 text-center">
+        <div class="glass-card p-4 text-center">
           <p class="text-3xl font-extrabold text-emerald-600">{{ pct }}%</p>
           <p class="text-xs text-slate-500 mt-1">ความสำเร็จ</p>
         </div>
-        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 text-center">
+        <div class="glass-card p-4 text-center">
           <p class="text-3xl font-extrabold text-amber-500">{{ pendingSchools.length }}</p>
           <p class="text-xs text-slate-500 mt-1">ยังไม่ส่ง</p>
           <div class="flex items-center justify-center gap-1 mt-1">
@@ -417,7 +417,7 @@ function formatDate(d) {
       </div>
 
       <!-- Progress bar -->
-      <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4">
+      <div class="glass-card p-4">
         <div class="flex justify-between text-sm font-medium text-slate-600 mb-2">
           <span>ความคืบหน้า</span>
           <span>{{ responseCount }} / {{ totalSchools }} โรงเรียน</span>
@@ -430,7 +430,7 @@ function formatDate(d) {
 
       <!-- No responses yet -->
       <div v-if="responseCount === 0"
-        class="text-center py-16 bg-white rounded-2xl border border-slate-100 text-slate-400">
+        class="text-center py-16 glass-card text-slate-400">
         <SvgIcon name="chart-bar" class="w-12 h-12 mx-auto mb-3 opacity-30"/>
         <p class="font-medium">ยังไม่มีคำตอบ</p>
         <p class="text-sm mt-1">รอโรงเรียนส่งแบบนิเทศ ผลลัพธ์จะแสดงอัตโนมัติ</p>
@@ -466,7 +466,7 @@ function formatDate(d) {
 
           <!-- Questions in this section -->
           <div v-for="q in sec.questions" :key="q.id"
-            class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+            class="glass-card p-5">
 
           <div class="mb-4">
             <div class="flex flex-wrap items-center gap-2 mb-1">
@@ -634,7 +634,7 @@ function formatDate(d) {
       </template>
 
       <!-- Pending schools table -->
-      <div v-if="pendingSchools.length > 0" class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+      <div v-if="pendingSchools.length > 0" class="glass-card p-5">
         <h3 class="font-bold text-slate-700 mb-3 flex items-center gap-2">
           <SvgIcon name="school" class="w-4 h-4 text-amber-500"/>
           โรงเรียนที่ยังไม่ส่ง ({{ pendingSchools.length }})
@@ -649,7 +649,7 @@ function formatDate(d) {
       </div>
 
       <!-- Responded list -->
-      <div v-if="responseCount > 0" class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+      <div v-if="responseCount > 0" class="glass-card p-5">
         <h3 class="font-bold text-slate-700 mb-3 flex items-center gap-2">
           <SvgIcon name="school" class="w-4 h-4 text-emerald-500"/>
           {{ form?.respondent_type === 'individual' ? 'ผู้ตอบ' : 'โรงเรียน' }}ที่ส่งแล้ว ({{ responseCount }})

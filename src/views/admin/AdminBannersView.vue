@@ -388,7 +388,7 @@ const LINK_OPTIONS = [
         :class="['px-4 py-1.5 rounded-full text-sm font-bold transition-all border',
           activeFilter === tab.key
             ? 'bg-primary text-white border-primary shadow-md'
-            : 'bg-white text-slate-500 border-slate-200 hover:border-primary/40 hover:text-primary']">
+            : 'bg-white/70 backdrop-blur text-slate-600 border-white/80 hover:border-primary/40 hover:text-primary']">
         {{ tab.label }}
         <span class="ml-1 opacity-70">
           ({{ tab.key==='all'?stats.total : tab.key==='active'?stats.active : tab.key==='hidden'?stats.hidden : tab.key==='pinned'?stats.pinned : stats.video }})
@@ -409,7 +409,7 @@ const LINK_OPTIONS = [
 
     <!-- ── Empty ─────────────────────────────────────────────────── -->
     <div v-else-if="filteredBanners.length === 0"
-      class="flex flex-col items-center justify-center py-20 bg-white rounded-3xl border-2 border-dashed border-slate-200">
+      class="flex flex-col items-center justify-center py-20 glass-card !rounded-3xl !border-2 !border-dashed border-slate-200">
       <div class="w-16 h-16 rounded-2xl bg-primary-light flex items-center justify-center mb-4">
         <svg class="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
           <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5z"/>
@@ -426,7 +426,7 @@ const LINK_OPTIONS = [
     <!-- ── Banner Cards ──────────────────────────────────────────── -->
     <div v-else class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
       <div v-for="(b, i) in filteredBanners" :key="b.id"
-        class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden hover:shadow-lg transition-all group">
+        class="glass-card overflow-hidden hover:shadow-lg transition-all group">
 
         <!-- Thumbnail -->
         <div class="relative aspect-video bg-slate-900 overflow-hidden">
@@ -568,7 +568,7 @@ const LINK_OPTIONS = [
         leave-active-class="transition duration-150" leave-from-class="opacity-100 scale-100" leave-to-class="opacity-0 scale-95">
         <div v-if="showModal"
           class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div class="bg-white rounded-3xl shadow-2xl w-full max-w-xl max-h-[92vh] flex flex-col overflow-hidden">
+          <div class="glass-panel rounded-3xl w-full max-w-xl max-h-[92vh] flex flex-col overflow-hidden">
 
             <!-- Modal header -->
             <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100 flex-shrink-0">
@@ -833,7 +833,7 @@ const LINK_OPTIONS = [
                   <button @click="form.is_active = !form.is_active"
                     :class="['relative w-12 h-6 rounded-full transition-colors flex-shrink-0',
                       form.is_active ? 'bg-emerald-500' : 'bg-slate-300']">
-                    <span :class="['absolute w-5 h-5 bg-white rounded-full shadow-sm top-0.5 transition-all',
+                    <span :class="['absolute w-5 h-5 bg-white/80 backdrop-blur rounded-full shadow-sm top-0.5 transition-all',
                       form.is_active ? 'left-6' : 'left-0.5']"></span>
                   </button>
                 </div>
@@ -846,7 +846,7 @@ const LINK_OPTIONS = [
                   <button @click="form.is_pinned = !form.is_pinned"
                     :class="['relative w-12 h-6 rounded-full transition-colors flex-shrink-0',
                       form.is_pinned ? 'bg-amber-400' : 'bg-slate-300']">
-                    <span :class="['absolute w-5 h-5 bg-white rounded-full shadow-sm top-0.5 transition-all',
+                    <span :class="['absolute w-5 h-5 bg-white/80 backdrop-blur rounded-full shadow-sm top-0.5 transition-all',
                       form.is_pinned ? 'left-6' : 'left-0.5']"></span>
                   </button>
                 </div>
@@ -890,7 +890,7 @@ const LINK_OPTIONS = [
         <div v-if="showStorage"
           class="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
           @click.self="showStorage = false">
-          <div class="bg-white rounded-3xl shadow-2xl w-full max-w-4xl max-h-[85vh] flex flex-col overflow-hidden">
+          <div class="glass-panel rounded-3xl w-full max-w-4xl max-h-[85vh] flex flex-col overflow-hidden">
             <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100 flex-shrink-0">
               <h3 class="font-extrabold text-slate-800 flex items-center gap-2">
                 <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">

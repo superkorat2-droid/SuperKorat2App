@@ -148,7 +148,7 @@ function flip(axis)   {
         class="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
         @click.self="close">
 
-        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden font-sarabun">
+        <div class="glass-panel rounded-3xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden font-sarabun">
 
           <!-- Header -->
           <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100 flex-shrink-0">

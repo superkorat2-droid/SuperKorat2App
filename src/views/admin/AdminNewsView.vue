@@ -351,7 +351,7 @@ function getCatPath(val) {
 
     <!-- ── Empty ───────────────────────────────────────────────────── -->
     <div v-else-if="filtered.length === 0"
-      class="flex flex-col items-center justify-center py-20 bg-white rounded-3xl border-2 border-dashed border-slate-200">
+      class="flex flex-col items-center justify-center py-20 glass-card !rounded-3xl !border-2 !border-dashed border-slate-200">
       <svg class="w-12 h-12 text-slate-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1">
         <path stroke-linecap="round" stroke-linejoin="round" d="M12 7.5h1.5m-1.5 3h1.5m-7.5 3h7.5m-7.5 3h7.5m3-9h3.375c.621 0 1.125.504 1.125 1.125V18a2.25 2.25 0 01-2.25 2.25M16.5 7.5V18a2.25 2.25 0 002.25 2.25M16.5 7.5V4.875c0-.621-.504-1.125-1.125-1.125H4.125C3.504 3.75 3 4.254 3 4.875V18a2.25 2.25 0 002.25 2.25h13.5"/>
       </svg>
@@ -360,7 +360,7 @@ function getCatPath(val) {
     </div>
 
     <!-- ── News table ──────────────────────────────────────────────── -->
-    <div v-else class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+    <div v-else class="glass-card overflow-hidden">
       <table class="w-full text-sm">
         <thead>
           <tr class="border-b border-slate-100 bg-slate-50">
@@ -465,7 +465,7 @@ function getCatPath(val) {
         leave-active-class="transition duration-150" leave-from-class="opacity-100" leave-to-class="opacity-0">
         <div v-if="showModal"
           class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div class="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[92vh] flex flex-col overflow-hidden">
+          <div class="glass-panel rounded-3xl w-full max-w-2xl max-h-[92vh] flex flex-col overflow-hidden">
 
             <!-- Header -->
             <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100 flex-shrink-0">
@@ -893,7 +893,7 @@ function getCatPath(val) {
         <div v-if="showStorage"
           class="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
           @click.self="showStorage = false">
-          <div class="bg-white rounded-3xl shadow-2xl w-full max-w-4xl max-h-[85vh] flex flex-col overflow-hidden">
+          <div class="glass-panel rounded-3xl w-full max-w-4xl max-h-[85vh] flex flex-col overflow-hidden">
             <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100 flex-shrink-0">
               <h3 class="font-extrabold text-slate-800 flex items-center gap-2">
                 <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">

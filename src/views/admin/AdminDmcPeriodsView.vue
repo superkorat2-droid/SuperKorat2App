@@ -220,7 +220,7 @@ const archivedPeriods = computed(() => periods.value.filter(p => p.is_archived))
       <div v-if="activePeriods.length > 0" class="space-y-4">
         <h2 class="text-sm font-bold text-slate-500 uppercase tracking-wider">รอบที่เปิดอยู่</h2>
         <div v-for="p in activePeriods" :key="p.id"
-          class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+          class="glass-card p-5">
           <div class="flex flex-wrap items-start justify-between gap-4">
             <div class="flex-1 min-w-0">
               <div class="flex flex-wrap items-center gap-2 mb-1">
@@ -280,7 +280,7 @@ const archivedPeriods = computed(() => periods.value.filter(p => p.is_archived))
 
       <!-- Empty active -->
       <div v-else
-        class="text-center py-12 bg-white rounded-2xl border border-slate-100 text-slate-400">
+        class="text-center py-12 glass-card text-slate-400">
         <svg class="w-12 h-12 mx-auto mb-3 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
           <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"/>
         </svg>
@@ -324,7 +324,7 @@ const archivedPeriods = computed(() => periods.value.filter(p => p.is_archived))
   <Teleport to="body">
     <Transition name="fade">
       <div v-if="showModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 font-sarabun">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+        <div class="glass-panel rounded-[1.25rem] w-full max-w-md">
           <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
             <h2 class="font-extrabold text-slate-800">{{ form.id ? 'แก้ไขรอบ' : 'สร้างรอบใหม่' }}</h2>
             <button @click="showModal=false" class="w-7 h-7 flex items-center justify-center rounded-full hover:bg-slate-100 text-slate-400">
@@ -351,7 +351,7 @@ const archivedPeriods = computed(() => periods.value.filter(p => p.is_archived))
               </div>
               <div>
                 <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">ภาคเรียน</label>
-                <select v-model="form.semester" class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:border-primary">
+                <select v-model="form.semester" class="w-full px-3 py-2.5 border border-white/80 bg-white/70 backdrop-blur rounded-xl text-sm focus:outline-none focus:border-primary">
                   <option :value="1">ภาคเรียนที่ 1</option>
                   <option :value="2">ภาคเรียนที่ 2</option>
                 </select>
@@ -382,7 +382,7 @@ const archivedPeriods = computed(() => periods.value.filter(p => p.is_archived))
   <Teleport to="body">
     <Transition name="fade">
       <div v-if="showVisibility && visPeriod" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 font-sarabun">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] flex flex-col overflow-hidden">
+        <div class="glass-panel rounded-[1.25rem] w-full max-w-md max-h-[90vh] flex flex-col overflow-hidden">
           <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between flex-shrink-0">
             <div>
               <h2 class="font-extrabold text-slate-800">การแสดงผลสาธารณะ</h2>
@@ -411,7 +411,7 @@ const archivedPeriods = computed(() => periods.value.filter(p => p.is_archived))
             <div v-if="visPeriod.show_public" class="space-y-2">
               <p class="text-xs font-bold text-slate-500 uppercase tracking-wider">หมวดข้อมูลที่อนุญาต</p>
               <div v-for="f in VIS_FIELDS" :key="f.key"
-                class="flex items-center gap-3 p-3 bg-white rounded-xl border border-slate-100">
+                class="flex items-center gap-3 p-3 glass-inset">
                 <label class="relative inline-flex items-center cursor-pointer flex-shrink-0">
                   <input type="checkbox" v-model="visPeriod.visibility[f.key]" class="sr-only peer"/>
                   <div class="w-9 h-5 bg-slate-200 rounded-full peer peer-checked:bg-primary transition-colors

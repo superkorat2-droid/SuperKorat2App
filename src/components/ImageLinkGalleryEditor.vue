@@ -153,18 +153,18 @@ async function onCropped({ blob }) {
 
         <div class="flex-1 min-w-0 space-y-1.5">
           <input v-model="item.title" type="text" placeholder="หัวข้อ"
-            class="w-full px-2.5 py-1.5 text-sm border border-slate-200 rounded-lg bg-white focus:outline-none focus:border-primary"/>
+            class="w-full px-2.5 py-1.5 text-sm border border-slate-200 rounded-lg bg-white/70 backdrop-blur focus:outline-none focus:border-primary"/>
           <input v-model="item.caption" type="text" placeholder="คำอธิบายสั้น (ไม่บังคับ)"
-            class="w-full px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg bg-white focus:outline-none focus:border-primary"/>
+            class="w-full px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg bg-white/70 backdrop-blur focus:outline-none focus:border-primary"/>
           <div class="flex gap-1.5">
-            <select v-model="item.link_type" class="px-2 py-1.5 text-xs border border-slate-200 rounded-lg bg-white focus:outline-none focus:border-primary">
+            <select v-model="item.link_type" class="px-2 py-1.5 text-xs border border-slate-200 rounded-lg bg-white/70 backdrop-blur focus:outline-none focus:border-primary">
               <option value="none">ไม่มีลิงก์</option>
               <option value="internal">ลิงก์ภายใน</option>
               <option value="external">ลิงก์ภายนอก</option>
             </select>
             <input v-if="item.link_type !== 'none'" v-model="item.link_url" type="text"
               :placeholder="item.link_type === 'internal' ? '/page/xxx' : 'https://...'"
-              class="flex-1 px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg bg-white focus:outline-none focus:border-primary"/>
+              class="flex-1 px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg bg-white/70 backdrop-blur focus:outline-none focus:border-primary"/>
           </div>
           <!-- เลือกจากหน้าที่มีอยู่จริง กันพิมพ์ path เองแล้วผิด (เช่นลืม /page/ นำหน้า) -->
           <select v-if="item.link_type === 'internal'" @change="item.link_url = $event.target.value; $event.target.value = ''"

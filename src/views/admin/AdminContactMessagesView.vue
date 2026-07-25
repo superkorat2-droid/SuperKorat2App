@@ -73,7 +73,7 @@ function formatDate(iso) {
 
     <!-- Empty -->
     <div v-else-if="filtered.length === 0"
-      class="flex flex-col items-center justify-center py-20 bg-white rounded-3xl border-2 border-dashed border-slate-200">
+      class="flex flex-col items-center justify-center py-20 glass-card !rounded-3xl !border-2 !border-dashed border-slate-200">
       <div class="text-5xl mb-3">📭</div>
       <p class="font-bold text-slate-600 mb-1">ไม่มีข้อความ</p>
       <p class="text-sm text-slate-400">{{ filterUnreadOnly ? 'ไม่มีข้อความที่ยังไม่ได้อ่าน' : 'ยังไม่มีใครส่งข้อความเข้ามา' }}</p>
@@ -98,7 +98,7 @@ function formatDate(iso) {
       </div>
 
       <!-- Detail -->
-      <div class="lg:col-span-3 bg-white rounded-3xl border border-slate-100 shadow-sm p-6">
+      <div class="lg:col-span-3 glass-card !rounded-3xl p-6">
         <div v-if="!selected" class="flex flex-col items-center justify-center py-20 text-slate-400">
           <div class="text-4xl mb-3">👈</div>
           <p class="text-sm">เลือกข้อความทางซ้ายเพื่อดูรายละเอียด</p>

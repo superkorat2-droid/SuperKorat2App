@@ -275,7 +275,7 @@ async function changePassword() {
             </div>
           </div>
           <button @click="showCropper = true" :disabled="uploadingAvatar"
-            class="absolute -bottom-1.5 -right-1.5 w-7 h-7 bg-white rounded-full flex items-center justify-center shadow-md hover:bg-slate-100 transition-colors">
+            class="absolute -bottom-1.5 -right-1.5 w-7 h-7 bg-white/80 backdrop-blur rounded-full flex items-center justify-center shadow-md hover:bg-slate-100 transition-colors">
             <svg v-if="!uploadingAvatar" class="w-3.5 h-3.5 text-slate-700" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.776 48.776 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM18.75 10.5h.008v.008h-.008V10.5z"/>
             </svg>
@@ -301,7 +301,7 @@ async function changePassword() {
     </div>
 
     <!-- Tabs -->
-    <div class="flex flex-wrap gap-1 bg-white rounded-2xl border border-slate-200 p-1 shadow-sm">
+    <div class="flex flex-wrap gap-1 glass-card p-1 shadow-sm">
       <button v-for="tab in tabs" :key="tab.key" @click="activeTab = tab.key"
         :class="['flex-1 py-2 text-xs font-bold rounded-xl transition-all min-w-[80px]',
           activeTab === tab.key ? 'bg-primary text-white shadow-sm' : 'text-slate-500 hover:bg-slate-50']">
@@ -317,7 +317,7 @@ async function changePassword() {
     <template v-else>
 
       <!-- ── TAB: พื้นฐาน ──────────────────────────────────────── -->
-      <div v-if="activeTab === 'basic'" class="bg-white rounded-3xl border border-slate-100 shadow-sm p-6 space-y-4">
+      <div v-if="activeTab === 'basic'" class="glass-card !rounded-3xl p-6 space-y-4">
         <h2 class="font-extrabold text-slate-800">ข้อมูลพื้นฐาน</h2>
 
         <!-- คำนำหน้า + ชื่อ + นามสกุล -->
@@ -325,7 +325,7 @@ async function changePassword() {
           <div>
             <label class="text-xs font-bold text-slate-500 uppercase tracking-wider">คำนำหน้า</label>
             <select v-model="form.title"
-              class="mt-1 w-full px-3 py-2 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:border-primary">
+              class="mt-1 w-full px-3 py-2 border border-white/80 bg-white/70 backdrop-blur rounded-xl text-sm focus:outline-none focus:border-primary">
               <option value="">-</option>
               <option v-for="t in TITLE_OPTIONS" :key="t" :value="t">{{ t }}</option>
             </select>
@@ -367,7 +367,7 @@ async function changePassword() {
       </div>
 
       <!-- ── TAB: บุคลากร ──────────────────────────────────────── -->
-      <div v-if="activeTab === 'work'" class="bg-white rounded-3xl border border-slate-100 shadow-sm p-6 space-y-5">
+      <div v-if="activeTab === 'work'" class="glass-card !rounded-3xl p-6 space-y-5">
         <h2 class="font-extrabold text-slate-800">ข้อมูลบุคลากร</h2>
 
         <!-- ตำแหน่งในองค์กร -->
@@ -375,14 +375,14 @@ async function changePassword() {
           <div>
             <label class="text-xs font-bold text-slate-500 uppercase tracking-wider">ตำแหน่งในองค์กร</label>
             <select v-model="form.org_role"
-              class="mt-1 w-full px-3 py-2 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:border-primary">
+              class="mt-1 w-full px-3 py-2 border border-white/80 bg-white/70 backdrop-blur rounded-xl text-sm focus:outline-none focus:border-primary">
               <option v-for="r in ORG_ROLES" :key="r.value" :value="r.value">{{ r.label }}</option>
             </select>
           </div>
           <div>
             <label class="text-xs font-bold text-slate-500 uppercase tracking-wider">ระดับ/วิทยฐานะ</label>
             <select v-model="form.position_level"
-              class="mt-1 w-full px-3 py-2 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:border-primary">
+              class="mt-1 w-full px-3 py-2 border border-white/80 bg-white/70 backdrop-blur rounded-xl text-sm focus:outline-none focus:border-primary">
               <option value="">-</option>
               <option v-for="l in POSITION_LEVELS" :key="l" :value="l">{{ l }}</option>
               <option value="custom">อื่นๆ</option>
@@ -394,7 +394,7 @@ async function changePassword() {
         <div>
           <label class="text-xs font-bold text-slate-500 uppercase tracking-wider">กลุ่มงาน/สังกัด</label>
           <select v-model="form.department"
-            class="mt-1 w-full px-3 py-2 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:border-primary">
+            class="mt-1 w-full px-3 py-2 border border-white/80 bg-white/70 backdrop-blur rounded-xl text-sm focus:outline-none focus:border-primary">
             <option value="">-- ไม่ระบุ --</option>
             <option v-for="dep in deptOptions" :key="dep" :value="dep">{{ dep }}</option>
           </select>
@@ -446,7 +446,7 @@ async function changePassword() {
       </div>
 
       <!-- ── TAB: ติดต่อ & Social ──────────────────────────────── -->
-      <div v-if="activeTab === 'contact'" class="bg-white rounded-3xl border border-slate-100 shadow-sm p-6 space-y-5">
+      <div v-if="activeTab === 'contact'" class="glass-card !rounded-3xl p-6 space-y-5">
         <h2 class="font-extrabold text-slate-800">ติดต่อ & Social Media</h2>
         <!-- legend -->
         <div class="flex items-center gap-4 text-xs text-slate-400">
@@ -547,7 +547,7 @@ async function changePassword() {
       </div>
 
       <!-- ── TAB: รหัสผ่าน ─────────────────────────────────────── -->
-      <div v-if="activeTab === 'password'" class="bg-white rounded-3xl border border-slate-100 shadow-sm p-6 space-y-4">
+      <div v-if="activeTab === 'password'" class="glass-card !rounded-3xl p-6 space-y-4">
         <h2 class="font-extrabold text-slate-800">เปลี่ยนรหัสผ่าน</h2>
         <div>
           <label class="text-xs font-bold text-slate-500 uppercase tracking-wider">รหัสผ่านใหม่</label>

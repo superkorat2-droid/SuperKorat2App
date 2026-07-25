@@ -170,7 +170,7 @@ function openMapsForGps(school) {
         { label: 'มีเว็บไซต์', value: withWebsite, color: 'text-emerald-600' },
         { label: 'ไม่มีเว็บไซต์', value: schools.length - withWebsite, color: 'text-amber-600' },
         { label: 'ผลการค้นหา', value: filtered.length, color: 'text-slate-700' },
-      ]" :key="i" class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4">
+      ]" :key="i" class="glass-card p-4">
         <p class="text-2xl font-extrabold" :class="item.color">{{ item.value }}</p>
         <p class="text-xs text-slate-500 mt-0.5">{{ item.label }}</p>
       </div>
@@ -193,7 +193,7 @@ function openMapsForGps(school) {
     </div>
 
     <!-- Table -->
-    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+    <div class="glass-card overflow-hidden">
       <div v-if="loading" class="p-8 text-center text-slate-400 text-sm">กำลังโหลด...</div>
       <div v-else-if="filtered.length === 0" class="p-8 text-center text-slate-400 text-sm">ไม่พบโรงเรียน</div>
       <div v-else class="overflow-x-auto">
@@ -248,7 +248,7 @@ function openMapsForGps(school) {
     <Transition name="fade">
       <div v-if="editSchool"
         class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 font-sarabun">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
+        <div class="glass-panel rounded-[1.25rem] w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
 
           <!-- Header -->
           <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">

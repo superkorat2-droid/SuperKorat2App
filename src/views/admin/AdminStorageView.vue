@@ -103,7 +103,7 @@ const current = () => BUCKETS.find(b => b.id === activeBucket.value)
     </div>
 
     <!-- ── Overall usage card ───────────────────────────────────── -->
-    <div class="bg-white rounded-3xl border border-slate-100 shadow-sm p-6">
+    <div class="glass-card !rounded-3xl p-6">
       <div class="flex flex-wrap items-start justify-between gap-4 mb-5">
         <div>
           <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">พื้นที่ใช้งานรวม (Free Plan)</p>
@@ -244,7 +244,7 @@ const current = () => BUCKETS.find(b => b.id === activeBucket.value)
     </div>
 
     <!-- ── StorageBrowser ─────────────────────────────────────────── -->
-    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+    <div class="glass-card p-5">
       <StorageBrowser
         :key="activeBucket"
         :bucket="activeBucket"

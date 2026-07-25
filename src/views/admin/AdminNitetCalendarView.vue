@@ -279,7 +279,7 @@ onMounted(async () => {
 
     <!-- Empty -->
     <div v-else-if="filtered.length === 0"
-      class="text-center py-16 bg-white rounded-2xl border border-slate-100 text-slate-400">
+      class="text-center py-16 glass-card text-slate-400">
       <SvgIcon name="calendar" class="w-12 h-12 mx-auto mb-3 opacity-30"/>
       <p class="font-medium">ยังไม่มีกิจกรรม</p>
       <p class="text-sm mt-1">กด "เพิ่มกิจกรรม" เพื่อเริ่มต้น</p>
@@ -288,7 +288,7 @@ onMounted(async () => {
     <!-- List -->
     <div v-else class="space-y-3">
       <div v-for="event in filtered" :key="event.id"
-        class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 hover:shadow-md transition-shadow">
+        class="glass-card glass-card-hover p-5">
         <div class="flex flex-wrap items-start justify-between gap-4">
           <div class="flex-1 min-w-0">
             <div class="flex flex-wrap items-center gap-2 mb-1">
@@ -338,7 +338,7 @@ onMounted(async () => {
         leave-active-class="transition duration-150" leave-from-class="opacity-100" leave-to-class="opacity-0">
         <div v-if="showModal"
           class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div class="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[92vh] flex flex-col overflow-hidden">
+          <div class="glass-panel rounded-3xl w-full max-w-2xl max-h-[92vh] flex flex-col overflow-hidden">
 
             <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100 flex-shrink-0">
               <h3 class="font-extrabold text-slate-800 text-lg flex items-center gap-2">

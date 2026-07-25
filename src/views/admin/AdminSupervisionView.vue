@@ -180,7 +180,7 @@ onMounted(async () => {
 
     <!-- Empty -->
     <div v-else-if="filtered.length === 0"
-      class="text-center py-16 bg-white rounded-2xl border border-slate-100 text-slate-400">
+      class="text-center py-16 glass-card text-slate-400">
       <SvgIcon name="clipboard" class="w-12 h-12 mx-auto mb-3 opacity-30"/>
       <p class="font-medium">ยังไม่มีแบบนิเทศ</p>
       <p class="text-sm mt-1">กด "สร้างแบบนิเทศใหม่" เพื่อเริ่มต้น</p>
@@ -189,7 +189,7 @@ onMounted(async () => {
     <!-- List -->
     <div v-else class="space-y-3">
       <div v-for="form in filtered" :key="form.id"
-        class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 hover:shadow-md transition-shadow">
+        class="glass-card glass-card-hover p-5">
 
         <div class="flex flex-wrap items-start justify-between gap-4">
           <!-- Info -->
@@ -265,7 +265,7 @@ onMounted(async () => {
                 </svg>
                 สถานะ
               </button>
-              <div class="absolute right-0 mt-1 bg-white rounded-2xl shadow-xl border border-slate-100 py-1 z-10 min-w-[130px] hidden group-hover:block">
+              <div class="absolute right-0 mt-1 glass-panel rounded-[1.25rem] border border-slate-100 py-1 z-10 min-w-[130px] hidden group-hover:block">
                 <button v-for="s in ['draft','published','closed']" :key="s"
                   @click="changeStatus(form, s)"
                   :class="['w-full text-left px-4 py-2 text-xs font-bold transition-colors',

@@ -256,7 +256,7 @@ function toggleGrade(g) {
       <div class="lg:col-span-2 space-y-4">
 
         <!-- Title -->
-        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+        <div class="glass-card p-5">
           <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">ชื่อสื่อ <span class="text-red-500">*</span></label>
           <input v-model="meta.title" type="text" placeholder="ชื่อสื่อการเรียนรู้..."
             class="w-full px-4 py-3 border border-slate-200 rounded-xl text-lg font-bold focus:outline-none focus:border-primary"/>
@@ -265,7 +265,7 @@ function toggleGrade(g) {
         </div>
 
         <!-- Block Editor -->
-        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 space-y-4">
+        <div class="glass-card p-5 space-y-4">
           <div class="flex items-center justify-between">
             <h2 class="font-bold text-slate-700">เนื้อหา (Block Editor)</h2>
           </div>
@@ -350,7 +350,7 @@ function toggleGrade(g) {
       <div class="space-y-4">
 
         <!-- Media Type -->
-        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+        <div class="glass-card p-5">
           <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">ประเภทสื่อ</label>
           <div class="grid grid-cols-2 gap-2">
             <label v-for="mt in MEDIA_TYPES" :key="mt.value"
@@ -387,7 +387,7 @@ function toggleGrade(g) {
         </div>
 
         <!-- Thumbnail section -->
-        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 space-y-3">
+        <div class="glass-card p-5 space-y-3">
           <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider">ภาพตัวอย่าง (Thumbnail)</label>
 
           <!-- Drive embed preview option -->
@@ -447,11 +447,11 @@ function toggleGrade(g) {
 
 
         <!-- Classification -->
-        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 space-y-3">
+        <div class="glass-card p-5 space-y-3">
           <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider">หมวดหมู่</label>
           <div>
             <label class="text-xs text-slate-500 mb-1 block">กลุ่มสาระ</label>
-            <select v-model="meta.subject_group" class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:border-primary">
+            <select v-model="meta.subject_group" class="w-full px-3 py-2.5 border border-white/80 bg-white/70 backdrop-blur rounded-xl text-sm focus:outline-none focus:border-primary">
               <option value="">-- เลือก --</option>
               <option v-for="s in SUBJECT_GROUPS" :key="s" :value="s">{{ s }}</option>
             </select>
@@ -479,7 +479,7 @@ function toggleGrade(g) {
         </div>
 
         <!-- Status -->
-        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 space-y-2">
+        <div class="glass-card p-5 space-y-2">
           <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">สถานะ</label>
           <label class="flex items-center gap-2 cursor-pointer">
             <input type="checkbox" v-model="meta.is_published" class="w-4 h-4 accent-primary"/>
@@ -502,7 +502,7 @@ function toggleGrade(g) {
   <Teleport to="body">
     <Transition name="fade">
       <div v-if="cropModal.open" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/75 p-4 font-sarabun">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md flex flex-col overflow-hidden">
+        <div class="glass-panel rounded-[1.25rem] w-full max-w-md flex flex-col overflow-hidden">
           <div class="px-5 py-3 border-b border-slate-100">
             <p class="text-sm font-extrabold text-slate-700">ครอบรูป Thumbnail (4:3)</p>
           </div>

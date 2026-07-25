@@ -327,7 +327,7 @@ async function clearHeaderMedia() {
           </span>
           <!-- Layout selector -->
           <select v-if="canEdit" v-model="layout"
-            class="px-2 py-1.5 border border-slate-200 rounded-xl text-xs bg-white text-slate-600 font-bold">
+            class="px-2 py-1.5 border border-slate-200 rounded-xl text-xs bg-white/70 backdrop-blur text-slate-600 font-bold">
             <option v-for="o in LAYOUT_OPTIONS" :key="o.value" :value="o.value">📐 {{ o.label }}</option>
           </select>
           <button @click="save()" :disabled="saving"
@@ -343,7 +343,7 @@ async function clearHeaderMedia() {
       </div>
 
       <!-- Header (ไอคอน SVG+ชื่อ หรือ รูป/วิดีโอ/GIF ตรงหัวหน้าเว็บ) -->
-      <div v-if="canEdit" class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 mb-5 space-y-3">
+      <div v-if="canEdit" class="glass-card p-4 mb-5 space-y-3">
         <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Header หน้า</p>
         <div class="flex gap-2">
           <button @click="headerMode = 'icon'"
@@ -420,7 +420,7 @@ async function clearHeaderMedia() {
       </div>
 
       <!-- Add block toolbar (แสดงเฉพาะมีสิทธิ์) -->
-      <div v-if="canEdit" class="bg-white rounded-2xl border border-slate-100 shadow-sm p-3 mb-5">
+      <div v-if="canEdit" class="glass-card p-3 mb-5">
         <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2.5">เพิ่ม Block</p>
         <div class="flex flex-wrap gap-2">
           <button v-for="bt in BLOCK_TYPES" :key="bt.type"
@@ -441,7 +441,7 @@ async function clearHeaderMedia() {
 
       <div class="space-y-3">
         <div v-for="(block, idx) in blocks" :key="block.id"
-          class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+          class="glass-card overflow-hidden">
 
           <!-- Block toolbar -->
           <div class="flex items-center gap-2 px-4 py-2 bg-slate-50 border-b border-slate-100">
@@ -538,14 +538,14 @@ async function clearHeaderMedia() {
                 <input v-model="block.caption" type="text" placeholder="คำบรรยายใต้ภาพ (optional)"
                   class="flex-1 px-3 py-1.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-primary"/>
                 <select v-model="block.align"
-                  class="px-2 py-1 border border-slate-200 rounded-xl text-xs bg-white">
+                  class="px-2 py-1 border border-slate-200 rounded-xl text-xs bg-white/70 backdrop-blur">
                   <option value="left">ซ้าย</option>
                   <option value="center">กลาง</option>
                   <option value="right">ขวา</option>
                 </select>
               </div>
               <div class="flex gap-2 mb-2">
-                <select v-model="block.link_type" class="px-2 py-1.5 border border-slate-200 rounded-xl text-xs bg-white">
+                <select v-model="block.link_type" class="px-2 py-1.5 border border-slate-200 rounded-xl text-xs bg-white/70 backdrop-blur">
                   <option value="none">ไม่มีลิงก์</option>
                   <option value="internal">ลิงก์ภายใน</option>
                   <option value="external">ลิงก์ภายนอก</option>
@@ -555,7 +555,7 @@ async function clearHeaderMedia() {
                   class="flex-1 px-3 py-1.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-primary font-mono"/>
               </div>
               <select v-if="block.link_type === 'internal'" @change="block.link_url = $event.target.value; $event.target.value = ''"
-                class="w-full px-2.5 py-1.5 mb-2 border border-slate-200 rounded-xl text-xs bg-white text-slate-500 focus:outline-none focus:border-primary">
+                class="w-full px-2.5 py-1.5 mb-2 border border-slate-200 rounded-xl text-xs bg-white/70 backdrop-blur text-slate-500 focus:outline-none focus:border-primary">
                 <option value="">— หรือเลือกจากหน้าที่มีอยู่ —</option>
                 <option v-for="p in internalPages" :key="p.path" :value="p.path">{{ p.title }} ({{ p.path }})</option>
               </select>
@@ -611,7 +611,7 @@ async function clearHeaderMedia() {
                   </svg>
                   {{ imgUploading && cropTargetIdx===idx ? 'กำลังอัปโหลด...' : 'อัปโหลดรูป' }}
                 </button>
-                <select v-model="block.side" class="px-2 py-1.5 border border-slate-200 rounded-xl text-xs bg-white">
+                <select v-model="block.side" class="px-2 py-1.5 border border-slate-200 rounded-xl text-xs bg-white/70 backdrop-blur">
                   <option value="left">ภาพซ้าย</option>
                   <option value="right">ภาพขวา</option>
                 </select>
@@ -629,7 +629,7 @@ async function clearHeaderMedia() {
               <input v-model="block.text" type="text" placeholder="ข้อความปุ่ม เช่น สมัครเลย"
                 class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm font-bold focus:outline-none focus:border-primary mb-2"/>
               <div class="flex gap-2 mb-2">
-                <select v-model="block.link_type" class="px-2 py-2 border border-slate-200 rounded-xl text-xs bg-white">
+                <select v-model="block.link_type" class="px-2 py-2 border border-slate-200 rounded-xl text-xs bg-white/70 backdrop-blur">
                   <option value="internal">ลิงก์ภายใน</option>
                   <option value="external">ลิงก์ภายนอก</option>
                 </select>
@@ -638,11 +638,11 @@ async function clearHeaderMedia() {
                   class="flex-1 px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-primary font-mono"/>
               </div>
               <select v-if="block.link_type === 'internal'" @change="block.link_url = $event.target.value; $event.target.value = ''"
-                class="w-full px-2.5 py-1.5 mb-2 border border-slate-200 rounded-xl text-xs bg-white text-slate-500 focus:outline-none focus:border-primary">
+                class="w-full px-2.5 py-1.5 mb-2 border border-slate-200 rounded-xl text-xs bg-white/70 backdrop-blur text-slate-500 focus:outline-none focus:border-primary">
                 <option value="">— หรือเลือกจากหน้าที่มีอยู่ —</option>
                 <option v-for="p in internalPages" :key="p.path" :value="p.path">{{ p.title }} ({{ p.path }})</option>
               </select>
-              <select v-model="block.align" class="px-2 py-1 border border-slate-200 rounded-xl text-xs bg-white">
+              <select v-model="block.align" class="px-2 py-1 border border-slate-200 rounded-xl text-xs bg-white/70 backdrop-blur">
                 <option value="left">ชิดซ้าย</option>
                 <option value="center">กึ่งกลาง</option>
                 <option value="right">ชิดขวา</option>
@@ -664,9 +664,9 @@ async function clearHeaderMedia() {
                 </div>
                 <div class="flex-1 min-w-0 space-y-1.5">
                   <input v-model="item.question" type="text" placeholder="คำถาม"
-                    class="w-full px-2.5 py-1.5 text-sm font-bold border border-slate-200 rounded-lg bg-white focus:outline-none focus:border-primary"/>
+                    class="w-full px-2.5 py-1.5 text-sm font-bold border border-slate-200 rounded-lg bg-white/70 backdrop-blur focus:outline-none focus:border-primary"/>
                   <textarea v-model="item.answer" rows="2" placeholder="คำตอบ"
-                    class="w-full px-2.5 py-1.5 text-sm border border-slate-200 rounded-lg bg-white focus:outline-none focus:border-primary resize-y"/>
+                    class="w-full px-2.5 py-1.5 text-sm border border-slate-200 rounded-lg bg-white/70 backdrop-blur focus:outline-none focus:border-primary resize-y"/>
                 </div>
                 <button @click="block.items.splice(ai,1)" type="button" class="flex-shrink-0 text-slate-300 hover:text-red-500 self-start">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>

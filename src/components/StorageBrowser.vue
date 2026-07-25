@@ -134,7 +134,7 @@ function fileIcon(name) {
         <input v-model="searchQ" type="text" placeholder="ค้นหาชื่อไฟล์..."
           class="px-3 py-1.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 w-44"/>
         <!-- Sort -->
-        <select v-model="sortBy" class="px-3 py-1.5 border border-slate-200 rounded-xl text-xs bg-white">
+        <select v-model="sortBy" class="px-3 py-1.5 border border-slate-200 rounded-xl text-xs bg-white/70 backdrop-blur">
           <option value="created_at">วันที่อัปโหลด</option>
           <option value="name">ชื่อไฟล์</option>
           <option value="metadata.size">ขนาด</option>

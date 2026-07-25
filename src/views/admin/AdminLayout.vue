@@ -191,7 +191,9 @@ function iconKey(to) {
 </script>
 
 <template>
-  <div class="flex min-h-screen bg-slate-100 font-sarabun">
+  <!-- ม่านขาวบางๆ ทับ aurora — หลังบ้านต้องนิ่งกว่าหน้าสาธารณะเพราะจ้องนาน
+       แต่ยังปล่อยให้เห็นสีแบรนด์จางๆ ไม่ตัดเป็นเทาแบนแบบเดิม -->
+  <div class="flex min-h-screen bg-white/45 font-sarabun">
 
     <!-- ── Sidebar ────────────────────────────────────────────────── -->
     <aside :class="[
@@ -296,7 +298,7 @@ function iconKey(to) {
     <div :class="['flex-1 flex flex-col transition-all duration-300', sidebarOpen ? 'lg:ml-64' : 'lg:ml-16']">
 
       <!-- Top bar -->
-      <header class="sticky top-0 z-20 h-16 bg-white border-b border-slate-200 shadow-sm flex items-center justify-between px-4 gap-4">
+      <header class="sticky top-0 z-20 h-16 glass-nav flex items-center justify-between px-4 gap-4">
         <div class="flex items-center gap-3">
           <!-- Mobile hamburger -->
           <button @click="mobileOpen = !mobileOpen"

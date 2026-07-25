@@ -199,7 +199,7 @@ async function clearMedia(row) {
     </div>
 
     <!-- Add route -->
-    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 flex items-center gap-3">
+    <div class="glass-card p-4 flex items-center gap-3">
       <select v-model="addKey" class="flex-1 px-3 py-2 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/30">
         <option value="" disabled>-- เลือกหน้าที่จะปรับแต่ง --</option>
         <option v-for="r in availableRoutes" :key="r.key" :value="r.key">{{ r.label }}</option>
@@ -334,7 +334,7 @@ async function clearMedia(row) {
       <Transition enter-active-class="transition duration-200" enter-from-class="opacity-0" enter-to-class="opacity-100"
         leave-active-class="transition duration-150" leave-from-class="opacity-100" leave-to-class="opacity-0">
         <div v-if="showStorage" class="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" @click.self="showStorage = false">
-          <div class="bg-white rounded-3xl shadow-2xl w-full max-w-4xl max-h-[85vh] flex flex-col overflow-hidden">
+          <div class="glass-panel rounded-3xl w-full max-w-4xl max-h-[85vh] flex flex-col overflow-hidden">
             <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100 flex-shrink-0">
               <h3 class="font-extrabold text-slate-800">🗂️ เลือกไฟล์จาก Storage</h3>
               <button @click="showStorage = false" class="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-slate-100 text-slate-400 text-lg">✕</button>

@@ -256,7 +256,7 @@ async function save() {
     <!-- Create user modal -->
     <Transition enter-active-class="transition duration-200" enter-from-class="opacity-0" leave-to-class="opacity-0">
       <div v-if="showCreate" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md p-6 space-y-4">
+        <div class="glass-panel rounded-3xl w-full max-w-md p-6 space-y-4">
           <h2 class="text-lg font-extrabold text-slate-800">สร้างบัญชีบุคลากร</h2>
           <p class="text-xs text-slate-400">บัญชีจะถูกสร้างและอนุมัติทันที บุคลากรสามารถ login ได้เลย</p>
 
@@ -280,7 +280,7 @@ async function save() {
             <div>
               <label class="text-xs font-bold text-slate-500 uppercase tracking-wider">System role</label>
               <select v-model="createForm.role"
-                class="mt-1 w-full px-2 py-2 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:border-primary">
+                class="mt-1 w-full px-2 py-2 border border-white/80 bg-white/70 backdrop-blur rounded-xl text-sm focus:outline-none focus:border-primary">
                 <option value="admin">Admin</option>
                 <option value="supervisor">ศึกษานิเทศก์</option>
                 <option value="staff">เจ้าหน้าที่</option>
@@ -289,7 +289,7 @@ async function save() {
             <div>
               <label class="text-xs font-bold text-slate-500 uppercase tracking-wider">ตำแหน่งองค์กร</label>
               <select v-model="createForm.org_role"
-                class="mt-1 w-full px-2 py-2 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:border-primary">
+                class="mt-1 w-full px-2 py-2 border border-white/80 bg-white/70 backdrop-blur rounded-xl text-sm focus:outline-none focus:border-primary">
                 <option v-for="r in ORG_ROLES" :key="r.value" :value="r.value">{{ r.label }}</option>
               </select>
             </div>
@@ -310,7 +310,7 @@ async function save() {
     </Transition>
 
     <!-- จัดการกลุ่มงาน -->
-    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4">
+    <div class="glass-card p-4">
       <div class="flex items-center justify-between mb-3">
         <p class="text-sm font-extrabold text-slate-700 flex items-center gap-2">
           <SvgIcon name="building" class="w-4 h-4 text-primary"/> กลุ่มงาน/สังกัด
@@ -342,7 +342,7 @@ async function save() {
           </div>
           <!-- label input -->
           <input v-model="g.label" type="text"
-            class="flex-1 px-2 py-1 text-sm font-bold border border-slate-200 rounded-lg bg-white focus:outline-none focus:border-primary"/>
+            class="flex-1 px-2 py-1 text-sm font-bold border border-slate-200 rounded-lg bg-white/70 backdrop-blur focus:outline-none focus:border-primary"/>
           <!-- visible toggle -->
           <button @click="g.visible = !g.visible" type="button"
             :class="['px-2.5 py-1 text-xs font-bold rounded-lg transition-colors',
@@ -376,7 +376,7 @@ async function save() {
 
     <div v-else class="space-y-2">
       <div v-for="p in filtered" :key="p.id"
-        class="bg-white rounded-2xl border border-slate-100 shadow-sm px-4 py-3 flex flex-wrap items-center gap-3">
+        class="glass-card px-4 py-3 flex flex-wrap items-center gap-3">
         <!-- Avatar -->
         <div class="w-10 h-10 rounded-xl overflow-hidden bg-slate-100 flex-shrink-0">
           <img v-if="p.avatar_url" :src="p.avatar_url" class="w-full h-full object-cover"/>
@@ -414,7 +414,7 @@ async function save() {
     <!-- Edit Modal -->
     <Transition enter-active-class="transition duration-200" enter-from-class="opacity-0" leave-to-class="opacity-0">
       <div v-if="editTarget" class="fixed inset-0 z-50 flex items-start justify-center p-4 bg-black/50 backdrop-blur-sm overflow-y-auto">
-        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-2xl my-4 p-6 space-y-5">
+        <div class="glass-panel rounded-3xl w-full max-w-2xl my-4 p-6 space-y-5">
           <div class="flex items-center justify-between">
             <h2 class="text-lg font-extrabold text-slate-800">แก้ไข: {{ displayName(editTarget) }}</h2>
             <button @click="editTarget=null"
@@ -460,7 +460,7 @@ async function save() {
             <div>
               <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">คำนำหน้า</label>
               <select v-model="form.title"
-                class="mt-1 w-full px-2 py-1.5 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:border-primary">
+                class="mt-1 w-full px-2 py-1.5 border border-white/80 bg-white/70 backdrop-blur rounded-xl text-sm focus:outline-none focus:border-primary">
                 <option value="">-</option>
                 <option v-for="t in TITLE_OPTIONS" :key="t" :value="t">{{ t }}</option>
               </select>
@@ -487,7 +487,7 @@ async function save() {
             <div>
               <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">ตำแหน่งในองค์กร</label>
               <select v-model="form.org_role"
-                class="mt-1 w-full px-2 py-1.5 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:border-primary">
+                class="mt-1 w-full px-2 py-1.5 border border-white/80 bg-white/70 backdrop-blur rounded-xl text-sm focus:outline-none focus:border-primary">
                 <option v-for="r in ORG_ROLES" :key="r.value" :value="r.value">{{ r.label }}</option>
               </select>
             </div>
@@ -512,7 +512,7 @@ async function save() {
           <div>
             <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">กลุ่มงาน/สังกัด</label>
             <select v-model="form.department"
-              class="mt-1 w-full px-2 py-1.5 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:border-primary">
+              class="mt-1 w-full px-2 py-1.5 border border-white/80 bg-white/70 backdrop-blur rounded-xl text-sm focus:outline-none focus:border-primary">
               <option value="">-- ไม่ระบุ --</option>
               <option v-for="dep in deptOptions" :key="dep" :value="dep">{{ dep }}</option>
             </select>
