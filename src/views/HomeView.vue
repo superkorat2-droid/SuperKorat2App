@@ -11,6 +11,7 @@ import { TYPE_LABEL, TYPE_COLOR, formatEventDateRange } from '../composables/use
 import BgLayers from '../components/BgLayers.vue'
 import MonthCalendar from '../components/calendar/MonthCalendar.vue'
 import EventDetailModal from '../components/calendar/EventDetailModal.vue'
+import { useHolidays } from '../composables/useHolidays'
 import { getBgStyle as getBgStyleRaw, bgTextClass } from '../composables/useBgStyle'
 
 const router = useRouter()
@@ -154,6 +155,7 @@ const now = new Date()
 const calYear  = ref(now.getFullYear())
 const calMonth = ref(now.getMonth())
 const selectedEvent = ref(null)   // กิจกรรมที่เปิดดูใน modal
+const { holidays, fetchHolidays } = useHolidays()
 
 // คลิกช่องวัน: ถ้าวันนั้นมีกิจกรรมเดียวเปิดเลย ถ้าหลายอันให้เลื่อนไปดูรายการแทน
 function onCalendarDay(dateKey) {
@@ -177,6 +179,7 @@ async function fetchNithetEvents() {
   const { data } = await supabase.rpc('get_nithet_events_public')
   allNithetEvents.value = (Array.isArray(data) ? data : [])
     .sort((a, b) => a.start_date.localeCompare(b.start_date) || (a.start_time || '').localeCompare(b.start_time || ''))
+  await fetchHolidays()
   loadingNithetEvents.value = false
 }
 
@@ -800,7 +803,7 @@ const stats = [
             <template v-else>
               <!-- ปฏิทินจริง — เดินดูย้อนหลัง/ล่วงหน้าได้ คลิกกิจกรรมไปหน้าปฏิทินเต็ม -->
               <MonthCalendar
-                :events="allNithetEvents"
+                :events="allNithetEvents" :holidays="holidays"
                 v-model:year="calYear" v-model:month="calMonth"
                 @select-event="selectedEvent = $event"
                 @select-day="onCalendarDay"/>
@@ -810,6 +813,10 @@ const stats = [
                 <span v-for="(label, key) in TYPE_LABEL" :key="key" class="flex items-center gap-1.5 text-xs text-slate-600">
                   <span :class="['w-2.5 h-2.5 rounded-full', TYPE_COLOR[key]?.dot]"></span>
                   {{ label }}
+                </span>
+                <span v-if="holidays.length" class="flex items-center gap-1.5 text-xs text-slate-600">
+                  <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
+                  วันหยุด
                 </span>
               </div>
 

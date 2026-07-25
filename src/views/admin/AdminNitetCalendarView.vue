@@ -3,6 +3,8 @@ import { ref, computed, watch, onMounted } from 'vue'
 import { supabase } from '../../supabase'
 import Swal from 'sweetalert2'
 import MonthCalendar from '../../components/calendar/MonthCalendar.vue'
+import HolidayManagerModal from '../../components/calendar/HolidayManagerModal.vue'
+import { useHolidays } from '../../composables/useHolidays'
 import { toDateKey } from '../../composables/useCalendarGrid'
 import { useAreaConfig } from '../../composables/useAreaConfig'
 import { TYPE_LABEL, TYPE_COLOR, STATUS_LABEL, STATUS_COLOR, displayName, formatEventDateRange, formatResponsible } from '../../composables/useNithetEventMeta'
@@ -17,6 +19,8 @@ const responsibleOptions = ref([])
 const loading       = ref(true)
 const saving        = ref(false)
 const showModal     = ref(false)
+const showHolidays  = ref(false)
+const { holidays, fetchHolidays } = useHolidays()
 const viewMode      = ref('list') // 'list' | 'month'
 const currentYear   = ref(new Date().getFullYear())
 const currentMonth  = ref(new Date().getMonth())
@@ -187,6 +191,7 @@ function onSelectEvent(ev) {
 
 onMounted(async () => {
   await fetchConfig()
+  fetchHolidays()   // ไม่ await — ปฏิทินแสดงกิจกรรมก่อนได้ วันหยุดค่อยมาระบายสีทีหลัง
   const { data: { user } } = await supabase.auth.getUser()
   currentUserId.value = user?.id
   if (user?.id) {
@@ -216,12 +221,22 @@ onMounted(async () => {
         </h1>
         <p class="text-sm text-slate-500 mt-0.5">จัดการกำหนดการนิเทศโรงเรียนและกิจกรรมของกลุ่มนิเทศ</p>
       </div>
-      <button @click="openAdd()"
-        class="flex items-center gap-1.5 px-5 py-2.5 text-sm font-bold bg-primary text-white rounded-2xl shadow-md hover:-translate-y-0.5 transition-all">
-        <SvgIcon name="plus" class="w-4 h-4"/>
-        เพิ่มกิจกรรม
-      </button>
+      <div class="flex items-center gap-2">
+        <button v-if="isAdmin" @click="showHolidays = true"
+          class="flex items-center gap-1.5 px-4 py-2.5 text-sm font-bold border-2 border-primary text-primary rounded-2xl hover:bg-primary hover:text-white transition-all">
+          <span class="w-2 h-2 rounded-full bg-rose-500"></span>
+          จัดการวันหยุด
+        </button>
+        <button @click="openAdd()"
+          class="flex items-center gap-1.5 px-5 py-2.5 text-sm font-bold bg-primary text-white rounded-2xl shadow-md hover:-translate-y-0.5 transition-all">
+          <SvgIcon name="plus" class="w-4 h-4"/>
+          เพิ่มกิจกรรม
+        </button>
+      </div>
     </div>
+
+    <!-- จัดการวันหยุด (admin เท่านั้น) — โหลดปฏิทินใหม่หลังแก้เพื่อให้สีในตารางอัปเดตทันที -->
+    <HolidayManagerModal :show="showHolidays" @close="showHolidays = false" @changed="fetchHolidays"/>
 
     <div class="flex flex-wrap items-center justify-between gap-3">
       <!-- Admin tabs: ทั้งหมด / ของฉัน -->
@@ -274,7 +289,7 @@ onMounted(async () => {
     </div>
 
     <!-- Month view -->
-    <MonthCalendar v-else-if="viewMode === 'month'" :events="filtered" v-model:year="currentYear" v-model:month="currentMonth"
+    <MonthCalendar v-else-if="viewMode === 'month'" :events="filtered" :holidays="holidays" v-model:year="currentYear" v-model:month="currentMonth"
       @select-event="onSelectEvent" @select-day="openAdd"/>
 
     <!-- Empty -->

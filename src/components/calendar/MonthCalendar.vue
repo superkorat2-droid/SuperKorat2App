@@ -2,11 +2,13 @@
 import { computed } from 'vue'
 import { buildMonthWeeks, toDateKey, WEEKDAY_LABELS, MONTH_LABELS } from '../../composables/useCalendarGrid'
 import { TYPE_COLOR } from '../../composables/useNithetEventMeta'
+import { buildHolidayIndex, holidayMeta } from '../../composables/useHolidays'
 
 const props = defineProps({
-  events: { type: Array, default: () => [] }, // [{ id, type, title, start_date, end_date }]
-  year:   { type: Number, required: true },
-  month:  { type: Number, required: true }, // 0-indexed
+  events:   { type: Array, default: () => [] }, // [{ id, type, title, start_date, end_date }]
+  holidays: { type: Array, default: () => [] }, // [{ id, title, type, start_date, end_date }]
+  year:     { type: Number, required: true },
+  month:    { type: Number, required: true }, // 0-indexed
 })
 const emit = defineEmits(['update:year', 'update:month', 'select-event', 'select-day'])
 
@@ -19,6 +21,10 @@ const todayKey = toDateKey(new Date())
 function eventsForDay(dateKey) {
   return props.events.filter(e => e.start_date <= dateKey && dateKey <= e.end_date)
 }
+
+// index วันที่ → วันหยุด สร้างครั้งเดียวต่อการเปลี่ยนข้อมูล เร็วกว่า filter ทุกช่อง
+const holidayIndex = computed(() => buildHolidayIndex(props.holidays))
+function holidayForDay(dateKey) { return holidayIndex.value[dateKey] || null }
 
 function goToday() {
   const now = new Date()
@@ -66,10 +72,24 @@ function goNext() {
         <div v-for="cell in week" :key="toDateKey(cell.date)"
           @click="emit('select-day', toDateKey(cell.date))"
           :class="['min-h-[58px] sm:min-h-[86px] p-1 sm:p-1.5 border-b border-r border-slate-900/[0.06] cursor-pointer hover:bg-white/60 transition-colors',
-            !cell.inMonth && 'bg-slate-500/[0.03]']">
-          <p :class="['text-xs font-bold w-5 h-5 flex items-center justify-center rounded-full mb-1',
-            toDateKey(cell.date) === todayKey ? 'bg-primary text-white' : (cell.inMonth ? 'text-slate-600' : 'text-slate-400')]">
-            {{ cell.date.getDate() }}
+            !cell.inMonth && 'bg-slate-500/[0.03]',
+            holidayForDay(toDateKey(cell.date)) && cell.inMonth && 'bg-rose-500/[0.07]']">
+          <div class="flex items-center gap-1 mb-1">
+            <p :class="['text-xs font-bold w-5 h-5 flex items-center justify-center rounded-full',
+              toDateKey(cell.date) === todayKey ? 'bg-primary text-white'
+                : holidayForDay(toDateKey(cell.date)) && cell.inMonth ? 'text-rose-600'
+                : (cell.inMonth ? 'text-slate-600' : 'text-slate-400')]">
+              {{ cell.date.getDate() }}
+            </p>
+            <span v-if="holidayForDay(toDateKey(cell.date)) && cell.inMonth"
+              :class="['w-1.5 h-1.5 rounded-full flex-shrink-0', holidayMeta(holidayForDay(toDateKey(cell.date)).type).dot]"
+              :title="holidayForDay(toDateKey(cell.date)).title"></span>
+          </div>
+          <!-- ชื่อวันหยุด — แสดงเฉพาะจอใหญ่ ช่องมือถือแคบเกินไป (มีจุดสีบอกอยู่แล้ว) -->
+          <p v-if="holidayForDay(toDateKey(cell.date)) && cell.inMonth"
+            class="hidden sm:block text-[10px] font-bold text-rose-600 truncate mb-0.5"
+            :title="holidayForDay(toDateKey(cell.date)).title">
+            {{ holidayForDay(toDateKey(cell.date)).title }}
           </p>
           <div class="space-y-0.5">
             <button v-for="ev in eventsForDay(toDateKey(cell.date)).slice(0, MAX_PILLS)" :key="ev.id"

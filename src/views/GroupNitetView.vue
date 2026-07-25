@@ -8,6 +8,7 @@ import EventDetailModal from '../components/calendar/EventDetailModal.vue'
 import { supabase } from '../supabase'
 import { TYPE_LABEL, TYPE_COLOR, formatEventDateRange, formatResponsible } from '../composables/useNithetEventMeta'
 import Swal from 'sweetalert2'
+import { useHolidays, holidayMeta } from '../composables/useHolidays'
 
 const { config, fetchConfig } = useAreaConfig()
 onMounted(fetchConfig)
@@ -18,6 +19,7 @@ function responsibleText(event) {
   return formatResponsible(event.responsible_names || [], event.responsible_group ? groupLabel(event.responsible_group) : '')
 }
 
+const { holidays, fetchHolidays } = useHolidays()
 const events        = ref([])
 const loadingEvents = ref(true)
 const selectedEvent = ref(null)
@@ -86,6 +88,13 @@ const printEvents = computed(() =>
 )
 const printedAt = new Date().toLocaleDateString('th-TH', { day: 'numeric', month: 'long', year: 'numeric' })
 
+// วันหยุดในช่วงเดียวกัน — ผู้บริหารต้องเห็นว่าช่วงไหนหยุด จะได้ไม่สงสัยว่าทำไมเว้นว่าง
+const printHolidays = computed(() =>
+  holidays.value
+    .filter(h => !useDateRange.value || (h.start_date <= dateTo.value && h.end_date >= dateFrom.value))
+    .sort((a, b) => a.start_date.localeCompare(b.start_date))
+)
+
 function printSchedule() {
   if (!printEvents.value.length) {
     Swal.fire({ icon: 'info', title: 'ไม่มีรายการให้พิมพ์', text: 'ลองปรับช่วงวันที่หรือประเภทกิจกรรม' })
@@ -97,6 +106,7 @@ function printSchedule() {
 onMounted(async () => {
   const { data } = await supabase.rpc('get_nithet_events_public')
   events.value = data || []
+  await fetchHolidays()
   loadingEvents.value = false
 })
 </script>
@@ -211,7 +221,7 @@ onMounted(async () => {
           </div>
 
           <!-- Month view -->
-          <MonthCalendar v-if="allViewMode === 'month'" :events="allFilteredEvents" v-model:year="allCurrentYear" v-model:month="allCurrentMonth"
+          <MonthCalendar v-if="allViewMode === 'month'" :events="allFilteredEvents" :holidays="holidays" v-model:year="allCurrentYear" v-model:month="allCurrentMonth"
             @select-event="onSelectEvent"/>
 
           <!-- Empty -->
@@ -292,6 +302,27 @@ onMounted(async () => {
         </table>
 
         <p style="font-size:11px; color:#64748b; margin-top:10px;">รวม {{ printEvents.length }} รายการ · พิมพ์เมื่อ {{ printedAt }}</p>
+
+        <!-- วันหยุดในช่วงเดียวกัน -->
+        <template v-if="printHolidays.length">
+          <p style="font-weight:800; font-size:13px; margin-top:16px; margin-bottom:6px;">วันหยุดในช่วงนี้</p>
+          <table style="width:100%; border-collapse:collapse; font-size:12px;">
+            <thead>
+              <tr style="background:#fef2f2;">
+                <th style="border:1px solid #cbd5e1; padding:5px 8px; text-align:left; width:150px;">วัน/เดือน/ปี</th>
+                <th style="border:1px solid #cbd5e1; padding:5px 8px; text-align:left;">วันหยุด</th>
+                <th style="border:1px solid #cbd5e1; padding:5px 8px; text-align:left; width:130px;">ประเภท</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="h in printHolidays" :key="h.id">
+                <td style="border:1px solid #cbd5e1; padding:5px 8px;">{{ formatEventDateRange(h) }}</td>
+                <td style="border:1px solid #cbd5e1; padding:5px 8px;">{{ h.title }}</td>
+                <td style="border:1px solid #cbd5e1; padding:5px 8px;">{{ holidayMeta(h.type).label }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </template>
 
         <div style="margin-top:1.6cm; text-align:center; font-size:13px;">
           <p>ลงชื่อ ....................................................</p>
