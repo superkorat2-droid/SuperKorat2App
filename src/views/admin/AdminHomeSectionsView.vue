@@ -39,7 +39,7 @@ function addGallerySection() {
   const key = `image_gallery_${Date.now()}`
   sections.value.push({
     key, label: 'ภาพลิงก์', subtitle: 'Gallery', title: 'ภาพลิงก์', visible: true,
-    bg: '#ffffff', bg2: '#f1f5f9', bg_type: 'solid', order: sections.value.length + 1,
+    bg: '#ffffff', bg2: '#f1f5f9', bg_type: 'none', order: sections.value.length + 1,
     gallery: { layout: 'card', title: '', items: [] },
   })
 }
@@ -257,8 +257,8 @@ async function save() {
           </div>
         </div>
 
-        <!-- BG Color picker -->
-        <div class="px-4 pb-3">
+        <!-- BG Color picker — ซ่อนเมื่อเลือก "โปร่งใส" เพราะไม่มีสีให้เลือก -->
+        <div v-if="sec.bg_type !== 'none'" class="px-4 pb-3">
           <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">สีพื้นหลัง (สี 1)</p>
           <div class="flex flex-wrap items-center gap-2">
             <button v-for="preset in BG_PRESETS" :key="preset.value"
@@ -293,7 +293,7 @@ async function save() {
 
         <!-- Gradient type selector -->
         <div class="px-4 pb-3">
-          <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">รูปแบบ Gradient</p>
+          <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">พื้นหลัง</p>
           <div class="flex flex-wrap gap-2">
             <button v-for="t in BG_TYPES" :key="t.value"
               @click="sec.bg_type = t.value"

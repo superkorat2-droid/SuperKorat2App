@@ -2,6 +2,9 @@
 // object ที่รับเข้ามาต้องมี field: bg_type, bg, bg2
 
 export const BG_TYPES = [
+  // 'none' = ไม่ทาสีพื้นเลย ปล่อยให้พื้นหลัง aurora ของเว็บทะลุขึ้นมา
+  // จำเป็นสำหรับธีมกระจก — ถ้าทุก section ทาสีทึบ จะบังพื้นหลังจนไม่เห็นกระจก
+  { value: 'none',        label: '◇ โปร่งใส',     preview: ()       => 'transparent' },
   { value: 'solid',       label: 'สีเดียว',       preview: (c1)     => `${c1}` },
   { value: 'gradient-tb', label: '↓ บน→ล่าง',     preview: (c1, c2) => `linear-gradient(to bottom, ${c1}, ${c2})` },
   { value: 'gradient-bt', label: '↑ ล่าง→บน',     preview: (c1, c2) => `linear-gradient(to top, ${c1}, ${c2})` },
@@ -11,6 +14,7 @@ export const BG_TYPES = [
 ]
 
 export function getBgStyle(obj) {
+  if (obj.bg_type === 'none') return {}
   const c1 = obj.bg  || '#ffffff'
   const c2 = obj.bg2 || '#f1f5f9'
   const t  = BG_TYPES.find(t => t.value === (obj.bg_type || 'solid'))

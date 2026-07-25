@@ -112,7 +112,7 @@ const deptGroupRows = computed(() => {
       <div v-else class="chart-wrap">
         <!-- Tier 1: ผอ.เขต -->
         <div v-if="directors.length" class="chart-tier">
-          <div v-for="p in directors" :key="p.id" class="chart-card">
+          <div v-for="p in directors" :key="p.id" class="chart-card glass-card">
             <div class="chart-avatar">
               <img v-if="p.avatar_url" :src="p.avatar_url" class="w-full h-full object-cover object-top"/>
               <span v-else class="chart-avatar-initial">{{ displayName(p)[0] }}</span>
@@ -127,7 +127,7 @@ const deptGroupRows = computed(() => {
           <div class="chart-connector"></div>
           <div class="chart-branch">
             <div v-for="p in deputies" :key="p.id" class="chart-branch-item">
-              <div class="chart-card">
+              <div class="chart-card glass-card">
                 <div class="chart-avatar">
                   <img v-if="p.avatar_url" :src="p.avatar_url" class="w-full h-full object-cover object-top"/>
                   <span v-else class="chart-avatar-initial">{{ displayName(p)[0] }}</span>
@@ -144,7 +144,7 @@ const deptGroupRows = computed(() => {
           <div class="chart-connector"></div>
           <div class="chart-branch">
             <div v-for="p in groupDirs" :key="p.id" class="chart-branch-item">
-              <div class="chart-card chart-card-sm">
+              <div class="chart-card chart-card-sm glass-card">
                 <div class="chart-avatar chart-avatar-sm">
                   <img v-if="p.avatar_url" :src="p.avatar_url" class="w-full h-full object-cover object-top"/>
                   <span v-else class="chart-avatar-initial">{{ displayName(p)[0] }}</span>
@@ -163,7 +163,7 @@ const deptGroupRows = computed(() => {
             <div class="chart-connector"></div>
             <div class="chart-branch chart-branch-deptrow">
               <div v-for="g in row" :key="g.name" class="chart-branch-item">
-                <div class="chart-box">
+                <div class="chart-box glass-card">
                   <p class="chart-box-title" :class="fitTextClass(g.name, [[22,'text-sm'],[30,'text-xs'],[Infinity,'text-[11px]']])">{{ g.name }}</p>
                   <div v-if="g.members.length" class="chart-roster">
                     <div v-for="m in g.members" :key="m.id" class="chart-roster-item">
@@ -230,9 +230,11 @@ const deptGroupRows = computed(() => {
 }
 
 /* ── การ์ดผู้บริหาร (ผอ.เขต/รองผอ.เขต/ผอ.กลุ่ม) ───────────────── */
+/* หมายเหตุ: พื้นผิวกระจกใส่เป็น class `glass-card` ที่ template ไม่ใช่ @apply ที่นี่
+   — @apply กับ custom class จาก @layer components ของ style.css ใช้ในไฟล์ scoped
+   ไม่ได้อย่างเสถียร (dev server อาจ process ไฟล์นี้ก่อน style.css แล้ว build พัง) */
 .chart-card {
-  @apply w-44 glass-card
-         overflow-hidden flex flex-col items-center pt-4 pb-3 px-2 text-center;
+  @apply w-44 overflow-hidden flex flex-col items-center pt-4 pb-3 px-2 text-center;
 }
 .chart-card-sm { @apply w-36 pt-3 pb-2 px-1.5; }
 .chart-avatar {
@@ -241,12 +243,13 @@ const deptGroupRows = computed(() => {
 .chart-avatar-sm { @apply w-12 h-12 mb-1.5; }
 .chart-avatar-initial { @apply text-2xl font-extrabold; color: var(--color-primary); }
 .chart-name { @apply w-full font-extrabold text-slate-800 dark:text-slate-100 leading-tight whitespace-nowrap overflow-hidden; }
-.chart-pos  { @apply w-full text-primary font-bold mt-0.5 leading-tight whitespace-nowrap overflow-hidden; }
+/* ใช้ var โดยตรงแทน @apply text-primary — @apply กับ custom class ของโปรเจค
+   ในไฟล์ scoped พังได้ถ้า style.css ยังไม่ถูก process ก่อน (ดูหมายเหตุด้านบน) */
+.chart-pos  { @apply w-full font-bold mt-0.5 leading-tight whitespace-nowrap overflow-hidden; color: var(--color-primary); }
 
 /* ── กล่องกลุ่มงาน (แสดงทุกคนในกลุ่มเป็นรูปเล็ก+ชื่อ เรียงตามลำดับ) ── */
 .chart-box {
-  @apply w-64 glass-card
-         p-4 text-center;
+  @apply w-64 p-4 text-center;
 }
 .chart-box-title { @apply font-extrabold leading-tight break-keep break-words mb-3; color: var(--color-primary); }
 .chart-roster { @apply flex flex-col gap-2; }

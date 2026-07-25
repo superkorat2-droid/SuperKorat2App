@@ -20,8 +20,9 @@ const { isDark } = useTheme()
 // โหมดมืดเลยไม่ใช้สีนี้ ปล่อยให้ใช้พื้นหลังเข้มมาตรฐานแทน ไม่งั้นตัวหนังสือสีขาว (dark:text-*) จะกลืนกับพื้นสว่างจนมองไม่เห็น
 function getBgStyle(sec) {
   if (isDark.value) return {}
-  // ยังไม่เคยตั้งสีเลย → โปร่งใส ปล่อยให้พื้นหลัง aurora ของเว็บทะลุขึ้นมา
-  // (ถ้า default เป็น #ffffff ทึบเหมือนเดิม ทุก section จะบัง aurora จนไม่เห็นกระจก)
+  // 'none' หรือยังไม่เคยตั้งสีเลย → โปร่งใส ปล่อยให้พื้นหลัง aurora ของเว็บทะลุขึ้นมา
+  // (ถ้าทุก section ทาสีทึบ จะบัง aurora ทั้งหน้าจนไม่เห็นว่าเป็นธีมกระจก)
+  if (sec.bg_type === 'none') return {}
   if (!sec.bg && !sec.bg_type) return {}
   const c1 = sec.bg  || '#ffffff'
   const c2 = sec.bg2 || '#f1f5f9'

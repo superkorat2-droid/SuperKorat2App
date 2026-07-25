@@ -148,14 +148,14 @@ function visibleContact(p) {
       <template v-else>
 
         <!-- แถว 1: ผอ.เขต (director) — กลางหน้า -->
-        <section v-if="directors.length" class="group-panel">
+        <section v-if="directors.length" class="group-panel glass-card">
           <div class="group-header">
             <h2 class="group-title">ผู้อำนวยการเขตพื้นที่การศึกษา</h2>
             <div class="group-underline"></div>
           </div>
           <div class="flex justify-center gap-5">
             <button v-for="p in directors" :key="p.id" @click="selected = p"
-              class="personnel-card hover:shadow-xl hover:-translate-y-1 transition-all">
+              class="personnel-card glass-card glass-card-hover">
               <div class="card-cover" style="background:linear-gradient(135deg,var(--color-primary),var(--color-secondary))">
                 <img v-if="p.avatar_url" :src="p.avatar_url" class="w-full h-full object-cover"/>
                     <span v-else class="avatar-initial">{{ displayName(p)[0] }}</span>
@@ -169,14 +169,14 @@ function visibleContact(p) {
         </section>
 
         <!-- แถว 2: รอง ผอ. (deputy) — กลางหน้า -->
-        <section v-if="deputies.length" class="group-panel">
+        <section v-if="deputies.length" class="group-panel glass-card">
           <div class="group-header">
             <h2 class="group-title">รองผู้อำนวยการเขตพื้นที่การศึกษา</h2>
             <div class="group-underline"></div>
           </div>
           <div class="flex justify-center flex-wrap gap-5">
             <button v-for="p in deputies" :key="p.id" @click="selected = p"
-              class="personnel-card hover:shadow-xl hover:-translate-y-1 transition-all">
+              class="personnel-card glass-card glass-card-hover">
               <div class="card-cover" style="background:linear-gradient(135deg,var(--color-secondary),var(--color-primary))">
                 <img v-if="p.avatar_url" :src="p.avatar_url" class="w-full h-full object-cover"/>
                     <span v-else class="avatar-initial">{{ displayName(p)[0] }}</span>
@@ -190,14 +190,14 @@ function visibleContact(p) {
         </section>
 
         <!-- แถว 3: ผอ.กลุ่ม (group_director) — กลางหน้า -->
-        <section v-if="groupDirs.length" class="group-panel">
+        <section v-if="groupDirs.length" class="group-panel glass-card">
           <div class="group-header">
             <h2 class="group-title">ผู้อำนวยการกลุ่ม</h2>
             <div class="group-underline"></div>
           </div>
           <div class="flex justify-center flex-wrap gap-5">
             <button v-for="p in groupDirs" :key="p.id" @click="selected = p"
-              class="personnel-card hover:shadow-xl hover:-translate-y-1 transition-all">
+              class="personnel-card glass-card glass-card-hover">
               <div class="card-cover" style="background:linear-gradient(135deg,#1e3a5f,#312e81)">
                 <img v-if="p.avatar_url" :src="p.avatar_url" class="w-full h-full object-cover"/>
                     <span v-else class="avatar-initial">{{ displayName(p)[0] }}</span>
@@ -212,7 +212,7 @@ function visibleContact(p) {
         </section>
 
         <!-- แถว 4+: กลุ่มงาน + บุคลากร -->
-        <section v-for="[dep, members] in departmentGroups" :key="dep" class="group-panel">
+        <section v-for="[dep, members] in departmentGroups" :key="dep" class="group-panel glass-card">
           <!-- หัวข้อกลุ่มงาน -->
           <div class="group-header">
             <h2 class="group-title">{{ dep }}</h2>
@@ -221,7 +221,7 @@ function visibleContact(p) {
           <!-- การ์ด 4 คอลัมน์ แถวสุดท้ายอยู่กลาง -->
           <div class="flex flex-wrap justify-center gap-5">
             <button v-for="p in members" :key="p.id" @click="selected = p"
-              class="personnel-card hover:shadow-xl hover:-translate-y-1 transition-all">
+              class="personnel-card glass-card glass-card-hover">
               <div class="card-cover" style="background:linear-gradient(135deg,var(--color-primary),var(--color-secondary))">
                 <img v-if="p.avatar_url" :src="p.avatar_url" class="w-full h-full object-cover"/>
                     <span v-else class="avatar-initial">{{ displayName(p)[0] }}</span>
@@ -315,8 +315,11 @@ function visibleContact(p) {
 .font-sarabun { font-family: 'Sarabun', sans-serif; }
 
 /* ── กรอบบล็อกแยกแต่ละกลุ่ม (ผู้บริหาร/กลุ่มงาน) ให้เป็นสัดส่วน ──── */
+/* หมายเหตุ: พื้นผิวกระจกใส่เป็น class `glass-card` ที่ template ไม่ใช่ @apply ที่นี่
+   — @apply กับ custom class จาก @layer components ของ style.css ใช้ในไฟล์ scoped
+   ไม่ได้อย่างเสถียร (dev server อาจ process ไฟล์นี้ก่อน style.css แล้ว build พัง) */
 .group-panel {
-  @apply glass-card !rounded-3xl p-6 md:p-8 mb-6;
+  @apply !rounded-3xl p-6 md:p-8 mb-6;
 }
 
 /* ── หัวข้อกลุ่ม — อยู่กลาง ฟอนต์น้ำเงินเข้ม ──────────────────── */
@@ -326,7 +329,7 @@ function visibleContact(p) {
 
 /* ── Unified card — height เท่ากันทุกใบ ───────────────────────── */
 .personnel-card {
-  @apply w-60 glass-card glass-card-hover overflow-hidden text-left cursor-pointer flex flex-col;
+  @apply w-60 overflow-hidden text-left cursor-pointer flex flex-col;
   min-height: 280px;
 }
 .personnel-card-sm {
@@ -366,8 +369,11 @@ function visibleContact(p) {
 .card-name {
   @apply w-full font-extrabold text-slate-800 dark:text-slate-100 leading-tight whitespace-nowrap overflow-hidden;
 }
+/* ใช้ var โดยตรงแทน @apply text-primary — @apply กับ custom class ของโปรเจค
+   ในไฟล์ scoped พังได้ถ้า style.css ยังไม่ถูก process ก่อน (ดูหมายเหตุด้านบน) */
 .card-pos {
-  @apply text-primary font-bold mt-1 leading-tight break-keep break-words;
+  @apply font-bold mt-1 leading-tight break-keep break-words;
+  color: var(--color-primary);
 }
 .card-dept {
   @apply text-[10px] text-slate-400 mt-0.5 break-keep break-words;
