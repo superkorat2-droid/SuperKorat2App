@@ -152,14 +152,15 @@ const handleLogout = async () => {
 </script>
 
 <template>
-  <div class="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 font-sarabun transition-colors duration-300">
+  <!-- ไม่มีพื้นทึบที่นี่ — ปล่อยให้ aurora จาก body::before (style.css) ทะลุขึ้นมา -->
+  <div class="min-h-screen flex flex-col font-sarabun">
 
     <!-- ── Top accent line + Navbar (hidden in school portal) ──────── -->
     <template v-if="!isSchoolRoute">
     <div class="fixed top-0 inset-x-0 z-50 h-[3px] bg-primary"></div>
 
     <!-- ── Navbar ─────────────────────────────────────────────────── -->
-    <nav class="fixed top-[3px] inset-x-0 z-40 bg-white dark:bg-slate-900 border-b border-slate-200/80 dark:border-slate-700/80 shadow-sm shadow-slate-900/[0.03] transition-colors duration-300">
+    <nav class="fixed top-[3px] inset-x-0 z-40 glass-nav">
       <div class="w-full px-4 sm:px-6 lg:px-8">
         <div class="flex items-center justify-between h-[58px] sm:h-[68px] lg:h-20">
 
@@ -221,7 +222,7 @@ const handleLogout = async () => {
                   leave-to-class="opacity-0">
                   <div v-if="openDropdown === item.key"
                     :class="[
-                      'absolute top-[calc(100%+8px)] left-0 z-50 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-lg shadow-slate-200/60 py-1.5 origin-top-left max-h-[70vh] overflow-y-auto',
+                      'absolute top-[calc(100%+8px)] left-0 z-50 glass-panel rounded-xl py-1.5 origin-top-left max-h-[70vh] overflow-y-auto',
                       item.key === 'work' ? 'w-72' : 'w-60'
                     ]"
                     @mouseenter="showDropdown(item.key)"
@@ -337,7 +338,7 @@ const handleLogout = async () => {
         leave-active-class="transition duration-150"
         leave-from-class="opacity-100"
         leave-to-class="opacity-0">
-        <div v-if="mobileOpen" class="lg:hidden border-t border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-900 max-h-[80vh] overflow-y-auto">
+        <div v-if="mobileOpen" class="lg:hidden glass-panel border-x-0 border-b-0 max-h-[80vh] overflow-y-auto">
           <div class="px-3 py-3 space-y-px">
             <template v-for="item in navItems" :key="item.key">
               <RouterLink v-if="item.to && !item.children" :to="item.to"

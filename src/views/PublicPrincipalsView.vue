@@ -82,7 +82,7 @@ function initials(name) {
 </script>
 
 <template>
-  <div class="font-sarabun bg-slate-50 dark:bg-slate-950 dark:text-slate-100 min-h-screen">
+  <div class="font-sarabun dark:text-slate-100 min-h-screen">
 
     <!-- ── Hero ───────────────────────────────────────────────────────────────── -->
     <PageHero v-if="!header.hidden"

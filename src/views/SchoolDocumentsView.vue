@@ -51,7 +51,7 @@ function formatDate(iso) {
 </script>
 
 <template>
-  <div class="font-sarabun min-h-[60vh] bg-slate-50 dark:bg-slate-950">
+  <div class="font-sarabun min-h-[60vh]">
     <PageHero v-if="!header.hidden" :title="header.title" :subtitle="header.subtitle" :mode="header.mode" :icon="header.icon"
       :media-url="header.mediaUrl" :media-type="header.mediaType" :aspect-ratio="header.aspectRatio"
       size="md" :align="header.align" max-width="6xl"/>

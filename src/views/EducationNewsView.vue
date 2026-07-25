@@ -34,7 +34,7 @@ onMounted(() => { fetchNews(); fetchConfig() })
 </script>
 
 <template>
-  <div class="font-sarabun text-slate-800 bg-slate-50 min-h-screen">
+  <div class="font-sarabun text-slate-800 min-h-screen">
 
     <!-- Hero -->
     <PageHero v-if="!header.hidden"

@@ -157,7 +157,7 @@ onUnmounted(() => window.removeEventListener('message', onHtmlMessage))
 </script>
 
 <template>
-  <div class="font-sarabun bg-slate-50 dark:bg-slate-950 dark:text-slate-100 min-h-screen transition-colors duration-300">
+  <div class="font-sarabun dark:text-slate-100 min-h-screen">
 
     <!-- Loading -->
     <div v-if="loading" class="max-w-3xl mx-auto px-4 py-16 space-y-4 animate-pulse">

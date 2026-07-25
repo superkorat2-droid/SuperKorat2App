@@ -51,7 +51,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="font-sarabun min-h-[60vh] bg-slate-50 dark:bg-slate-950">
+  <div class="font-sarabun min-h-[60vh]">
     <PageHero v-if="!header.hidden" :title="header.title"
       :subtitle="header.subtitle || config?.area_name || 'สำนักงานเขตพื้นที่การศึกษา'"
       :mode="header.mode" :icon="header.icon"

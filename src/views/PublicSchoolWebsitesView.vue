@@ -118,7 +118,7 @@ function resetFilters() {
 </script>
 
 <template>
-  <div class="font-sarabun bg-slate-50 dark:bg-slate-950 dark:text-slate-100 min-h-screen transition-colors duration-300">
+  <div class="font-sarabun dark:text-slate-100 min-h-screen">
 
     <PageHero v-if="!header.hidden" :title="header.title" :subtitle="header.subtitle"
       :mode="header.mode" :icon="header.icon"

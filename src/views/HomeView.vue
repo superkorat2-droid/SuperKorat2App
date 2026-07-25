@@ -19,6 +19,9 @@ const { isDark } = useTheme()
 // โหมดมืดเลยไม่ใช้สีนี้ ปล่อยให้ใช้พื้นหลังเข้มมาตรฐานแทน ไม่งั้นตัวหนังสือสีขาว (dark:text-*) จะกลืนกับพื้นสว่างจนมองไม่เห็น
 function getBgStyle(sec) {
   if (isDark.value) return {}
+  // ยังไม่เคยตั้งสีเลย → โปร่งใส ปล่อยให้พื้นหลัง aurora ของเว็บทะลุขึ้นมา
+  // (ถ้า default เป็น #ffffff ทึบเหมือนเดิม ทุก section จะบัง aurora จนไม่เห็นกระจก)
+  if (!sec.bg && !sec.bg_type) return {}
   const c1 = sec.bg  || '#ffffff'
   const c2 = sec.bg2 || '#f1f5f9'
   switch (sec.bg_type) {
@@ -391,7 +394,7 @@ const stats = [
 </script>
 
 <template>
-  <div class="font-sarabun text-slate-800 dark:text-slate-100 bg-slate-50 dark:bg-slate-950 transition-colors duration-300">
+  <div class="font-sarabun text-slate-800 dark:text-slate-100">
 
     <!-- ── SECTION 1: BANNER / HERO (full-width) ─────────────────── -->
     <section class="w-full">

@@ -12,6 +12,12 @@
   --color-primary-ring:   rgba(30,58,95,0.20);
   --color-secondary:      #b8922a;
   --color-secondary-light: rgba(184,146,42,0.12);
+
+  /* Aurora — สีเรืองของพื้นหลังเว็บ คำนวณจากสีแบรนด์เดียวกัน (ดู applyTheme ใน useAreaConfig) */
+  --aurora-base:      #fbfcfe;
+  --aurora-primary:   rgba(30,58,95,0.10);
+  --aurora-secondary: rgba(184,146,42,0.09);
+  --aurora-primary-2: rgba(30,58,95,0.06);
 }
 
 /* ── Brand utility classes ──────────────────────────────────── */
@@ -71,6 +77,120 @@
     box-shadow: 0 0 0 3px var(--color-primary-ring);
     border-color: var(--color-primary);
   }
+}
+
+/* ── Aurora background ────────────────────────────────────────────
+   พื้นหลังเว็บทั้งใบ — layer เดียว fixed อยู่หลังทุกอย่าง ไม่เลื่อนตามสกรอลล์
+   ทำให้พื้นผิวกระจก (.glass-*) มี "อะไรให้เบลอ" ตลอดเวลา
+
+   สำคัญ: element ใดที่มีพื้นทึบคร่อมอยู่ (bg-white/bg-slate-50 ที่ root ของ view)
+   จะบัง aurora ทั้งหมด — ห้ามใส่ bg ทึบที่ body / root wrapper / root ของ view
+   ─────────────────────────────────────────────────────────────── */
+body {
+  background-color: var(--aurora-base);
+}
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(60rem 40rem at 12% -8%,  var(--aurora-primary),   transparent 62%),
+    radial-gradient(45rem 34rem at 96%   6%, var(--aurora-secondary), transparent 62%),
+    radial-gradient(52rem 40rem at 48% 108%, var(--aurora-primary-2), transparent 62%);
+}
+
+/* ── Glass surfaces ───────────────────────────────────────────────
+   หน้าตาการ์ด/พาเนล/navbar ทั้งเว็บรวมศูนย์อยู่ที่ 4 class นี้
+   ปรับความแรงกระจก (หรือถอยกลับเป็นการ์ดขาวทึบแบบเดิม) ทำที่นี่จุดเดียว
+
+   ⚠️ อยู่ใน @layer components ซึ่งมาก่อน utilities — ถ้า element ยังมี
+   `bg-white` ติดอยู่ Tailwind จะชนะและกระจกจะไม่ทำงาน เวลาแปลงการ์ด
+   ต้องลบ bg-*/border-*/shadow-*/rounded-* ของเดิมออกด้วยเสมอ
+   ─────────────────────────────────────────────────────────────── */
+@layer components {
+  /* การ์ดมาตรฐาน — ใช้กับ grid/panel ที่มีจำนวนไม่มาก (< ~20 ใบต่อหน้า) */
+  .glass-card {
+    background: rgba(255,255,255,0.68);
+    backdrop-filter: blur(20px) saturate(160%);
+    -webkit-backdrop-filter: blur(20px) saturate(160%);
+    border: 1px solid rgba(255,255,255,0.75);
+    border-radius: 1.25rem;
+    box-shadow:
+      0 8px 32px rgba(15,23,42,0.08),
+      inset 0 1px 0 rgba(255,255,255,0.9);
+  }
+
+  /* ใส่คู่กับ .glass-card / .glass-tile บนการ์ดที่คลิกได้ */
+  .glass-card-hover {
+    transition: transform .25s ease, box-shadow .25s ease, background-color .25s ease;
+  }
+  .glass-card-hover:hover {
+    background: rgba(255,255,255,0.82);
+    transform: translateY(-2px);
+    box-shadow:
+      0 16px 44px rgba(15,23,42,0.12),
+      inset 0 1px 0 #fff;
+  }
+
+  /* navbar — ทึบกว่าการ์ดเพราะเนื้อหาเลื่อนผ่านใต้ตลอดเวลา */
+  .glass-nav {
+    background: rgba(255,255,255,0.72);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border-bottom: 1px solid rgba(255,255,255,0.6);
+    box-shadow: 0 1px 24px rgba(15,23,42,0.06);
+  }
+
+  /* modal / dropdown / กล่องลอยที่ต้องอ่านทับเนื้อหาข้างหลัง */
+  .glass-panel {
+    background: rgba(255,255,255,0.82);
+    backdrop-filter: blur(28px) saturate(170%);
+    -webkit-backdrop-filter: blur(28px) saturate(170%);
+    border: 1px solid rgba(255,255,255,0.8);
+    box-shadow:
+      0 24px 64px rgba(15,23,42,0.16),
+      inset 0 1px 0 #fff;
+  }
+
+  /* ไม่มี backdrop-filter — สำหรับลิสต์ยาว (> ~20 ใบ) กันมือถือกระตุก
+     backdrop-filter แต่ละตัวสร้าง compositing layer แยก บนพื้น aurora นุ่มๆ
+     แทบแยกไม่ออกจาก .glass-card ด้วยตาเปล่า */
+  .glass-tile {
+    background: rgba(255,255,255,0.86);
+    border: 1px solid rgba(255,255,255,0.75);
+    border-radius: 1.25rem;
+    box-shadow:
+      0 6px 24px rgba(15,23,42,0.07),
+      inset 0 1px 0 rgba(255,255,255,0.9);
+  }
+
+  /* กล่องย่อย "ข้างใน" การ์ดกระจก — ห้ามซ้อน .glass-card ใน .glass-card
+     (พื้นจะทึบขึ้นเรื่อยๆ และขอบขาวจะตีกัน) ใช้ตัวนี้แทน */
+  .glass-inset {
+    background: rgba(255,255,255,0.45);
+    border: 1px solid rgba(255,255,255,0.6);
+    border-radius: 0.875rem;
+  }
+}
+
+/* Fallback: เบราว์เซอร์เก่า / Android WebView ที่ไม่รองรับ backdrop-filter
+   → เพิ่มความทึบแทน ไม่งั้นจะได้พื้นโปร่งจางๆ ที่อ่านไม่ออก */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass-card  { background: rgba(255,255,255,0.92); }
+  .glass-nav   { background: rgba(255,255,255,0.95); }
+  .glass-panel { background: rgba(255,255,255,0.95); }
+}
+
+/* ผู้ใช้ที่ตั้งค่าระบบว่าไม่ต้องการพื้นผิวโปร่ง (accessibility) */
+@media (prefers-reduced-transparency: reduce) {
+  .glass-card, .glass-nav, .glass-panel, .glass-tile {
+    background: rgba(255,255,255,0.96);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+  .glass-inset { background: rgba(255,255,255,0.85); }
 }
 
 /* ── Navbar brand title: ย่อสเกลตามพื้นที่จริง ไม่ตัดบรรทัด ──────────
@@ -146,4 +266,16 @@ body {
   @page { size: A4; margin: 0; }
   body > *:not(#print-report-root) { display: none !important; }
   #print-report-root { display: block !important; }
+  /* aurora เป็น pseudo-element จึงไม่โดน `body > *` ข้างบน ต้องปิดเอง
+     ไม่งั้นจะมีสีเรืองติดไปในหน้าที่พิมพ์ */
+  body { background: #fff !important; }
+  body::before { display: none !important; }
+  /* กระจกไม่มีความหมายบนกระดาษ — พิมพ์เป็นกล่องขอบเรียบแทน */
+  .glass-card, .glass-tile, .glass-panel, .glass-nav, .glass-inset {
+    background: #fff !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    box-shadow: none !important;
+    border-color: #e2e8f0 !important;
+  }
 }

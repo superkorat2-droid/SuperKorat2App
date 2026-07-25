@@ -106,7 +106,7 @@ function extractDriveId(url) {
 </script>
 
 <template>
-  <div class="font-sarabun bg-slate-50 dark:bg-slate-950 min-h-screen">
+  <div class="font-sarabun min-h-screen">
     <div v-if="loading" class="flex justify-center py-24">
       <div class="w-10 h-10 border-4 border-primary/30 border-t-primary rounded-full animate-spin"/>
     </div>

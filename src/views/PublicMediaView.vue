@@ -125,7 +125,7 @@ const isFiltered = computed(() =>
 </script>
 
 <template>
-  <div class="font-sarabun bg-slate-50 dark:bg-slate-950 min-h-screen">
+  <div class="font-sarabun min-h-screen">
 
     <!-- Hero -->
     <PageHero v-if="!header.hidden"
