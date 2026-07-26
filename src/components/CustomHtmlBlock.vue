@@ -36,7 +36,25 @@ const srcdoc = computed(() => {
     try { new ResizeObserver(r).observe(document.body) } catch(e) {}
     setTimeout(r, 300);
   })()<\/script>`
-  const html = props.code
+
+  // กันเคสวางโค้ดที่แท็บปิดสคริปต์ถูก escape มาเป็น <\/script> (เจอบ่อยเวลาก๊อปจาก
+  // ตัวอย่างโค้ดที่อยู่ในสตริง JS) — เบราว์เซอร์จะไม่ปิดแท็บสคริปต์ ทำให้ทุกอย่าง
+  // ที่ตามมาไหลเข้าไปเป็นเนื้อสคริปต์เดียวกันแล้วพังเงียบๆ ด้วย SyntaxError
+  //
+  // แก้เฉพาะกรณีที่ "ไม่มีแท็บปิดแบบปกติเลยสักตัว" = เป็นของที่ escape มาทั้งหมด
+  // ถ้ามีทั้งสองแบบปนกัน แปลว่าผู้เขียนตั้งใจใช้ <\/script> ข้างในสตริง JS จริง
+  // (เช่น document.write ที่พ่นแท็บสคริปต์ออกมา) กรณีนั้นห้ามแตะ
+  //
+  // หมายเหตุสำคัญ: ในไฟล์ .vue ห้ามเขียนแท็บปิดสคริปต์แบบดิบ แม้แต่ในคอมเมนต์
+  // เพราะตัวแยกส่วน SFC จะตัดบล็อก <script setup> ทิ้งตรงนั้นทันที (build พังด้วย
+  // ข้อความ "Invalid end tag") ต้องเขียนเป็น <\/script> เสมอ ซึ่งประเมินค่าได้เท่ากัน
+  const CLOSE_TAG   = '<\/script>'
+  const ESCAPED_TAG = '<\\/script>'
+  let html = props.code || ''
+  if (html.includes(ESCAPED_TAG) && !html.includes(CLOSE_TAG)) {
+    html = html.split(ESCAPED_TAG).join(CLOSE_TAG)
+  }
+
   return html.includes('</body>') ? html.replace('</body>', s + '</body>') : html + s
 })
 

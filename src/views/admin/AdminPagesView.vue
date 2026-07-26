@@ -28,18 +28,35 @@ const navGroups = ref([])
 const TYPE_LABELS  = { cms:'CMS', system:'ระบบ', link:'ลิงก์' }
 
 // routes ทั้งหมดที่มีใน system
+// route ของหน้าที่เป็น Vue component (page_type='system')
+// label ใช้ชื่อเดียวกับหัวข้อจริงของแต่ละหน้า เพื่อให้แอดมินเลือกไม่ผิด
+// ⚠️ อย่าใส่ route ที่ไม่มีจริง — เลือกไปแล้วเมนูจะกดได้แต่หน้าว่าง
+//    (เคยมี '/site-info' ค้างอยู่ทั้งที่ไม่มี route นี้ในระบบ จึงเอาออก)
+// ⚠️ ไม่ใส่ /embed/* เพราะเป็นหน้าสำหรับฝัง iframe ไม่ใช่หน้าให้คนเข้าจากเมนู
 const SYSTEM_ROUTES = [
-  { route: '/personnel',      label: 'ทำเนียบบุคลากร' },
-  { route: '/site-info',      label: 'ข้อมูลสารสนเทศ' },
-  { route: '/schools',        label: 'ทำเนียบโรงเรียน' },
-  { route: '/news',           label: 'ข่าวสาร' },
-  { route: '/download',       label: 'ดาวน์โหลดเอกสาร' },
-  { route: '/url-short',      label: 'ย่อลิงก์' },
-  { route: '/qrcode',         label: 'สร้าง QR Code' },
-  { route: '/contact',        label: 'ติดต่อสอบถาม' },
-  { route: '/nithet',         label: 'กลุ่มนิเทศ' },
-  { route: '/works',          label: 'ผลงานและนวัตกรรม' },
-  { route: '/school',         label: 'Portal โรงเรียน' },
+  // ข้อมูลหน่วยงาน
+  { route: '/personnel',        label: 'ทำเนียบบุคลากร' },
+  { route: '/page/org',         label: 'โครงสร้างการบริหารงาน' },
+  { route: '/nithet',           label: 'กลุ่มนิเทศ ติดตามและประเมินผลฯ' },
+  // โรงเรียน
+  { route: '/schools',          label: 'ทำเนียบโรงเรียน' },
+  { route: '/principals',       label: 'ทำเนียบผู้บริหารสถานศึกษา' },
+  { route: '/schoolweb',        label: 'เว็บไซต์โรงเรียนในสังกัด' },
+  { route: '/student-stats',    label: 'สารสนเทศนักเรียน' },
+  { route: '/school',           label: 'Portal โรงเรียน' },
+  // ข่าวสารและการเผยแพร่
+  { route: '/news',             label: 'ข่าวสาร' },
+  { route: '/education-news',   label: 'ข่าวการศึกษา' },
+  { route: '/newsletters',      label: 'จดหมายข่าว / เอกสารเผยแพร่' },
+  { route: '/media',            label: 'คลังสื่อการเรียนรู้' },
+  { route: '/works',            label: 'ผลงานและนวัตกรรม' },
+  { route: '/submit-work',      label: 'ส่งผลงาน (สำหรับบุคคลภายนอกเขต)' },
+  // บริการ
+  { route: '/download',         label: 'ดาวน์โหลดเอกสาร' },
+  { route: '/school-documents', label: 'หนังสือถึงโรงเรียน' },
+  { route: '/url-short',        label: 'ย่อลิงก์' },
+  { route: '/qrcode',           label: 'สร้าง QR Code' },
+  { route: '/contact',          label: 'ติดต่อสอบถาม' },
 ]
 
 const showRouteList = ref(false)
