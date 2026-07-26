@@ -175,6 +175,8 @@ const routes = [
   { path: '/newsletters',  name: 'newsletters',  component: PublicNewslettersView },
   { path: '/media',        name: 'media',        component: PublicMediaView },
   { path: '/media/:id',    name: 'mediaDetail',  component: () => import('../views/MediaDetailView.vue') },
+  { path: '/works',        name: 'works',        component: () => import('../views/PublicWorksView.vue') },
+  { path: '/works/:id',    name: 'workDetail',   component: () => import('../views/WorkDetailView.vue') },
   { path: '/student-stats', name: 'studentStats', component: PublicStudentStatsView },
 
   // ── Dynamic CMS pages ────────────────────────────────────────────────

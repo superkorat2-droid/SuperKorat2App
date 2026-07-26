@@ -38,6 +38,7 @@ const SYSTEM_ROUTES = [
   { route: '/qrcode',         label: 'สร้าง QR Code' },
   { route: '/contact',        label: 'ติดต่อสอบถาม' },
   { route: '/nithet',         label: 'กลุ่มนิเทศ' },
+  { route: '/works',          label: 'ผลงานและนวัตกรรม' },
   { route: '/school',         label: 'Portal โรงเรียน' },
 ]
 

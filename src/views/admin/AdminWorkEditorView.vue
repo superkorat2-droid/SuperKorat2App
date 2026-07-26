@@ -12,7 +12,7 @@ import { supabase } from '../../supabase'
 import Swal from 'sweetalert2'
 import ContentBlockEditor from '../../components/content/ContentBlockEditor.vue'
 import { withKeys, stripKeys } from '../../composables/useContentBlocks'
-import { WORK_TYPES, OWNER_TYPES, ownerTypeFromRole, AUTO_APPROVE_ROLES, workStatusMeta } from '../../composables/useWorks'
+import { WORK_TYPES, OWNER_TYPES, SUBJECT_GROUPS, GRADES, ownerTypeFromRole, AUTO_APPROVE_ROLES, workStatusMeta } from '../../composables/useWorks'
 
 const route  = useRoute()
 const router = useRouter()
@@ -24,9 +24,6 @@ const blocks  = ref([])
 const myRole  = ref('')
 const schools = ref([])
 const existing = ref(null)
-
-const GRADES = ['ป.1','ป.2','ป.3','ป.4','ป.5','ป.6','ม.1','ม.2','ม.3','ม.4','ม.5','ม.6']
-const SUBJECT_GROUPS = ['ภาษาไทย','คณิตศาสตร์','วิทยาศาสตร์และเทคโนโลยี','สังคมศึกษาฯ','สุขศึกษาและพลศึกษา','ศิลปะ','การงานอาชีพ','ภาษาต่างประเทศ','ปฐมวัย','อื่นๆ']
 
 const form = ref({
   title: '', description: '', work_type: 'research', owner_type: 'supervisor',

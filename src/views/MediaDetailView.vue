@@ -2,7 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { supabase } from '../supabase'
-import { extractDriveId } from '../composables/useGoogleDrive'
+import ContentBlockRenderer from '../components/content/ContentBlockRenderer.vue'
 
 const route  = useRoute()
 const router = useRouter()
@@ -94,12 +94,6 @@ const MEDIA_TYPE_LABEL = {
 function fmtDate(d) {
   return new Date(d).toLocaleDateString('th-TH', { year:'numeric', month:'long', day:'numeric' })
 }
-
-// ─── Block renderer (same as DynamicPageView) ─────────────────────────────────
-function extractYtId(url) {
-  const m = url?.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/)
-  return m?.[1]
-}
 </script>
 
 <template>
@@ -183,64 +177,7 @@ function extractYtId(url) {
         </div>
 
         <!-- ── Block content ────────────────────────────────────────────────── -->
-        <div v-if="item.content_blocks?.length" class="space-y-4">
-          <div v-for="(block, i) in item.content_blocks" :key="i">
-
-            <!-- heading -->
-            <component :is="`h${block.level || 2}`"
-              v-if="block.type === 'heading' && block.text"
-              :class="['font-extrabold text-slate-800',
-                block.level===2?'text-xl':block.level===3?'text-lg':'text-base']">
-              {{ block.text }}
-            </component>
-
-            <!-- text -->
-            <div v-else-if="block.type === 'text' && block.text"
-              class="text-slate-600 leading-relaxed whitespace-pre-line">
-              {{ block.text }}
-            </div>
-
-            <!-- image -->
-            <figure v-else-if="block.type === 'image' && block.url" class="rounded-2xl overflow-hidden">
-              <img :src="block.url" :alt="block.alt || ''" class="w-full rounded-2xl"/>
-              <figcaption v-if="block.caption" class="text-xs text-center text-slate-400 mt-2">{{ block.caption }}</figcaption>
-            </figure>
-
-            <!-- drive embed -->
-            <div v-else-if="block.type === 'drive' && block.url" class="rounded-2xl overflow-hidden border border-slate-200">
-              <p v-if="block.label" class="text-xs font-bold text-slate-500 px-4 py-2 border-b border-slate-100 bg-slate-50">📄 {{ block.label }}</p>
-              <div class="aspect-video bg-slate-900">
-                <iframe :src="`https://drive.google.com/file/d/${extractDriveId(block.url)}/preview`"
-                  class="w-full h-full border-0" allow="autoplay" loading="lazy"/>
-              </div>
-            </div>
-
-            <!-- embed URL -->
-            <div v-else-if="block.type === 'embed' && block.url" class="rounded-2xl overflow-hidden border border-slate-200">
-              <p v-if="block.label" class="text-xs font-bold text-slate-500 px-4 py-2 border-b border-slate-100 bg-slate-50">🔗 {{ block.label }}</p>
-              <div class="aspect-video bg-slate-900">
-                <iframe v-if="extractYtId(block.url)"
-                  :src="`https://www.youtube.com/embed/${extractYtId(block.url)}`"
-                  class="w-full h-full border-0" allow="autoplay; encrypted-media" allowfullscreen/>
-                <iframe v-else :src="block.url" class="w-full h-full border-0" loading="lazy"/>
-              </div>
-            </div>
-
-            <!-- html — full doc → srcdoc iframe | snippet → v-html -->
-            <div v-else-if="block.type === 'html' && block.code" class="rounded-2xl overflow-hidden">
-              <iframe v-if="/<!DOCTYPE|<html/i.test(block.code)"
-                :srcdoc="block.code"
-                sandbox="allow-scripts allow-same-origin"
-                class="w-full border-0 rounded-2xl"
-                style="min-height:500px; height:80vh; max-height:900px"
-                scrolling="yes"/>
-              <div v-else v-html="block.code" class="prose max-w-none"/>
-            </div>
-
-            <!-- divider -->
-            <hr v-else-if="block.type === 'divider'" class="border-slate-200"/>
-          </div>
-        </div>
+        <ContentBlockRenderer :blocks="item.content_blocks"/>
 
       </div>
     </template>
