@@ -26,7 +26,53 @@ const tabs = [
   { key: 'footer',   icon: 'link',      label: 'ลิงก์ท้ายเว็บไซต์' },
   { key: 'storage',  icon: 'folder',    label: 'จัดการไฟล์' },
   { key: 'features', icon: 'wrench',    label: 'ฟีเจอร์' },
+  { key: 'embed',    icon: 'link',      label: 'โค้ดฝังเว็บอื่น' },
 ]
+
+// ── โค้ดฝังทำเนียบบุคลากรสำหรับเว็บภายนอก (แผงอ่าน/คัดลอก ไม่บันทึกลง DB) ──
+// เดิมโค้ดอยู่แต่ในไฟล์ docs/ ซึ่งแอดมินเปิดจากหน้าเว็บไม่ได้ จึงหาไม่เจอ
+const EMBED_VERSIONS = [
+  { key: 'all',      label: 'ทั้งหมด',            desc: 'มี ผอ.เขต และ รอง ผอ.', hide: '' },
+  { key: 'noDir',    label: 'ไม่มี ผอ.เขต',        desc: 'ตัด ผอ.เขต ออก',        hide: 'director' },
+  { key: 'noDirDep', label: 'ไม่มี ผอ.เขต + รอง',  desc: 'เหลือ ผอ.กลุ่ม ลงไป',   hide: 'director,deputy' },
+]
+const embedVer   = ref('all')
+const embedMaxW  = ref('')
+const embedCopied = ref(false)
+
+// คำนวณโดเมนจากที่อยู่จริง ไม่ hardcode — เผื่อย้ายไปโดเมน .go.th ในอนาคต
+const embedOrigin = window.location.origin
+const embedHide = computed(() => EMBED_VERSIONS.find(v => v.key === embedVer.value)?.hide || '')
+
+const embedCode = computed(() => {
+  const attrs = []
+  if (embedHide.value) attrs.push(`data-hide="${embedHide.value}"`)
+  const w = String(embedMaxW.value).trim()
+  if (/^\d+$/.test(w)) attrs.push(`data-max-width="${w}"`)
+  const tail = attrs.length ? `
+        ${attrs.join(' ')}` : ''
+  return `<script src="${embedOrigin}/embed/personnel.js"${tail}><\/script>`
+})
+
+const embedPreviewUrl = computed(() => {
+  const qs = embedHide.value ? `?hide=${embedHide.value}` : ''
+  return `${embedOrigin}/embed/personnel#/embed/personnel${qs}`
+})
+
+async function copyEmbedCode() {
+  try {
+    await navigator.clipboard.writeText(embedCode.value)
+  } catch {
+    // clipboard API ใช้ไม่ได้ (http ที่ไม่ใช่ localhost / เบราว์เซอร์เก่า) — fallback
+    const ta = document.createElement('textarea')
+    ta.value = embedCode.value
+    document.body.appendChild(ta); ta.select()
+    document.execCommand('copy')
+    document.body.removeChild(ta)
+  }
+  embedCopied.value = true
+  setTimeout(() => { embedCopied.value = false }, 1800)
+}
 
 const areaTypes = ['สพป.', 'สพม.', 'สศศ.', 'สพปกษ.']
 
@@ -945,6 +991,71 @@ function resetToDefault() {
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+
+        <!-- ══ โค้ดฝังเว็บอื่น ══════════════════════════════════════ -->
+        <div v-if="activeTab === 'embed'" class="space-y-5">
+
+          <div class="glass-tile px-4 py-3 text-sm text-slate-600">
+            เอาทำเนียบบุคลากรไปแสดงบนเว็บอื่น (เช่นเว็บหลักของเขตที่เป็น WordPress)
+            <b>ข้อมูลอ่านสดจากที่นี่</b> แก้ที่ <span class="font-mono text-xs">จัดการบุคลากร</span>
+            แล้วเว็บนั้นเปลี่ยนตามทันที ไม่ต้องแก้อะไรที่ปลายทางอีก
+          </div>
+
+          <!-- เลือกเวอร์ชัน -->
+          <div>
+            <p class="text-sm font-extrabold text-slate-700 mb-2">1. เลือกว่าจะแสดงใครบ้าง</p>
+            <div class="grid sm:grid-cols-3 gap-2">
+              <button v-for="v in EMBED_VERSIONS" :key="v.key" type="button" @click="embedVer = v.key"
+                :class="['text-left px-3.5 py-3 rounded-2xl border-2 transition-all',
+                  embedVer === v.key
+                    ? 'border-primary bg-primary/5 shadow-sm'
+                    : 'border-slate-200 hover:border-primary/40']">
+                <p :class="['font-bold text-sm', embedVer === v.key ? 'text-primary' : 'text-slate-700']">
+                  {{ v.label }}
+                </p>
+                <p class="text-[11px] text-slate-400 mt-0.5">{{ v.desc }}</p>
+              </button>
+            </div>
+          </div>
+
+          <!-- ตัวเลือกเสริม -->
+          <div>
+            <p class="text-sm font-extrabold text-slate-700 mb-2">2. ความกว้างสูงสุด (ไม่ใส่ = เต็มพื้นที่)</p>
+            <div class="flex items-center gap-2">
+              <input v-model="embedMaxW" inputmode="numeric" placeholder="เช่น 1000"
+                class="w-40 px-3 py-2 border border-slate-200 rounded-xl text-sm font-mono focus:outline-none focus:border-primary"/>
+              <span class="text-xs text-slate-400">px</span>
+            </div>
+          </div>
+
+          <!-- โค้ด -->
+          <div>
+            <div class="flex items-center justify-between gap-2 mb-2 flex-wrap">
+              <p class="text-sm font-extrabold text-slate-700">3. คัดลอกโค้ดนี้ไปวาง</p>
+              <div class="flex items-center gap-2">
+                <a :href="embedPreviewUrl" target="_blank" rel="noopener"
+                  class="px-3 py-1.5 text-xs font-bold text-primary bg-primary/10 rounded-xl hover:bg-primary/20 transition-colors">
+                  ดูตัวอย่าง →
+                </a>
+                <button type="button" @click="copyEmbedCode"
+                  :class="['px-4 py-1.5 text-xs font-bold rounded-xl shadow-sm transition-all',
+                    embedCopied ? 'bg-emerald-600 text-white' : 'bg-primary text-white hover:-translate-y-0.5']">
+                  {{ embedCopied ? '✓ คัดลอกแล้ว' : 'คัดลอกโค้ด' }}
+                </button>
+              </div>
+            </div>
+            <pre class="bg-slate-900 text-slate-100 rounded-2xl p-4 text-xs overflow-x-auto leading-relaxed"><code>{{ embedCode }}</code></pre>
+          </div>
+
+          <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-xs text-slate-600 space-y-1.5">
+            <p class="font-bold text-slate-700">วิธีวางใน WordPress</p>
+            <p>เข้าหน้าที่ต้องการ → เพิ่มบล็อก <b>“HTML ที่กำหนดเอง”</b> → วางโค้ด → อัปเดต</p>
+            <p class="text-slate-400">
+              กรอบจะปรับความสูงตามเนื้อหาเอง ไม่มีแถบเลื่อนซ้อน ·
+              คลิกการ์ดบุคลากรจะเปิดหน้าทำเนียบบุคลากรของเว็บนี้ในแท็บใหม่
+            </p>
           </div>
         </div>
 

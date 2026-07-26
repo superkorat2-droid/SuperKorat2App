@@ -12,7 +12,10 @@
  * App.vue ซ่อน navbar/footer ให้ทุก route ที่ขึ้นต้นด้วย /embed/
  *
  * พารามิเตอร์ (ส่งมาทาง query string จาก personnel.js):
- *   contact=off  ปิดโมดัลรายละเอียด/ช่องทางติดต่อ เหลือแค่รายชื่อ
+ *   hide=director[,deputy]  ซ่อนผู้บริหารระดับนั้น — เว็บหลักของเขตมีหน้าผู้บริหาร
+ *                           ของตัวเองอยู่แล้ว ฝังซ้ำจะซ้ำซ้อน · ไม่ส่ง = แสดงทุกคน
+ *   contact=off  (เลิกใช้) เดิมปิดโมดัล ตอนนี้การ์ดเป็นลิงก์อยู่แล้วจึงไม่มีผล
+ *                คงรับไว้เพื่อไม่ให้โค้ดที่วางใน WordPress ไปแล้วพัง
  *
  * พื้นหลังใช้ของเว็บนิเทศ (aurora อ่อน ๆ จาก style.css ระดับ global) ตั้งใจไม่ทำ
  * ตัวเลือกโปร่งใส เพราะการ์ดกระจกออกแบบมาบนพื้นนี้ ถอดออกแล้วขอบการ์ดจะจาง
@@ -35,8 +38,21 @@ const rootEl    = ref(null)
 // ไม่ใช้ location.pathname เพราะหน้านี้ถูกเรียกที่ /embed/personnel (ดูเหตุผลใน personnel.js)
 const fullSiteUrl = `${window.location.origin}/#/personnel`
 
-const showContact = computed(() => route.query.contact !== 'off')
 const groupConfig = computed(() => config.value?.personnel_groups || [])
+
+/** org_role ที่ขอให้ซ่อน — whitelist ไว้ กันค่าแปลกๆ ที่ยัดมาทาง URL */
+const HIDEABLE = ['director', 'deputy', 'group_director']
+const hidden = computed(() =>
+  String(route.query.hide || '').split(',').map(v => v.trim()).filter(v => HIDEABLE.includes(v))
+)
+
+/**
+ * กรองก่อนส่งเข้า PersonnelDirectory — ไม่ต้องแตะตรรกะใน component
+ * เพราะ section แต่ละอันมี v-if="directors.length" อยู่แล้ว หัวข้อจะหายไปเอง
+ */
+const shownPersonnel = computed(() =>
+  hidden.value.length ? personnel.value.filter(p => !hidden.value.includes(p.org_role)) : personnel.value
+)
 
 // ── แจ้งความสูงให้หน้าที่ฝังปรับ iframe (ไม่งั้นจะมี scrollbar ซ้อน) ──
 let ro = null
@@ -90,15 +106,15 @@ onBeforeUnmount(() => {
         <p class="text-xs mt-1">{{ loadError }}</p>
       </div>
 
-      <div v-else-if="!personnel.length" class="text-center py-12 text-sm text-slate-500">
+      <div v-else-if="!shownPersonnel.length" class="text-center py-12 text-sm text-slate-500">
         ยังไม่มีข้อมูลบุคลากร
       </div>
 
       <PersonnelDirectory v-else
-        :personnel="personnel" :group-config="groupConfig" :show-contact="showContact"/>
+        :personnel="shownPersonnel" :group-config="groupConfig" :link-to="fullSiteUrl"/>
 
       <!-- เครดิตแหล่งข้อมูล — ให้คนดูรู้ว่าข้อมูลมาจากไหนและกดไปดูฉบับเต็มได้ -->
-      <p v-if="!loading && personnel.length" class="text-center text-[11px] text-slate-400 pt-1 pb-2">
+      <p v-if="!loading && shownPersonnel.length" class="text-center text-[11px] text-slate-400 pt-1 pb-2">
         ข้อมูลจาก
         <a :href="fullSiteUrl" target="_blank" rel="noopener"
           class="font-bold hover:underline" style="color:var(--color-primary)">

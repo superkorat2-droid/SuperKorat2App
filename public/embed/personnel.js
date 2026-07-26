@@ -5,8 +5,12 @@
  *   <script src="https://<โดเมนเว็บนิเทศ>/embed/personnel.js"></script>
  *
  * ตัวเลือก (ใส่เป็น attribute บนแท็ก script):
- *   data-contact="off"   ปิดช่องทางติดต่อ/โมดัล เหลือแค่รายชื่อ
- *   data-max-width="900" จำกัดความกว้างสูงสุด (px)
+ *   data-hide="director"          ไม่แสดง ผอ.เขต
+ *   data-hide="director,deputy"   ไม่แสดง ผอ.เขต และ รอง ผอ.
+ *                                 (ไม่ใส่ = แสดงทุกคน) ใช้เมื่อเว็บหลักมีหน้าผู้บริหารเองแล้ว
+ *   data-max-width="900"          จำกัดความกว้างสูงสุด (px)
+ *
+ * คัดลอกโค้ดสำเร็จรูปได้จาก หลังบ้าน → ตั้งค่าเขต → โค้ดฝังเว็บอื่น
  *
  * สคริปต์นี้สร้าง iframe ให้เอง เพราะการ inject HTML ตรงๆ จะโดน CSS ของธีม
  * WordPress ทับจนหน้าตาเพี้ยน — iframe แยก style ขาดจากกัน
@@ -32,7 +36,15 @@
   var origin = me.src.replace(/\/embed\/personnel\.js.*$/, '');
 
   var params = [];
-  if (me.getAttribute('data-contact') === 'off') params.push('contact=off');
+  if (me.getAttribute('data-contact') === 'off') params.push('contact=off'); // เลิกใช้ คงไว้ให้ของเดิมไม่พัง
+
+  // whitelist ค่าที่ยอมรับ ไม่ส่งอะไรก็ตามที่ใส่มาเข้า URL ตรงๆ
+  var HIDEABLE = ['director', 'deputy', 'group_director'];
+  var hide = (me.getAttribute('data-hide') || '').split(',')
+    .map(function (v) { return v.trim(); })
+    .filter(function (v) { return HIDEABLE.indexOf(v) !== -1; });
+  if (hide.length) params.push('hide=' + hide.join(','));
+
   var qs = params.length ? '?' + params.join('&') : '';
 
   var wrap = document.createElement('div');

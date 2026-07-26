@@ -15,6 +15,16 @@ const props = defineProps({
   groupConfig: { type: Array, default: () => [] },
   /** ปิดโมดัล/ช่องทางติดต่อ (โค้ดฝังบางที่อยากได้แค่รายชื่อ) */
   showContact: { type: Boolean, default: true },
+  /**
+   * ถ้าใส่ URL มา การ์ดจะกลายเป็นลิงก์เปิดแท็บใหม่ไป URL นั้น แทนการเปิดโมดัล
+   *
+   * ใช้ในโค้ดฝัง (/embed/personnel) เพราะโมดัลเป็น position:fixed ซึ่งอ้างอิง
+   * viewport ของ iframe — และ iframe ถูกตั้งความสูงเท่าเนื้อหาทั้งหมด (หลายพัน px)
+   * พร้อม scrolling="no" → โมดัลไปโผล่กลาง iframe ต่ำกว่าที่ผู้ชมมองอยู่มาก
+   * และเลื่อนไปดูไม่ได้ กลายเป็น "กดแล้วไม่มีอะไรเกิดขึ้น"
+   * หน้า /personnel ปกติไม่ส่ง prop นี้ จึงยังเปิดโมดัลเหมือนเดิม
+   */
+  linkTo: { type: String, default: '' },
 })
 
 const selected = ref(null)
@@ -101,7 +111,10 @@ const departmentGroups = computed(() => {
     })
 })
 
-function open(p) { if (props.showContact) selected.value = p }
+function open(p) {
+  if (props.linkTo) return          // เป็นลิงก์อยู่แล้ว ปล่อยให้เบราว์เซอร์เปิดแท็บใหม่
+  if (props.showContact) selected.value = p
+}
 </script>
 
 <template>
@@ -113,7 +126,10 @@ function open(p) { if (props.showContact) selected.value = p }
         <div class="group-underline"></div>
       </div>
       <div class="flex justify-center gap-5">
-        <button v-for="p in directors" :key="p.id" @click="open(p)"
+        <component :is="linkTo ? 'a' : 'button'" v-for="p in directors" :key="p.id" @click="open(p)"
+          :href="linkTo || undefined"
+          :target="linkTo ? '_blank' : undefined" :rel="linkTo ? 'noopener' : undefined"
+          :title="linkTo ? 'ดูข้อมูลและช่องทางติดต่อเต็มที่เว็บกลุ่มนิเทศ' : undefined"
           class="personnel-card glass-card glass-card-hover">
           <div class="card-cover" style="background:linear-gradient(135deg,var(--color-primary),var(--color-secondary))">
             <img v-if="p.avatar_url" :src="p.avatar_url" class="w-full h-full object-cover"/>
@@ -123,7 +139,7 @@ function open(p) { if (props.showContact) selected.value = p }
             <p class="card-name" :class="fitTextClass(displayName(p))">{{ displayName(p) }}</p>
             <p class="card-pos" :class="fitTextClass(p.position)">{{ p.position }}</p>
           </div>
-        </button>
+        </component>
       </div>
     </section>
 
@@ -134,7 +150,10 @@ function open(p) { if (props.showContact) selected.value = p }
         <div class="group-underline"></div>
       </div>
       <div class="flex justify-center flex-wrap gap-5">
-        <button v-for="p in deputies" :key="p.id" @click="open(p)"
+        <component :is="linkTo ? 'a' : 'button'" v-for="p in deputies" :key="p.id" @click="open(p)"
+          :href="linkTo || undefined"
+          :target="linkTo ? '_blank' : undefined" :rel="linkTo ? 'noopener' : undefined"
+          :title="linkTo ? 'ดูข้อมูลและช่องทางติดต่อเต็มที่เว็บกลุ่มนิเทศ' : undefined"
           class="personnel-card glass-card glass-card-hover">
           <div class="card-cover" style="background:linear-gradient(135deg,var(--color-secondary),var(--color-primary))">
             <img v-if="p.avatar_url" :src="p.avatar_url" class="w-full h-full object-cover"/>
@@ -144,7 +163,7 @@ function open(p) { if (props.showContact) selected.value = p }
             <p class="card-name" :class="fitTextClass(displayName(p))">{{ displayName(p) }}</p>
             <p class="card-pos" :class="fitTextClass(p.position)">{{ p.position }}</p>
           </div>
-        </button>
+        </component>
       </div>
     </section>
 
@@ -155,7 +174,10 @@ function open(p) { if (props.showContact) selected.value = p }
         <div class="group-underline"></div>
       </div>
       <div class="flex justify-center flex-wrap gap-5">
-        <button v-for="p in groupDirs" :key="p.id" @click="open(p)"
+        <component :is="linkTo ? 'a' : 'button'" v-for="p in groupDirs" :key="p.id" @click="open(p)"
+          :href="linkTo || undefined"
+          :target="linkTo ? '_blank' : undefined" :rel="linkTo ? 'noopener' : undefined"
+          :title="linkTo ? 'ดูข้อมูลและช่องทางติดต่อเต็มที่เว็บกลุ่มนิเทศ' : undefined"
           class="personnel-card glass-card glass-card-hover">
           <div class="card-cover" style="background:linear-gradient(135deg,#1e3a5f,#312e81)">
             <img v-if="p.avatar_url" :src="p.avatar_url" class="w-full h-full object-cover"/>
@@ -166,7 +188,7 @@ function open(p) { if (props.showContact) selected.value = p }
             <p class="card-pos" :class="fitTextClass(p.position)">{{ p.position }}</p>
             <p v-if="p.department" class="card-dept">{{ p.department }}</p>
           </div>
-        </button>
+        </component>
       </div>
     </section>
 
@@ -178,7 +200,10 @@ function open(p) { if (props.showContact) selected.value = p }
       </div>
       <!-- flex-wrap + justify-center: แถวสุดท้ายที่การ์ดไม่ครบจะอยู่กลาง (grid ทำไม่ได้) -->
       <div class="flex flex-wrap justify-center gap-5">
-        <button v-for="p in members" :key="p.id" @click="open(p)"
+        <component :is="linkTo ? 'a' : 'button'" v-for="p in members" :key="p.id" @click="open(p)"
+          :href="linkTo || undefined"
+          :target="linkTo ? '_blank' : undefined" :rel="linkTo ? 'noopener' : undefined"
+          :title="linkTo ? 'ดูข้อมูลและช่องทางติดต่อเต็มที่เว็บกลุ่มนิเทศ' : undefined"
           class="personnel-card glass-card glass-card-hover">
           <div class="card-cover" style="background:linear-gradient(135deg,var(--color-primary),var(--color-secondary))">
             <img v-if="p.avatar_url" :src="p.avatar_url" class="w-full h-full object-cover"/>
@@ -195,7 +220,7 @@ function open(p) { if (props.showContact) selected.value = p }
               </span>
             </div>
           </div>
-        </button>
+        </component>
       </div>
     </section>
 
