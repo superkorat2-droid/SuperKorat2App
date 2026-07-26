@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { supabase } from '../../supabase'
+import SecretInput from '../../components/SecretInput.vue'
 import { useAreaConfig } from '../../composables/useAreaConfig'
 import ImageCropperModal from '../../components/ImageCropperModal.vue'
 import Swal from 'sweetalert2'
@@ -551,8 +552,8 @@ async function changePassword() {
         <h2 class="font-extrabold text-slate-800">เปลี่ยนรหัสผ่าน</h2>
         <div>
           <label class="text-xs font-bold text-slate-500 uppercase tracking-wider">รหัสผ่านใหม่</label>
-          <input v-model="pwForm.newPw" type="password" minlength="8"
-            class="mt-1 w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-primary"/>
+          <SecretInput v-model="pwForm.newPw" minlength="8" autocomplete="new-password" class="mt-1"
+            input-class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-primary"/>
           <div v-if="pwForm.newPw" class="mt-2 flex items-center gap-2">
             <div class="flex gap-1 flex-1">
               <div v-for="i in 4" :key="i"
@@ -564,10 +565,10 @@ async function changePassword() {
         </div>
         <div>
           <label class="text-xs font-bold text-slate-500 uppercase tracking-wider">ยืนยันรหัสผ่าน</label>
-          <input v-model="pwForm.confirm" type="password"
-            :class="['mt-1 w-full px-3 py-2 border rounded-xl text-sm focus:outline-none',
+          <SecretInput v-model="pwForm.confirm" autocomplete="new-password" class="mt-1"
+            :input-class="['w-full px-3 py-2 border rounded-xl text-sm focus:outline-none',
               pwForm.confirm && pwForm.confirm !== pwForm.newPw
-                ? 'border-red-300 focus:border-red-400' : 'border-slate-200 focus:border-primary']"/>
+                ? 'border-red-300 focus:border-red-400' : 'border-slate-200 focus:border-primary'].join(' ')"/>
           <p v-if="pwForm.confirm && pwForm.confirm !== pwForm.newPw" class="text-xs text-red-500 mt-1">รหัสผ่านไม่ตรงกัน</p>
         </div>
         <button @click="changePassword" :disabled="pwLoading || !pwForm.newPw || pwForm.newPw !== pwForm.confirm"

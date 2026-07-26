@@ -1,6 +1,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { supabase } from '../../supabase'
+import SecretInput from '../../components/SecretInput.vue'
 import { useAreaConfig, THEME_PRESETS } from '../../composables/useAreaConfig'
 
 import ImageCropperModal from '../../components/ImageCropperModal.vue'
@@ -752,9 +753,10 @@ function resetToDefault() {
                   🧑‍🏫 รหัสสมัคร — ครู
                 </label>
                 <div class="flex gap-2">
-                  <input v-model="config.register_code_teacher" type="text"
+                  <SecretInput v-model="config.register_code_teacher" autocomplete="off"
                     placeholder="เช่น KORAT2-TEACHER"
-                    class="flex-1 px-3 py-2 border border-amber-300 rounded-xl text-sm font-mono focus:outline-none focus:border-amber-500 bg-white"/>
+                    class="flex-1"
+                    input-class="w-full px-3 py-2 border border-amber-300 rounded-xl text-sm font-mono focus:outline-none focus:border-amber-500 bg-white"/>
                   <button type="button"
                     @click="config.register_code_teacher = Math.random().toString(36).slice(2,8).toUpperCase()"
                     class="px-3 py-2 bg-amber-200 hover:bg-amber-300 text-amber-800 text-xs font-bold rounded-xl transition-colors"
@@ -771,9 +773,10 @@ function resetToDefault() {
                   👥 รหัสสมัคร — บุคลากร
                 </label>
                 <div class="flex gap-2">
-                  <input v-model="config.register_code_personnel" type="text"
+                  <SecretInput v-model="config.register_code_personnel" autocomplete="off"
                     placeholder="เช่น NITET-2568"
-                    class="flex-1 px-3 py-2 border border-blue-300 rounded-xl text-sm font-mono focus:outline-none focus:border-blue-500 bg-white"/>
+                    class="flex-1"
+                    input-class="w-full px-3 py-2 border border-blue-300 rounded-xl text-sm font-mono focus:outline-none focus:border-blue-500 bg-white"/>
                   <button type="button"
                     @click="config.register_code_personnel = Math.random().toString(36).slice(2,8).toUpperCase()"
                     class="px-3 py-2 bg-blue-200 hover:bg-blue-300 text-blue-800 text-xs font-bold rounded-xl transition-colors"

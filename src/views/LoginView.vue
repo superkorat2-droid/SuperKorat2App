@@ -2,6 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { supabase } from '../supabase'
+import SecretInput from '../components/SecretInput.vue'
 import { ICON_MAP } from '../composables/useIcons.js'
 import Swal from 'sweetalert2'
 
@@ -210,8 +211,9 @@ const handleRegister = async () => {
           </div>
           <div>
             <label class="block text-sm font-bold text-slate-700 mb-1.5">รหัสผ่าน</label>
-            <input v-model="password" type="password" required
-              class="block w-full px-4 py-3 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-50 focus:border-blue-500 outline-none transition-all"
+            <SecretInput v-model="password" required
+              input-class="block w-full px-4 py-3 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-50 focus:border-blue-500 outline-none transition-all"
+              autocomplete="current-password"
               placeholder="••••••••"/>
           </div>
           <button :disabled="loading" type="submit"
@@ -259,8 +261,8 @@ const handleRegister = async () => {
               รหัสสมัครสมาชิก <span class="text-red-500">*</span>
               <span class="text-xs font-normal text-slate-400 ml-1">(ขอรหัสจากผู้ดูแลระบบ)</span>
             </label>
-            <input v-model="rRegCode" type="text" required
-              class="block w-full px-4 py-3 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-50 focus:border-blue-500 outline-none transition-all font-mono uppercase tracking-widest"
+            <SecretInput v-model="rRegCode" required autocomplete="off"
+              input-class="block w-full px-4 py-3 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-50 focus:border-blue-500 outline-none transition-all font-mono uppercase tracking-widest"
               placeholder="กรอกรหัสลับ"/>
           </div>
 
@@ -338,17 +340,18 @@ const handleRegister = async () => {
           <div class="grid grid-cols-2 gap-3">
             <div>
               <label class="block text-sm font-bold text-slate-700 mb-1.5">รหัสผ่าน <span class="text-red-500">*</span></label>
-              <input v-model="rPassword" type="password" required minlength="8"
-                class="block w-full px-4 py-3 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-50 focus:border-blue-500 outline-none transition-all"
+              <SecretInput v-model="rPassword" required minlength="8"
+                input-class="block w-full px-4 py-3 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-50 focus:border-blue-500 outline-none transition-all"
+                autocomplete="new-password"
                 placeholder="อย่างน้อย 8 ตัว"/>
             </div>
             <div>
               <label class="block text-sm font-bold text-slate-700 mb-1.5">ยืนยันรหัสผ่าน <span class="text-red-500">*</span></label>
-              <input v-model="rConfirm" type="password" required
-                :class="['block w-full px-4 py-3 border rounded-2xl focus:ring-4 outline-none transition-all',
+              <SecretInput v-model="rConfirm" required autocomplete="new-password"
+                :input-class="['block w-full px-4 py-3 border rounded-2xl focus:ring-4 outline-none transition-all',
                   rConfirm && rConfirm !== rPassword
                     ? 'border-red-300 focus:ring-red-50 focus:border-red-400'
-                    : 'border-slate-200 focus:ring-blue-50 focus:border-blue-500']"
+                    : 'border-slate-200 focus:ring-blue-50 focus:border-blue-500'].join(' ')"
                 placeholder="••••••••"/>
             </div>
           </div>
