@@ -2,6 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { supabase } from '../../supabase'
 import Swal from 'sweetalert2'
+import { extractDriveId as extractFileId } from '../../composables/useGoogleDrive'
 
 const props = defineProps({ school: { type: Object, default: null }, profile: { type: Object, default: null } })
 
@@ -25,11 +26,6 @@ const emptyForm = () => ({
 })
 const form = ref(emptyForm())
 
-function extractFileId(url) {
-  const patterns = [/\/file\/d\/([a-zA-Z0-9_-]+)/, /id=([a-zA-Z0-9_-]+)/, /\/d\/([a-zA-Z0-9_-]+)\//]
-  for (const p of patterns) { const m = url?.match(p); if (m) return m[1] }
-  return null
-}
 
 async function load() {
   if (!props.school?.id) return

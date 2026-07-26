@@ -5,6 +5,7 @@ import { supabase } from '../supabase'
 import PageHero from '../components/PageHero.vue'
 import ImageLinkGallery from '../components/ImageLinkGallery.vue'
 import YoutubeCardGrid from '../components/YoutubeCardGrid.vue'
+import DriveFolderBrowser from '../components/drive/DriveFolderBrowser.vue'
 import CustomHtmlBlock from '../components/CustomHtmlBlock.vue'
 import { getBgStyle as getBgStyleRaw, bgTextClass } from '../composables/useBgStyle'
 import BgLayers from '../components/BgLayers.vue'
@@ -183,6 +184,14 @@ watch(() => route.params.slug, s => { if (s) load(s) })
           <!-- YOUTUBE CARDS -->
           <YoutubeCardGrid v-else-if="block.type === 'youtube' && block.items?.length"
             :items="block.items" :cols="block.cols || 4" :rows="block.rows || 3"/>
+
+          <!-- DRIVE FOLDER -->
+          <div v-else-if="block.type === 'drive' && block.folder_id">
+            <h3 v-if="block.title" class="text-xl font-extrabold text-slate-800 mb-3">{{ block.title }}</h3>
+            <DriveFolderBrowser :folder-id="block.folder_id" :folder-name="block.title || 'โฟลเดอร์'"
+              :view="block.view || 'grid'" :cols="block.cols || 4" :rows="block.rows || 3"
+              :show-search="block.show_search !== false" :allow-subfolders="block.allow_subfolders !== false"/>
+          </div>
 
           <!-- DIVIDER -->
           <hr v-else-if="block.type === 'divider'"

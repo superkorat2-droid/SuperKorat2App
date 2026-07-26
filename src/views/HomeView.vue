@@ -11,6 +11,7 @@ import { TYPE_LABEL, TYPE_COLOR, formatEventDateRange } from '../composables/use
 import BgLayers from '../components/BgLayers.vue'
 import MonthCalendar from '../components/calendar/MonthCalendar.vue'
 import YoutubeCardGrid from '../components/YoutubeCardGrid.vue'
+import DriveFolderBrowser from '../components/drive/DriveFolderBrowser.vue'
 import CustomHtmlBlock from '../components/CustomHtmlBlock.vue'
 import EventDetailModal from '../components/calendar/EventDetailModal.vue'
 import { useHolidays } from '../composables/useHolidays'
@@ -961,6 +962,21 @@ const stats = [
               <h2 class="text-2xl md:text-3xl font-extrabold text-slate-900 accent-line-center">{{ sec.title }}</h2>
             </div>
             <YoutubeCardGrid :items="sec.youtube.items" :cols="sec.youtube.cols || 4" :rows="sec.youtube.rows || 3"/>
+          </div>
+        </section>
+
+        <!-- ══ GOOGLE DRIVE FOLDER ══ -->
+        <section v-else-if="sec.key.startsWith('drive') && sec.drive?.folder_id"
+          :style="getBgStyle(sec)" :class="secBgClass(sec)" class="py-8 md:py-12">
+          <BgLayers :cfg="sec"/>
+          <div class="relative max-w-7xl mx-auto px-4">
+            <div class="text-center mb-8">
+              <p v-if="sec.subtitle" class="text-secondary text-xs font-bold uppercase tracking-[0.18em] mb-2">{{ sec.subtitle }}</p>
+              <h2 class="text-2xl md:text-3xl font-extrabold text-slate-900 accent-line-center">{{ sec.title }}</h2>
+            </div>
+            <DriveFolderBrowser :folder-id="sec.drive.folder_id" :folder-name="sec.drive.title || sec.title"
+              :view="sec.drive.view || 'grid'" :cols="sec.drive.cols || 4" :rows="sec.drive.rows || 3"
+              :show-search="sec.drive.show_search !== false" :allow-subfolders="sec.drive.allow_subfolders !== false"/>
           </div>
         </section>
 

@@ -2,6 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { supabase } from '../supabase'
+import { extractDriveId } from '../composables/useGoogleDrive'
 
 const route  = useRoute()
 const router = useRouter()
@@ -97,10 +98,6 @@ function fmtDate(d) {
 // ─── Block renderer (same as DynamicPageView) ─────────────────────────────────
 function extractYtId(url) {
   const m = url?.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/)
-  return m?.[1]
-}
-function extractDriveId(url) {
-  const m = url?.match(/\/file\/d\/([a-zA-Z0-9_-]+)/)
   return m?.[1]
 }
 </script>

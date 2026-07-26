@@ -5,6 +5,7 @@ import { BG_TYPES, BG_PRESETS, GRADIENT_PRESETS, getBgStyle, isDarkColor as isDa
          BG_POSITIONS, OVERLAY_COLORS, IMAGE_PRESETS, IMAGE_DEFAULTS } from '../../composables/useBgStyle'
 import ImageLinkGalleryEditor from '../../components/ImageLinkGalleryEditor.vue'
 import YoutubeGridEditor from '../../components/YoutubeGridEditor.vue'
+import DriveFolderEditor from '../../components/drive/DriveFolderEditor.vue'
 import ImageCropperModal from '../../components/ImageCropperModal.vue'
 import { useExternalUpload, externalUploadEnabled } from '../../composables/useExternalUpload'
 import { useUploadGc } from '../../composables/useUploadGc'
@@ -96,6 +97,7 @@ const SECTION_ICONS = {
   image_gallery:   'M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3 12V4.5A2.25 2.25 0 015.25 2.25h13.5A2.25 2.25 0 0121 4.5V12M3 12v7.5A2.25 2.25 0 005.25 21.75h13.5A2.25 2.25 0 0021 19.5V12M3 12l4.5-4.5',
   youtube:         'M21.582 6.186a2.506 2.506 0 00-1.768-1.768C18.254 4 12 4 12 4s-6.254 0-7.814.418c-.86.23-1.538.908-1.768 1.768C2 7.746 2 12 2 12s0 4.254.418 5.814c.23.86.908 1.538 1.768 1.768C5.746 20 12 20 12 20s6.254 0 7.814-.418a2.506 2.506 0 001.768-1.768C22 16.254 22 12 22 12s0-4.254-.418-5.814zM10 15.5v-7l6 3.5-6 3.5z',
   custom_html:     'M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3l-4.5 16.5',
+  drive:           'M2.25 12.75l8.954-8.955a1.126 1.126 0 011.591 0L21.75 12.75M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75',
   cta:             'M12 18v-5.25m0 0a6.01 6.01 0 001.5-.189m-1.5.189a6.01 6.01 0 01-1.5-.189m3.75 7.478a12.06 12.06 0 01-4.5 0m3.75 2.383a14.406 14.406 0 01-3 0M14.25 18v-.192c0-.983.658-1.823 1.508-2.316a7.5 7.5 0 10-7.517 0c.85.493 1.509 1.333 1.509 2.316V18',
 }
 
@@ -107,6 +109,7 @@ const SECTION_DESC = {
   image_gallery:   'ภาพลิงก์ — กำหนดรูปภาพ/ลิงก์ที่จะแสดงในหน้าแรกได้เอง',
   youtube:         'การ์ดลิงก์ YouTube — กำหนดคอลัมน์/แถวได้ เกินแล้วแบ่งหน้าอัตโนมัติ',
   custom_html:     'แทรกโค้ด HTML/CSS/JS เอง — เอกสารเต็มจะรันใน iframe แยก ปรับความสูงอัตโนมัติ',
+  drive:           'โฟลเดอร์ Google Drive สาธารณะ — แสดงรายการไฟล์พร้อมค้นหา กรอง เรียง',
   cta:             'แบนเนอร์เชิญชวน + ลิงก์หลัก',
 }
 
@@ -114,11 +117,13 @@ const SECTION_DESC = {
 function isGallerySection(sec) { return sec.key.startsWith('image_gallery') }
 function isYoutubeSection(sec) { return sec.key.startsWith('youtube') }
 function isHtmlSection(sec)    { return sec.key.startsWith('custom_html') }
+function isDriveSection(sec)   { return sec.key.startsWith('drive') }
 // เซกชันที่เพิ่มเองได้จะมี key แบบ <ชนิด>_<timestamp> ต้องเช็คด้วย prefix ไม่ใช่ exact match
 function customKind(sec) {
   if (isGallerySection(sec)) return 'image_gallery'
   if (isYoutubeSection(sec)) return 'youtube'
   if (isHtmlSection(sec))    return 'custom_html'
+  if (isDriveSection(sec))   return 'drive'
   return ''
 }
 function isCustomSection(sec) { return !!customKind(sec) }
@@ -130,6 +135,14 @@ function addYoutubeSection() {
     key: `youtube_${Date.now()}`, label: 'การ์ด YouTube', subtitle: 'Video', title: 'วิดีโอแนะนำ', visible: true,
     bg: '#ffffff', bg2: '#f1f5f9', bg_type: 'none', order: sections.value.length + 1,
     youtube: { cols: 4, rows: 3, items: [] },
+  })
+}
+
+function addDriveSection() {
+  sections.value.push({
+    key: `drive_${Date.now()}`, label: 'โฟลเดอร์ Drive', subtitle: 'Documents', title: 'เอกสารดาวน์โหลด', visible: true,
+    bg: '#ffffff', bg2: '#f1f5f9', bg_type: 'none', order: sections.value.length + 1,
+    drive: { url: '', folder_id: '', title: '', view: 'grid', cols: 4, rows: 3, show_search: true, allow_subfolders: true },
   })
 }
 
@@ -258,6 +271,10 @@ async function save() {
         class="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold border-2 border-dashed border-slate-300 text-slate-500 hover:border-primary hover:text-primary transition-all">
         + เพิ่มเซกชันโค้ด HTML
       </button>
+      <button @click="addDriveSection" type="button"
+        class="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold border-2 border-dashed border-slate-300 text-slate-500 hover:border-primary hover:text-primary transition-all">
+        + เพิ่มเซกชันโฟลเดอร์ Drive
+      </button>
       <button @click="save" :disabled="saving"
         class="flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary-dark text-white font-bold rounded-2xl shadow-md transition-all hover:-translate-y-0.5 disabled:opacity-50">
         <svg v-if="saving" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
@@ -329,6 +346,7 @@ async function save() {
               </svg>
               <template v-if="isGallerySection(sec)">จัดการรูปภาพ ({{ sec.gallery?.items?.length || 0 }})</template>
               <template v-else-if="isYoutubeSection(sec)">จัดการวิดีโอ ({{ sec.youtube?.items?.length || 0 }})</template>
+              <template v-else-if="isDriveSection(sec)">ตั้งค่าโฟลเดอร์</template>
               <template v-else>แก้ไขโค้ด</template>
             </button>
             <button @click="removeSection(i)" type="button"
@@ -620,6 +638,7 @@ async function save() {
               <h2 class="text-lg font-extrabold text-slate-800">
                 <template v-if="isGallerySection(editingSection)">จัดการรูปภาพ — ภาพลิงก์หน้าแรก</template>
                 <template v-else-if="isYoutubeSection(editingSection)">จัดการวิดีโอ — การ์ด YouTube</template>
+                <template v-else-if="isDriveSection(editingSection)">ตั้งค่าโฟลเดอร์ Google Drive</template>
                 <template v-else>แทรกโค้ด HTML / CSS / JS</template>
               </h2>
               <button @click="editingSection = null" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 text-slate-400">
@@ -630,6 +649,8 @@ async function save() {
               <ImageLinkGalleryEditor v-if="isGallerySection(editingSection)" :gallery="editingSection.gallery"/>
 
               <YoutubeGridEditor v-else-if="isYoutubeSection(editingSection)" :model-value="editingSection.youtube"/>
+
+              <DriveFolderEditor v-else-if="isDriveSection(editingSection)" :model-value="editingSection.drive"/>
 
               <div v-else class="space-y-3">
                 <textarea v-model="editingSection.html_code" rows="16" spellcheck="false"

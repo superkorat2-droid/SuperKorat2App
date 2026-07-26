@@ -8,6 +8,7 @@ import { useExternalUpload, externalUploadEnabled, deleteUploadedFile } from '..
 import IconPicker from '../../components/IconPicker.vue'
 import ImageLinkGalleryEditor from '../../components/ImageLinkGalleryEditor.vue'
 import YoutubeGridEditor from '../../components/YoutubeGridEditor.vue'
+import DriveFolderEditor from '../../components/drive/DriveFolderEditor.vue'
 import { BG_TYPES, BG_PRESETS, GRADIENT_PRESETS, getBgStyle,
          BG_POSITIONS, OVERLAY_COLORS, IMAGE_PRESETS, IMAGE_DEFAULTS } from '../../composables/useBgStyle'
 import { useUploadGc } from '../../composables/useUploadGc'
@@ -65,6 +66,7 @@ const BLOCK_TYPES = [
   { type: 'button',     label: 'ปุ่ม CTA',        iconName: 'star'         },
   { type: 'accordion',  label: 'Accordion/FAQ',   iconName: 'clipboard'    },
   { type: 'youtube',    label: 'การ์ด YouTube',   iconName: 'presentation' },
+  { type: 'drive',      label: 'โฟลเดอร์ Drive',  iconName: 'folder'       },
 ]
 
 function newBlock(type) {
@@ -81,6 +83,7 @@ function newBlock(type) {
     case 'button':      return { ...base, text: '', link_type: 'internal', link_url: '', align: 'center' }
     case 'accordion':   return { ...base, items: [] }
     case 'youtube':     return { ...base, cols: 4, rows: 3, items: [] }
+    case 'drive':       return { ...base, url: '', folder_id: '', title: '', view: 'grid', cols: 4, rows: 3, show_search: true, allow_subfolders: true }
     default:            return base
   }
 }
@@ -757,6 +760,9 @@ async function clearHeaderMedia() {
 
             <!-- YOUTUBE CARDS -->
             <YoutubeGridEditor v-else-if="block.type === 'youtube'" :model-value="block"/>
+
+            <!-- DRIVE FOLDER -->
+            <DriveFolderEditor v-else-if="block.type === 'drive'" :model-value="block"/>
 
             <!-- พื้นหลังบล็อก — ใช้ได้กับทุก block type -->
             <details class="mt-3 pt-3 border-t border-slate-100 group">

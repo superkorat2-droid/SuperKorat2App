@@ -5,6 +5,7 @@ import { supabase } from '../../supabase'
 import { Cropper } from 'vue-advanced-cropper'
 import 'vue-advanced-cropper/dist/style.css'
 import Swal from 'sweetalert2'
+import { extractDriveId as extractFileId } from '../../composables/useGoogleDrive'
 
 const router = useRouter()
 const route  = useRoute()
@@ -99,11 +100,6 @@ const meta = ref({
 })
 
 // ── Extract Drive file ID ─────────────────────────────────────────────────────
-function extractFileId(url) {
-  const patterns = [/\/file\/d\/([a-zA-Z0-9_-]+)/, /id=([a-zA-Z0-9_-]+)/, /\/d\/([a-zA-Z0-9_-]+)\//]
-  for (const p of patterns) { const m = url?.match(p); if (m) return m[1] }
-  return null
-}
 
 // ─── Block editor ─────────────────────────────────────────────────────────────
 const blocks = ref([])
