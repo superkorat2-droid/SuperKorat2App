@@ -134,8 +134,11 @@ const allGroups = [
 
 const navGroups = computed(() => {
   const role = profile.value?.role || 'teacher'
+  // กรอง "รายการ" ก่อน แล้วค่อยตัดกลุ่มที่ไม่เหลืออะไร
+  // เดิมกรองกลุ่มก่อน ทำให้ ศน./เจ้าหน้าที่มองไม่เห็น จดหมายข่าว + คลังสื่อ
+  // ที่อยู่ในกลุ่ม "จัดการระบบ" ซึ่งล็อกไว้แค่ admin — ทั้งที่ตัวรายการอนุญาต
+  // roles ระดับรายการเป็นตัวตัดสินจริง จึงไม่ต้องใช้ g.roles เป็นตัวกรองอีก
   return allGroups
-    .filter(g => g.roles.includes(role))
     .map(g => ({ ...g, items: g.items.filter(i => i.roles.includes(role)) }))
     .filter(g => g.items.length > 0)
 })

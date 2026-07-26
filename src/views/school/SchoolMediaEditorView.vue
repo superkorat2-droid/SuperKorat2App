@@ -6,6 +6,8 @@ import { Cropper } from 'vue-advanced-cropper'
 import 'vue-advanced-cropper/dist/style.css'
 import Swal from 'sweetalert2'
 import { extractDriveId as extractFileId } from '../../composables/useGoogleDrive'
+import ContentBlockEditor from '../../components/content/ContentBlockEditor.vue'
+import { withKeys, stripKeys } from '../../composables/useContentBlocks'
 
 const router = useRouter()
 const route  = useRoute()
@@ -61,32 +63,6 @@ const firstDriveFileId = computed(() => {
   return b ? extractFileId(b.url) : null
 })
 
-const BLOCK_TYPES = [
-  { type:'heading', label:'หัวข้อ', icon:'H1' },
-  { type:'text',    label:'ข้อความ', icon:'¶' },
-  { type:'image',   label:'รูปภาพ', icon:'🖼' },
-  { type:'drive',   label:'Drive',  icon:'📄' },
-  { type:'embed',   label:'Embed',  icon:'🔗' },
-  { type:'html',    label:'HTML',   icon:'<>' },
-  { type:'divider', label:'เส้นแบ่ง', icon:'—' },
-]
-
-function addBlock(type) {
-  const defaults = {
-    heading:{ type:'heading', text:'', level:2 },
-    text:   { type:'text', text:'' },
-    image:  { type:'image', url:'', caption:'' },
-    drive:  { type:'drive', url:'', label:'' },
-    embed:  { type:'embed', url:'', label:'' },
-    html:   { type:'html', code:'' },
-    divider:{ type:'divider' },
-  }
-  blocks.value.push({ ...defaults[type], _key: Date.now() })
-}
-function removeBlock(i) { blocks.value.splice(i,1) }
-function moveUp(i)   { if(i>0) { const t=blocks.value[i-1]; blocks.value[i-1]=blocks.value[i]; blocks.value[i]=t } }
-function moveDown(i) { if(i<blocks.value.length-1) { const t=blocks.value[i+1]; blocks.value[i+1]=blocks.value[i]; blocks.value[i]=t } }
-
 function toggleGrade(g) {
   const i = meta.value.grade_levels.indexOf(g)
   if (i>=0) meta.value.grade_levels.splice(i,1)
@@ -121,7 +97,7 @@ async function save() {
     author_name:    meta.value.author_name.trim() || props.school?.name || '',
     title:          meta.value.title.trim(),
     description:    meta.value.description.trim() || null,
-    content_blocks: blocks.value.map(({ _key, ...b }) => b),
+    content_blocks: stripKeys(blocks.value),
     media_type:     meta.value.media_type,
     drive_url:      meta.value.drive_url.trim() || null,
     file_id:        driveFileId,
@@ -207,61 +183,7 @@ onMounted(load)
             class="w-full mt-3 px-4 py-2.5 border border-slate-200 rounded-xl text-sm resize-none focus:outline-none focus:border-primary"/>
         </div>
 
-        <!-- Block Editor -->
-        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 space-y-4">
-          <h2 class="font-bold text-slate-700 text-sm">เนื้อหาสื่อ (Block Editor)</h2>
-          <div class="space-y-3">
-            <div v-for="(block, i) in blocks" :key="block._key"
-              class="border border-slate-200 rounded-xl p-3 space-y-2 hover:border-primary/40 transition-colors">
-              <div class="flex items-center justify-between gap-2">
-                <span class="text-[10px] font-bold text-slate-400 uppercase bg-slate-100 px-2 py-0.5 rounded">{{ block.type }}</span>
-                <div class="flex gap-1 flex-shrink-0">
-                  <button @click="moveUp(i)" :disabled="i===0" class="w-6 h-6 flex items-center justify-center text-slate-400 hover:bg-slate-100 rounded disabled:opacity-20">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 15.75l7.5-7.5 7.5 7.5"/></svg>
-                  </button>
-                  <button @click="moveDown(i)" :disabled="i===blocks.length-1" class="w-6 h-6 flex items-center justify-center text-slate-400 hover:bg-slate-100 rounded disabled:opacity-20">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/></svg>
-                  </button>
-                  <button @click="removeBlock(i)" class="w-6 h-6 flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-                  </button>
-                </div>
-              </div>
-              <div v-if="block.type==='heading'" class="flex gap-2">
-                <select v-model="block.level" class="px-2 py-1 border border-slate-200 rounded-lg text-xs bg-white">
-                  <option :value="2">H2</option><option :value="3">H3</option><option :value="4">H4</option>
-                </select>
-                <input v-model="block.text" type="text" placeholder="หัวข้อ..." class="flex-1 px-3 py-1.5 border border-slate-200 rounded-lg text-sm font-bold focus:outline-none focus:border-primary"/>
-              </div>
-              <textarea v-else-if="block.type==='text'" v-model="block.text" rows="3" placeholder="ข้อความ..."
-                class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm resize-none focus:outline-none focus:border-primary"/>
-              <div v-else-if="block.type==='image'" class="space-y-1.5">
-                <input v-model="block.url" type="url" placeholder="URL รูปภาพ https://..." class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-primary"/>
-                <input v-model="block.caption" type="text" placeholder="คำอธิบายรูป (ไม่บังคับ)" class="w-full px-3 py-1.5 border border-slate-100 bg-slate-50 rounded-lg text-xs focus:outline-none focus:border-primary"/>
-              </div>
-              <div v-else-if="block.type==='drive'" class="space-y-1.5">
-                <div class="text-[10px] text-amber-600 bg-amber-50 rounded-lg px-3 py-1.5">⚠️ ต้องตั้งค่า "ทุกคนที่มีลิงก์" ใน Google Drive ก่อน</div>
-                <input v-model="block.url" type="url" placeholder="https://drive.google.com/file/d/..." class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-mono focus:outline-none focus:border-primary"/>
-                <input v-model="block.label" type="text" placeholder="ชื่อที่แสดง (ไม่บังคับ)" class="w-full px-3 py-1.5 border border-slate-100 bg-slate-50 rounded-lg text-xs focus:outline-none focus:border-primary"/>
-              </div>
-              <div v-else-if="block.type==='embed'" class="space-y-1.5">
-                <input v-model="block.url" type="url" placeholder="https://youtu.be/..." class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-mono focus:outline-none focus:border-primary"/>
-                <input v-model="block.label" type="text" placeholder="ชื่อที่แสดง (ไม่บังคับ)" class="w-full px-3 py-1.5 border border-slate-100 bg-slate-50 rounded-lg text-xs focus:outline-none focus:border-primary"/>
-              </div>
-              <div v-else-if="block.type==='html'" class="space-y-1.5">
-                <p class="text-[10px] text-slate-400">HTML (รองรับ full document &lt;!DOCTYPE&gt;)</p>
-                <textarea v-model="block.code" rows="5" placeholder="<!DOCTYPE html>..." class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs font-mono resize-y focus:outline-none focus:border-primary"/>
-              </div>
-              <hr v-else-if="block.type==='divider'" class="border-slate-200"/>
-            </div>
-          </div>
-          <div class="flex flex-wrap gap-2 pt-2 border-t border-slate-100">
-            <button v-for="bt in BLOCK_TYPES" :key="bt.type" @click="addBlock(bt.type)"
-              class="flex items-center gap-1 px-3 py-1.5 text-xs font-bold bg-slate-50 text-slate-600 rounded-xl hover:bg-primary/10 hover:text-primary transition-colors">
-              <span>{{ bt.icon }}</span> {{ bt.label }}
-            </button>
-          </div>
-        </div>
+        <ContentBlockEditor :blocks="blocks"/>
       </div>
 
       <!-- Right: Meta -->
