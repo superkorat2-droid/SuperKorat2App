@@ -6,6 +6,8 @@ import { extractDriveId as extractFileId } from '../../composables/useGoogleDriv
 
 const items    = ref([])
 const schools  = ref([])
+const myId     = ref(null)
+const myRole   = ref('')
 const loading  = ref(true)
 const saving   = ref(false)
 const showModal = ref(false)
@@ -36,8 +38,19 @@ function embedUrl(fileId) {
   return fileId ? `https://drive.google.com/file/d/${fileId}/preview` : null
 }
 
+// ศน./เจ้าหน้าที่ แก้/ลบได้เฉพาะรายการที่ตัวเองสร้าง (บังคับที่ RLS อีกชั้น)
+// admin แก้ได้ทุกแถว — ตรงนี้ซ่อนปุ่มให้ตรงกับสิทธิ์จริง ไม่ให้กดแล้วเงียบ
+const isAdmin = computed(() => ['super_admin','admin'].includes(myRole.value))
+function canEdit(n) { return isAdmin.value || (!!n.created_by && n.created_by === myId.value) }
+
 async function load() {
   loading.value = true
+  const { data: { user } } = await supabase.auth.getUser()
+  myId.value = user?.id || null
+  if (user?.id) {
+    const { data: p } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+    myRole.value = p?.role || ''
+  }
   const [{ data: n }, { data: sc }] = await Promise.all([
     supabase.from('newsletters').select('*, schools(name, district)')
       .order('year', { ascending: false }).order('month', { ascending: false }),
@@ -100,7 +113,8 @@ async function save() {
   if (form.value.id) {
     ;({ error } = await supabase.from('newsletters').update(payload).eq('id', form.value.id))
   } else {
-    ;({ error } = await supabase.from('newsletters').insert(payload))
+    // RLS บังคับว่า ศน./เจ้าหน้าที่ ต้องระบุ created_by เป็นตัวเอง
+    ;({ error } = await supabase.from('newsletters').insert({ ...payload, created_by: myId.value }))
   }
   saving.value = false
   if (error) { Swal.fire({ icon: 'error', title: 'บันทึกไม่สำเร็จ', text: error.message }); return }
@@ -204,8 +218,11 @@ function catLabel(c)  { return CATEGORIES.find(x=>x.value===c)?.label || c }
               </td>
               <td class="px-4 py-3 text-center">
                 <div class="flex items-center justify-center gap-2">
-                  <button @click="openEdit(n)" class="px-2.5 py-1.5 text-xs font-bold text-primary bg-primary/10 rounded-lg hover:bg-primary/20 transition-colors">แก้ไข</button>
-                  <button @click="del(n)" class="px-2.5 py-1.5 text-xs font-bold text-red-500 bg-red-50 rounded-lg hover:bg-red-100 transition-colors">ลบ</button>
+                  <template v-if="canEdit(n)">
+                    <button @click="openEdit(n)" class="px-2.5 py-1.5 text-xs font-bold text-primary bg-primary/10 rounded-lg hover:bg-primary/20 transition-colors">แก้ไข</button>
+                    <button @click="del(n)" class="px-2.5 py-1.5 text-xs font-bold text-red-500 bg-red-50 rounded-lg hover:bg-red-100 transition-colors">ลบ</button>
+                  </template>
+                  <span v-else class="text-[11px] text-slate-400" title="แก้ไขได้เฉพาะรายการที่คุณเป็นผู้เพิ่ม">ไม่ใช่รายการของคุณ</span>
                 </div>
               </td>
             </tr>

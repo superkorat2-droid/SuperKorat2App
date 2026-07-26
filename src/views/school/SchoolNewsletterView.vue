@@ -70,7 +70,7 @@ async function save() {
   if (form.value.id) {
     ;({ error } = await supabase.from('newsletters').update(payload).eq('id', form.value.id))
   } else {
-    ;({ error } = await supabase.from('newsletters').insert(payload))
+    ;({ error } = await supabase.from('newsletters').insert({ ...payload, created_by: (await supabase.auth.getUser()).data.user?.id || null }))
   }
   saving.value = false
   if (error) { Swal.fire({ icon: 'error', title: 'บันทึกไม่สำเร็จ', text: error.message }); return }
