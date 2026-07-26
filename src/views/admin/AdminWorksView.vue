@@ -4,13 +4,17 @@
  * admin เห็นทุกอัน · คนอื่นเห็นเฉพาะของตัวเอง (RLS คุมอีกชั้นอยู่แล้ว)
  */
 import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { supabase } from '../../supabase'
 import Swal from 'sweetalert2'
 import SvgIcon from '../../components/SvgIcon.vue'
 import { WORK_TYPES, WORK_STATUS, workTypeMeta, workStatusMeta, fmtDate, AUTO_APPROVE_ROLES } from '../../composables/useWorks'
 
 const router = useRouter()
+const route  = useRoute()
+// ใช้ไฟล์เดียวกันทั้งหลังบ้านเขตและ portal โรงเรียน — path ปลายทางคิดจาก route ที่อยู่
+// (role school ถูก guard เด้งออกจาก /dashboard จึงต้องอยู่ใต้ /school)
+const base = computed(() => route.path.startsWith('/school') ? '/school/works' : '/dashboard/works')
 const items   = ref([])
 const loading = ref(true)
 const myId    = ref(null)
@@ -80,7 +84,7 @@ async function del(w) {
           <template v-else>ส่งผลงานเพื่อรอการอนุมัติจากศึกษานิเทศก์</template>
         </p>
       </div>
-      <button @click="router.push('/dashboard/works/new')"
+      <button @click="router.push(`${base}/new`)"
         class="flex items-center gap-1.5 px-5 py-2.5 text-sm font-bold bg-primary text-white rounded-2xl shadow-md hover:-translate-y-0.5 transition-all">
         <SvgIcon name="plus" class="w-4 h-4"/> เพิ่มผลงาน
       </button>
@@ -140,7 +144,7 @@ async function del(w) {
           </div>
           <div class="flex gap-2 flex-shrink-0">
             <template v-if="canEdit(w)">
-              <button @click="router.push(`/dashboard/works/${w.id}/edit`)"
+              <button @click="router.push(`${base}/${w.id}/edit`)"
                 class="px-2.5 py-1.5 text-xs font-bold text-primary bg-primary/10 rounded-lg hover:bg-primary/20 transition-colors">แก้ไข</button>
               <button @click="del(w)"
                 class="px-2.5 py-1.5 text-xs font-bold text-red-500 bg-red-50 rounded-lg hover:bg-red-100 transition-colors">ลบ</button>

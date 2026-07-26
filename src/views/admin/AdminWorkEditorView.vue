@@ -20,6 +20,8 @@ import { WORK_TYPES, OWNER_TYPES, SUBJECT_GROUPS, GRADES, ownerTypeFromRole, AUT
 const route  = useRoute()
 const router = useRouter()
 const isNew  = computed(() => !route.params.id)
+/** ใช้ร่วมกันทั้ง /dashboard/works และ /school/works — ดูหมายเหตุใน AdminWorksView */
+const base = computed(() => route.path.startsWith('/school') ? '/school/works' : '/dashboard/works')
 
 const loading = ref(true)
 const saving  = ref(false)
@@ -87,7 +89,7 @@ onMounted(async () => {
 
   if (!isNew.value) {
     const { data } = await supabase.from('works').select('*').eq('id', route.params.id).single()
-    if (!data) { router.push('/dashboard/works'); return }
+    if (!data) { router.push(base.value); return }
     existing.value = data
     form.value = {
       title: data.title, description: data.description || '', work_type: data.work_type,
@@ -155,7 +157,7 @@ async function save() {
     timer: isNew.value && !autoApprove.value ? 2200 : 900,
     showConfirmButton: false,
   })
-  router.push('/dashboard/works')
+  router.push(base.value)
 }
 </script>
 
@@ -163,7 +165,7 @@ async function save() {
   <div class="font-sarabun space-y-5">
     <div class="flex items-center justify-between gap-3">
       <h1 class="text-2xl font-extrabold text-slate-800">{{ isNew ? 'เพิ่มผลงาน' : 'แก้ไขผลงาน' }}</h1>
-      <button @click="router.push('/dashboard/works')"
+      <button @click="router.push(base.value)"
         class="px-4 py-2 rounded-2xl text-sm font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors">← กลับ</button>
     </div>
 

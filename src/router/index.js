@@ -165,6 +165,11 @@ const routes = [
       { path: 'media',                   name: 'schoolMedia',           component: SchoolMediaView },
       { path: 'media/new',               name: 'schoolMediaNew',        component: SchoolMediaEditorView },
       { path: 'media/:id/edit',          name: 'schoolMediaEdit',       component: SchoolMediaEditorView },
+      // ผลงาน: ใช้ component เดียวกับหลังบ้านเขต (คิด path ปลายทางจาก route เอง)
+      // role school ถูก guard เด้งออกจาก /dashboard จึงต้องมี route ใต้ /school
+      { path: 'works',                   name: 'schoolWorks',           component: AdminWorksView },
+      { path: 'works/new',               name: 'schoolWorkNew',         component: AdminWorkEditorView },
+      { path: 'works/:id/edit',          name: 'schoolWorkEdit',        component: AdminWorkEditorView },
     ]
   },
 
