@@ -42,8 +42,11 @@
   if (maxW) wrap.style.maxWidth = /^\d+$/.test(maxW) ? maxW + 'px' : maxW;
 
   var frame = document.createElement('iframe');
-  // hash router: ต้องเป็น /#/embed/personnel
-  frame.src = origin + '/#/embed/personnel' + qs;
+  // ต้องเป็น path จริง /embed/personnel แล้วต่อ hash — ไม่ใช่ /#/embed/personnel เฉยๆ
+  // เพราะเว็บใช้ hash router ฝั่ง server จะเห็นแค่ "/" ทำให้แยก header ไม่ได้
+  // และทั้งเว็บส่ง X-Frame-Options: DENY อยู่ (กัน clickjacking) → iframe จะถูกบล็อก
+  // path จริงทำให้ vercel.json ยกเว้น header ให้เฉพาะ /embed/* ได้ ส่วน hash เป็นตัวบอก router
+  frame.src = origin + '/embed/personnel#/embed/personnel' + qs;
   frame.title = 'ทำเนียบบุคลากร';
   frame.loading = 'lazy';
   frame.setAttribute('scrolling', 'no');

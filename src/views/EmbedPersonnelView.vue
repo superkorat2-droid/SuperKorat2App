@@ -32,7 +32,8 @@ const personnel = ref([])
 const rootEl    = ref(null)
 
 // target="_blank" ต้องเป็น URL เต็ม เพราะลิงก์สัมพัทธ์ใน iframe จะอ้างจากโดเมนของเว็บที่ฝัง
-const fullSiteUrl = `${window.location.origin}${window.location.pathname}#/personnel`
+// ไม่ใช้ location.pathname เพราะหน้านี้ถูกเรียกที่ /embed/personnel (ดูเหตุผลใน personnel.js)
+const fullSiteUrl = `${window.location.origin}/#/personnel`
 
 const showContact = computed(() => route.query.contact !== 'off')
 const groupConfig = computed(() => config.value?.personnel_groups || [])
