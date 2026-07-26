@@ -6,12 +6,15 @@
  * status / owner_id ไม่ส่งจาก client — trigger ใน DB กำหนดเองตามบทบาท
  * (ถ้าส่งมาก็ถูกเขียนทับ) การอนุมัติทำผ่าน RPC review_work เท่านั้น
  */
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { supabase } from '../../supabase'
 import Swal from 'sweetalert2'
 import ContentBlockEditor from '../../components/content/ContentBlockEditor.vue'
+import ImageCropperModal from '../../components/ImageCropperModal.vue'
 import { withKeys, stripKeys } from '../../composables/useContentBlocks'
+import { useExternalUpload, externalUploadEnabled } from '../../composables/useExternalUpload'
+import { useUploadGc } from '../../composables/useUploadGc'
 import { WORK_TYPES, OWNER_TYPES, SUBJECT_GROUPS, GRADES, ownerTypeFromRole, AUTO_APPROVE_ROLES, workStatusMeta } from '../../composables/useWorks'
 
 const route  = useRoute()
@@ -24,6 +27,44 @@ const blocks  = ref([])
 const myRole  = ref('')
 const schools = ref([])
 const existing = ref(null)
+
+// ── รูปปก: อัปโหลดขึ้น PHP server เหมือนข่าว/แบนเนอร์ ────────────────
+// gc ผูกการลบรูปเก่าไว้กับผลการบันทึก — เปลี่ยนรูปแล้วกดยกเลิก รูปเดิมต้องไม่หาย
+const { uploadImage } = useExternalUpload()
+const gc = useUploadGc()
+const showCropper    = ref(false)
+const coverUploading = ref(false)
+const coverErr       = ref('')
+
+async function onCoverCropped({ blob }) {
+  coverUploading.value = true
+  coverErr.value = ''
+  try {
+    let url
+    if (externalUploadEnabled) {
+      url = await uploadImage(blob, 'works')
+    } else {
+      // สำรองเมื่อยังไม่ได้ตั้งค่า PHP host — เก็บลง Supabase storage
+      const name = `works/cover_${Date.now()}.png`
+      const { error } = await supabase.storage.from('images')
+        .upload(name, blob, { contentType: 'image/png', upsert: false })
+      if (error) throw error
+      url = supabase.storage.from('images').getPublicUrl(name).data.publicUrl
+    }
+    if (form.value.cover_url) gc.trackReplaced(form.value.cover_url)
+    gc.trackUploaded(url)
+    form.value.cover_url = url
+    showCropper.value = false
+  } catch (e) {
+    coverErr.value = e.message || 'อัปโหลดรูปปกไม่สำเร็จ'
+  }
+  coverUploading.value = false
+}
+
+function clearCover() {
+  if (form.value.cover_url) gc.trackReplaced(form.value.cover_url)
+  form.value.cover_url = ''
+}
 
 const form = ref({
   title: '', description: '', work_type: 'research', owner_type: 'supervisor',
@@ -66,6 +107,10 @@ function toggleGrade(g) {
   else form.value.grade_levels.push(g)
 }
 
+// ออกจากหน้าโดยไม่บันทึก → ลบรูปที่เพิ่งอัปแต่ไม่ได้ใช้ ไม่ให้ค้างกินพื้นที่
+let saved = false
+onBeforeUnmount(() => { if (!saved) gc.discard() })
+
 async function save() {
   if (!form.value.title.trim()) {
     return Swal.fire({ icon: 'warning', title: 'กรุณากรอกชื่อผลงาน' })
@@ -97,6 +142,11 @@ async function save() {
   }
   saving.value = false
   if (error) return Swal.fire({ icon: 'error', title: 'บันทึกไม่สำเร็จ', text: error.message })
+
+  // บันทึกผ่านแล้วจึงลบรูปเก่าบน server ได้ — ส่งรูปที่ยังใช้อยู่ไปกันลบผิดตัว
+  saved = true
+  const stillUsed = [payload.cover_url, ...blocks.value.map(b => b.url).filter(Boolean)].filter(Boolean)
+  await gc.commit(stillUsed)
 
   await Swal.fire({
     icon: 'success',
@@ -151,7 +201,14 @@ async function save() {
             </div>
           </div>
 
-          <ContentBlockEditor :blocks="blocks" title="รายละเอียดผลงาน"/>
+          <div class="space-y-1.5">
+            <ContentBlockEditor :blocks="blocks" title="รายละเอียดผลงาน (ไม่ใส่ก็ได้)"/>
+            <p class="text-[11px] text-slate-400 px-1">
+              ส่วนนี้คือ<b>เนื้อหาที่จะแสดงบนหน้าเว็บ</b> — ใช้เมื่ออยากเล่าเรื่องผลงาน
+              ใส่รูป วิดีโอ ข้อความได้ · ถ้ามีแค่ไฟล์ Drive ให้ไปใส่ที่ช่อง
+              <b>“ลิงก์ไฟล์ผลงานฉบับเต็ม”</b> ด้านขวา แล้วข้ามส่วนนี้ไปเลย
+            </p>
+          </div>
         </div>
 
         <!-- ขวา: ข้อมูลประกอบ -->
@@ -217,15 +274,42 @@ async function save() {
               </select>
             </div>
 
+          </div>
+
+          <!-- ไฟล์และรูปปก แยกเป็นการ์ดของตัวเอง ให้เห็นชัดว่าเป็นของแนบ ไม่ใช่เนื้อหา -->
+          <div class="glass-card p-5 space-y-4">
+            <p class="font-bold text-slate-700 text-sm">ไฟล์แนบและรูปปก</p>
+
             <div>
-              <label class="text-[11px] font-bold text-slate-500">ลิงก์ไฟล์ผลงาน (Drive/PDF)</label>
+              <label class="text-[11px] font-bold text-slate-500">ลิงก์ไฟล์ผลงานฉบับเต็ม (Drive/PDF)</label>
               <input v-model="form.file_url" placeholder="https://drive.google.com/…"
                 class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm font-mono focus:outline-none focus:border-primary"/>
+              <p class="text-[10px] text-slate-400 mt-1">
+                จะขึ้นเป็นปุ่ม <b>“เปิดไฟล์ผลงาน”</b> บนหน้าสาธารณะ · ไม่ใส่ก็ได้
+              </p>
             </div>
+
+            <!-- รูปปก: อัปโหลดขึ้น server เหมือนข่าว/แบนเนอร์ ไม่ต้องหา URL มาแปะเอง -->
             <div>
-              <label class="text-[11px] font-bold text-slate-500">URL รูปปก</label>
-              <input v-model="form.cover_url" placeholder="https://…"
-                class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-primary"/>
+              <label class="text-[11px] font-bold text-slate-500">รูปปก</label>
+              <div v-if="form.cover_url" class="mt-1 relative rounded-xl overflow-hidden border border-slate-200">
+                <img :src="form.cover_url" alt="รูปปก" class="w-full aspect-[4/3] object-cover"/>
+                <div class="absolute top-1.5 right-1.5 flex gap-1.5">
+                  <button type="button" @click="showCropper = true"
+                    class="px-2 py-1 text-[10px] font-bold bg-white/90 text-primary rounded-lg shadow-sm hover:bg-white">เปลี่ยน</button>
+                  <button type="button" @click="clearCover"
+                    class="px-2 py-1 text-[10px] font-bold bg-white/90 text-red-500 rounded-lg shadow-sm hover:bg-white">ลบ</button>
+                </div>
+              </div>
+              <button v-else type="button" @click="showCropper = true" :disabled="coverUploading"
+                class="mt-1 w-full py-6 rounded-xl border-2 border-dashed border-slate-300 text-slate-500 hover:border-primary hover:text-primary transition-colors disabled:opacity-50">
+                <svg class="w-6 h-6 mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/>
+                </svg>
+                <span class="text-xs font-bold">{{ coverUploading ? 'กำลังอัปโหลด…' : 'อัปโหลดรูปปก' }}</span>
+                <span class="block text-[10px] text-slate-400 mt-0.5">ครอบสัดส่วน 4:3 ให้อัตโนมัติ</span>
+              </button>
+              <p v-if="coverErr" class="text-[10px] text-red-500 mt-1">{{ coverErr }}</p>
             </div>
           </div>
 
@@ -236,5 +320,12 @@ async function save() {
         </div>
       </div>
     </template>
+
+    <ImageCropperModal
+      :show="showCropper"
+      :aspect-ratio="4/3"
+      title="ครอบรูปปกผลงาน (4:3)"
+      @close="showCropper = false"
+      @cropped="onCoverCropped"/>
   </div>
 </template>
