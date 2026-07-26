@@ -57,10 +57,15 @@ const TYPE_BY_LABEL = {
 export function parseHolidayDate(v) {
   if (v === null || v === undefined || v === '') return null
 
-  // Excel serial number (นับจาก 1899-12-30)
+  // Excel serial number (นับจาก 1899-12-30) — เป็น instant แบบ UTC จึงต้องอ่านด้วย getUTC*
   if (typeof v === 'number') {
     const d = new Date(Math.round((v - 25569) * 86400000))
-    return isNaN(d) ? null : d.toISOString().slice(0, 10)
+    if (isNaN(d)) return null
+    // ปีอาจเป็น พ.ศ. ได้เหมือน branch อื่น (ก่อนหน้านี้ลืมแปลง วันหยุดจึงเข้าเป็นปี 2569)
+    let y = d.getUTCFullYear()
+    if (y > 2400) y -= 543
+    const p = n => String(n).padStart(2, '0')
+    return `${y}-${p(d.getUTCMonth() + 1)}-${p(d.getUTCDate())}`
   }
   if (v instanceof Date) {
     if (isNaN(v)) return null
