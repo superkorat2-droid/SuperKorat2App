@@ -84,6 +84,9 @@ import QrCodeView       from '../views/QrCodeView.vue'
 import ShortRedirectView from '../views/ShortRedirectView.vue'
 import ContactView      from '../views/ContactView.vue'
 import AdminShortUrlsView from '../views/admin/AdminShortUrlsView.vue'
+import AdminWorksView         from '../views/admin/AdminWorksView.vue'
+import AdminWorkEditorView    from '../views/admin/AdminWorkEditorView.vue'
+import AdminWorksApproveView  from '../views/admin/AdminWorksApproveView.vue'
 
 const routes = [
   // ── หน้าหลัก ──────────────────────────────────────────────────────────
@@ -128,8 +131,10 @@ const routes = [
       { path: 'documents',name: 'adminDocuments', component: AdminDocumentsView,    meta: { title: 'เอกสารและดาวน์โหลด', icon: '📂' } },
       { path: 'document-tasks', name: 'adminDocumentTasks', component: AdminDocumentTasksView, meta: { title: 'ระบบธุรการ' } },
       { path: 'contact-messages', name: 'adminContactMessages', component: AdminContactMessagesView, meta: { title: 'ข้อความติดต่อ', icon: '📬' } },
-      { path: 'works',    name: 'adminWorks',     component: AdminPlaceholderView,  meta: { title: 'ผลงานและนวัตกรรม', icon: '🏆' } },
-      { path: 'works-approve', name: 'adminWorksApprove', component: AdminPlaceholderView, meta: { title: 'อนุมัติผลงาน', icon: '✅' } },
+      { path: 'works',              name: 'adminWorks',        component: AdminWorksView,       meta: { title: 'ผลงานและนวัตกรรม', icon: '🏆' } },
+      { path: 'works/new',          name: 'adminWorkNew',      component: AdminWorkEditorView,  meta: { title: 'เพิ่มผลงาน' } },
+      { path: 'works/:id/edit',     name: 'adminWorkEdit',     component: AdminWorkEditorView,  meta: { title: 'แก้ไขผลงาน' } },
+      { path: 'works-approve',      name: 'adminWorksApprove', component: AdminWorksApproveView, meta: { title: 'อนุมัติผลงาน', icon: '✅' } },
       { path: 'short-urls', name: 'adminShortUrls', component: AdminShortUrlsView, meta: { title: 'จัดการ URL ย่อ', icon: '🔗' } },
       { path: 'storage',  name: 'adminStorage',   component: AdminStorageView,      meta: { title: 'จัดการไฟล์ Storage', icon: '🗄️' } },
       { path: 'profile',  name: 'adminProfile',   component: AdminProfileView,      meta: { title: 'โปรไฟล์ของฉัน', icon: '👤' } },
