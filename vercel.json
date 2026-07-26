@@ -4,7 +4,6 @@
   ],
   "headers": [
     {
-      "//": "ทุกหน้ายกเว้น /embed — ห้ามฝังใน iframe เด็ดขาด (กัน clickjacking หน้า login/dashboard)",
       "source": "/((?!embed/).*)",
       "headers": [
         { "key": "X-Content-Type-Options", "value": "nosniff" },
@@ -13,7 +12,6 @@
       ]
     },
     {
-      "//": "/embed/* ต้องฝังได้ ไม่งั้นโค้ดฝังบุคลากรใช้ไม่ได้ — จึงไม่ส่ง X-Frame-Options ที่นี่ (ใช้ negative lookahead ข้างบนกันไว้) และประกาศ frame-ancestors ให้ชัดว่าอนุญาตโดยเจตนา หน้าใน /embed แสดงข้อมูลสาธารณะเท่านั้น ไม่มีฟอร์มล็อกอิน จึงไม่มีอะไรให้ clickjack",
       "source": "/embed/(.*)",
       "headers": [
         { "key": "X-Content-Type-Options", "value": "nosniff" },
