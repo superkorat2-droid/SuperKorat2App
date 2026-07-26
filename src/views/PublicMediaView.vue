@@ -5,6 +5,9 @@ import { supabase } from '../supabase'
 import { useAreaConfig } from '../composables/useAreaConfig'
 import { usePageHeader } from '../composables/usePageHeader'
 import PageHero from '../components/PageHero.vue'
+import ViewModeToggle from '../components/ViewModeToggle.vue'
+import PublishCta from '../components/PublishCta.vue'
+import { useViewMode, CARD_WRAP, CARD_ITEM_5 } from '../composables/useViewMode'
 
 const { config, fetchConfig } = useAreaConfig()
 const header = usePageHeader('media', { icon: 'folder', title: 'คลังสื่อการเรียนรู้', align: 'center' })
@@ -13,6 +16,7 @@ const router = useRouter()
 const items      = ref([])
 const loading    = ref(true)
 const totalCount = ref(0)
+const viewMode   = useViewMode('media')
 
 // ── Filter state ──────────────────────────────────────────────────────────────
 const searchQ      = ref('')
@@ -137,6 +141,9 @@ const isFiltered = computed(() =>
 
     <div class="max-w-7xl mx-auto px-4 py-6 space-y-5">
 
+      <!-- แถบเชิญชวนเผยแพร่สื่อ — เหนือช่องค้นหา -->
+      <PublishCta kind="media"/>
+
       <!-- Search (แยกจาก hero เสมอ ไม่ว่าจะใช้ไอคอนหรือรูป/วิดีโอ) -->
       <div class="max-w-lg mx-auto relative">
         <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
@@ -189,15 +196,18 @@ const isFiltered = computed(() =>
         </button>
       </div>
 
-      <!-- Count info -->
-      <div class="text-center text-sm text-slate-500">
-        แสดง {{ Math.min((currentPage-1)*PER_PAGE+1, totalCount) }}–{{ Math.min(currentPage*PER_PAGE, totalCount) }}
-        จาก {{ totalCount.toLocaleString() }} รายการ
+      <!-- Count info + สลับมุมมอง -->
+      <div class="flex items-center justify-between gap-3 flex-wrap">
+        <div class="text-sm text-slate-500">
+          แสดง {{ Math.min((currentPage-1)*PER_PAGE+1, totalCount) }}–{{ Math.min(currentPage*PER_PAGE, totalCount) }}
+          จาก {{ totalCount.toLocaleString() }} รายการ
+        </div>
+        <ViewModeToggle v-model="viewMode"/>
       </div>
 
       <!-- Loading -->
-      <div v-if="loading" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-        <div v-for="i in 8" :key="i" class="glass-card overflow-hidden animate-pulse">
+      <div v-if="loading" :class="CARD_WRAP">
+        <div v-for="i in 8" :key="i" :class="[CARD_ITEM_5, 'glass-card overflow-hidden animate-pulse']">
           <div class="aspect-[4/3] bg-slate-100"/>
           <div class="p-3 space-y-2"><div class="h-3 bg-slate-100 rounded w-3/4"/><div class="h-2.5 bg-slate-100 rounded w-1/2"/></div>
         </div>
@@ -211,9 +221,10 @@ const isFiltered = computed(() =>
       </div>
 
       <!-- Cards -->
-      <div v-else class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-        <div v-for="item in items" :key="item.id"
-          class="group glass-tile
+      <div v-else-if="viewMode === 'card'" :class="CARD_WRAP">
+        <div v-for="item in items" :key="item.id" :class="CARD_ITEM_5">
+        <div
+          class="group glass-tile h-full flex flex-col
                  hover:shadow-lg hover:-translate-y-1 transition-all duration-200 overflow-hidden cursor-pointer"
           @click="router.push(`/media/${item.id}`)">
 
@@ -284,6 +295,54 @@ const isFiltered = computed(() =>
                 {{ item.like_count.toLocaleString() }}
               </span>
             </div>
+          </div>
+        </div>
+        </div>
+      </div>
+
+      <!-- รายการ -->
+      <div v-else class="space-y-2">
+        <div v-for="item in items" :key="item.id"
+          class="glass-tile p-3 flex items-center gap-3 cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all"
+          @click="router.push(`/media/${item.id}`)">
+
+          <!-- ภาพย่อ -->
+          <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden bg-slate-100 flex-shrink-0 relative">
+            <img v-if="getThumbnail(item)" :src="getThumbnail(item)" :alt="item.title"
+              class="absolute inset-0 w-full h-full object-cover" loading="lazy"
+              @error="$event.target.style.display='none'"/>
+            <div v-else class="absolute inset-0 flex items-center justify-center">
+              <div :class="['w-8 h-8 rounded-xl flex items-center justify-center', typeInfo(item.media_type).color]">
+                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" :d="typeInfo(item.media_type).icon"/>
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex-1 min-w-0">
+            <div class="flex flex-wrap items-center gap-1.5 mb-0.5">
+              <span :class="['text-[10px] font-bold text-white px-2 py-0.5 rounded-full', typeInfo(item.media_type).color]">
+                {{ typeInfo(item.media_type).label }}
+              </span>
+              <span v-if="item.subject_group" class="text-[10px] text-slate-400">{{ item.subject_group }}</span>
+            </div>
+            <p class="font-bold text-slate-800 text-sm leading-snug line-clamp-1">{{ item.title }}</p>
+            <p class="text-[11px] text-slate-400 truncate mt-0.5">
+              {{ item.author_name || '—' }}
+              <span v-if="(item.grade_levels || []).length"> · {{ item.grade_levels.join(', ') }}</span>
+            </p>
+          </div>
+
+          <div class="flex flex-col items-end gap-1 text-[11px] text-slate-400 flex-shrink-0">
+            <span class="flex items-center gap-1">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.964-7.178z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+              {{ item.view_count.toLocaleString() }}
+            </span>
+            <span class="flex items-center gap-1">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z"/></svg>
+              {{ item.like_count.toLocaleString() }}
+            </span>
           </div>
         </div>
       </div>

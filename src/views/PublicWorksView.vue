@@ -12,7 +12,10 @@ import { supabase } from '../supabase'
 import { useAreaConfig } from '../composables/useAreaConfig'
 import { usePageHeader } from '../composables/usePageHeader'
 import PageHero from '../components/PageHero.vue'
+import ViewModeToggle from '../components/ViewModeToggle.vue'
+import PublishCta from '../components/PublishCta.vue'
 import { WORK_TYPES, SUBJECT_GROUPS, GRADES, workTypeMeta } from '../composables/useWorks'
+import { useViewMode, CARD_WRAP, CARD_ITEM } from '../composables/useViewMode'
 
 const { config, fetchConfig } = useAreaConfig()
 const header = usePageHeader('works', { icon: 'star', title: 'ผลงานและนวัตกรรม', align: 'center' })
@@ -32,6 +35,7 @@ const currentPage   = ref(1)
 const PER_PAGE      = 20
 
 const years = ref([])
+const viewMode = useViewMode('works')
 
 const SORT_OPTIONS = [
   { value:'newest',  label:'ล่าสุด' },
@@ -138,6 +142,9 @@ const isFiltered = computed(() =>
 
     <div v-else class="max-w-7xl mx-auto px-4 py-6 space-y-5">
 
+      <!-- แถบเชิญชวนเผยแพร่ผลงาน — เหนือช่องค้นหา -->
+      <PublishCta kind="works"/>
+
       <!-- ค้นหา -->
       <div class="max-w-lg mx-auto relative">
         <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
@@ -190,14 +197,20 @@ const isFiltered = computed(() =>
         </button>
       </div>
 
-      <div v-if="totalCount" class="text-center text-sm text-slate-500">
-        แสดง {{ Math.min((currentPage-1)*PER_PAGE+1, totalCount) }}–{{ Math.min(currentPage*PER_PAGE, totalCount) }}
-        จาก {{ totalCount.toLocaleString() }} ผลงาน
+      <!-- จำนวน + สลับมุมมอง -->
+      <div class="flex items-center justify-between gap-3 flex-wrap">
+        <div class="text-sm text-slate-500">
+          <template v-if="totalCount">
+            แสดง {{ Math.min((currentPage-1)*PER_PAGE+1, totalCount) }}–{{ Math.min(currentPage*PER_PAGE, totalCount) }}
+            จาก {{ totalCount.toLocaleString() }} ผลงาน
+          </template>
+        </div>
+        <ViewModeToggle v-model="viewMode"/>
       </div>
 
       <!-- Loading -->
-      <div v-if="loading" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-        <div v-for="i in 8" :key="i" class="glass-card overflow-hidden animate-pulse">
+      <div v-if="loading" :class="CARD_WRAP">
+        <div v-for="i in 8" :key="i" :class="[CARD_ITEM, 'glass-card overflow-hidden animate-pulse']">
           <div class="aspect-[4/3] bg-slate-100"/>
           <div class="p-3 space-y-2"><div class="h-3 bg-slate-100 rounded w-3/4"/><div class="h-2.5 bg-slate-100 rounded w-1/2"/></div>
         </div>
@@ -211,9 +224,10 @@ const isFiltered = computed(() =>
       </div>
 
       <!-- การ์ด -->
-      <div v-else class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-        <div v-for="item in items" :key="item.id"
-          class="group glass-tile hover:shadow-lg hover:-translate-y-1 transition-all duration-200 overflow-hidden cursor-pointer flex flex-col"
+      <div v-else-if="viewMode === 'card'" :class="CARD_WRAP">
+        <div v-for="item in items" :key="item.id" :class="CARD_ITEM">
+        <div
+          class="group glass-tile hover:shadow-lg hover:-translate-y-1 transition-all duration-200 overflow-hidden cursor-pointer flex flex-col h-full"
           @click="router.push(`/works/${item.id}`)">
 
           <!-- ปก -->
@@ -267,6 +281,54 @@ const isFiltered = computed(() =>
               </span>
               <span v-if="item.academic_year" class="ml-auto">ปี {{ item.academic_year }}</span>
             </div>
+          </div>
+        </div>
+        </div>
+      </div>
+
+      <!-- รายการ -->
+      <div v-else class="space-y-2">
+        <div v-for="item in items" :key="item.id"
+          class="glass-tile p-3 flex items-center gap-3 cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all"
+          @click="router.push(`/works/${item.id}`)">
+
+          <!-- ปกย่อ -->
+          <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden bg-slate-100 flex-shrink-0 relative">
+            <img v-if="item.cover_url" :src="item.cover_url" :alt="item.title"
+              class="absolute inset-0 w-full h-full object-cover" loading="lazy"
+              @error="$event.target.style.display='none'"/>
+            <div v-else class="absolute inset-0 flex items-center justify-center text-2xl opacity-60">
+              {{ workTypeMeta(item.work_type).icon }}
+            </div>
+          </div>
+
+          <div class="flex-1 min-w-0">
+            <div class="flex flex-wrap items-center gap-1.5 mb-0.5">
+              <span :class="['text-[10px] font-bold px-2 py-0.5 rounded-full',
+                workTypeMeta(item.work_type).bg, workTypeMeta(item.work_type).text]">
+                {{ workTypeMeta(item.work_type).label }}
+              </span>
+              <span v-if="item.is_featured"
+                class="text-[10px] font-bold text-white bg-amber-500 px-2 py-0.5 rounded-full">⭐ แนะนำ</span>
+              <span v-if="item.academic_year" class="text-[10px] text-slate-400">ปี {{ item.academic_year }}</span>
+            </div>
+            <p class="font-bold text-slate-800 text-sm leading-snug line-clamp-1">{{ item.title }}</p>
+            <p v-if="item.description" class="text-xs text-slate-500 line-clamp-1 mt-0.5 hidden sm:block">{{ item.description }}</p>
+            <p class="text-[11px] text-slate-400 truncate mt-0.5">
+              {{ item.owner_name || item.school_name || '—' }}
+              <span v-if="item.subject_group"> · {{ item.subject_group }}</span>
+            </p>
+          </div>
+
+          <div class="flex flex-col items-end gap-1 text-[11px] text-slate-400 flex-shrink-0">
+            <span class="flex items-center gap-1">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.964-7.178z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+              {{ (item.view_count || 0).toLocaleString() }}
+            </span>
+            <span class="flex items-center gap-1">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z"/></svg>
+              {{ (item.like_count || 0).toLocaleString() }}
+            </span>
           </div>
         </div>
       </div>

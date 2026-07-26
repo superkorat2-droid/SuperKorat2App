@@ -7,7 +7,8 @@ import Swal from 'sweetalert2'
 
 const router = useRouter()
 const route  = useRoute()
-const tab = ref('login') // 'login' | 'register'
+// ?tab=register เพื่อลิงก์มาที่แท็บสมัครสมาชิกได้ตรงๆ (แถบเชิญชวนในหน้าคลังสื่อ/ผลงานใช้)
+const tab = ref(route.query.tab === 'register' ? 'register' : 'login') // 'login' | 'register'
 
 // ── Login ──────────────────────────────────────────────────────
 const email    = ref('')
