@@ -13,8 +13,10 @@ const router    = useRouter()
 const route     = useRoute()
 
 // ซ่อน navbar+footer เฉพาะ school portal (/school และ /school/...) ไม่รวม /schools
+// รวม /embed/* ด้วย — หน้าเหล่านั้นถูกฝังใน iframe ของเว็บอื่น ต้องมีแต่เนื้อหาล้วน
 const isSchoolRoute = computed(() =>
-  route.path === '/school' || route.path.startsWith('/school/')
+  route.path === '/school' || route.path.startsWith('/school/') ||
+  route.path.startsWith('/embed/')
 )
 const isDashboardRoute = computed(() => route.path.startsWith('/dashboard'))
 const session   = ref(null)

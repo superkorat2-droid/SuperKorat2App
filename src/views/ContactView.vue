@@ -81,7 +81,7 @@ const selected = ref(null)
 async function fetchSupervisors() {
   loadingSupervisors.value = true
   const { data, error } = await supabase
-    .from('profiles')
+    .from('personnel_public')
     .select('id,full_name,first_name,last_name,title,position,position_level,department,subjects,avatar_url,sort_order,phone,line_id,email,contact_visibility')
     .eq('org_role', 'supervisor')
     .order('sort_order', { ascending: true })

@@ -12,8 +12,10 @@ onMounted(async () => {
   const supervisorId = route.params.id
   try {
     // Fetch Profile
+    // personnel_public ไม่ใช่ profiles — หน้านี้เป็น route สาธารณะ (/supervisor/:id)
+    // และ anon ไม่มีสิทธิ์ select * บนตาราง profiles แล้ว
     const { data: profileData, error: profileError } = await supabase
-      .from('profiles')
+      .from('personnel_public')
       .select('*')
       .eq('id', supervisorId)
       .single()

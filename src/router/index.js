@@ -177,6 +177,9 @@ const routes = [
   { path: '/media/:id',    name: 'mediaDetail',  component: () => import('../views/MediaDetailView.vue') },
   { path: '/works',        name: 'works',        component: () => import('../views/PublicWorksView.vue') },
   { path: '/works/:id',    name: 'workDetail',   component: () => import('../views/WorkDetailView.vue') },
+
+  // ── โค้ดฝังสำหรับเว็บภายนอก (ไม่มี navbar/footer — ดู isSchoolRoute ใน App.vue) ──
+  { path: '/embed/personnel', name: 'embedPersonnel', component: () => import('../views/EmbedPersonnelView.vue') },
   { path: '/student-stats', name: 'studentStats', component: PublicStudentStatsView },
 
   // ── Dynamic CMS pages ────────────────────────────────────────────────
