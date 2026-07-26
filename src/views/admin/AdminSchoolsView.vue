@@ -6,9 +6,14 @@ import Swal from 'sweetalert2'
 
 const { config, fetchConfig } = useAreaConfig()
 
-const defaultPassword = computed(() =>
-  config.value?.default_school_password || 'Korat2@2569'
-)
+// get_area_config() ไม่ส่ง default_school_password มาแล้ว (กันคนทั่วไปอ่านได้)
+// หน้านี้เป็นหน้าผู้ดูแล จึงอ่านจากตารางตรงๆ ซึ่ง authenticated ยังมีสิทธิ์อยู่
+const defaultPassword = ref('Korat2@2569')
+onMounted(async () => {
+  const { data } = await supabase.from('area_config')
+    .select('default_school_password').eq('id', 1).single()
+  if (data?.default_school_password) defaultPassword.value = data.default_school_password
+})
 
 const schools  = ref([])
 const loading  = ref(true)

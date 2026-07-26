@@ -112,13 +112,17 @@ const handleRegister = async () => {
     return Swal.fire({ icon:'warning', title:'กรุณาเลือกโรงเรียน', confirmButtonColor:'#3b82f6' })
 
   // ── ตรวจสอบรหัสลับ ────────────────────────────────────────
-  const cfg = areaConfig.value
-  if (cfg?.register_code_enabled) {
-    const isPersonnelRole = ['supervisor','staff'].includes(rRole.value)
-    const expectedCode = isPersonnelRole
-      ? cfg.register_code_personnel
-      : cfg.register_code_teacher
-    if (expectedCode && rRegCode.value.trim().toUpperCase() !== expectedCode.trim().toUpperCase()) {
+  // ตรวจที่ฝั่ง DB ผ่าน RPC — เดิมโหลดรหัสจริงมาเทียบในเบราว์เซอร์ ซึ่งแปลว่า
+  // ต้องส่งรหัสไปให้ทุกคนที่เปิดเว็บ = ไม่เป็นความลับ (ยิง REST ก็อ่านได้)
+  if (areaConfig.value?.register_code_enabled) {
+    const { data: codeOk, error: codeErr } = await supabase.rpc('verify_register_code', {
+      p_role: rRole.value,
+      p_code: rRegCode.value,
+    })
+    if (codeErr) {
+      return Swal.fire({ icon:'error', title:'ตรวจสอบรหัสไม่สำเร็จ', text: codeErr.message, confirmButtonColor:'#3b82f6' })
+    }
+    if (!codeOk) {
       return Swal.fire({ icon:'error', title:'รหัสสมัครสมาชิกไม่ถูกต้อง', text:'กรุณาติดต่อผู้ดูแลระบบเพื่อขอรหัส', confirmButtonColor:'#3b82f6' })
     }
   }
@@ -253,7 +257,9 @@ const handleRegister = async () => {
           </div>
 
           <!-- รหัสลับ (แสดงเมื่อ config เปิดและมีรหัส) -->
-          <div v-if="areaConfig?.register_code_enabled && (isPersonnel ? areaConfig?.register_code_personnel : areaConfig?.register_code_teacher)">
+          <!-- ใช้ has_register_code_* (boolean) ไม่ใช่ตัวรหัส — RPC get_area_config
+               ไม่ส่งรหัสจริงมาแล้ว เพื่อไม่ให้ใครอ่านรหัสจากเบราว์เซอร์ได้ -->
+          <div v-if="areaConfig?.register_code_enabled && (isPersonnel ? areaConfig?.has_register_code_personnel : areaConfig?.has_register_code_teacher)">
             <label class="flex items-center gap-1.5 text-sm font-bold text-slate-700 mb-1.5">
               <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z"/>
