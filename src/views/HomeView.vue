@@ -818,7 +818,7 @@ const stats = [
                   {{ label }}
                 </span>
                 <span v-if="holidays.length" class="flex items-center gap-1.5 text-xs text-slate-600">
-                  <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
+                  <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
                   วันหยุด
                 </span>
               </div>

@@ -2,9 +2,11 @@ import { ref } from 'vue'
 import { supabase } from '../supabase'
 
 export const HOLIDAY_TYPES = [
-  { value: 'public',  label: 'วันหยุดราชการ', dot: 'bg-rose-500',   bg: 'bg-rose-100',   text: 'text-rose-700'   },
+  // โทนอบอุ่นให้เข้ากับธีมกรมท่าของเว็บ (เดิม public เป็นชมพู rose ซึ่งตัดกับธีม)
+  // special ย้ายมาใช้ rose แทน orange เพราะ orange ใกล้ amber เกินไปจนแยกไม่ออก
+  { value: 'public',  label: 'วันหยุดราชการ', dot: 'bg-amber-500',  bg: 'bg-amber-100',  text: 'text-amber-800'  },
   { value: 'school',  label: 'ปิดภาคเรียน',   dot: 'bg-violet-500', bg: 'bg-violet-100', text: 'text-violet-700' },
-  { value: 'special', label: 'หยุดกรณีพิเศษ', dot: 'bg-orange-500', bg: 'bg-orange-100', text: 'text-orange-700' },
+  { value: 'special', label: 'หยุดกรณีพิเศษ', dot: 'bg-rose-500',   bg: 'bg-rose-100',   text: 'text-rose-700'   },
 ]
 
 export function holidayMeta(type) {
