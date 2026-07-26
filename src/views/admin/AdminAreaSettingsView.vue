@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { supabase } from '../../supabase'
 import SecretInput from '../../components/SecretInput.vue'
 import { useAreaConfig, THEME_PRESETS } from '../../composables/useAreaConfig'
