@@ -709,6 +709,7 @@ function resetToDefault() {
               { key:'show_public_stats',      icon:'📊', label:'แสดงสถิติสาธารณะ',              desc:'แสดงตัวเลขโรงเรียน ครู นักเรียน บนหน้าเว็บหลัก' },
               { key:'show_public_news',       icon:'📰', label:'แสดงข่าวสารสาธารณะ',            desc:'ข่าวที่ publish แล้วจะแสดงบนหน้าเว็บ' },
               { key:'show_public_works',      icon:'🏆', label:'แสดงผลงานสาธารณะ',             desc:'ผลงานที่อนุมัติแล้วจะแสดงบนหน้าเว็บ' },
+              { key:'allow_external_works',   icon:'📮', label:'รับผลงานจากภายนอกเขต',        desc:'เปิดฟอร์ม /submit-work ให้คนนอกเขตส่งผลงาน (ต้องอนุมัติก่อนเผยแพร่)' },
             ]" :key="feat.key"
               class="flex items-start justify-between gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100 hover:bg-white hover:border-slate-200 transition-all">
               <div class="flex items-start gap-3">

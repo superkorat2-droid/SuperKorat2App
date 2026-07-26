@@ -182,6 +182,8 @@ const routes = [
   { path: '/media/:id',    name: 'mediaDetail',  component: () => import('../views/MediaDetailView.vue') },
   { path: '/works',        name: 'works',        component: () => import('../views/PublicWorksView.vue') },
   { path: '/works/:id',    name: 'workDetail',   component: () => import('../views/WorkDetailView.vue') },
+  // ฟอร์มให้บุคคลภายนอกเขตส่งผลงาน (ไม่ต้องล็อกอิน — เขียนลง work_submissions)
+  { path: '/submit-work',  name: 'submitWork',   component: () => import('../views/SubmitWorkView.vue') },
 
   // ── โค้ดฝังสำหรับเว็บภายนอก (ไม่มี navbar/footer — ดู isSchoolRoute ใน App.vue) ──
   { path: '/embed/personnel', name: 'embedPersonnel', component: () => import('../views/EmbedPersonnelView.vue') },

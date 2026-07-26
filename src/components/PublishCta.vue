@@ -41,6 +41,8 @@ const manageTo = computed(() => {
 
 /** เขตอาจตั้งให้ต้องใช้รหัสลับในการสมัคร — บอกไว้ล่วงหน้าดีกว่าให้ไปเจอหน้างาน */
 const needCode = computed(() => config.value?.register_code_enabled === true)
+/** เปิด/ปิดรับผลงานจากภายนอกได้จากหน้าตั้งค่าเขต */
+const allowExternal = computed(() => config.value?.allow_external_works !== false)
 </script>
 
 <template>
@@ -65,6 +67,12 @@ const needCode = computed(() => config.value?.register_code_enabled === true)
             ลงทะเบียนเป็นสมาชิกเพื่อส่ง{{ label }}ขึ้นเว็บของกลุ่มนิเทศ
             <span v-if="needCode" class="text-amber-600 font-bold">· ต้องมีรหัสสมัครสมาชิกจากเขต</span>
           </template>
+        </p>
+        <!-- คนนอกเขตไม่มีรหัสสมัคร จึงต้องมีทางส่งผลงานแบบไม่ต้องมีบัญชี -->
+        <p v-if="!signedIn && kind === 'works' && allowExternal" class="text-xs mt-1">
+          <router-link to="/submit-work" class="font-bold hover:underline" style="color:var(--color-primary)">
+            อยู่นอกเขต / หน่วยงานอื่น? ส่งผลงานพร้อมหนังสือนำส่งที่นี่ →
+          </router-link>
         </p>
       </div>
 
