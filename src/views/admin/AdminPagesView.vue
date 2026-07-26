@@ -50,6 +50,7 @@ const SYSTEM_ROUTES = [
   { route: '/newsletters',      label: 'จดหมายข่าว / เอกสารเผยแพร่' },
   { route: '/media',            label: 'คลังสื่อการเรียนรู้' },
   { route: '/works',            label: 'ผลงานและนวัตกรรม' },
+  { route: '/awards',           label: 'ผลงานและรางวัล' },
   { route: '/submit-work',      label: 'ส่งผลงาน (สำหรับบุคคลภายนอกเขต)' },
   // บริการ
   { route: '/download',         label: 'ดาวน์โหลดเอกสาร' },

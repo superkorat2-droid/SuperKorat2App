@@ -60,6 +60,10 @@ const ICON_MAP = {
   '/dashboard/contact-messages': 'mail',
   '/dashboard/works':        'works',
   '/dashboard/works-approve':'approve',
+  '/dashboard/awards':       'trophy',
+  '/dashboard/awards-approve':'approve',
+  '/dashboard/awards-dashboard':'chart-bar',
+  '/dashboard/awards-report': 'document',
   '/dashboard/short-urls':   'urls',
   '/dashboard/storage':      'storage',
   '/dashboard/profile':      'profile',
@@ -115,6 +119,10 @@ const allGroups = [
     items: [
       { to: '/dashboard/works',         label: 'ผลงาน/นวัตกรรม', roles: ['super_admin','admin','supervisor','teacher','school'] },
       { to: '/dashboard/works-approve', label: 'อนุมัติผลงาน',   roles: ['super_admin','admin','supervisor'] },
+      { to: '/dashboard/awards',         label: 'ผลงานและรางวัล', roles: ['super_admin','admin','supervisor','staff','teacher'] },
+      { to: '/dashboard/awards-approve', label: 'อนุมัติรางวัล',   roles: ['super_admin','admin','supervisor'] },
+      { to: '/dashboard/awards-dashboard', label: 'สถิติรางวัล',   roles: ['super_admin','admin','supervisor','staff'] },
+      { to: '/dashboard/awards-report',    label: 'รายงานรางวัล',  roles: ['super_admin','admin','supervisor','staff'] },
     ]
   },
   {

@@ -87,6 +87,11 @@ import AdminShortUrlsView from '../views/admin/AdminShortUrlsView.vue'
 import AdminWorksView         from '../views/admin/AdminWorksView.vue'
 import AdminWorkEditorView    from '../views/admin/AdminWorkEditorView.vue'
 import AdminWorksApproveView  from '../views/admin/AdminWorksApproveView.vue'
+import AdminAwardsView        from '../views/admin/AdminAwardsView.vue'
+import AdminAwardEditorView   from '../views/admin/AdminAwardEditorView.vue'
+import AdminAwardsApproveView from '../views/admin/AdminAwardsApproveView.vue'
+import AdminAwardsDashboardView from '../views/admin/AdminAwardsDashboardView.vue'
+import AdminAwardsReportView  from '../views/admin/AdminAwardsReportView.vue'
 
 const routes = [
   // ── หน้าหลัก ──────────────────────────────────────────────────────────
@@ -135,6 +140,12 @@ const routes = [
       { path: 'works/new',          name: 'adminWorkNew',      component: AdminWorkEditorView,  meta: { title: 'เพิ่มผลงาน' } },
       { path: 'works/:id/edit',     name: 'adminWorkEdit',     component: AdminWorkEditorView,  meta: { title: 'แก้ไขผลงาน' } },
       { path: 'works-approve',      name: 'adminWorksApprove', component: AdminWorksApproveView, meta: { title: 'อนุมัติผลงาน', icon: '✅' } },
+      { path: 'awards',             name: 'adminAwards',       component: AdminAwardsView,       meta: { title: 'ผลงานและรางวัล', icon: '🏆' } },
+      { path: 'awards/new',         name: 'adminAwardNew',     component: AdminAwardEditorView,  meta: { title: 'เพิ่มรางวัล' } },
+      { path: 'awards/:id/edit',    name: 'adminAwardEdit',    component: AdminAwardEditorView,  meta: { title: 'แก้ไขรางวัล' } },
+      { path: 'awards-approve',     name: 'adminAwardsApprove',component: AdminAwardsApproveView,meta: { title: 'อนุมัติรางวัล', icon: '✅' } },
+      { path: 'awards-dashboard',   name: 'adminAwardsDash',   component: AdminAwardsDashboardView, meta: { title: 'สถิติรางวัล', icon: '📊' } },
+      { path: 'awards-report',      name: 'adminAwardsReport', component: AdminAwardsReportView,    meta: { title: 'รายงานรางวัล', icon: '📄' } },
       { path: 'short-urls', name: 'adminShortUrls', component: AdminShortUrlsView, meta: { title: 'จัดการ URL ย่อ', icon: '🔗' } },
       { path: 'storage',  name: 'adminStorage',   component: AdminStorageView,      meta: { title: 'จัดการไฟล์ Storage', icon: '🗄️' } },
       { path: 'profile',  name: 'adminProfile',   component: AdminProfileView,      meta: { title: 'โปรไฟล์ของฉัน', icon: '👤' } },
@@ -170,6 +181,9 @@ const routes = [
       { path: 'works',                   name: 'schoolWorks',           component: AdminWorksView },
       { path: 'works/new',               name: 'schoolWorkNew',         component: AdminWorkEditorView },
       { path: 'works/:id/edit',          name: 'schoolWorkEdit',        component: AdminWorkEditorView },
+      { path: 'awards',                  name: 'schoolAwards',          component: AdminAwardsView },
+      { path: 'awards/new',              name: 'schoolAwardNew',        component: AdminAwardEditorView },
+      { path: 'awards/:id/edit',         name: 'schoolAwardEdit',       component: AdminAwardEditorView },
     ]
   },
 
@@ -184,6 +198,7 @@ const routes = [
   { path: '/works/:id',    name: 'workDetail',   component: () => import('../views/WorkDetailView.vue') },
   // ฟอร์มให้บุคคลภายนอกเขตส่งผลงาน (ไม่ต้องล็อกอิน — เขียนลง work_submissions)
   { path: '/submit-work',  name: 'submitWork',   component: () => import('../views/SubmitWorkView.vue') },
+  { path: '/awards',       name: 'awards',       component: () => import('../views/PublicAwardsView.vue') },
 
   // ── โค้ดฝังสำหรับเว็บภายนอก (ไม่มี navbar/footer — ดู isSchoolRoute ใน App.vue) ──
   { path: '/embed/personnel', name: 'embedPersonnel', component: () => import('../views/EmbedPersonnelView.vue') },
