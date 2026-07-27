@@ -142,7 +142,7 @@ async function load() {
     author_name: data.author_name || '',
     is_published: data.is_published, is_featured: data.is_featured, is_approved: data.is_approved,
   }
-  blocks.value = (data.content_blocks || []).map(b => ({ ...b, _key: Date.now() + Math.random() }))
+  blocks.value = withKeys(data.content_blocks)
   loading.value = false
 }
 

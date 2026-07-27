@@ -1,6 +1,7 @@
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useAreaConfig, DEFAULT_HOME_SECTIONS } from '../../composables/useAreaConfig'
+import { useBlockCollapse } from '../../composables/useBlockCollapse'
 import { BG_TYPES, BG_PRESETS, GRADIENT_PRESETS, getBgStyle, isDarkColor as isDark,
          BG_POSITIONS, OVERLAY_COLORS, IMAGE_PRESETS, IMAGE_DEFAULTS } from '../../composables/useBgStyle'
 import ImageLinkGalleryEditor from '../../components/ImageLinkGalleryEditor.vue'
@@ -15,6 +16,10 @@ const { config, fetchConfig, updateConfig } = useAreaConfig()
 
 const sections       = ref([])
 const saving         = ref(false)
+
+// เซกชันหน้าแรกมีสิบกว่าอันและแต่ละอันสูงเป็นจอ — พับเก็บให้เหลือหัวแถบจะสลับง่ายกว่ามาก
+const collapse       = useBlockCollapse()
+const collapsedCount = computed(() => sections.value.filter(s => collapse.isCollapsed(s.key)).length)
 const editingSection = ref(null) // section object ที่กำลังจัดการรูปภาพอยู่ (เฉพาะ key ขึ้นต้นด้วย image_gallery)
 
 // ── พื้นหลังรูปภาพ ────────────────────────────────────────────────
@@ -178,6 +183,7 @@ onMounted(async () => {
   const raw = config.value?.home_sections
   if (!Array.isArray(raw) || raw.length === 0) {
     sections.value = DEFAULT_HOME_SECTIONS.map(s => ({ ...s }))
+    collapse.autoCollapse(sections.value.map(s => s.key))
     return
   }
   // merge: เพิ่ม section ใหม่จาก DEFAULT ที่ยังไม่มีใน stored config
@@ -202,6 +208,7 @@ onMounted(async () => {
       .map((s, i) => ({ ...s, order: maxOrder + i + 1 })),
   ]
   sections.value = merged.sort((a, b) => a.order - b.order)
+  collapse.autoCollapse(sections.value.map(s => s.key))
 })
 
 // ── Reorder ───────────────────────────────────────────────────────
@@ -297,6 +304,22 @@ async function save() {
       <span>แบนเนอร์/Hero อยู่บนสุดเสมอ ส่วน section ด้านล่างเรียงตามลำดับที่กำหนดที่นี่</span>
     </div>
 
+    <!-- แถบพับ/กางทั้งหมด -->
+    <div v-if="sections.length > 1" class="flex flex-wrap items-center gap-2">
+      <span class="text-[11px] font-bold text-slate-400">{{ sections.length }} เซกชัน</span>
+      <span v-if="collapsedCount" class="text-[11px] text-slate-400">· พับอยู่ {{ collapsedCount }}</span>
+      <div class="ml-auto flex items-center gap-1.5">
+        <button type="button" @click="collapse.collapseAll(sections.map(s => s.key))"
+          class="px-2.5 py-1 rounded-lg text-[11px] font-bold border border-slate-200 bg-white text-slate-500 hover:border-primary hover:text-primary transition-colors">
+          ยุบทั้งหมด
+        </button>
+        <button type="button" @click="collapse.expandAll()"
+          class="px-2.5 py-1 rounded-lg text-[11px] font-bold border border-slate-200 bg-white text-slate-500 hover:border-primary hover:text-primary transition-colors">
+          ขยายทั้งหมด
+        </button>
+      </div>
+    </div>
+
     <!-- Sections list -->
     <div class="space-y-3">
       <div v-for="(sec, i) in sections" :key="sec.key"
@@ -322,8 +345,10 @@ async function save() {
             </button>
           </div>
 
-          <!-- Icon + Info -->
-          <div class="flex items-center gap-3 flex-1 min-w-0">
+          <!-- Icon + Info — กดทั้งแถบเพื่อพับ/กางเซกชัน -->
+          <button type="button" @click="collapse.toggle(sec.key)"
+            class="flex items-center gap-3 flex-1 min-w-0 text-left group"
+            :title="collapse.isCollapsed(sec.key) ? 'กางเซกชันนี้' : 'พับเซกชันนี้'">
             <div class="w-11 h-11 rounded-xl flex-shrink-0 flex items-center justify-center"
               :style="{ backgroundColor: sec.bg || '#f8fafc' }">
               <svg class="w-5 h-5" :class="isDark(sec.bg || '#f8fafc') ? 'text-white' : 'text-primary'"
@@ -331,11 +356,20 @@ async function save() {
                 <path stroke-linecap="round" stroke-linejoin="round" :d="sectionIcon(sec)"/>
               </svg>
             </div>
-            <div>
-              <p class="font-extrabold text-slate-800">{{ sec.label }}</p>
-              <p class="text-xs text-slate-400">{{ sectionDesc(sec) }}</p>
+            <div class="min-w-0">
+              <span class="flex items-center gap-1.5 font-extrabold text-slate-800 group-hover:text-primary transition-colors">
+                {{ sec.label }}
+                <svg :class="['w-3.5 h-3.5 text-slate-300 transition-transform',
+                  collapse.isCollapsed(sec.key) ? '-rotate-90' : '']"
+                  fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/>
+                </svg>
+              </span>
+              <span class="block text-xs text-slate-400 truncate">
+                {{ sec.title || sectionDesc(sec) }}
+              </span>
             </div>
-          </div>
+          </button>
 
           <!-- จัดการรูปภาพ / ลบ (เฉพาะเซกชันภาพลิงก์) -->
           <div v-if="isCustomSection(sec)" class="flex-shrink-0 flex items-center gap-2">
@@ -372,6 +406,9 @@ async function save() {
             </button>
           </div>
         </div>
+
+        <!-- ตัวตั้งค่าทั้งหมดของเซกชัน — v-show ไม่ใช่ v-if จะได้ไม่รีเซ็ตตัวแก้ไขข้างในตอนพับ -->
+        <div v-show="!collapse.isCollapsed(sec.key)">
 
         <!-- Section subtitle + title input -->
         <div class="px-4 pb-2 space-y-2">
@@ -598,6 +635,8 @@ async function save() {
               :style="getBgStyle(sec)"></div>
           </div>
         </div>
+
+        </div><!-- /ตัวตั้งค่าที่พับได้ -->
       </div>
     </div>
 

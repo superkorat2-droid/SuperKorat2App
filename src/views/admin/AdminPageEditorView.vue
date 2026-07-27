@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { ref, onMounted, onUnmounted, computed, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { supabase } from '../../supabase'
 import Swal from 'sweetalert2'
@@ -13,13 +13,16 @@ import { BG_TYPES, BG_PRESETS, GRADIENT_PRESETS, getBgStyle,
          BG_POSITIONS, OVERLAY_COLORS, IMAGE_PRESETS, IMAGE_DEFAULTS } from '../../composables/useBgStyle'
 import { useUploadGc } from '../../composables/useUploadGc'
 import { useInternalPages } from '../../composables/useInternalPages'
+import { useBlockCollapse, blockPreview } from '../../composables/useBlockCollapse'
 
 const { internalPages } = useInternalPages()
+const collapse = useBlockCollapse()
 const route  = useRoute()
 const router = useRouter()
 
 const page    = ref(null)
 const blocks  = ref([])
+const collapsedCount = computed(() => blocks.value.filter(b => collapse.isCollapsed(b.id)).length)
 const layout  = ref('narrow')
 const saving  = ref(false)
 const loading = ref(true)
@@ -101,6 +104,7 @@ onMounted(async () => {
   if (!data) { router.push('/dashboard/pages'); return }
   page.value    = data
   blocks.value  = Array.isArray(data.blocks) ? data.blocks : []
+  collapse.autoCollapse(blocks.value.map(b => b.id))   // หน้าที่มีบล็อกเยอะ เปิดมาให้เห็นภาพรวมก่อน
   layout.value  = data.layout || 'narrow'
   headerMode.value        = data.header_mode || 'icon'
   headerMediaUrl.value    = data.header_media_url  || ''
@@ -116,7 +120,14 @@ onMounted(async () => {
   loading.value = false
 })
 
-function addBlock(type) { blocks.value.push(newBlock(type)) }
+function addBlock(type) {
+  const b = newBlock(type)
+  blocks.value.push(b)
+  collapse.expand(b.id)          // ของที่เพิ่งเพิ่มต้องกางรอให้กรอกเสมอ
+  nextTick(() => {
+    document.getElementById('block-' + b.id)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  })
+}
 
 function removeBlock(idx) {
   gc.trackReplaced(blocks.value[idx]?.bg_image)   // รูปพื้นหลังของบล็อกที่ถูกลบ เข้าคิวรอลบบน server
@@ -518,17 +529,48 @@ async function clearHeaderMedia() {
         <p class="text-sm font-bold">ยังไม่มีเนื้อหา — กด "+ เพิ่ม Block" ด้านบน</p>
       </div>
 
+      <!-- แถบพับ/กาง — โผล่เมื่อมีบล็อกมากพอที่จะเริ่มหายาก -->
+      <div v-if="blocks.length > 1" class="flex flex-wrap items-center gap-2 mb-2">
+        <span class="text-[11px] font-bold text-slate-400">{{ blocks.length }} บล็อก</span>
+        <span v-if="collapsedCount" class="text-[11px] text-slate-400">· พับอยู่ {{ collapsedCount }}</span>
+        <div class="ml-auto flex items-center gap-1.5">
+          <button @click="collapse.collapseAll(blocks.map(b => b.id))"
+            class="px-2.5 py-1 rounded-lg text-[11px] font-bold border border-slate-200 bg-white/70 text-slate-500 hover:border-primary hover:text-primary transition-colors">
+            ยุบทั้งหมด
+          </button>
+          <button @click="collapse.expandAll()"
+            class="px-2.5 py-1 rounded-lg text-[11px] font-bold border border-slate-200 bg-white/70 text-slate-500 hover:border-primary hover:text-primary transition-colors">
+            ขยายทั้งหมด
+          </button>
+        </div>
+      </div>
+
       <div class="space-y-3">
-        <div v-for="(block, idx) in blocks" :key="block.id"
+        <div v-for="(block, idx) in blocks" :key="block.id" :id="'block-' + block.id"
           class="glass-card overflow-hidden">
 
-          <!-- Block toolbar -->
-          <div class="flex items-center gap-2 px-4 py-2 bg-slate-50 border-b border-slate-100">
-            <span class="flex items-center gap-1.5 text-xs font-bold text-slate-500 uppercase tracking-wider">
-              <SvgIcon :name="BLOCK_TYPES.find(b=>b.type===block.type)?.iconName || 'document'" class="w-3.5 h-3.5"/>
-              {{ BLOCK_TYPES.find(b=>b.type===block.type)?.label }}
-            </span>
-            <div class="flex items-center gap-1 ml-auto">
+          <!-- Block toolbar — กดที่หัวแถบเพื่อพับ/กาง -->
+          <div :class="['flex items-center gap-2 px-4 py-2 border-b transition-colors',
+            collapse.isCollapsed(block.id) ? 'bg-white border-transparent' : 'bg-slate-50 border-slate-100']">
+            <button type="button" @click="collapse.toggle(block.id)"
+              class="flex items-center gap-2 min-w-0 flex-1 text-left group"
+              :title="collapse.isCollapsed(block.id) ? 'กางบล็อกนี้' : 'พับบล็อกนี้'">
+              <svg :class="['w-3.5 h-3.5 text-slate-400 flex-shrink-0 transition-transform group-hover:text-primary',
+                collapse.isCollapsed(block.id) ? '-rotate-90' : '']"
+                fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/>
+              </svg>
+              <span class="flex items-center gap-1.5 text-xs font-bold text-slate-500 uppercase tracking-wider flex-shrink-0">
+                <SvgIcon :name="BLOCK_TYPES.find(b=>b.type===block.type)?.iconName || 'document'" class="w-3.5 h-3.5"/>
+                {{ BLOCK_TYPES.find(b=>b.type===block.type)?.label }}
+              </span>
+              <!-- สรุปเนื้อหาให้รู้ว่าอันไหนเป็นอันไหนโดยไม่ต้องกางดู -->
+              <span v-if="collapse.isCollapsed(block.id)"
+                class="text-xs text-slate-400 truncate font-normal normal-case">
+                {{ blockPreview(block) || 'ยังไม่มีเนื้อหา' }}
+              </span>
+            </button>
+            <div class="flex items-center gap-1 ml-auto flex-shrink-0">
               <button @click="moveUp(idx)" :disabled="idx===0"
                 class="w-7 h-7 rounded-lg hover:bg-slate-200 flex items-center justify-center disabled:opacity-30 transition-colors">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
@@ -550,8 +592,8 @@ async function clearHeaderMedia() {
             </div>
           </div>
 
-          <!-- Block content editor -->
-          <div class="p-4">
+          <!-- Block content editor — v-show ไม่ใช่ v-if เพื่อไม่ให้ตัวแก้ไขข้างในเสียสถานะตอนพับ -->
+          <div v-show="!collapse.isCollapsed(block.id)" class="p-4">
 
             <!-- HEADING -->
             <template v-if="block.type === 'heading'">

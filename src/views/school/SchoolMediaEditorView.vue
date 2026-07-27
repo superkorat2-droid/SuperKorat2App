@@ -82,7 +82,7 @@ async function load() {
     subject_group: data.subject_group || '', grade_levels: data.grade_levels || [],
     tags: (data.tags||[]).join(', '), author_name: data.author_name || '', is_published: data.is_published,
   }
-  blocks.value = (data.content_blocks||[]).map(b => ({ ...b, _key: Date.now()+Math.random() }))
+  blocks.value = withKeys(data.content_blocks)
   loading.value = false
 }
 

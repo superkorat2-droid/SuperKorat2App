@@ -8,10 +8,32 @@
  * แก้ array ที่ส่งเข้ามาโดยตรง (pattern เดียวกับ ImageLinkGalleryEditor/YoutubeGridEditor)
  * `_key` ใช้เป็น :key เท่านั้น ต้องตัดออกก่อนบันทึกลง DB — ดู stripKeys()
  */
-defineProps({
+import { watch } from 'vue'
+import { useBlockCollapse, blockPreview } from '../../composables/useBlockCollapse'
+import { newBlockKey } from '../../composables/useContentBlocks'
+
+const props = defineProps({
   blocks: { type: Array, required: true },
   title:  { type: String, default: 'เนื้อหา (Block Editor)' },
 })
+
+const collapse = useBlockCollapse()
+
+// blocks ถูกเติมทีหลังจากฝั่ง parent (โหลดจาก DB) จึงต้องรอครั้งแรกที่มีของ
+// แล้วพับให้ครั้งเดียว — ถ้าพับซ้ำทุกครั้งที่จำนวนเปลี่ยน กดเพิ่มบล็อกแล้วจะโดนพับทันที
+let autoCollapsed = false
+watch(() => props.blocks.length, n => {
+  if (autoCollapsed || !n) return
+  autoCollapsed = true
+  collapse.autoCollapse(props.blocks.map(b => b._key))
+}, { immediate: true })
+
+function addBlock(type, defaults) {
+  const b = { ...defaults, _key: newBlockKey() }
+  props.blocks.push(b)
+  autoCollapsed = true       // เพิ่มเองแล้ว ไม่ต้องพับอัตโนมัติอีก
+  collapse.expand(b._key)
+}
 
 const BLOCK_TYPES = [
   { type:'heading',  label:'หัวข้อ',    icon:'H1' },
@@ -32,19 +54,44 @@ const DEFAULTS = {
   html:    { type:'html', code:'' },
   divider: { type:'divider' },
 }
-
-function newKey() { return Date.now() + Math.random() }
 </script>
 
 <template>
   <div class="glass-card p-5 space-y-4">
-    <h2 class="font-bold text-slate-700">{{ title }}</h2>
+    <div class="flex items-center gap-2">
+      <h2 class="font-bold text-slate-700">{{ title }}</h2>
+      <!-- พับเก็บบล็อกเวลามีเยอะจนหาลำบาก -->
+      <div v-if="blocks.length > 1" class="ml-auto flex items-center gap-1.5">
+        <button type="button" @click="collapse.collapseAll(blocks.map(b => b._key))"
+          class="px-2.5 py-1 rounded-lg text-[11px] font-bold border border-slate-200 bg-white text-slate-500 hover:border-primary hover:text-primary transition-colors">
+          ยุบทั้งหมด
+        </button>
+        <button type="button" @click="collapse.expandAll()"
+          class="px-2.5 py-1 rounded-lg text-[11px] font-bold border border-slate-200 bg-white text-slate-500 hover:border-primary hover:text-primary transition-colors">
+          ขยายทั้งหมด
+        </button>
+      </div>
+    </div>
 
     <div class="space-y-3">
       <div v-for="(block, i) in blocks" :key="block._key"
         class="border border-slate-200 rounded-xl p-3 space-y-2 hover:border-primary/40 transition-colors">
         <div class="flex items-center justify-between gap-2">
-          <span class="text-[10px] font-bold text-slate-400 uppercase bg-slate-100 px-2 py-0.5 rounded">{{ block.type }}</span>
+          <button type="button" @click="collapse.toggle(block._key)"
+            class="flex items-center gap-1.5 min-w-0 flex-1 text-left group"
+            :title="collapse.isCollapsed(block._key) ? 'กางบล็อกนี้' : 'พับบล็อกนี้'">
+            <svg :class="['w-3 h-3 text-slate-400 flex-shrink-0 transition-transform group-hover:text-primary',
+              collapse.isCollapsed(block._key) ? '-rotate-90' : '']"
+              fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/>
+            </svg>
+            <span class="text-[10px] font-bold text-slate-400 uppercase bg-slate-100 px-2 py-0.5 rounded flex-shrink-0">
+              {{ BLOCK_TYPES.find(t => t.type === block.type)?.label || block.type }}
+            </span>
+            <span v-if="collapse.isCollapsed(block._key)" class="text-xs text-slate-400 truncate">
+              {{ blockPreview(block) || 'ยังไม่มีเนื้อหา' }}
+            </span>
+          </button>
           <div class="flex gap-1 flex-shrink-0">
             <button type="button" @click="i > 0 && blocks.splice(i - 1, 0, blocks.splice(i, 1)[0])" :disabled="i === 0"
               class="w-6 h-6 flex items-center justify-center text-slate-400 hover:bg-slate-100 rounded disabled:opacity-20" title="เลื่อนขึ้น">
@@ -61,6 +108,8 @@ function newKey() { return Date.now() + Math.random() }
           </div>
         </div>
 
+        <!-- v-show ไม่ใช่ v-if จะได้ไม่ล้างค่าที่พิมพ์ค้างไว้ตอนพับ -->
+        <div v-show="!collapse.isCollapsed(block._key)" class="space-y-2">
         <div v-if="block.type==='heading'" class="flex gap-2">
           <select v-model="block.level" class="px-2 py-1 border border-slate-200 rounded-lg text-xs bg-white">
             <option :value="2">H2</option><option :value="3">H3</option><option :value="4">H4</option>
@@ -96,12 +145,13 @@ function newKey() { return Date.now() + Math.random() }
         </div>
 
         <div v-else-if="block.type==='divider'" class="py-1"><hr class="border-slate-200"/></div>
+        </div>
       </div>
     </div>
 
     <div class="flex flex-wrap gap-2 pt-2 border-t border-slate-100">
       <button v-for="bt in BLOCK_TYPES" :key="bt.type" type="button"
-        @click="blocks.push({ ...DEFAULTS[bt.type], _key: newKey() })"
+        @click="addBlock(bt.type, DEFAULTS[bt.type])"
         class="flex items-center gap-1 px-3 py-1.5 text-xs font-bold bg-slate-50 text-slate-600 rounded-xl hover:bg-primary/10 hover:text-primary transition-colors">
         <span>{{ bt.icon }}</span> {{ bt.label }}
       </button>
