@@ -563,7 +563,9 @@ const handleLogout = async () => {
             </div>
           </div>
 
-          <p class="text-xs text-white/40 text-center sm:text-left">© {{ currentYear }} {{ areaName }} · สงวนลิขสิทธิ์</p>
+          <!-- จัดกลางเสมอให้อยู่แกนเดียวกับแผงตัวนับด้านบน — เดิมชิดซ้ายบนจอใหญ่
+               แล้วดูขัดกันเพราะแผงอยู่กลาง -->
+          <p class="text-xs text-white/40 text-center">© {{ currentYear }} {{ areaName }} · สงวนลิขสิทธิ์</p>
         </div>
       </div>
     </footer>
