@@ -111,6 +111,16 @@ const summary = computed(() => {
           @input="cfg.rows = Math.min(10, Math.max(1, +$event.target.value || 3))"
           class="w-16 px-2 py-1 border border-slate-200 rounded-lg text-sm text-center focus:outline-none focus:border-primary"/>
       </div>
+
+      <!-- บอกผลลัพธ์จริงก่อนบันทึก — "คอลัมน์" มีผลเฉพาะมุมมองการ์ด
+           มุมมองรายการ 1 แถว = 1 รายการ จึงได้เท่ากับจำนวนแถวพอดี -->
+      <span class="text-[11px] text-slate-400 w-full sm:w-auto">
+        = แสดงหน้าละ
+        <b class="text-slate-600">{{ cfg.view === 'list' ? cfg.rows : cfg.cols * cfg.rows }}</b>
+        รายการ
+        <template v-if="cfg.view === 'list'">(รายการ 1 แถวต่อ 1 รายการ · คอลัมน์ไม่มีผล)</template>
+        <template v-else>({{ cfg.cols }} คอลัมน์ × {{ cfg.rows }} แถว)</template>
+      </span>
     </div>
 
     <div class="flex flex-wrap gap-x-5 gap-y-2">

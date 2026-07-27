@@ -86,12 +86,25 @@ const filtered = computed(() => {
   })
 })
 
-const perPage    = computed(() => Math.max(1, props.cols * props.rows))
+/**
+ * จำนวนต่อหน้า — คิดจาก "แถวต่อหน้า" ที่ตั้งไว้เสมอ
+ *
+ * มุมมองการ์ด : 1 แถวมี cols ใบ  → cols x rows
+ * มุมมองรายการ: 1 แถวมี 1 รายการ → rows เท่านั้น
+ *
+ * เดิมใช้ cols x rows กับทั้งสองมุมมอง ทำให้มุมมองรายการแสดงเกินที่ตั้งไว้หลายเท่า
+ * (ตั้ง 4 คอลัมน์ 3 แถว แล้วได้ 12 แถวในมุมมองรายการ) ซึ่งไม่ตรงกับคำว่า "แถวต่อหน้า"
+ * ผูกกับ viewMode ไม่ใช่ props.view เพราะผู้ชมสลับมุมมองเองได้ระหว่างดู
+ */
+const perPage    = computed(() =>
+  Math.max(1, viewMode.value === 'list' ? props.rows : props.cols * props.rows))
 const totalPages = computed(() => Math.max(1, Math.ceil(filtered.value.length / perPage.value)))
 const paged      = computed(() => filtered.value.slice((page.value - 1) * perPage.value, page.value * perPage.value))
 const widthClass = computed(() => COL_WIDTH_CLASS[props.cols] || COL_WIDTH_CLASS[4])
 
 watch([filtered, perPage], () => { if (page.value > totalPages.value) page.value = totalPages.value })
+// สลับการ์ด/รายการ = จำนวนต่อหน้าเปลี่ยน กลับไปหน้าแรกเพื่อไม่ให้ผู้ชมงงว่าของหายไปไหน
+watch(viewMode, () => { page.value = 1 })
 
 function toggleSort(key) {
   if (sortBy.value === key) sortAsc.value = !sortAsc.value
