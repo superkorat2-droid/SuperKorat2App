@@ -519,21 +519,51 @@ const handleLogout = async () => {
         </div>
 
         <!-- แถบล่างสุด — ไม่ใส่อะไรชิดขวาสุด กันซ้อนกับปุ่มลอย "กลับขึ้นบน" -->
-        <div class="mt-10 pt-6 border-t border-white/10 text-center sm:text-left">
-          <p class="text-xs text-white/40">© {{ currentYear }} {{ areaName }} · สงวนลิขสิทธิ์</p>
+        <div class="mt-10 pt-6 border-t border-white/10">
 
-          <!-- ตัวนับผู้เข้าชม — ใช้ <span class="block"> ไม่ใช่ <p> เพราะ
-               .glass-card p { color: revert !important } ใน style.css ล้างสีทิ้ง -->
-          <span v-if="showVisitCounter"
-            class="mt-2 inline-flex items-center gap-2 text-xs text-white/40">
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/>
-              <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-            </svg>
-            ผู้เข้าชม <b class="text-white/70 font-bold">{{ (visitCounter.total || 0).toLocaleString('th-TH') }}</b> ครั้ง
-            <span class="text-white/25">·</span>
-            วันนี้ <b class="text-white/70 font-bold">{{ (visitCounter.today || 0).toLocaleString('th-TH') }}</b>
-          </span>
+          <!-- ── ตัวนับผู้เข้าชม — แผงกระจกกลางหน้า ──
+               ใช้ <span class="block"> ไม่ใช่ <p> เพราะ .glass-card p { color: revert !important }
+               ใน style.css ล้างสี Tailwind ทิ้ง (เคยโดนมาแล้วกับปฏิทิน) -->
+          <div v-if="showVisitCounter" class="flex justify-center mb-6">
+            <div class="relative">
+              <!-- แสงจาง ๆ ด้านหลังให้แผงดูลอยขึ้นมาจากพื้น ไม่แบนติดกับ footer -->
+              <div class="absolute -inset-4 rounded-[28px] bg-white/[0.04] blur-xl pointer-events-none"></div>
+
+              <div class="relative flex items-stretch rounded-2xl bg-white/[0.07] backdrop-blur-md
+                          ring-1 ring-white/15 shadow-[0_10px_36px_rgba(0,0,0,0.22)] overflow-hidden">
+                <!-- ไอคอน -->
+                <div class="flex items-center px-4 sm:px-5 bg-white/[0.04] border-r border-white/10">
+                  <svg class="w-5 h-5 text-white/45" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                  </svg>
+                </div>
+
+                <!-- ยอดสะสม -->
+                <div class="px-5 sm:px-7 py-3 text-center min-w-[104px] sm:min-w-[128px]">
+                  <span class="block text-[9px] font-bold uppercase tracking-[0.2em] text-white/35 whitespace-nowrap">
+                    ผู้เข้าชมเว็บไซต์
+                  </span>
+                  <span class="block text-xl sm:text-2xl font-extrabold text-white tabular-nums leading-tight mt-0.5">
+                    {{ (visitCounter.total || 0).toLocaleString('th-TH') }}
+                  </span>
+                </div>
+
+                <!-- วันนี้ — จุดเขียวกะพริบบอกว่ายังนับอยู่ตอนนี้ -->
+                <div class="px-5 sm:px-7 py-3 text-center border-l border-white/10 min-w-[92px] sm:min-w-[108px]">
+                  <span class="block text-[9px] font-bold uppercase tracking-[0.2em] text-white/35 whitespace-nowrap">
+                    วันนี้
+                  </span>
+                  <span class="flex items-center justify-center gap-1.5 text-xl sm:text-2xl font-extrabold text-white tabular-nums leading-tight mt-0.5">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)] animate-pulse"></span>
+                    {{ (visitCounter.today || 0).toLocaleString('th-TH') }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <p class="text-xs text-white/40 text-center sm:text-left">© {{ currentYear }} {{ areaName }} · สงวนลิขสิทธิ์</p>
         </div>
       </div>
     </footer>
