@@ -975,7 +975,8 @@ const stats = [
               <h2 class="text-2xl md:text-3xl font-extrabold text-slate-900 accent-line-center">{{ sec.title }}</h2>
             </div>
             <DriveFolderBrowser :folder-id="sec.drive.folder_id" :folder-name="sec.drive.title || sec.title"
-              :view="sec.drive.view || 'grid'" :cols="sec.drive.cols || 4" :rows="sec.drive.rows || 3"
+              :view="sec.drive.view || 'grid'" :cols="sec.drive.cols || 4"
+              :rows="sec.drive.rows || 2" :rows-list="sec.drive.rows_list || 10"
               :show-search="sec.drive.show_search !== false" :allow-subfolders="sec.drive.allow_subfolders !== false"/>
           </div>
         </section>

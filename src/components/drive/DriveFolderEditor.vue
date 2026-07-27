@@ -15,7 +15,8 @@ const props = defineProps({
 const cfg = props.modelValue
 if (!cfg.view)  cfg.view = 'grid'
 if (!cfg.cols)  cfg.cols = 4
-if (!cfg.rows)  cfg.rows = 3
+if (!cfg.rows)      cfg.rows = 2
+if (!cfg.rows_list) cfg.rows_list = 10
 if (cfg.show_search === undefined)      cfg.show_search = true
 if (cfg.allow_subfolders === undefined) cfg.allow_subfolders = true
 
@@ -106,20 +107,26 @@ const summary = computed(() => {
       </div>
 
       <div class="flex items-center gap-1.5">
-        <span class="text-[11px] font-bold text-slate-500">แถวต่อหน้า</span>
-        <input type="number" min="1" max="10" :value="cfg.rows"
-          @input="cfg.rows = Math.min(10, Math.max(1, +$event.target.value || 3))"
+        <span class="text-[11px] font-bold text-slate-500">แถว (การ์ด)</span>
+        <input type="number" min="1" max="20" :value="cfg.rows"
+          @input="cfg.rows = Math.min(20, Math.max(1, +$event.target.value || 2))"
+          class="w-16 px-2 py-1 border border-slate-200 rounded-lg text-sm text-center focus:outline-none focus:border-primary"/>
+      </div>
+
+      <div class="flex items-center gap-1.5">
+        <span class="text-[11px] font-bold text-slate-500">แถว (รายการ)</span>
+        <input type="number" min="1" max="50" :value="cfg.rows_list"
+          @input="cfg.rows_list = Math.min(50, Math.max(1, +$event.target.value || 10))"
           class="w-16 px-2 py-1 border border-slate-200 rounded-lg text-sm text-center focus:outline-none focus:border-primary"/>
       </div>
 
       <!-- บอกผลลัพธ์จริงก่อนบันทึก — "คอลัมน์" มีผลเฉพาะมุมมองการ์ด
            มุมมองรายการ 1 แถว = 1 รายการ จึงได้เท่ากับจำนวนแถวพอดี -->
       <span class="text-[11px] text-slate-400 w-full sm:w-auto">
-        = แสดงหน้าละ
-        <b class="text-slate-600">{{ cfg.view === 'list' ? cfg.rows : cfg.cols * cfg.rows }}</b>
-        รายการ
-        <template v-if="cfg.view === 'list'">(รายการ 1 แถวต่อ 1 รายการ · คอลัมน์ไม่มีผล)</template>
-        <template v-else>({{ cfg.cols }} คอลัมน์ × {{ cfg.rows }} แถว)</template>
+        การ์ด <b class="text-slate-600">{{ cfg.cols * cfg.rows }}</b> ใบ/หน้า
+        ({{ cfg.cols }}×{{ cfg.rows }})
+        · รายการ <b class="text-slate-600">{{ cfg.rows_list }}</b> แถว/หน้า
+        <span class="text-slate-300">| คอลัมน์ไม่มีผลกับมุมมองรายการ</span>
       </span>
     </div>
 

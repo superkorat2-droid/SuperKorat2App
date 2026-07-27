@@ -15,7 +15,8 @@ const props = defineProps({
   folderName: { type: String,  default: 'โฟลเดอร์' },
   view:       { type: String,  default: 'grid' },  // 'grid' | 'list'
   cols:       { type: Number,  default: 4 },
-  rows:       { type: Number,  default: 3 },
+  rows:       { type: Number,  default: 2 },   // แถวต่อหน้า — มุมมองการ์ด
+  rowsList:   { type: Number,  default: 10 },  // แถวต่อหน้า — มุมมองรายการ (1 แถว = 1 รายการ)
   showSearch: { type: Boolean, default: true },
   allowSubfolders: { type: Boolean, default: true },
 })
@@ -87,17 +88,15 @@ const filtered = computed(() => {
 })
 
 /**
- * จำนวนต่อหน้า — คิดจาก "แถวต่อหน้า" ที่ตั้งไว้เสมอ
+ * จำนวนต่อหน้า — แยกค่าตามมุมมอง เพราะจำนวนที่ "พอดีตา" ต่างกันมาก
+ *   การ์ด  : 1 แถวมี cols ใบ  → cols x rows      (เช่น 6 x 2 = 12 ใบ)
+ *   รายการ : 1 แถวมี 1 รายการ → rowsList          (เช่น 10 แถว)
  *
- * มุมมองการ์ด : 1 แถวมี cols ใบ  → cols x rows
- * มุมมองรายการ: 1 แถวมี 1 รายการ → rows เท่านั้น
- *
- * เดิมใช้ cols x rows กับทั้งสองมุมมอง ทำให้มุมมองรายการแสดงเกินที่ตั้งไว้หลายเท่า
- * (ตั้ง 4 คอลัมน์ 3 แถว แล้วได้ 12 แถวในมุมมองรายการ) ซึ่งไม่ตรงกับคำว่า "แถวต่อหน้า"
+ * เดิมใช้ cols x rows กับทั้งสองมุมมอง มุมมองรายการเลยแสดงเกินที่ตั้งไว้หลายเท่า
  * ผูกกับ viewMode ไม่ใช่ props.view เพราะผู้ชมสลับมุมมองเองได้ระหว่างดู
  */
 const perPage    = computed(() =>
-  Math.max(1, viewMode.value === 'list' ? props.rows : props.cols * props.rows))
+  Math.max(1, viewMode.value === 'list' ? props.rowsList : props.cols * props.rows))
 const totalPages = computed(() => Math.max(1, Math.ceil(filtered.value.length / perPage.value)))
 const paged      = computed(() => filtered.value.slice((page.value - 1) * perPage.value, page.value * perPage.value))
 const widthClass = computed(() => COL_WIDTH_CLASS[props.cols] || COL_WIDTH_CLASS[4])

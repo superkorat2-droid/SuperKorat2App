@@ -189,7 +189,8 @@ watch(() => route.params.slug, s => { if (s) load(s) })
           <div v-else-if="block.type === 'drive' && block.folder_id">
             <h3 v-if="block.title" class="text-xl font-extrabold text-slate-800 mb-3">{{ block.title }}</h3>
             <DriveFolderBrowser :folder-id="block.folder_id" :folder-name="block.title || 'โฟลเดอร์'"
-              :view="block.view || 'grid'" :cols="block.cols || 4" :rows="block.rows || 3"
+              :view="block.view || 'grid'" :cols="block.cols || 4"
+              :rows="block.rows || 2" :rows-list="block.rows_list || 10"
               :show-search="block.show_search !== false" :allow-subfolders="block.allow_subfolders !== false"/>
           </div>
 
