@@ -61,6 +61,31 @@ export function fileKind(mimeType) {
 
 export function isFolder(file) { return file?.mimeType === FOLDER_MIME }
 
+export const SHORTCUT_MIME = 'application/vnd.google-apps.shortcut'
+
+/**
+ * แปลง "ทางลัด" (shortcut) ให้กลายเป็นเป้าหมายจริง
+ *
+ * ถ้าผู้ใช้เอาโฟลเดอร์/ไฟล์จากที่อื่นมา "เพิ่มทางลัด" ไว้ในโฟลเดอร์ที่แชร์
+ * Google จะคืน mimeType เป็น shortcut พร้อม shortcutDetails.targetId/targetMimeType
+ * ถ้าไม่แปล ฝั่งหน้าเว็บจะเห็นเป็นไฟล์ชนิดไม่รู้จัก → คลิกโฟลเดอร์แล้วไม่เข้า
+ * และตัวอย่างไฟล์ก็เปิดไม่ขึ้น (อาการที่ user เจอในหน้า CMS)
+ *
+ * คง id เดิมไว้ที่ shortcutId เผื่อต้องอ้างอิงตัวทางลัดจริงๆ
+ */
+export function resolveShortcut(f) {
+  if (!f || f.mimeType !== SHORTCUT_MIME) return f
+  const t = f.shortcutDetails
+  if (!t?.targetId) return f
+  return {
+    ...f,
+    id: t.targetId,
+    mimeType: t.targetMimeType || f.mimeType,
+    isShortcut: true,
+    shortcutId: f.id,
+  }
+}
+
 export function formatSize(bytes) {
   const n = Number(bytes)
   if (!n) return ''            // โฟลเดอร์และไฟล์ Google Docs ไม่มี size
@@ -110,7 +135,7 @@ export function useDriveFolder() {
       const data = await res.json()
       if (!res.ok) throw new Error(data?.message || 'โหลดรายการไฟล์ไม่สำเร็จ')
 
-      const list = Array.isArray(data.files) ? data.files : []
+      const list = (Array.isArray(data.files) ? data.files : []).map(resolveShortcut)
       _cache.set(folderId, { ts: Date.now(), files: list })
       files.value = list
       return list

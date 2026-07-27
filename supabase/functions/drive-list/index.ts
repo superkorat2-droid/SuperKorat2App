@@ -49,7 +49,10 @@ Deno.serve(async (req) => {
   try {
     const q = new URLSearchParams({
       q: `'${folderId}' in parents and trashed = false`,
-      fields: 'nextPageToken,files(id,name,mimeType,size,modifiedTime,iconLink,thumbnailLink,webViewLink)',
+      // ต้องขอ shortcutDetails ด้วย — โฟลเดอร์ที่ผู้ใช้ "เพิ่มทางลัด" เข้ามาจะมาเป็น
+      // mimeType application/vnd.google-apps.shortcut ไม่ใช่ folder ถ้าไม่แปลเป้าหมาย
+      // ฝั่งหน้าเว็บจะมองว่าเป็นไฟล์ คลิกแล้วเข้าโฟลเดอร์ไม่ได้
+      fields: 'nextPageToken,files(id,name,mimeType,size,modifiedTime,iconLink,thumbnailLink,webViewLink,shortcutDetails(targetId,targetMimeType))',
       // โฟลเดอร์ขึ้นก่อนเสมอ แล้วเรียงชื่อแบบธรรมชาติ (เลข 2 มาก่อน 10)
       orderBy: 'folder,name_natural',
       pageSize: '1000',
