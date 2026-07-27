@@ -4,6 +4,7 @@ import { useRouter, useRoute, RouterLink, RouterView } from 'vue-router'
 import { supabase } from './supabase'
 import { useAreaConfig } from './composables/useAreaConfig'
 import { useNavPages } from './composables/useNavPages'
+import { fetchVisitCounter } from './composables/useVisitTracker'
 import { iconPath, isIconKey } from './composables/useIcons.js'
 import WelcomePopup from './components/WelcomePopup.vue'
 import ScrollToTopButton from './components/ScrollToTopButton.vue'
@@ -45,6 +46,13 @@ const contactAddress = computed(() => config.value?.contact_address || '')
 const contactFax     = computed(() => config.value?.contact_fax || '')
 const siteWebsite    = computed(() => config.value?.website_url || '')
 const currentYear    = computed(() => new Date().getFullYear())
+
+// ── Footer: ตัวนับผู้เข้าชม ────────────────────────────────────────────
+// โหลดครั้งเดียวตอนเปิดเว็บ ไม่ต้องรีเฟรชตามทุกหน้า — ตัวเลขท้ายเว็บไม่ใช่
+// ข้อมูลที่ต้องสด และการยิงซ้ำทุกครั้งที่เปลี่ยนหน้าคือ request ทิ้งเปล่า
+const visitCounter = ref(null)
+const showVisitCounter = computed(() =>
+  config.value?.show_visitor_counter !== false && visitCounter.value)
 
 // ── Footer: โซเชียล — SVG path เดียวกับที่ ContactView.vue ใช้ ──────────
 const FOOTER_ICONS = {
@@ -125,6 +133,7 @@ async function loadUserRole(userId) {
 onMounted(async () => {
   fetchConfig()
   fetchNavPages()
+  fetchVisitCounter().then(c => { visitCounter.value = c })
   const { data: { session: s } } = await supabase.auth.getSession()
   session.value = s
   loadUserRole(s?.user?.id)
@@ -512,6 +521,19 @@ const handleLogout = async () => {
         <!-- แถบล่างสุด — ไม่ใส่อะไรชิดขวาสุด กันซ้อนกับปุ่มลอย "กลับขึ้นบน" -->
         <div class="mt-10 pt-6 border-t border-white/10 text-center sm:text-left">
           <p class="text-xs text-white/40">© {{ currentYear }} {{ areaName }} · สงวนลิขสิทธิ์</p>
+
+          <!-- ตัวนับผู้เข้าชม — ใช้ <span class="block"> ไม่ใช่ <p> เพราะ
+               .glass-card p { color: revert !important } ใน style.css ล้างสีทิ้ง -->
+          <span v-if="showVisitCounter"
+            class="mt-2 inline-flex items-center gap-2 text-xs text-white/40">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/>
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+            </svg>
+            ผู้เข้าชม <b class="text-white/70 font-bold">{{ (visitCounter.total || 0).toLocaleString('th-TH') }}</b> ครั้ง
+            <span class="text-white/25">·</span>
+            วันนี้ <b class="text-white/70 font-bold">{{ (visitCounter.today || 0).toLocaleString('th-TH') }}</b>
+          </span>
         </div>
       </div>
     </footer>

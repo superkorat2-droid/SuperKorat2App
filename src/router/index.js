@@ -1,5 +1,6 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
 import { supabase } from '../supabase'
+import { trackVisit } from '../composables/useVisitTracker'
 
 // ─── Core pages ───────────────────────────────────────────────────────────
 import HomeView         from '../views/HomeView.vue'
@@ -24,6 +25,7 @@ import AdminSchoolsView       from '../views/admin/AdminSchoolsView.vue'
 import AdminPersonnelView     from '../views/admin/AdminPersonnelView.vue'
 import AdminStudentsView      from '../views/admin/AdminStudentsView.vue'
 import AdminEnrollmentView    from '../views/admin/AdminEnrollmentView.vue'
+import AdminVisitStatsView   from '../views/admin/AdminVisitStatsView.vue'
 import AdminPagesView         from '../views/admin/AdminPagesView.vue'
 import AdminPageEditorView    from '../views/admin/AdminPageEditorView.vue'
 import AdminPageHeadersView   from '../views/admin/AdminPageHeadersView.vue'
@@ -95,10 +97,10 @@ import AdminAwardsReportView  from '../views/admin/AdminAwardsReportView.vue'
 
 const routes = [
   // ── หน้าหลัก ──────────────────────────────────────────────────────────
-  { path: '/',           name: 'home',       component: HomeView },
+  { path: '/',           name: 'home',       component: HomeView, meta: { title: 'หน้าแรก' } },
   { path: '/login',      name: 'login',      component: LoginView },
-  { path: '/supervisor/:id', name: 'supervisor', component: SupervisorView },
-  { path: '/nithet',     name: 'nithet',     component: GroupNitetView },
+  { path: '/supervisor/:id', name: 'supervisor', component: SupervisorView, meta: { title: 'ประวัติศึกษานิเทศก์' } },
+  { path: '/nithet',     name: 'nithet',     component: GroupNitetView, meta: { title: 'กลุ่มนิเทศ ติดตามและประเมินผล' } },
 
   // ── Admin (nested) ─────────────────────────────────────────────────────
   {
@@ -120,6 +122,7 @@ const routes = [
       { path: 'dmc',         name: 'adminDmc',         component: AdminDmcPeriodsView,  meta: { title: 'รอบ DMC', icon: '📊' } },
       { path: 'dmc/:id',     name: 'adminDmcResults',  component: AdminDmcResultsView,  meta: { title: 'สถิติ DMC' } },
       { path: 'enrollment',  name: 'adminEnrollment',  component: AdminEnrollmentView,  meta: { title: 'สถิติย้อนหลัง', icon: '📊' } },
+      { path: 'visit-stats', name: 'adminVisitStats',  component: AdminVisitStatsView,  meta: { title: 'สถิติการเข้าชม', icon: '👁️' } },
       { path: 'home-sections', name: 'adminHomeSections', component: AdminHomeSectionsView, meta: { title: 'จัดการ Section หน้าแรก' } },
       { path: 'banners',   name: 'adminBanners',   component: AdminBannersView,   meta: { title: 'แบนเนอร์', icon: '🖼️' } },
       { path: 'services',  name: 'adminServices',  component: AdminServicesView,  meta: { title: 'บริการออนไลน์', icon: '🌐' } },
@@ -188,44 +191,44 @@ const routes = [
   },
 
   // ── ทำเนียบโรงเรียน (สาธารณะ) ─────────────────────────────────────────
-  { path: '/schools',       name: 'schools',      component: PublicSchoolsView },
-  { path: '/schoolweb',     name: 'schoolWebsites', component: PublicSchoolWebsitesView },
-  { path: '/principals',   name: 'principals',   component: PublicPrincipalsView },
-  { path: '/newsletters',  name: 'newsletters',  component: PublicNewslettersView },
-  { path: '/media',        name: 'media',        component: PublicMediaView },
-  { path: '/media/:id',    name: 'mediaDetail',  component: () => import('../views/MediaDetailView.vue') },
-  { path: '/works',        name: 'works',        component: () => import('../views/PublicWorksView.vue') },
-  { path: '/works/:id',    name: 'workDetail',   component: () => import('../views/WorkDetailView.vue') },
+  { path: '/schools',       name: 'schools',      component: PublicSchoolsView, meta: { title: 'ทำเนียบโรงเรียน' } },
+  { path: '/schoolweb',     name: 'schoolWebsites', component: PublicSchoolWebsitesView, meta: { title: 'เว็บไซต์โรงเรียน' } },
+  { path: '/principals',   name: 'principals',   component: PublicPrincipalsView, meta: { title: 'ผู้บริหารโรงเรียน' } },
+  { path: '/newsletters',  name: 'newsletters',  component: PublicNewslettersView, meta: { title: 'จดหมายข่าว' } },
+  { path: '/media',        name: 'media',        component: PublicMediaView, meta: { title: 'คลังสื่อการเรียนรู้' } },
+  { path: '/media/:id',    name: 'mediaDetail',  component: () => import('../views/MediaDetailView.vue'), meta: { title: 'รายละเอียดสื่อ' } },
+  { path: '/works',        name: 'works',        component: () => import('../views/PublicWorksView.vue'), meta: { title: 'ผลงาน/นวัตกรรม' } },
+  { path: '/works/:id',    name: 'workDetail',   component: () => import('../views/WorkDetailView.vue'), meta: { title: 'รายละเอียดผลงาน' } },
   // ฟอร์มให้บุคคลภายนอกเขตส่งผลงาน (ไม่ต้องล็อกอิน — เขียนลง work_submissions)
-  { path: '/submit-work',  name: 'submitWork',   component: () => import('../views/SubmitWorkView.vue') },
-  { path: '/awards',       name: 'awards',       component: () => import('../views/PublicAwardsView.vue') },
+  { path: '/submit-work',  name: 'submitWork',   component: () => import('../views/SubmitWorkView.vue'), meta: { title: 'ส่งผลงานเผยแพร่' } },
+  { path: '/awards',       name: 'awards',       component: () => import('../views/PublicAwardsView.vue'), meta: { title: 'ผลงานและรางวัล' } },
 
   // ── โค้ดฝังสำหรับเว็บภายนอก (ไม่มี navbar/footer — ดู isSchoolRoute ใน App.vue) ──
   { path: '/embed/personnel', name: 'embedPersonnel', component: () => import('../views/EmbedPersonnelView.vue') },
-  { path: '/student-stats', name: 'studentStats', component: PublicStudentStatsView },
+  { path: '/student-stats', name: 'studentStats', component: PublicStudentStatsView, meta: { title: 'สถิตินักเรียน' } },
 
   // ── Dynamic CMS pages ────────────────────────────────────────────────
   // /page/org แทนที่ด้วยผังโครงสร้างที่ดึงข้อมูลจริง (ต้องมาก่อน /page/:slug ทั่วไป)
-  { path: '/page/org', name: 'orgChart', component: OrgChartView },
+  { path: '/page/org', name: 'orgChart', component: OrgChartView, meta: { title: 'โครงสร้างการบริหาร' } },
   { path: '/page/:slug', name: 'dynamicPage', component: DynamicPageView },
 
   // ── Supervision fill (public link) ───────────────────────────────────
   { path: '/supervision/:token', name: 'supervisionFill', component: SupervisionFillView },
 
   // ── ข่าวสาร ──────────────────────────────────────────────────────────
-  { path: '/news',            name: 'news',          component: NewsView          },
-  { path: '/news/:id',        name: 'newsDetail',    component: NewsDetailView    },
-  { path: '/education-news',  name: 'educationNews', component: EducationNewsView },
+  { path: '/news',            name: 'news',          component: NewsView, meta: { title: 'ข่าวสาร' }          },
+  { path: '/news/:id',        name: 'newsDetail',    component: NewsDetailView, meta: { title: 'รายละเอียดข่าว' }    },
+  { path: '/education-news',  name: 'educationNews', component: EducationNewsView, meta: { title: 'ข่าวการศึกษา' } },
 
   // ── บริการ ────────────────────────────────────────────────────────────
-  { path: '/download',  name: 'download',  component: DownloadView  },
-  { path: '/school-documents', name: 'schoolDocuments', component: SchoolDocumentsView },
-  { path: '/url-short', name: 'urlShort',  component: UrlShortView  },
-  { path: '/qrcode',    name: 'qrcode',    component: QrCodeView    },
+  { path: '/download',  name: 'download',  component: DownloadView, meta: { title: 'เอกสารดาวน์โหลด' }  },
+  { path: '/school-documents', name: 'schoolDocuments', component: SchoolDocumentsView, meta: { title: 'เอกสารสำหรับโรงเรียน' } },
+  { path: '/url-short', name: 'urlShort',  component: UrlShortView, meta: { title: 'ย่อลิงก์' }  },
+  { path: '/qrcode',    name: 'qrcode',    component: QrCodeView, meta: { title: 'สร้าง QR Code' }    },
   { path: '/s/:slug',   name: 'shortRedirect', component: ShortRedirectView },
 
   // ── ติดต่อ ────────────────────────────────────────────────────────────
-  { path: '/contact',   name: 'contact',   component: ContactView   },
+  { path: '/contact',   name: 'contact',   component: ContactView, meta: { title: 'ติดต่อเรา' }   },
 
   // ── 404 fallback ──────────────────────────────────────────────────────
   { path: '/:pathMatch(.*)*', redirect: '/' },
@@ -290,6 +293,14 @@ router.beforeEach(async (to, from, next) => {
   }
 
   next()
+})
+
+// สถิติการเข้าชม — ต้องอยู่ใน afterEach เท่านั้น ถ้าไปใส่ใน beforeEach จะหน่วง
+// การเปลี่ยนหน้าให้ผู้ใช้ทุกครั้ง · ตัวมันเองไม่ await อยู่แล้ว
+// เอา path จาก to.path ไม่ใช่ location.pathname เพราะ hash router ทำให้
+// location.pathname เป็น "/" ตลอด ทุกหน้าจะถูกนับรวมกันหมด
+router.afterEach((to) => {
+  trackVisit(to.path, to.meta?.title)
 })
 
 export default router

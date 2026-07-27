@@ -757,6 +757,7 @@ function resetToDefault() {
               { key:'show_public_news',       icon:'📰', label:'แสดงข่าวสารสาธารณะ',            desc:'ข่าวที่ publish แล้วจะแสดงบนหน้าเว็บ' },
               { key:'show_public_works',      icon:'🏆', label:'แสดงผลงานสาธารณะ',             desc:'ผลงานที่อนุมัติแล้วจะแสดงบนหน้าเว็บ' },
               { key:'allow_external_works',   icon:'📮', label:'รับผลงานจากภายนอกเขต',        desc:'เปิดฟอร์ม /submit-work ให้คนนอกเขตส่งผลงาน (ต้องอนุมัติก่อนเผยแพร่)' },
+              { key:'show_visitor_counter',   icon:'👁️', label:'แสดงตัวนับผู้เข้าชมท้ายเว็บ',  desc:'ปิดแค่ตัวเลขที่โชว์ให้คนนอกเห็น ระบบยังเก็บสถิติต่อและดูได้ที่เมนู สถิติการเข้าชม' },
             ]" :key="feat.key"
               class="flex items-start justify-between gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100 hover:bg-white hover:border-slate-200 transition-all">
               <div class="flex items-start gap-3">
