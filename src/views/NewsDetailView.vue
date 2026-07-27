@@ -1,7 +1,8 @@
 <script setup>
-import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { supabase } from '../supabase'
+import DriveFolderBrowser from '../components/drive/DriveFolderBrowser.vue'
 
 const route  = useRoute()
 const router = useRouter()
@@ -46,6 +47,13 @@ function isFileAttachment(url) {
     return FILE_EXTS.test(url)
   }
 }
+
+/** ไฟล์แนบที่จะแสดงจริง — กรองแถวที่ url ว่างทิ้ง เผื่อมีของเสียหลุดมาใน jsonb */
+const attachments = computed(() =>
+  (Array.isArray(news.value?.links) ? news.value.links : [])
+    .filter(l => l && typeof l.url === 'string' && l.url.trim())
+    .map(l => ({ label: (l.label || '').trim(), url: l.url.trim() }))
+)
 
 function attachmentLabel(url) {
   return isFileAttachment(url) ? 'เอกสารแนบ' : 'ลิงก์ที่เกี่ยวข้อง'
@@ -264,9 +272,54 @@ onUnmounted(() => window.removeEventListener('message', onHtmlMessage))
             loading="lazy"/>
         </div>
 
-        <!-- ── File / Link attachment ───────────────────────────────── -->
-        <div v-if="news.file_url"
-          class="mt-8 p-4 bg-primary-light border border-primary/20 rounded-2xl flex items-center gap-4">
+        <!-- ── โฟลเดอร์ Google Drive ────────────────────────────────── -->
+        <!-- คอมโพเนนต์ตัวเดียวกับบล็อก Drive ของหน้าเนื้อหา (DynamicPageView)
+             ถ้าโฟลเดอร์ไม่ได้แชร์สาธารณะ ตัวมันขึ้นการ์ดแจ้ง error เอง ไม่ทำหน้าพัง -->
+        <div v-if="news.drive?.folder_id" class="mt-8">
+          <h3 v-if="news.drive.title" class="text-xl font-extrabold text-slate-800 mb-3">{{ news.drive.title }}</h3>
+          <DriveFolderBrowser
+            :folder-id="news.drive.folder_id"
+            :folder-name="news.drive.title || 'เอกสารประกอบข่าว'"
+            :view="news.drive.view || 'grid'"
+            :cols="news.drive.cols || 4"
+            :rows="news.drive.rows || 2"
+            :rows-list="news.drive.rows_list || 10"
+            :show-search="news.drive.show_search !== false"
+            :allow-subfolders="news.drive.allow_subfolders !== false"/>
+        </div>
+
+        <!-- ── ไฟล์แนบ / ลิงก์เพิ่มเติม (หลายลิงก์) ──────────────────── -->
+        <div v-if="attachments.length" class="mt-8 space-y-3">
+          <div v-for="(l, i) in attachments" :key="i"
+            class="p-4 bg-primary-light border border-slate-200 rounded-2xl flex items-center gap-4">
+            <div class="w-10 h-10 rounded-xl bg-primary flex items-center justify-center flex-shrink-0">
+              <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                <path stroke-linecap="round" stroke-linejoin="round" :d="attachmentIcon(l.url)"/>
+              </svg>
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-bold text-primary">{{ l.label || attachmentLabel(l.url) }}</p>
+              <p class="text-xs text-slate-500 truncate">
+                {{ isFileAttachment(l.url) ? l.url.split('/').pop().split('?')[0] : l.url }}
+              </p>
+            </div>
+            <a :href="l.url" target="_blank" rel="noopener"
+              class="flex-shrink-0 px-4 py-2 bg-primary text-white text-sm font-bold rounded-xl
+                     hover:bg-primary-dark transition-all flex items-center gap-1.5">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                  :d="isFileAttachment(l.url)
+                    ? 'M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3'
+                    : 'M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25'"/>
+              </svg>
+              {{ attachmentBtnLabel(l.url) }}
+            </a>
+          </div>
+        </div>
+
+        <!-- ตัวเก่าเก็บไว้เป็นตาข่ายกันพลาด — เผื่อข่าวที่ migration ตกหล่น -->
+        <div v-else-if="news.file_url"
+          class="mt-8 p-4 bg-primary-light border border-slate-200 rounded-2xl flex items-center gap-4">
           <!-- Icon -->
           <div class="w-10 h-10 rounded-xl bg-primary flex items-center justify-center flex-shrink-0">
             <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">

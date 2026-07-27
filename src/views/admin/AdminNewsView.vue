@@ -4,6 +4,7 @@ import { supabase } from '../../supabase'
 import Swal from 'sweetalert2'
 import StorageBrowser    from '../../components/StorageBrowser.vue'
 import ImageCropperModal from '../../components/ImageCropperModal.vue'
+import DriveFolderEditor from '../../components/drive/DriveFolderEditor.vue'
 import { useExternalUpload, externalUploadEnabled, deleteUploadedFile } from '../../composables/useExternalUpload'
 
 // ── Categories ───────────────────────────────────────────────────
@@ -55,6 +56,7 @@ const showCropper     = ref(false)
 const coverUploading  = ref(false)
 const coverUploadErr  = ref('')
 const showHtmlSection    = ref(false)
+const showDriveSection   = ref(false)
 const showHtmlPreview    = ref(false)
 const showCoverUrlInput  = ref(false)
 const coverUrlDraft      = ref('')
@@ -69,6 +71,11 @@ const emptyForm = () => ({
   content:      '',
   cover_url:    '',
   file_url:     '',
+  // ไฟล์แนบหลายลิงก์ [{ label, url }] — file_url ยังถูกเขียนด้วยเป็นลิงก์แรก
+  // เพื่อให้ป้ายคลิปหนีบในการ์ดข่าวและโค้ดเก่าที่อาจตกหล่นยังทำงานเหมือนเดิม
+  links:        [],
+  // โฟลเดอร์ Drive 1 โฟลเดอร์ต่อข่าว — โครงเดียวกับบล็อก drive ของหน้า CMS
+  drive:        {},
   embed_url:    '',
   embed_type:   '',
   html_code:    '',
@@ -132,6 +139,7 @@ function openAdd() {
   form.value = emptyForm()
   coverUploadErr.value = ''
   showHtmlSection.value = false
+  showDriveSection.value = false
   showHtmlPreview.value = false
   showCoverUrlInput.value = false
   coverUrlDraft.value = ''
@@ -146,14 +154,41 @@ function openEdit(n) {
     embed_url:    n.embed_url   || '',
     embed_type:   n.embed_type  || '',
     html_code:    n.html_code   || '',
+    // ต้องเซ็ตหลัง spread — ข่าวเก่าที่ค่าเป็น null จะทับค่าเริ่มต้นจาก emptyForm()
+    // แล้ว DriveFolderEditor (ที่แก้ modelValue ตรง ๆ) จะพังทันทีที่เปิดข่าวนั้น
+    drive:        (n.drive && typeof n.drive === 'object' && !Array.isArray(n.drive)) ? { ...n.drive } : {},
+    links:        Array.isArray(n.links) ? n.links.map(l => ({ label: l?.label || '', url: l?.url || '' })) : [],
     published_at: n.published_at ? n.published_at.slice(0, 16) : '',
+  }
+  // ข่าวเก่าที่ยังไม่เคยมี links แต่มี file_url — โชว์ให้แก้ได้ ไม่ให้หายไปเฉย ๆ
+  if (!form.value.links.length && (n.file_url || '').trim()) {
+    form.value.links = [{ label: '', url: n.file_url.trim() }]
   }
   coverUploadErr.value = ''
   showHtmlSection.value = !!(n.html_code)
+  showDriveSection.value = !!(n.drive?.folder_id)
   showHtmlPreview.value = false
   showCoverUrlInput.value = false
   coverUrlDraft.value = ''
   showModal.value = true
+}
+
+// ── ไฟล์แนบหลายลิงก์ ──────────────────────────────────────────────
+// แพตเทิร์นเดียวกับ "ลิงก์ท้ายเว็บไซต์" ในหน้าตั้งค่าเขต (footer_extra_links)
+function addLink()    { form.value.links.push({ label: '', url: '' }) }
+function removeLink(i){ form.value.links.splice(i, 1) }
+function moveLinkUp(i){
+  if (i > 0) { const l = form.value.links; [l[i - 1], l[i]] = [l[i], l[i - 1]] }
+}
+function moveLinkDown(i){
+  const l = form.value.links
+  if (i < l.length - 1) { [l[i], l[i + 1]] = [l[i + 1], l[i]] }
+}
+/** ตัดแถวที่ยัง url ว่างทิ้งก่อนบันทึก — แถวเปล่าไม่ควรไปโผล่บนหน้าเว็บ */
+function cleanLinks() {
+  return form.value.links
+    .map(l => ({ label: (l.label || '').trim(), url: (l.url || '').trim() }))
+    .filter(l => l.url)
 }
 
 // ── HTML preview (wrap in full document + auto-height script) ─────
@@ -215,13 +250,18 @@ async function saveNews() {
 
   saving.value = true
   const { data: { user } } = await supabase.auth.getUser()
+  const links = cleanLinks()
   const payload = {
     category:     form.value.category,
     title:        form.value.title.trim(),
     excerpt:      form.value.excerpt.trim(),
     content:      form.value.content.trim(),
     cover_url:    form.value.cover_url.trim(),
-    file_url:     form.value.file_url.trim(),
+    links,
+    // เก็บเฉพาะเมื่อวางลิงก์โฟลเดอร์จริง ไม่งั้นบันทึกค่า default เปล่า ๆ ลง DB
+    drive:        form.value.drive?.folder_id ? form.value.drive : {},
+    // ลิงก์แรกลง file_url ด้วย — ป้ายคลิปหนีบในการ์ดข่าวและโค้ดเก่ายังใช้ค่านี้อยู่
+    file_url:     links[0]?.url || '',
     embed_url:    form.value.embed_url.trim(),
     embed_type:   form.value.embed_type,
     html_code:    form.value.html_code.trim(),
@@ -275,13 +315,15 @@ async function deleteNews(n) {
 
 // ── Storage select ────────────────────────────────────────────────
 const storageTarget = ref('cover')
-function pickStorage(target) {
+const storageLinkIdx = ref(-1)   // เลือกไฟล์ให้ลิงก์แถวไหน (-1 = ปกหน้า)
+function pickStorage(target, idx = -1) {
   storageTarget.value = target
+  storageLinkIdx.value = idx
   showStorage.value = true
 }
 function onStorageSelect({ url }) {
   if (storageTarget.value === 'cover') form.value.cover_url = url
-  else form.value.file_url = url
+  else if (form.value.links[storageLinkIdx.value]) form.value.links[storageLinkIdx.value].url = url
   showStorage.value = false
 }
 
@@ -719,6 +761,42 @@ function getCatPath(val) {
 
               <!-- ══ DIVIDER ══ -->
               <div class="border-t border-slate-100 pt-1">
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">โฟลเดอร์ Google Drive</p>
+              </div>
+
+              <!-- โฟลเดอร์ Drive — ตัวเดียวกับบล็อก "โฟลเดอร์ Drive" ของหน้าเนื้อหา -->
+              <div>
+                <button @click="showDriveSection = !showDriveSection"
+                  :class="['w-full flex items-center justify-between gap-2 px-4 py-3 rounded-2xl border-2 transition-all text-sm font-bold',
+                    showDriveSection || form.drive?.folder_id
+                      ? 'border-blue-300 bg-blue-50 text-blue-700'
+                      : 'border-dashed border-slate-200 text-slate-500 hover:border-blue-300 hover:text-blue-600']">
+                  <span class="flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z"/>
+                    </svg>
+                    {{ form.drive?.folder_id ? 'แนบโฟลเดอร์ Drive แล้ว' : 'แนบทั้งโฟลเดอร์ Drive (ผู้อ่านเปิดดูไฟล์ได้ในหน้าข่าว)' }}
+                  </span>
+                  <svg class="w-4 h-4 transition-transform flex-shrink-0" :class="showDriveSection ? 'rotate-180' : ''"
+                    fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/>
+                  </svg>
+                </button>
+
+                <div v-if="showDriveSection" class="mt-3 p-4 rounded-2xl border border-slate-200 bg-slate-50/60">
+                  <DriveFolderEditor :model-value="form.drive"/>
+                  <button v-if="form.drive?.folder_id" @click="form.drive = {}; showDriveSection = false"
+                    class="mt-3 flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-red-500 transition-colors">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                    เอาโฟลเดอร์ออก
+                  </button>
+                </div>
+              </div>
+
+              <!-- ══ DIVIDER ══ -->
+              <div class="border-t border-slate-100 pt-1">
                 <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">HTML โค้ดแบบกำหนดเอง</p>
               </div>
 
@@ -807,19 +885,60 @@ function getCatPath(val) {
                 <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">ไฟล์แนบและการตั้งค่า</p>
               </div>
 
-              <!-- ⑧ File attachment -->
+              <!-- ⑧ ไฟล์แนบ / ลิงก์เพิ่มเติม — เพิ่มได้หลายลิงก์ ตั้งชื่อได้ -->
               <div>
-                <label class="block text-xs font-bold text-slate-600 mb-1">ไฟล์แนบ / ลิงก์เพิ่มเติม</label>
-                <div class="flex gap-2">
-                  <input v-model="form.file_url" type="text" placeholder="URL ไฟล์แนบ (PDF, ฯลฯ) หรือลิงก์ภายนอก"
-                    class="input-field flex-1"/>
-                  <button @click="pickStorage('file')"
-                    class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-colors flex-shrink-0">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z"/>
-                    </svg>
-                  </button>
+                <div class="flex items-center justify-between gap-2 mb-1.5">
+                  <label class="block text-xs font-bold text-slate-600">ไฟล์แนบ / ลิงก์เพิ่มเติม</label>
+                  <span v-if="form.links.length" class="text-[11px] text-slate-400">{{ form.links.length }} ลิงก์</span>
                 </div>
+
+                <div v-if="!form.links.length"
+                  class="text-center py-5 text-xs text-slate-400 border-2 border-dashed border-slate-200 rounded-2xl">
+                  ยังไม่มีไฟล์แนบ — กด "เพิ่มลิงก์" ด้านล่าง
+                </div>
+
+                <div v-else class="space-y-2">
+                  <div v-for="(l, i) in form.links" :key="i"
+                    class="p-3 rounded-2xl border border-slate-200 bg-slate-50/60 space-y-2">
+                    <div class="flex items-center gap-2">
+                      <span class="w-6 h-6 flex-shrink-0 flex items-center justify-center rounded-lg bg-white border border-slate-200 text-[11px] font-extrabold text-slate-400">
+                        {{ i + 1 }}
+                      </span>
+                      <input v-model="l.label" type="text" placeholder="ชื่อลิงก์ที่จะแสดง (เว้นว่างได้)"
+                        class="input-field flex-1 text-sm"/>
+                      <div class="flex items-center gap-1 flex-shrink-0">
+                        <button @click="moveLinkUp(i)" :disabled="i === 0" title="เลื่อนขึ้น"
+                          class="w-7 h-7 flex items-center justify-center rounded-lg border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-30 transition-colors">
+                          <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 15.75l7.5-7.5 7.5 7.5"/></svg>
+                        </button>
+                        <button @click="moveLinkDown(i)" :disabled="i === form.links.length - 1" title="เลื่อนลง"
+                          class="w-7 h-7 flex items-center justify-center rounded-lg border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-30 transition-colors">
+                          <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/></svg>
+                        </button>
+                        <button @click="removeLink(i)" title="ลบลิงก์นี้"
+                          class="w-7 h-7 flex items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-400 hover:text-red-500 hover:border-red-200 transition-colors">
+                          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                        </button>
+                      </div>
+                    </div>
+                    <div class="flex gap-2">
+                      <input v-model="l.url" type="text" placeholder="URL ไฟล์แนบ (PDF, ฯลฯ) หรือลิงก์ภายนอก"
+                        class="input-field flex-1 text-sm"/>
+                      <button @click="pickStorage('file', i)" title="เลือกจากคลังไฟล์"
+                        class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-colors flex-shrink-0">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z"/>
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <button @click="addLink"
+                  class="mt-2 w-full flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl border-2 border-dashed border-slate-200 text-xs font-bold text-slate-500 hover:border-primary hover:text-primary transition-colors">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+                  เพิ่มลิงก์
+                </button>
               </div>
 
               <!-- ⑨ Published + Pinned -->

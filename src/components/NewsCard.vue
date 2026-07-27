@@ -40,7 +40,7 @@ defineProps({
       </div>
 
       <!-- มีไฟล์แนบ -->
-      <div v-if="showFileBadge && news.file_url" class="absolute top-2 right-2">
+      <div v-if="showFileBadge && (news.links?.length || news.file_url)" class="absolute top-2 right-2">
         <span class="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 bg-white/90 text-slate-600 rounded-full shadow-sm">
           <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
             <path stroke-linecap="round" stroke-linejoin="round" d="M18.375 12.739l-7.693 7.693a4.5 4.5 0 01-6.364-6.364l10.94-10.94A3 3 0 1119.5 7.372L8.552 18.32m.009-.01l-.01.01m5.699-9.941l-7.81 7.81a1.5 1.5 0 002.112 2.13"/>

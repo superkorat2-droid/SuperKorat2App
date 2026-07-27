@@ -41,7 +41,7 @@ async function fetchNews() {
   loading.value = true
   const { data } = await supabase
     .from('news')
-    .select('id, title, excerpt, cover_url, category, is_pinned, published_at, file_url, view_count')
+    .select('id, title, excerpt, cover_url, category, is_pinned, published_at, file_url, links, view_count')
     .eq('is_published', true)
     .order('is_pinned',    { ascending: false })
     .order('published_at', { ascending: false })
