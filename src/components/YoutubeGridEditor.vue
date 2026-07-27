@@ -9,7 +9,10 @@ import { computed } from 'vue'
 import { youtubeId, youtubeThumb, COL_OPTIONS } from '../composables/useYoutubeGrid'
 
 const props = defineProps({
-  modelValue: { type: Object, required: true },  // { cols, rows, items: [] }
+  modelValue: { type: Object, required: true },  // { title, cols, rows, items: [] }
+  // เซกชันหน้าแรกมีช่อง "ชื่อหลัก" ของตัวเองอยู่แล้ว ถ้าโชว์อีกช่องจะซ้ำซ้อนและงง
+  // บล็อกในหน้า CMS ไม่มีหัวข้อให้ จึงต้องเปิดเฉพาะที่นั่น (แบบเดียวกับบล็อกภาพลิงก์/Drive)
+  showTitle:  { type: Boolean, default: false },
 })
 
 const cfg = props.modelValue
@@ -30,6 +33,13 @@ function moveDown(i) { if (i < cfg.items.length - 1) cfg.items.splice(i + 1, 0, 
 
 <template>
   <div class="space-y-3">
+    <!-- หัวข้อใหญ่ของบล็อก -->
+    <div v-if="showTitle">
+      <label class="text-[11px] font-bold text-slate-500">หัวข้อ (เว้นว่างได้)</label>
+      <input v-model="cfg.title" placeholder="เช่น วิดีโอแนะนำ"
+        class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:border-primary"/>
+    </div>
+
     <!-- คอลัมน์ / แถว -->
     <div class="flex flex-wrap items-center gap-x-5 gap-y-2">
       <div class="flex items-center gap-1.5">

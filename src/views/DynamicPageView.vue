@@ -182,8 +182,10 @@ watch(() => route.params.slug, s => { if (s) load(s) })
             :code="block.code" :block-id="block.id"/>
 
           <!-- YOUTUBE CARDS -->
-          <YoutubeCardGrid v-else-if="block.type === 'youtube' && block.items?.length"
-            :items="block.items" :cols="block.cols || 4" :rows="block.rows || 3"/>
+          <div v-else-if="block.type === 'youtube' && block.items?.length">
+            <h3 v-if="block.title" class="text-xl font-extrabold text-slate-800 mb-3">{{ block.title }}</h3>
+            <YoutubeCardGrid :items="block.items" :cols="block.cols || 4" :rows="block.rows || 3"/>
+          </div>
 
           <!-- DRIVE FOLDER -->
           <div v-else-if="block.type === 'drive' && block.folder_id">

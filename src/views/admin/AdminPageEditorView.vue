@@ -85,7 +85,7 @@ function newBlock(type) {
     case 'media-text':  return { ...base, url: '', side: 'left', heading: '', text: '' }
     case 'button':      return { ...base, text: '', link_type: 'internal', link_url: '', align: 'center' }
     case 'accordion':   return { ...base, items: [] }
-    case 'youtube':     return { ...base, cols: 4, rows: 3, items: [] }
+    case 'youtube':     return { ...base, title: '', cols: 4, rows: 3, items: [] }
     case 'drive':       return { ...base, url: '', folder_id: '', title: '', view: 'grid', cols: 4, rows: 3, show_search: true, allow_subfolders: true }
     default:            return base
   }
@@ -801,7 +801,7 @@ async function clearHeaderMedia() {
             </template>
 
             <!-- YOUTUBE CARDS -->
-            <YoutubeGridEditor v-else-if="block.type === 'youtube'" :model-value="block"/>
+            <YoutubeGridEditor v-else-if="block.type === 'youtube'" :model-value="block" show-title/>
 
             <!-- DRIVE FOLDER -->
             <DriveFolderEditor v-else-if="block.type === 'drive'" :model-value="block"/>
