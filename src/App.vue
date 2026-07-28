@@ -88,6 +88,17 @@ const footerExtraLinks = computed(() =>
   [...(config.value?.footer_extra_links || [])].sort((a, b) => (a.order ?? 99) - (b.order ?? 99))
 )
 
+// ── Footer: กริดต้องนับเฉพาะคอลัมน์ที่แสดงจริง ──────────────────────────
+// เดิมประกาศ 5 คอลัมน์ตายตัว แต่ "ติดตามเรา" กับ "ลิงก์เพิ่มเติม" ถูก v-if ซ่อน
+// ช่องว่าง 2 ช่อง (0.65+0.65fr) ยังถูกจองไว้ คอลัมน์ติดต่อเราเลยโดนบีบจนที่อยู่
+// ภาษาไทยตัดคำผิดกลางคำ ("เพชรมาตุ / คลา")
+const footerColumns = computed(() => {
+  const cols = ['2.6fr', '0.8fr', '1.5fr']            // แบรนด์ · ลิงก์ด่วน · ติดต่อเรา
+  if (socialLinks.value.length)     cols.push('0.65fr')
+  if (footerExtraLinks.value.length) cols.push('0.7fr')
+  return cols.join(' ')
+})
+
 // ── ฟอนต์ชื่อระบบใน navbar: คำนวณตามความยาวข้อความจริง เพื่อไม่ให้ตัดบรรทัด ──
 // ใช้หน่วย cqw (container query width) แทน vw เพราะพื้นที่ว่างจริงถูกกินโดยโลโก้/ปุ่มต่างๆ
 // ไม่ใช่สัดส่วนคงที่ของ viewport — cqw จะอิงความกว้าง container ที่ layout คำนวณให้แล้ว
@@ -482,7 +493,8 @@ const handleLogout = async () => {
       </div>
 
       <div class="relative max-w-7xl mx-auto px-6 pt-12 pb-20 sm:pb-10">
-        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-[2.6fr_0.75fr_0.95fr_0.65fr_0.65fr] gap-10">
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-[var(--footer-cols)] gap-10"
+          :style="{ '--footer-cols': footerColumns }">
 
           <!-- แบรนด์ -->
           <div class="sm:col-span-2 md:col-span-1">
@@ -518,7 +530,7 @@ const handleLogout = async () => {
           <div>
             <p class="text-xs font-bold text-white/40 uppercase tracking-widest mb-4">ติดต่อเรา</p>
             <ul class="space-y-2.5 text-sm text-white/70">
-              <li v-if="contactAddress" class="leading-relaxed">{{ contactAddress }}</li>
+              <li v-if="contactAddress" class="leading-relaxed text-pretty">{{ contactAddress }}</li>
               <li v-if="contactPhone">
                 <a :href="`tel:${contactPhone}`" class="hover:text-white transition-colors">โทร. {{ contactPhone }}</a>
                 <span v-if="contactFax"> · แฟกซ์ {{ contactFax }}</span>
