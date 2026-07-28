@@ -441,7 +441,47 @@ const handleLogout = async () => {
         <svg width="100%" height="100%"><defs><pattern id="footer-dots" width="24" height="24" patternUnits="userSpaceOnUse"><circle cx="12" cy="12" r="1" fill="white"/></pattern></defs><rect width="100%" height="100%" fill="url(#footer-dots)"/></svg>
       </div>
 
-      <div class="relative max-w-7xl mx-auto px-6 pt-12 pb-20 sm:pb-8">
+      <!-- ── ริ้วคลื่นขอบล่างสุดของหน้า ──
+           สีดึงจากตัวแปรธีม (--color-secondary) ทั้งหมด เปลี่ยนสีเขตเมื่อไรริ้วเปลี่ยนตาม
+           preserveAspectRatio="none" ให้เส้นโค้งยืดเต็มความกว้างจอ ส่วน
+           vector-effect="non-scaling-stroke" กันไม่ให้ความหนาริ้วบิดตอนยืด -->
+      <div class="absolute inset-x-0 bottom-0 h-[260px] md:h-[240px] pointer-events-none" aria-hidden="true">
+        <!-- -scale-y-100 พลิกแนวตั้ง — เส้นโค้งชุดเดิมออกแบบให้เกาะขอบบน
+             พอย้ายมาไว้ล่างต้องกลับหัวถึงจะซบขอบล่างแทนที่จะลอย
+             viewBox สูง 150 แต่กล่องสูง 240 + preserveAspectRatio="none"
+             = เส้นโค้งถูกยืดเต็มแถบ ริ้วจึงพาดหลังแผงตัวนับด้วย ไม่กองอยู่ใต้สุด -->
+        <svg class="w-full h-full -scale-y-100" viewBox="0 0 1440 150" preserveAspectRatio="none">
+          <defs>
+            <!-- จางหัวท้ายให้ริ้วละลายไปกับพื้น ไม่ตัดขอบแข็ง -->
+            <linearGradient id="fr-fade" x1="0" x2="1" y1="0" y2="0">
+              <stop offset="0"    stop-color="white" stop-opacity="0"/>
+              <stop offset="0.14" stop-color="white" stop-opacity="1"/>
+              <stop offset="0.86" stop-color="white" stop-opacity="1"/>
+              <stop offset="1"    stop-color="white" stop-opacity="0"/>
+            </linearGradient>
+            <mask id="fr-mask"><rect width="1440" height="150" fill="url(#fr-fade)"/></mask>
+          </defs>
+
+          <g mask="url(#fr-mask)" fill="none" stroke-linecap="round">
+            <!-- เงาฟ้าจาง กว้าง ๆ ให้ริ้วมีมิติ ไม่ลอยโดด -->
+            <path d="M-60,150 C 300,120 560,44 880,34 C 1120,26 1300,54 1520,10"
+              stroke="var(--color-secondary)" stroke-opacity="0.14" class="stroke-[30] md:stroke-[52]" vector-effect="non-scaling-stroke"/>
+
+            <!-- ริ้วฟ้าหลัก — พุ่งจากซ้ายล่างขึ้นขวาบน -->
+            <path d="M-60,140 C 280,116 540,46 860,34 C 1110,24 1300,50 1520,6"
+              stroke="var(--color-secondary)" stroke-opacity="0.38" class="stroke-[15] md:stroke-[28]" vector-effect="non-scaling-stroke"/>
+            <path d="M-60,140 C 280,116 540,46 860,34 C 1110,24 1300,50 1520,6"
+              stroke="rgba(255,255,255,0.07)" class="stroke-[15] md:stroke-[28]" vector-effect="non-scaling-stroke"/>
+
+
+            <!-- เส้นสว่างบาง วิ่งเลียบริ้วฟ้าด้านบน เพิ่มความคม -->
+            <path d="M-60,112 C 290,84 550,16 870,4 C 1120,-6 1310,20 1520,-24"
+              stroke="rgba(255,255,255,0.12)" class="stroke-[2.5] md:stroke-[4]" vector-effect="non-scaling-stroke"/>
+          </g>
+        </svg>
+      </div>
+
+      <div class="relative max-w-7xl mx-auto px-6 pt-12 pb-20 sm:pb-10">
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-[2.6fr_0.75fr_0.95fr_0.65fr_0.65fr] gap-10">
 
           <!-- แบรนด์ -->
