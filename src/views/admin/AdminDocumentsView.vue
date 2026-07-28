@@ -60,10 +60,17 @@ async function fetchDocs() {
 async function fetchMyProfile() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return
-  const { data } = await supabase.from('profiles').select('full_name, department').eq('id', user.id).single()
+  const { data } = await supabase.from('profiles').select('id, role, full_name, department').eq('id', user.id).single()
   myProfile.value = data || null
 }
 onMounted(() => { fetchDocs(); fetchConfig(); fetchMyProfile() })
+
+// ── สิทธิ์แก้/ลบ — ต้องตรงกับ RLS ใน migration 0066 เป๊ะ ๆ ────────────
+// ถ้าโชว์ปุ่มเกินจริง ผู้ใช้จะกดแล้วเจอ error เปล่า ๆ · ถ้าซ่อนเกินจริงก็ใช้งานไม่ได้
+const isDocAdmin = computed(() => ['super_admin','admin'].includes(myProfile.value?.role))
+function canManageDoc(d) {
+  return isDocAdmin.value || (!!d?.created_by && d.created_by === myProfile.value?.id)
+}
 
 // ── Computed ──────────────────────────────────────────────────────
 const filtered = computed(() => {
@@ -114,7 +121,6 @@ async function saveDoc() {
     file_size:      form.value.file_size.trim(),
     is_published:   form.value.is_published,
     sort_order:     Number(form.value.sort_order) || 0,
-    created_by:     user?.id || null,
     publisher_name: form.value.publisher_name.trim(),
     publisher_dept: form.value.publisher_dept.trim(),
   }
@@ -123,7 +129,8 @@ async function saveDoc() {
   if (form.value.id) {
     ;({ error } = await supabase.from('documents').update(payload).eq('id', form.value.id))
   } else {
-    ;({ error } = await supabase.from('documents').insert(payload))
+    // ใส่ created_by เฉพาะตอนสร้าง — ถ้าใส่ตอน update ด้วย เจ้าของจะถูกโอนไปให้คนที่กดแก้
+    ;({ error } = await supabase.from('documents').insert({ ...payload, created_by: user?.id || null }))
   }
 
   if (error) {
@@ -318,8 +325,9 @@ function formatDate(iso) {
             </td>
             <!-- Status -->
             <td class="px-4 py-3 text-center">
-              <button @click="togglePublish(d)"
+              <button @click="togglePublish(d)" :disabled="!canManageDoc(d)"
                 :class="['px-2.5 py-1 rounded-full text-xs font-bold transition-all',
+                  !canManageDoc(d) ? 'cursor-default opacity-70' : '',
                   d.is_published ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' : 'bg-slate-100 text-slate-500 hover:bg-slate-200']">
                 {{ d.is_published ? '✅ เผยแพร่' : '🚫 ซ่อน' }}
               </button>
@@ -331,14 +339,19 @@ function formatDate(iso) {
                   class="px-3 py-1.5 bg-slate-50 text-slate-600 text-xs font-bold rounded-xl hover:bg-slate-100 transition-all">
                   👁️
                 </a>
-                <button @click="openEdit(d)"
-                  class="px-3 py-1.5 bg-blue-50 text-blue-600 text-xs font-bold rounded-xl hover:bg-blue-100 transition-all">
-                  ✏️
-                </button>
-                <button @click="deleteDoc(d)"
-                  class="px-3 py-1.5 bg-red-50 text-red-500 text-xs font-bold rounded-xl hover:bg-red-100 transition-all">
-                  🗑️
-                </button>
+                <template v-if="canManageDoc(d)">
+                  <button @click="openEdit(d)"
+                    class="px-3 py-1.5 bg-blue-50 text-blue-600 text-xs font-bold rounded-xl hover:bg-blue-100 transition-all">
+                    ✏️
+                  </button>
+                  <button @click="deleteDoc(d)"
+                    class="px-3 py-1.5 bg-red-50 text-red-500 text-xs font-bold rounded-xl hover:bg-red-100 transition-all">
+                    🗑️
+                  </button>
+                </template>
+                <span v-else class="px-2 text-[11px] text-slate-300" title="แก้ได้เฉพาะผู้ที่อัปโหลดเอกสารนี้ หรือผู้ดูแลระบบ">
+                  ของผู้อื่น
+                </span>
               </div>
             </td>
           </tr>
