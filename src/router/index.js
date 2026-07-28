@@ -20,6 +20,7 @@ import AdminNewsView          from '../views/admin/AdminNewsView.vue'
 import AdminDocumentsView     from '../views/admin/AdminDocumentsView.vue'
 import AdminContactMessagesView from '../views/admin/AdminContactMessagesView.vue'
 import AdminStorageView       from '../views/admin/AdminStorageView.vue'
+import AdminImageLibraryView  from '../views/admin/AdminImageLibraryView.vue'
 import AdminHomeSectionsView  from '../views/admin/AdminHomeSectionsView.vue'
 import AdminSchoolsView       from '../views/admin/AdminSchoolsView.vue'
 import AdminPersonnelView     from '../views/admin/AdminPersonnelView.vue'
@@ -123,6 +124,7 @@ const routes = [
       { path: 'dmc/:id',     name: 'adminDmcResults',  component: AdminDmcResultsView,  meta: { title: 'สถิติ DMC' } },
       { path: 'enrollment',  name: 'adminEnrollment',  component: AdminEnrollmentView,  meta: { title: 'สถิติย้อนหลัง', icon: '📊' } },
       { path: 'visit-stats', name: 'adminVisitStats',  component: AdminVisitStatsView,  meta: { title: 'สถิติการเข้าชม', icon: '👁️' } },
+      { path: 'image-library', name: 'adminImageLibrary', component: AdminImageLibraryView, meta: { title: 'คลังภาพ', icon: '🖼️' } },
       { path: 'home-sections', name: 'adminHomeSections', component: AdminHomeSectionsView, meta: { title: 'จัดการ Section หน้าแรก' } },
       { path: 'banners',   name: 'adminBanners',   component: AdminBannersView,   meta: { title: 'แบนเนอร์', icon: '🖼️' } },
       { path: 'services',  name: 'adminServices',  component: AdminServicesView,  meta: { title: 'บริการออนไลน์', icon: '🌐' } },
@@ -250,6 +252,7 @@ const ADMIN_ONLY_PATHS = [
   '/dashboard/personnel',
   '/dashboard/home-sections',
   '/dashboard/banners',
+  '/dashboard/image-library',
 ]
 
 router.beforeEach(async (to, from, next) => {

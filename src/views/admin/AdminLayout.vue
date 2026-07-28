@@ -90,6 +90,7 @@ const allGroups = [
       { to: '/dashboard/students',   label: 'ข้อมูลนักเรียน',   roles: ['super_admin','admin','supervisor'] },
       { to: '/dashboard/enrollment', label: 'สถิติย้อนหลัง',    roles: ['super_admin','admin','supervisor'] },
       { to: '/dashboard/visit-stats', label: 'สถิติการเข้าชม',  roles: ['super_admin','admin','supervisor'] },
+      { to: '/dashboard/image-library', label: 'คลังภาพ',       roles: ['super_admin','admin'] },
       { to: '/dashboard/settings', label: 'ตั้งค่าเขต',         roles: ['super_admin','admin'] },
     ]
   },

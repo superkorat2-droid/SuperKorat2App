@@ -6,7 +6,6 @@ import { Cropper } from 'vue-advanced-cropper'
 import 'vue-advanced-cropper/dist/style.css'
 import Swal from 'sweetalert2'
 import { useFormDraft } from '../composables/useFormDraft'
-import { useExternalUpload, externalUploadEnabled } from '../composables/useExternalUpload'
 import { useAreaConfig } from '../composables/useAreaConfig'
 
 const route = useRoute()
@@ -197,15 +196,14 @@ function resizeCanvas(src, maxPx = 1200) {
   return c
 }
 
-const { uploadFile: uploadEvidenceExternal } = useExternalUpload()
 
 async function uploadBlob(questionId, blob, ext = 'jpg') {
   uploadingEvidence.value[questionId] = true
   try {
-    if (externalUploadEnabled) {
-      const file = blob instanceof File ? blob : new File([blob], `evidence_${questionId}_${Date.now()}.${ext}`, { type: blob.type })
-      evidenceFileUrls.value[questionId] = await uploadEvidenceExternal(file, 'supervision-evidence')
-    } else {
+    // หน้านี้เข้าได้โดยไม่ต้องล็อกอิน (ใช้ token) จึงอัปผ่าน PHP host ไม่ได้อีกแล้ว —
+    // ตัวอัปโหลดนั้นต้องมี JWT หลังย้ายความลับไปไว้หลัง Edge Function
+    // ใช้ Supabase Storage อย่างเดียว ซึ่งเป็นเส้นทางที่มีอยู่เดิมและ bucket ก็มีอยู่แล้ว
+    {
       const path = `${token.value}/${questionId}_${Date.now()}.${ext}`
       const { error: upErr } = await supabase.storage
         .from('supervision-evidence')
