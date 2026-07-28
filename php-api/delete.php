@@ -6,7 +6,7 @@ require __DIR__ . '/config.php';
 
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: POST, OPTIONS');
-header('Access-Control-Allow-Headers: X-Upload-Secret, Content-Type');
+header('Access-Control-Allow-Headers: X-Upload-Secret, X-Upload-Ticket, Content-Type');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(204);
@@ -21,8 +21,36 @@ function fail(string $msg, int $code = 400): void {
     exit;
 }
 
+// ── ตรวจ "ตั๋วอัปโหลด" ที่ออกโดย Edge Function media-upload ────────────────
+// ทำไมต้องมี: Cloudflare หน้าโดเมนนี้บล็อกคำขอที่มาจากศูนย์ข้อมูล (Attention Required!)
+// Edge Function จึงยิงตรงมาไม่ได้ ต้องให้เบราว์เซอร์ของผู้ใช้ยิงเองแทน
+// แต่จะส่ง UPLOAD_SECRET ไปให้เบราว์เซอร์ไม่ได้ (เคยรั่วมาแล้ว) จึงส่ง "ตั๋ว" ที่
+// เซ็นด้วย HMAC ของ UPLOAD_SECRET หมดอายุใน ~2 นาที และผูกกับ category ที่ขอไว้
+//
+// รูปแบบตั๋ว: purpose.category.exp.nonce.signature
+function verify_ticket(string $ticket, string $purpose): ?string {
+    $parts = explode('.', $ticket);
+    if (count($parts) !== 5) return null;
+    [$p, $cat, $exp, $nonce, $sig] = $parts;
+
+    if ($p !== $purpose) return null;
+    if (!ctype_digit($exp) || (int)$exp < time()) return null;   // หมดอายุแล้ว
+    if (!preg_match('/^[a-z0-9_-]+$/i', $cat)) return null;
+
+    $expected = hash_hmac('sha256', "$p.$cat.$exp.$nonce", UPLOAD_SECRET);
+    if (!hash_equals($expected, $sig)) return null;
+
+    return $cat;   // คืน category ที่ถูกเซ็นไว้ — ใช้ค่านี้แทนค่าที่ผู้ใช้ส่งมา
+}
+
+$ticket = $_SERVER['HTTP_X_UPLOAD_TICKET'] ?? '';
 $secret = $_SERVER['HTTP_X_UPLOAD_SECRET'] ?? '';
-if (!hash_equals(UPLOAD_SECRET, $secret)) {
+
+if ($ticket !== '') {
+    if (verify_ticket($ticket, 'delete') === null) {
+        fail('Invalid or expired ticket', 401);
+    }
+} elseif (!hash_equals(UPLOAD_SECRET, $secret)) {
     fail('Unauthorized', 401);
 }
 

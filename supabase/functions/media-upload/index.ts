@@ -48,6 +48,33 @@ async function requireApprovedUser(req: Request) {
   return { user, profile }
 }
 
+/**
+ * ออก "ตั๋ว" ให้เบราว์เซอร์เอาไปยิง PHP เอง
+ *
+ * ทำไมไม่ให้ Edge Function ยิงเอง: Cloudflare หน้าโดเมนของเขตบล็อกคำขอที่มาจาก
+ * ศูนย์ข้อมูล (ตอบ 403 Attention Required!) ส่วนคำขอจากเบราว์เซอร์ผู้ใช้ผ่านปกติ
+ *
+ * ทำไมไม่ส่ง UPLOAD_SECRET ไปให้เบราว์เซอร์: เคยรั่วมาแล้วเพราะฝังใน bundle
+ * ตั๋วนี้เซ็นด้วย HMAC ของความลับ อายุ 2 นาที และผูกกับ category ที่ขอ
+ * ต่อให้ใครดักไปได้ก็ทำได้แค่อัปไฟล์เข้าโฟลเดอร์เดิมภายในสองนาที
+ * และถอดกลับเป็นความลับไม่ได้
+ */
+const TICKET_TTL_SEC = 120
+
+async function issueTicket(purpose: 'upload' | 'delete', category: string) {
+  const exp   = Math.floor(Date.now() / 1000) + TICKET_TTL_SEC
+  const nonce = crypto.randomUUID().replace(/-/g, '').slice(0, 16)
+  const payload = `${purpose}.${category}.${exp}.${nonce}`
+
+  const key = await crypto.subtle.importKey(
+    'raw', new TextEncoder().encode(UPLOAD_SECRET),
+    { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'])
+  const sigBuf = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(payload))
+  const sig = [...new Uint8Array(sigBuf)].map(b => b.toString(16).padStart(2, '0')).join('')
+
+  return { ticket: `${payload}.${sig}`, exp }
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: CORS_HEADERS })
   if (req.method !== 'POST')    return json({ error: 'method not allowed' }, 405)
@@ -59,44 +86,22 @@ Deno.serve(async (req) => {
     return json({ error: 'not_configured', message: 'ยังไม่ได้ตั้งค่า UPLOAD_API_URL / UPLOAD_API_SECRET บนเซิร์ฟเวอร์' }, 500)
   }
 
-  const contentType = req.headers.get('content-type') || ''
-
   try {
-    // ── ลบไฟล์ (ส่ง JSON มา) ────────────────────────────────────────────
-    if (contentType.includes('application/json')) {
-      const body = await req.json()
-      if (body.action !== 'delete' || !body.url) return json({ error: 'bad request' }, 400)
+    const body = await req.json().catch(() => ({}))
+    const purpose = body.purpose === 'delete' ? 'delete' : 'upload'
+    const category = String(body.category || 'misc').replace(/[^a-z0-9_-]/gi, '') || 'misc'
 
-      const res = await fetch(UPLOAD_API_URL.replace(/upload\.php$/, 'delete.php'), {
-        method: 'POST',
-        headers: { 'X-Upload-Secret': UPLOAD_SECRET, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: body.url }),
-      })
-      const data = await res.json().catch(() => ({}))
-      return json(data, res.ok ? 200 : res.status)
-    }
+    const { ticket, exp } = await issueTicket(purpose, category)
+    const uploadUrl = UPLOAD_API_URL
+    const deleteUrl = UPLOAD_API_URL.replace(/upload\.php$/, 'delete.php')
 
-    // ── อัปโหลด (multipart ส่งต่อทั้งก้อน) ──────────────────────────────
-    // อ่าน formData แล้วประกอบใหม่ ไม่ส่ง body ดิบต่อ เพราะต้องคุมว่า category
-    // เป็นค่าที่ยอมรับได้และไม่ให้แนบฟิลด์แปลกปลอมเข้าไปที่ PHP
-    const form = await req.formData()
-    const file = form.get('file')
-    if (!(file instanceof File)) return json({ error: 'missing file' }, 400)
-
-    const category = String(form.get('category') || 'misc').replace(/[^a-z0-9_-]/gi, '') || 'misc'
-
-    const fwd = new FormData()
-    fwd.append('file', file, file.name)
-    fwd.append('category', category)
-
-    const res = await fetch(UPLOAD_API_URL, {
-      method: 'POST',
-      headers: { 'X-Upload-Secret': UPLOAD_SECRET },
-      body: fwd,
+    return json({
+      ticket,
+      exp,
+      endpoint: purpose === 'delete' ? deleteUrl : uploadUrl,
+      category,
     })
-    const data = await res.json().catch(() => ({}))
-    return json(data, res.ok ? 200 : res.status)
   } catch (e) {
-    return json({ error: (e as Error).message || 'upload failed' }, 500)
+    return json({ error: (e as Error).message || 'ticket failed' }, 500)
   }
 })

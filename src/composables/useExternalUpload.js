@@ -23,6 +23,24 @@ async function authHeaders() {
   return { Authorization: `Bearer ${session.access_token}`, apikey: ANON_KEY }
 }
 
+/**
+ * ขอ "ตั๋ว" จาก Edge Function แล้วเอาไปยิง PHP เอง
+ *
+ * ทำไมไม่ให้ Edge Function ยิงให้: Cloudflare หน้าโดเมนของเขตบล็อกคำขอที่มาจาก
+ * ศูนย์ข้อมูล (403 Attention Required!) แต่คำขอจากเบราว์เซอร์ผ่านปกติ
+ * ตั๋วมีอายุ 2 นาที เซ็นด้วย HMAC ของความลับ ถอดกลับเป็นความลับไม่ได้
+ */
+async function getTicket(purpose, category = 'misc') {
+  const res = await fetch(FN_URL, {
+    method: 'POST',
+    headers: { ...(await authHeaders()), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ purpose, category }),
+  })
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok || !data.ticket) throw new Error(data.error || data.message || 'ขอสิทธิ์อัปโหลดไม่สำเร็จ')
+  return data
+}
+
 export const externalUploadEnabled = !!API_URL
 
 // ลบไฟล์ที่เคยอัปโหลด — รองรับทั้ง URL จาก host ภายนอกและ Supabase storage
@@ -31,10 +49,11 @@ export async function deleteUploadedFile(url) {
   if (!url) return
   try {
     if (externalUploadEnabled && API_BASE && url.startsWith(API_BASE)) {
-      await fetch(FN_URL, {
+      const t = await getTicket('delete')
+      await fetch(t.endpoint, {
         method: 'POST',
-        headers: { ...(await authHeaders()), 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'delete', url }),
+        headers: { 'X-Upload-Ticket': t.ticket, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url }),
       })
       return
     }
@@ -59,9 +78,10 @@ export function useExternalUpload() {
       const fd = new FormData()
       fd.append('file', blob, `${category}.png`)
       fd.append('category', category)
-      const res = await fetch(FN_URL, {
+      const t = await getTicket('upload', category)
+      const res = await fetch(t.endpoint, {
         method: 'POST',
-        headers: await authHeaders(),
+        headers: { 'X-Upload-Ticket': t.ticket },
         body: fd,
       })
       const data = await res.json()
@@ -80,9 +100,9 @@ export function useExternalUpload() {
     uploading.value = true
     error.value = ''
     // ขอ token ก่อนเปิด XHR — ยังใช้ XHR อยู่เพราะต้องการแถบความคืบหน้า
-    let headers
+    let t
     try {
-      headers = await authHeaders()
+      t = await getTicket('upload', category)
     } catch (e) {
       uploading.value = false
       error.value = e.message
@@ -94,8 +114,8 @@ export function useExternalUpload() {
       fd.append('category', category)
 
       const xhr = new XMLHttpRequest()
-      xhr.open('POST', FN_URL)
-      Object.entries(headers).forEach(([k, v]) => xhr.setRequestHeader(k, v))
+      xhr.open('POST', t.endpoint)
+      xhr.setRequestHeader('X-Upload-Ticket', t.ticket)
 
       xhr.upload.addEventListener('progress', ev => {
         if (ev.lengthComputable) onProgress?.(Math.round((ev.loaded / ev.total) * 100))
