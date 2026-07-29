@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase } from '../supabase'
 import { useAreaConfig, DEFAULT_HOME_SECTIONS } from '../composables/useAreaConfig'
@@ -33,8 +33,13 @@ const newsList    = ref([])
 const loading     = ref(true)
 const activeCategory = ref('all')
 const searchQ     = ref('')
+const filterYear  = ref('all')   // เก็บเป็น ค.ศ. แสดงผลเป็น พ.ศ.
+const filterMonth = ref('all')   // 1-12
 const page        = ref(1)
 const PAGE_SIZE   = 12
+
+const THAI_MONTHS = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน',
+                     'กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม']
 
 // ── Fetch ────────────────────────────────────────────────────────
 async function fetchNews() {
@@ -54,9 +59,60 @@ onMounted(async () => {
   await fetchNews()
 })
 
+// ── ตัวกรองเดือน/ปี ───────────────────────────────────────────────
+// รายการปีสร้างจากข้อมูลจริง ไม่ได้ hard-code — ปีใหม่โผล่เองเมื่อมีข่าวของปีนั้น
+// จึงไม่ต้องกลับมาแก้โค้ดทุกต้นปี
+function newsDate(n) {
+  return n.published_at ? new Date(n.published_at) : null
+}
+
+const availableYears = computed(() => {
+  const set = new Set()
+  newsList.value.forEach(n => { const d = newsDate(n); if (d) set.add(d.getFullYear()) })
+  return [...set].sort((a, b) => b - a)      // ใหม่ไปเก่า
+})
+
+// เดือนที่มีข่าวจริงในปีที่เลือก — ไม่โชว์เดือนที่กดแล้วได้ผลลัพธ์ว่าง
+const availableMonths = computed(() => {
+  const set = new Set()
+  newsList.value.forEach(n => {
+    const d = newsDate(n)
+    if (!d) return
+    if (filterYear.value !== 'all' && d.getFullYear() !== filterYear.value) return
+    set.add(d.getMonth() + 1)
+  })
+  return [...set].sort((a, b) => a - b)
+})
+
+// เปลี่ยนปีแล้วเดือนเดิมอาจไม่มีข่าว ต้องล้างทิ้ง ไม่งั้นหน้าจะว่างโดยไม่มีสาเหตุชัดเจน
+watch(filterYear, () => {
+  if (filterMonth.value !== 'all' && !availableMonths.value.includes(filterMonth.value)) {
+    filterMonth.value = 'all'
+  }
+  page.value = 1
+})
+watch(filterMonth, () => { page.value = 1 })
+
+const dateFilterActive = computed(() => filterYear.value !== 'all' || filterMonth.value !== 'all')
+function clearDateFilter() {
+  filterYear.value = 'all'
+  filterMonth.value = 'all'
+  page.value = 1
+}
+
+/** กรองเฉพาะเงื่อนไขวันที่ — ใช้ทั้งกับรายการข่าวและกับตัวเลขในแท็บหมวด */
+function inDateRange(n) {
+  if (!dateFilterActive.value) return true
+  const d = newsDate(n)
+  if (!d) return false
+  if (filterYear.value !== 'all' && d.getFullYear() !== filterYear.value) return false
+  if (filterMonth.value !== 'all' && d.getMonth() + 1 !== filterMonth.value) return false
+  return true
+}
+
 // ── Filter + Search ───────────────────────────────────────────────
 const filtered = computed(() => {
-  let list = newsList.value
+  let list = newsList.value.filter(inDateRange)
   if (activeCategory.value !== 'all')
     list = list.filter(n => n.category === activeCategory.value)
   if (searchQ.value.trim())
@@ -79,9 +135,14 @@ function setCategory(cat) {
 }
 
 // ── Counts per category ───────────────────────────────────────────
-const countOf = (cat) => cat === 'all'
-  ? newsList.value.length
-  : newsList.value.filter(n => n.category === cat).length
+const countOf = (cat) => {
+  const list = newsList.value.filter(inDateRange)
+  return cat === 'all' ? list.length : list.filter(n => n.category === cat).length
+}
+
+const selCls = 'px-3 py-2 rounded-xl border border-white/80 bg-white/70 backdrop-blur ' +
+  'shadow-[0_4px_16px_rgba(30,58,95,0.06)] text-sm text-slate-600 ' +
+  'focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all'
 
 // ── Format date ───────────────────────────────────────────────────
 function fmtDate(d) {
@@ -114,8 +175,9 @@ const catMeta = {
 
     <div class="max-w-7xl mx-auto px-4 py-8">
 
-      <!-- ── Search (แยกจาก hero เสมอ ไม่ว่าจะใช้ไอคอนหรือรูป/วิดีโอ) ── -->
-      <div class="max-w-lg relative mb-8">
+      <!-- ── Search + กรองตามเดือน/ปี ── -->
+      <div class="flex flex-col sm:flex-row sm:items-center gap-3 mb-8">
+      <div class="w-full sm:max-w-lg relative">
         <svg class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"
           fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
           <path stroke-linecap="round" stroke-linejoin="round"
@@ -124,7 +186,42 @@ const catMeta = {
         <input v-model="searchQ" @input="page=1" type="text" placeholder="ค้นหาข่าว..."
           class="w-full pl-10 pr-4 py-2.5 rounded-2xl border border-white/80 bg-white/70 backdrop-blur
                  shadow-[0_4px_16px_rgba(30,58,95,0.06)] text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"/>
+        </div>
+
+        <!-- ปี พ.ศ. + เดือน — รายการสร้างจากข้อมูลจริง ปีใหม่โผล่เองไม่ต้องแก้โค้ด -->
+        <div class="flex items-center gap-2 flex-wrap">
+          <svg class="w-4 h-4 text-slate-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/>
+          </svg>
+
+          <select v-model="filterYear" :class="selCls">
+            <option value="all">ทุกปี</option>
+            <option v-for="y in availableYears" :key="y" :value="y">พ.ศ. {{ y + 543 }}</option>
+          </select>
+
+          <select v-model="filterMonth" :class="selCls">
+            <option value="all">ทุกเดือน</option>
+            <option v-for="m in availableMonths" :key="m" :value="m">{{ THAI_MONTHS[m - 1] }}</option>
+          </select>
+
+          <button v-if="dateFilterActive" @click="clearDateFilter"
+            class="flex items-center gap-1 px-2.5 py-2 rounded-xl text-xs font-bold text-slate-500 hover:text-red-500 transition-colors"
+            title="ล้างตัวกรองวันที่">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+            ล้าง
+          </button>
+        </div>
       </div>
+
+      <!-- บอกให้ชัดว่ากำลังดูช่วงไหนอยู่ กันงงว่าทำไมข่าวหาย -->
+      <p v-if="dateFilterActive" class="-mt-4 mb-6 text-sm text-slate-500">
+        แสดงข่าวของ
+        <b class="text-slate-700">{{ filterMonth === 'all' ? '' : THAI_MONTHS[filterMonth - 1] }}
+        {{ filterYear === 'all' ? 'ทุกปี' : 'พ.ศ. ' + (filterYear + 543) }}</b>
+        · พบ <b class="text-slate-700">{{ filtered.length }}</b> ข่าว
+      </p>
 
       <!-- ── Category tabs ─────────────────────────────────────── -->
       <div class="flex gap-2 flex-wrap mb-8">
