@@ -9,6 +9,7 @@ import { ICON_MAP } from '../composables/useIcons.js'
 import { useEducationNews } from '../composables/useEducationNews'
 import { TYPE_LABEL, TYPE_COLOR, formatEventDateRange } from '../composables/useNithetEventMeta'
 import BgLayers from '../components/BgLayers.vue'
+import { toEmbedUrl } from '../composables/useEmbed'
 import MonthCalendar from '../components/calendar/MonthCalendar.vue'
 import YoutubeCardGrid from '../components/YoutubeCardGrid.vue'
 import DriveFolderBrowser from '../components/drive/DriveFolderBrowser.vue'
@@ -991,6 +992,29 @@ const stats = [
               <h2 class="text-2xl md:text-3xl font-extrabold text-slate-900 accent-line-center">{{ sec.title }}</h2>
             </div>
             <CustomHtmlBlock :code="sec.html_code" :block-id="sec.key"/>
+          </div>
+        </section>
+
+        <!-- ══ EMBED — ฝังลิงก์จากเว็บอื่น (YouTube / Slides / Forms / Maps / Drive / PDF) ══ -->
+        <section v-else-if="sec.key.startsWith('embed') && sec.embed?.url"
+          :style="getBgStyle(sec)" :class="secBgClass(sec)" class="py-8 md:py-12">
+          <BgLayers :cfg="sec"/>
+          <div :class="['relative mx-auto px-4', sec.embed.full_width ? 'max-w-none px-0' : 'max-w-7xl']">
+            <div v-if="sec.title" class="text-center mb-8">
+              <p v-if="sec.subtitle" class="text-secondary text-xs font-bold uppercase tracking-[0.18em] mb-2">{{ sec.subtitle }}</p>
+              <h2 class="text-2xl md:text-3xl font-extrabold text-slate-900 accent-line-center">{{ sec.title }}</h2>
+            </div>
+            <div class="rounded-2xl overflow-hidden shadow-lg bg-slate-100">
+              <div :style="{ aspectRatio: sec.embed.aspect || '16/9' }">
+                <iframe :src="toEmbedUrl(sec.embed.url, sec.embed.embed_type)"
+                  class="w-full h-full" frameborder="0" loading="lazy"
+                  allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowfullscreen/>
+              </div>
+            </div>
+            <!-- ใช้ span ไม่ใช่ p — .glass-card p { color: revert !important } ล้างสีทิ้ง -->
+            <span v-if="sec.embed.caption" class="block text-center text-sm text-slate-500 mt-3">
+              {{ sec.embed.caption }}
+            </span>
           </div>
         </section>
 
