@@ -36,27 +36,42 @@ const EMBED_VERSIONS = [
   { key: 'noDir',    label: 'ไม่มี ผอ.เขต',        desc: 'ตัด ผอ.เขต ออก',        hide: 'director' },
   { key: 'noDirDep', label: 'ไม่มี ผอ.เขต + รอง',  desc: 'เหลือ ผอ.กลุ่ม ลงไป',   hide: 'director,deputy' },
 ]
-const embedVer   = ref('all')
-const embedMaxW  = ref('')
+const embedVer    = ref('all')
+const embedMaxW   = ref('')
+const embedFormat = ref('script')   // 'script' = ปรับความสูงเอง | 'iframe' = เว็บที่ห้าม <script>
+const embedHeight = ref('1600')
 const embedCopied = ref(false)
 
-// คำนวณโดเมนจากที่อยู่จริง ไม่ hardcode — เผื่อย้ายไปโดเมน .go.th ในอนาคต
-const embedOrigin = window.location.origin
+// โดเมนสาธารณะของเว็บนี้ ใช้ตอนคัดลอกโค้ดขณะรันบน localhost
+// ไม่งั้นแอดมินจะได้โค้ดที่ชี้กลับมาเครื่องตัวเอง เอาไปวางที่อื่นแล้วขึ้น "ปฏิเสธการเชื่อมต่อ"
+const PUBLIC_ORIGIN = 'https://super-korat2-app.vercel.app'
+const isLocalOrigin = /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:|$)/.test(window.location.origin)
+const embedOrigin = isLocalOrigin ? PUBLIC_ORIGIN : window.location.origin
+
 const embedHide = computed(() => EMBED_VERSIONS.find(v => v.key === embedVer.value)?.hide || '')
 
-const embedCode = computed(() => {
-  const attrs = []
-  if (embedHide.value) attrs.push(`data-hide="${embedHide.value}"`)
-  const w = String(embedMaxW.value).trim()
-  if (/^\d+$/.test(w)) attrs.push(`data-max-width="${w}"`)
-  const tail = attrs.length ? `
-        ${attrs.join(' ')}` : ''
-  return `<script src="${embedOrigin}/embed/personnel.js"${tail}><\/script>`
-})
-
-const embedPreviewUrl = computed(() => {
+// ⚠️ ต้องเป็น path จริง + hash เสมอ — `/#/embed/personnel` โดน X-Frame-Options: DENY
+//    เพราะ hash ไม่ถูกส่งไป server (ดู docs/embed-personnel.md)
+const embedUrl = computed(() => {
   const qs = embedHide.value ? `?hide=${embedHide.value}` : ''
   return `${embedOrigin}/embed/personnel#/embed/personnel${qs}`
+})
+const embedPreviewUrl = embedUrl
+
+const embedCode = computed(() => {
+  const w = String(embedMaxW.value).trim()
+
+  if (embedFormat.value === 'iframe') {
+    const h = /^\d+$/.test(String(embedHeight.value).trim()) ? String(embedHeight.value).trim() : '1600'
+    const style = `width:100%;${/^\d+$/.test(w) ? `max-width:${w}px;margin:0 auto;` : ''}height:${h}px;border:0;display:block`
+    return `<iframe src="${embedUrl.value}"\n        title="ทำเนียบบุคลากร" loading="lazy"\n        style="${style}"></iframe>`
+  }
+
+  const attrs = []
+  if (embedHide.value) attrs.push(`data-hide="${embedHide.value}"`)
+  if (/^\d+$/.test(w)) attrs.push(`data-max-width="${w}"`)
+  const tail = attrs.length ? `\n        ${attrs.join(' ')}` : ''
+  return `<script src="${embedOrigin}/embed/personnel.js"${tail}><\/script>`
 })
 
 async function copyEmbedCode() {
@@ -1021,20 +1036,60 @@ function resetToDefault() {
             </div>
           </div>
 
+          <!-- รูปแบบโค้ด -->
+          <div>
+            <p class="text-sm font-extrabold text-slate-700 mb-2">2. เลือกรูปแบบโค้ด</p>
+            <div class="grid sm:grid-cols-2 gap-2">
+              <button type="button" @click="embedFormat = 'script'"
+                :class="['text-left px-3.5 py-3 rounded-2xl border-2 transition-all',
+                  embedFormat === 'script' ? 'border-primary bg-primary/5 shadow-sm' : 'border-slate-200 hover:border-primary/40']">
+                <p :class="['font-bold text-sm', embedFormat === 'script' ? 'text-primary' : 'text-slate-700']">
+                  สคริปต์ (แนะนำ)
+                </p>
+                <p class="text-[11px] text-slate-400 mt-0.5">ปรับความสูงตามเนื้อหาเอง ไม่มีแถบเลื่อนซ้อน</p>
+              </button>
+              <button type="button" @click="embedFormat = 'iframe'"
+                :class="['text-left px-3.5 py-3 rounded-2xl border-2 transition-all',
+                  embedFormat === 'iframe' ? 'border-primary bg-primary/5 shadow-sm' : 'border-slate-200 hover:border-primary/40']">
+                <p :class="['font-bold text-sm', embedFormat === 'iframe' ? 'text-primary' : 'text-slate-700']">
+                  iframe
+                </p>
+                <p class="text-[11px] text-slate-400 mt-0.5">ใช้กับเว็บที่ไม่ยอมให้วาง &lt;script&gt; ต้องกำหนดความสูงเอง</p>
+              </button>
+            </div>
+          </div>
+
           <!-- ตัวเลือกเสริม -->
           <div>
-            <p class="text-sm font-extrabold text-slate-700 mb-2">2. ความกว้างสูงสุด (ไม่ใส่ = เต็มพื้นที่)</p>
-            <div class="flex items-center gap-2">
-              <input v-model="embedMaxW" inputmode="numeric" placeholder="เช่น 1000"
-                class="w-40 px-3 py-2 border border-slate-200 rounded-xl text-sm font-mono focus:outline-none focus:border-primary"/>
-              <span class="text-xs text-slate-400">px</span>
+            <p class="text-sm font-extrabold text-slate-700 mb-2">3. ขนาด</p>
+            <div class="flex items-end gap-4 flex-wrap">
+              <div>
+                <label class="text-[11px] font-bold text-slate-500">ความกว้างสูงสุด (ไม่ใส่ = เต็มพื้นที่)</label>
+                <div class="flex items-center gap-2">
+                  <input v-model="embedMaxW" inputmode="numeric" placeholder="เช่น 1000"
+                    class="w-40 px-3 py-2 border border-slate-200 rounded-xl text-sm font-mono focus:outline-none focus:border-primary"/>
+                  <span class="text-xs text-slate-400">px</span>
+                </div>
+              </div>
+              <div v-if="embedFormat === 'iframe'">
+                <label class="text-[11px] font-bold text-slate-500">ความสูงกรอบ</label>
+                <div class="flex items-center gap-2">
+                  <input v-model="embedHeight" inputmode="numeric" placeholder="1600"
+                    class="w-40 px-3 py-2 border border-slate-200 rounded-xl text-sm font-mono focus:outline-none focus:border-primary"/>
+                  <span class="text-xs text-slate-400">px</span>
+                </div>
+              </div>
             </div>
+            <p v-if="embedFormat === 'iframe'" class="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 mt-2">
+              แบบ iframe <b>ปรับความสูงเองไม่ได้</b> ถ้าตั้งเตี้ยไปจะมีแถบเลื่อนในกรอบ ถ้าตั้งสูงไปจะเหลือที่ว่างข้างล่าง
+              — ถ้าเว็บปลายทางวาง &lt;script&gt; ได้ ให้ใช้แบบสคริปต์ดีกว่า
+            </p>
           </div>
 
           <!-- โค้ด -->
           <div>
             <div class="flex items-center justify-between gap-2 mb-2 flex-wrap">
-              <p class="text-sm font-extrabold text-slate-700">3. คัดลอกโค้ดนี้ไปวาง</p>
+              <p class="text-sm font-extrabold text-slate-700">4. คัดลอกโค้ดนี้ไปวาง</p>
               <div class="flex items-center gap-2">
                 <a :href="embedPreviewUrl" target="_blank" rel="noopener"
                   class="px-3 py-1.5 text-xs font-bold text-primary bg-primary/10 rounded-xl hover:bg-primary/20 transition-colors">
@@ -1054,8 +1109,29 @@ function resetToDefault() {
             <p class="font-bold text-slate-700">วิธีวางใน WordPress</p>
             <p>เข้าหน้าที่ต้องการ → เพิ่มบล็อก <b>“HTML ที่กำหนดเอง”</b> → วางโค้ด → อัปเดต</p>
             <p class="text-slate-400">
-              กรอบจะปรับความสูงตามเนื้อหาเอง ไม่มีแถบเลื่อนซ้อน ·
               คลิกการ์ดบุคลากรจะเปิดหน้าทำเนียบบุคลากรของเว็บนี้ในแท็บใหม่
+            </p>
+          </div>
+
+          <!-- กับดักที่ทำให้ขึ้น "ปฏิเสธการเชื่อมต่อ" -->
+          <div class="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-xs text-rose-800 space-y-2">
+            <p class="font-bold">ถ้าปลายทางขึ้นว่า “ปฏิเสธการเชื่อมต่อ”</p>
+            <p>
+              แปลว่าลิงก์ที่ใช้ฝัง <b>ไม่ใช่ลิงก์ข้างบนนี้</b> — เว็บนี้ปิดการฝังทุกหน้าเพื่อกันการหลอกคลิก
+              เปิดให้ฝังได้เฉพาะที่อยู่ <span class="font-mono">/embed/personnel</span> เท่านั้น
+            </p>
+            <div class="font-mono text-[11px] space-y-1 bg-white/60 rounded-xl p-3 break-all">
+              <p class="text-emerald-700">✓ {{ embedOrigin }}/embed/personnel#/embed/personnel</p>
+              <p class="text-rose-600 line-through">✗ {{ embedOrigin }}/#/embed/personnel</p>
+              <p class="text-rose-600 line-through">✗ {{ embedOrigin }}/#/personnel</p>
+            </div>
+            <p>
+              <b>อย่าพิมพ์ลิงก์เอง</b> ให้กด “คัดลอกโค้ด” แล้ววางทั้งก้อน ·
+              ถ้าเว็บปลายทางมีช่องให้ใส่เฉพาะ URL ให้วางบรรทัดสีเขียวข้างบน
+            </p>
+            <p v-if="isLocalOrigin" class="pt-1 border-t border-rose-200">
+              ตอนนี้เปิดหน้านี้จากเครื่องตัวเอง (localhost) โค้ดข้างบนจึงใส่โดเมนจริง
+              <span class="font-mono">{{ embedOrigin }}</span> ให้แล้ว — เอาไปวางที่เว็บอื่นได้เลย
             </p>
           </div>
         </div>

@@ -33,6 +33,21 @@
         data-hide="director,deputy" data-max-width="1000"></script>
 ```
 
+### ถ้าเว็บปลายทางวาง `<script>` ไม่ได้
+
+Google Sites · Blogger · WordPress.com แบบฟรี บล็อก `<script>` ทิ้ง
+ให้เลือกรูปแบบ **iframe** ในแผงคัดลอก จะได้โค้ดแบบนี้แทน
+
+```html
+<iframe src="https://super-korat2-app.vercel.app/embed/personnel#/embed/personnel"
+        title="ทำเนียบบุคลากร" loading="lazy"
+        style="width:100%;height:1600px;border:0;display:block"></iframe>
+```
+
+**แลกมาด้วยการปรับความสูงอัตโนมัติ** — ไม่มีสคริปต์ก็ไม่มีใครรับข้อความความสูง
+ต้องกำหนด `height` เอง เตี้ยไป = มีแถบเลื่อนในกรอบ สูงไป = เหลือที่ว่าง
+ถ้าวาง `<script>` ได้ให้ใช้แบบสคริปต์เสมอ
+
 **ทำไมต้องมีเวอร์ชันไม่มี ผอ.เขต:** เว็บหลักของเขตมีหน้าผู้บริหารของตัวเองอยู่แล้ว
 ฝังผังที่มี ผอ.เขต/รอง ซ้ำเข้าไปอีกจะซ้ำซ้อน
 
@@ -52,7 +67,14 @@
 ```
 /embed/personnel#/embed/personnel      ✅
 /#/embed/personnel                     ❌ ถูก X-Frame-Options บล็อก
+/#/personnel                           ❌ เหมือนกัน
+/                                      ❌ เหมือนกัน
 ```
+
+**อาการเวลาผิด:** ปลายทางขึ้นกรอบว่างพร้อมข้อความ **“ปฏิเสธการเชื่อมต่อ”**
+(Chrome: *refused to connect*) และคอนโซลบอก
+`Refused to display '…' in a frame because it set 'X-Frame-Options' to 'deny'`
+ทดสอบยืนยันแล้วทั้ง 4 แบบข้างบน — มีแค่แบบแรกที่ผ่าน
 
 เว็บใช้ `createWebHashHistory()` — hash **ไม่ถูกส่งไป server** ฝั่ง server จึงเห็น
 `/#/embed/personnel` เป็น `/` เฉยๆ แยก header ตาม path ไม่ได้ และ [vercel.json](../vercel.json)
@@ -99,7 +121,14 @@ iframe **ยืดได้แต่หดไม่ได้** ค้างท�
 ต้องวัด `getBoundingClientRect().height` ของ element เนื้อหา
 (ดู `postHeight()` ใน [EmbedPersonnelView.vue](../src/views/EmbedPersonnelView.vue))
 
-### 5. โครงสร้างการ์ดใช้ร่วมกับหน้า /personnel
+### 5. แผงคัดลอกต้องไม่ใช้ `window.location.origin` ตรงๆ
+
+แอดมินมักเปิดหลังบ้านจาก `localhost:5173` ตอนพัฒนา ถ้าเอา origin จริงมาใส่โค้ด
+จะได้ `<script src="http://localhost:5173/…">` ซึ่ง**ตายทันทีที่เอาไปวางเว็บอื่น**
+`AdminAreaSettingsView` จึงมี `PUBLIC_ORIGIN` ไว้แทนที่เมื่อ origin เป็น
+localhost / 127.0.0.1 / [::1] — **ถ้าย้ายโดเมนต้องแก้ค่าคงที่ตัวนี้ด้วย**
+
+### 6. โครงสร้างการ์ดใช้ร่วมกับหน้า /personnel
 
 `PersonnelDirectory.vue` เป็นตัวเดียวกันทั้งหน้า `/personnel` และหน้าฝัง
 **อย่าทำสำเนา** ไม่งั้นแก้หน้าบุคลากรแล้วโค้ดฝังจะไม่ตามไปด้วย
