@@ -17,7 +17,6 @@ import CustomHtmlBlock from '../components/CustomHtmlBlock.vue'
 import SchoolNewsletterGrid from '../components/SchoolNewsletterGrid.vue'
 import LibraryGrid from '../components/LibraryGrid.vue'
 import { useGroupOptions } from '../composables/useLibraryOptions'
-import { drivePreviewUrl } from '../composables/useGoogleDrive'
 import EventDetailModal from '../components/calendar/EventDetailModal.vue'
 import { useHolidays } from '../composables/useHolidays'
 import { getBgStyle as getBgStyleRaw, bgTextClass } from '../composables/useBgStyle'
@@ -230,7 +229,6 @@ function showNewsletterSection(key) {
 // profiles ตรงไม่ได้ (migration 0060 revoke ไว้) — view มีชื่อผู้เผยแพร่ให้แล้ว
 const libraryFeeds = ref({})     // { [sec.key]: { items, loading } }
 const { groupLabel: libGroupLabel } = useGroupOptions(config)
-const openLibraryItem = ref(null)
 
 const librarySections = computed(() =>
   orderedSections.value.filter(s => s.key.startsWith('library') && s.visible)
@@ -1171,8 +1169,7 @@ const stats = [
               :rows="sec.library?.rows || 1"
               :animate="sec.library?.animate !== false"
               :group-label-of="libGroupLabelOf"
-              :publisher-name-of="libPublisherNameOf"
-              @open="openLibraryItem = $event"/>
+              :publisher-name-of="libPublisherNameOf"/>
 
             <div class="text-center mt-8">
               <a href="#/library"
@@ -1235,40 +1232,6 @@ const stats = [
     <!-- รายละเอียดกิจกรรม — ใช้ modal ตัวเดียวกับหน้า /nithet -->
     <EventDetailModal :event="selectedEvent" @close="selectedEvent = null"/>
 
-    <!-- อ่านหนังสือ/คู่มือ — iframe ของ Drive เลื่อนอ่านได้ครบทุกหน้าในตัว
-         ใช้ iframe ตรงนี้ได้เพราะเปิดทีละเล่มตามที่ผู้ใช้กด ไม่ใช่หลายอันพร้อมกัน -->
-    <Teleport to="body">
-      <Transition enter-active-class="transition duration-200" enter-from-class="opacity-0"
-        leave-active-class="transition duration-150" leave-to-class="opacity-0">
-        <div v-if="openLibraryItem" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
-          @click.self="openLibraryItem = null">
-          <div class="glass-panel rounded-3xl w-full max-w-4xl max-h-[92vh] flex flex-col overflow-hidden">
-            <div class="flex items-start justify-between gap-3 px-5 py-3.5 border-b border-slate-100 flex-shrink-0">
-              <div class="min-w-0">
-                <span class="block text-base font-extrabold text-slate-800 leading-snug line-clamp-2">{{ openLibraryItem.title }}</span>
-                <span class="block text-[11px] text-slate-400 mt-0.5 truncate">
-                  <template v-if="openLibraryItem.publisher_name">{{ openLibraryItem.publisher_name }}</template>
-                  <template v-if="libGroupLabel(openLibraryItem.group_key)"> · {{ libGroupLabel(openLibraryItem.group_key) }}</template>
-                  <template v-if="openLibraryItem.year"> · พ.ศ. {{ openLibraryItem.year }}</template>
-                </span>
-              </div>
-              <button @click="openLibraryItem = null" class="w-8 h-8 flex-shrink-0 flex items-center justify-center rounded-full hover:bg-slate-100 text-slate-400">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-              </button>
-            </div>
-            <div class="flex-1 min-h-[50vh] bg-slate-100">
-              <iframe :src="drivePreviewUrl(openLibraryItem.file_id)" class="w-full h-full" frameborder="0" :title="openLibraryItem.title"/>
-            </div>
-            <div class="px-5 py-3 border-t border-slate-100 flex-shrink-0 flex items-center justify-end">
-              <a :href="openLibraryItem.drive_url" target="_blank" rel="noopener"
-                class="px-4 py-2 rounded-xl text-xs font-bold bg-primary text-white shadow-sm hover:-translate-y-0.5 transition-all">
-                เปิดใน Drive ↗
-              </a>
-            </div>
-          </div>
-        </div>
-      </Transition>
-    </Teleport>
 
   </div>
 </template>

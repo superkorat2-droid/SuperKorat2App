@@ -13,8 +13,7 @@ import { useAreaConfig } from '../composables/useAreaConfig'
 import { usePageHeader } from '../composables/usePageHeader'
 import PageHero from '../components/PageHero.vue'
 import LibraryGrid from '../components/LibraryGrid.vue'
-import { LIBRARY_KINDS, kindLabel, useGroupOptions } from '../composables/useLibraryOptions'
-import { drivePreviewUrl } from '../composables/useGoogleDrive'
+import { LIBRARY_KINDS, useGroupOptions } from '../composables/useLibraryOptions'
 
 const { config, fetchConfig } = useAreaConfig()
 const header = usePageHeader('library', {
@@ -24,7 +23,6 @@ const { groupOptions, groupLabel } = useGroupOptions(config)
 
 const items   = ref([])
 const loading = ref(true)
-const openItem = ref(null)
 
 const searchQ     = ref('')
 const filterKind  = ref('all')
@@ -135,50 +133,10 @@ const publisherNameOf = it => it.publisher_name || ''
       </span>
 
       <LibraryGrid :items="filtered" :loading="loading" :cols="6"
-        :group-label-of="groupLabelOf" :publisher-name-of="publisherNameOf"
-        @open="openItem = $event"/>
+        :group-label-of="groupLabelOf" :publisher-name-of="publisherNameOf"/>
 
       <span class="block text-center text-xs text-slate-300 pb-6">{{ config?.area_name }}</span>
     </div>
 
-    <!-- โมดัลอ่าน — iframe ของ Drive เลื่อนอ่าน PDF ได้ครบทุกหน้าในตัว
-         ที่นี่ใช้ iframe ได้เพราะเปิดทีละเล่มตามที่ผู้ใช้กด ไม่ใช่ 12 อันพร้อมกัน -->
-    <Teleport to="body">
-      <Transition enter-active-class="transition duration-200" enter-from-class="opacity-0"
-        leave-active-class="transition duration-150" leave-to-class="opacity-0">
-        <div v-if="openItem" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
-          @click.self="openItem = null">
-          <div class="glass-panel rounded-3xl w-full max-w-4xl max-h-[92vh] flex flex-col overflow-hidden">
-            <div class="flex items-start justify-between gap-3 px-5 py-3.5 border-b border-slate-100 flex-shrink-0">
-              <div class="min-w-0">
-                <span class="block text-base font-extrabold text-slate-800 leading-snug line-clamp-2">{{ openItem.title }}</span>
-                <span class="block text-[11px] text-slate-400 mt-0.5 truncate">
-                  {{ kindLabel(openItem.kind) }}
-                  <template v-if="openItem.publisher_name"> · {{ openItem.publisher_name }}</template>
-                  <template v-if="groupLabel(openItem.group_key)"> · {{ groupLabel(openItem.group_key) }}</template>
-                  <template v-if="openItem.year"> · พ.ศ. {{ openItem.year }}</template>
-                </span>
-              </div>
-              <button @click="openItem = null" class="w-8 h-8 flex-shrink-0 flex items-center justify-center rounded-full hover:bg-slate-100 text-slate-400">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-              </button>
-            </div>
-
-            <div class="flex-1 min-h-[50vh] bg-slate-100">
-              <iframe :src="drivePreviewUrl(openItem.file_id)" class="w-full h-full" frameborder="0"
-                allow="autoplay" :title="openItem.title"/>
-            </div>
-
-            <div class="px-5 py-3 border-t border-slate-100 flex-shrink-0 flex items-center justify-between gap-3">
-              <span v-if="openItem.description" class="text-[11px] text-slate-500 line-clamp-2">{{ openItem.description }}</span>
-              <a :href="openItem.drive_url" target="_blank" rel="noopener"
-                class="ml-auto flex-shrink-0 px-4 py-2 rounded-xl text-xs font-bold bg-primary text-white shadow-sm hover:-translate-y-0.5 transition-all">
-                เปิดใน Drive ↗
-              </a>
-            </div>
-          </div>
-        </div>
-      </Transition>
-    </Teleport>
   </div>
 </template>

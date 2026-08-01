@@ -20,7 +20,6 @@ const props = defineProps({
   groupLabelOf:   { type: Function, default: () => '' },
   publisherNameOf:{ type: Function, default: () => '' },
 })
-defineEmits(['open'])
 
 const { containerRef, revealed } = useRevealOnScroll()
 
@@ -48,7 +47,6 @@ const itemClass = computed(() => (props.animate ? 'reveal-item' : ''))
       :group-label="groupLabelOf(it)"
       :publisher-name="publisherNameOf(it)"
       :style="{ '--i': idx }"
-      :class="[widthClass, itemClass]"
-      @open="$emit('open', $event)"/>
+      :class="[widthClass, itemClass]"/>
   </div>
 </template>

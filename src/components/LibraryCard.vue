@@ -6,8 +6,9 @@
  * (การซ่อน/แสดงอยู่ในคลาส .lib-meta ที่ style.css เพราะต้องใช้ @media (hover)
  *  ซึ่งเขียนเป็นคลาส Tailwind ไม่ได้ — จอสัมผัสต้องเห็นรายละเอียดตลอด)
  *
- * คลิกแล้ว emit ให้ parent เปิดโมดัลอ่าน ไม่พาออกนอกเว็บ เพราะ PDF หลายหน้า
- * ต้องอ่านในตัวอ่านของ Google ที่เลื่อนหน้าได้
+ * คลิกแล้ว **เปิดไฟล์ใน Drive แท็บใหม่ทันที** ไม่มีโมดัลคั่น
+ * เดิมเคยเปิดโมดัลตัวอ่านก่อน แต่ผู้ใช้ไม่ต้องการป็อปอัประหว่างทาง
+ * ตัวอ่านของ Drive เลื่อนดูได้ครบทุกหน้าอยู่แล้ว จึงไม่เสียอะไร
  */
 import { computed } from 'vue'
 import DriveCover from './DriveCover.vue'
@@ -18,7 +19,6 @@ const props = defineProps({
   groupLabel:  { type: String, default: '' },
   publisherName: { type: String, default: '' },
 })
-defineEmits(['open'])
 
 const meta = computed(() => {
   const parts = []
@@ -30,7 +30,7 @@ const meta = computed(() => {
 </script>
 
 <template>
-  <button type="button" @click="$emit('open', item)"
+  <a :href="item.drive_url" target="_blank" rel="noopener"
     class="group relative block w-full text-left glass-card glass-card-hover overflow-hidden
            aspect-[3/4] focus:outline-none focus-visible:ring-2 focus-visible:ring-primary">
 
@@ -49,5 +49,5 @@ const meta = computed(() => {
       <span class="block text-white text-sm font-bold leading-snug line-clamp-3">{{ item.title }}</span>
       <span v-if="meta" class="block text-white/70 text-[10px] leading-snug mt-1 line-clamp-2">{{ meta }}</span>
     </div>
-  </button>
+  </a>
 </template>
