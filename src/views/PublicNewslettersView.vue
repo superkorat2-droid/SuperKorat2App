@@ -4,7 +4,7 @@ import { supabase } from '../supabase'
 import { useAreaConfig } from '../composables/useAreaConfig'
 import { usePageHeader } from '../composables/usePageHeader'
 import PageHero from '../components/PageHero.vue'
-import NewsletterThumb from '../components/NewsletterThumb.vue'
+import DriveCover from '../components/DriveCover.vue'
 import { NEWSLETTER_CATEGORIES, MONTHS_TH,
          newsletterCatLabel, newsletterCatColor } from '../composables/useNewsletterMeta'
 
@@ -140,7 +140,7 @@ function monthLabel(m) { return m ? MONTHS[m-1] : '' }
                วัดจริงแล้ว 12 ใบ = 439 คำขอ / 38 MB เปลี่ยนมาเป็น <img> เหลือ 0.59 MB
                (iframe ยังใช้อยู่ในโมดัลข้างล่าง ซึ่งเปิดทีละอันจึงไม่เป็นปัญหา) -->
           <div class="aspect-[3/4] overflow-hidden bg-slate-100 relative">
-            <NewsletterThumb :file-id="n.file_id" :title="n.title"/>
+            <DriveCover :file-id="n.file_id" :title="n.title"/>
             <!-- Hover overlay -->
             <div class="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-200 flex items-center justify-center">
               <div class="opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 rounded-2xl px-4 py-2 text-sm font-bold text-primary shadow-lg">

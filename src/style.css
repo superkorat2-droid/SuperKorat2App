@@ -324,6 +324,24 @@ body::before {
   }
 }
 
+/* ── การ์ดคลังหนังสือ: ภาพล้วน ชี้แล้วค่อยขึ้นรายละเอียด ──────────
+   ⚠️ จอสัมผัสไม่มี hover ถ้าใช้ opacity-0 group-hover:opacity-100 เฉยๆ
+   คนใช้มือถือจะเห็นแต่ภาพปกโดยไม่รู้เลยว่าเล่มไหนคืออะไร
+   จึงตั้งค่าเริ่มต้นเป็น "เห็นตลอด" แล้วซ่อนเฉพาะเครื่องที่มีเมาส์จริง */
+.lib-meta {
+  opacity: 1;
+  transition: opacity .3s ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  .lib-meta { opacity: 0; }
+  /* focus-within เพื่อให้คนที่กด Tab เห็นรายละเอียดด้วย ไม่ตกหล่นเรื่องการเข้าถึง */
+  .group:hover .lib-meta,
+  .group:focus-within .lib-meta { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lib-meta { transition: none; }
+}
+
 /* ── Typography base ─────────────────────────────────────────── */
 body {
   font-family: 'Sarabun', sans-serif;

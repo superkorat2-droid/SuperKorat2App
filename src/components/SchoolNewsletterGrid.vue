@@ -5,13 +5,13 @@
  * ต่างจากหน้า /newsletters ตรงที่การ์ดเป็นลิงก์เปิด Drive ตรงๆ ไม่ใช่โมดัล
  * เพราะหน้าแรกควรพาไปดูของจริงเลย ไม่ควรมีโมดัลซ้อนบนหน้าที่ยาวมาก
  *
- * ภาพปกใช้ <img> ผ่าน NewsletterThumb ไม่ใช่ iframe — วัดแล้วเบากว่า 64 เท่า
+ * ภาพปกใช้ <img> ผ่าน DriveCover ไม่ใช่ iframe — วัดแล้วเบากว่า 64 เท่า
  */
 import { computed } from 'vue'
 import { COL_WIDTH_CLASS } from '../composables/useYoutubeGrid'
 import { newsletterCatLabel, newsletterCatColor, newsletterDateLabel } from '../composables/useNewsletterMeta'
 import { useRevealOnScroll } from '../composables/useRevealOnScroll'
-import NewsletterThumb from './NewsletterThumb.vue'
+import DriveCover from './DriveCover.vue'
 
 const props = defineProps({
   items:   { type: Array,   default: () => [] },
@@ -52,7 +52,7 @@ const surfaceClass = computed(() => (props.items.length > 20 ? 'glass-tile' : 'g
       :class="['group overflow-hidden', surfaceClass, widthClass, itemClass]">
 
       <div class="relative aspect-[3/4] overflow-hidden bg-slate-100">
-        <NewsletterThumb :file-id="n.file_id" :title="n.title" :size="400"/>
+        <DriveCover :file-id="n.file_id" :title="n.title" :size="400"/>
 
         <span :class="['absolute top-1.5 left-1.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full',
                        newsletterCatColor(n.category)]">

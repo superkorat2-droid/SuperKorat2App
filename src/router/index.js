@@ -37,6 +37,8 @@ import AdminPrincipalsView       from '../views/admin/AdminPrincipalsView.vue'
 import PublicPrincipalsView      from '../views/PublicPrincipalsView.vue'
 import PublicNewslettersView     from '../views/PublicNewslettersView.vue'
 import AdminNewslettersView      from '../views/admin/AdminNewslettersView.vue'
+import PublicLibraryView         from '../views/PublicLibraryView.vue'
+import AdminLibraryView          from '../views/admin/AdminLibraryView.vue'
 import AdminMediaView           from '../views/admin/AdminMediaView.vue'
 import AdminMediaEditorView     from '../views/admin/AdminMediaEditorView.vue'
 import PublicMediaView          from '../views/PublicMediaView.vue'
@@ -117,6 +119,8 @@ const routes = [
       { path: 'students',    name: 'adminStudents',    component: AdminStudentsView,    meta: { title: 'ข้อมูลนักเรียน', icon: '👨‍🎓' } },
       { path: 'principals',    name: 'adminPrincipals',  component: AdminPrincipalsView,  meta: { title: 'ผู้บริหารโรงเรียน' } },
       { path: 'newsletters',   name: 'adminNewsletters',    component: AdminNewslettersView,    meta: { title: 'จดหมายข่าว' } },
+      // ไม่อยู่ใน ADMIN_ONLY_PATHS — ศน./เจ้าหน้าที่ ต้องเข้าได้ (RLS คุมว่าแก้ของใครได้)
+      { path: 'library',       name: 'adminLibrary',        component: AdminLibraryView,        meta: { title: 'คลังหนังสือและคู่มือ' } },
       { path: 'media',         name: 'adminMedia',          component: AdminMediaView,          meta: { title: 'คลังสื่อ' } },
       { path: 'media/new',     name: 'adminMediaNew',       component: AdminMediaEditorView,    meta: { title: 'เพิ่มสื่อ' } },
       { path: 'media/:id/edit',name: 'adminMediaEdit',      component: AdminMediaEditorView,    meta: { title: 'แก้ไขสื่อ' } },
@@ -197,6 +201,7 @@ const routes = [
   { path: '/schoolweb',     name: 'schoolWebsites', component: PublicSchoolWebsitesView, meta: { title: 'เว็บไซต์โรงเรียน' } },
   { path: '/principals',   name: 'principals',   component: PublicPrincipalsView, meta: { title: 'ผู้บริหารโรงเรียน' } },
   { path: '/newsletters',  name: 'newsletters',  component: PublicNewslettersView, meta: { title: 'จดหมายข่าว' } },
+  { path: '/library',      name: 'library',      component: PublicLibraryView,     meta: { title: 'คลังหนังสือและคู่มือ' } },
   { path: '/media',        name: 'media',        component: PublicMediaView, meta: { title: 'คลังสื่อการเรียนรู้' } },
   { path: '/media/:id',    name: 'mediaDetail',  component: () => import('../views/MediaDetailView.vue'), meta: { title: 'รายละเอียดสื่อ' } },
   { path: '/works',        name: 'works',        component: () => import('../views/PublicWorksView.vue'), meta: { title: 'ผลงาน/นวัตกรรม' } },

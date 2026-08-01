@@ -15,6 +15,9 @@ import YoutubeCardGrid from '../components/YoutubeCardGrid.vue'
 import DriveFolderBrowser from '../components/drive/DriveFolderBrowser.vue'
 import CustomHtmlBlock from '../components/CustomHtmlBlock.vue'
 import SchoolNewsletterGrid from '../components/SchoolNewsletterGrid.vue'
+import LibraryGrid from '../components/LibraryGrid.vue'
+import { useGroupOptions } from '../composables/useLibraryOptions'
+import { drivePreviewUrl } from '../composables/useGoogleDrive'
 import EventDetailModal from '../components/calendar/EventDetailModal.vue'
 import { useHolidays } from '../composables/useHolidays'
 import { getBgStyle as getBgStyleRaw, bgTextClass } from '../composables/useBgStyle'
@@ -222,6 +225,45 @@ function showNewsletterSection(key) {
   return f.loading || f.items.length > 0
 }
 
+// ── คลังหนังสือและคู่มือ (home section) ───────────────────────────
+// อ่านจาก view library_public เพราะผู้ชมหน้าแรกส่วนใหญ่เป็น anon ซึ่งอ่าน
+// profiles ตรงไม่ได้ (migration 0060 revoke ไว้) — view มีชื่อผู้เผยแพร่ให้แล้ว
+const libraryFeeds = ref({})     // { [sec.key]: { items, loading } }
+const { groupLabel: libGroupLabel } = useGroupOptions(config)
+const openLibraryItem = ref(null)
+
+const librarySections = computed(() =>
+  orderedSections.value.filter(s => s.key.startsWith('library') && s.visible)
+)
+
+async function fetchLibraryFeed(sec) {
+  const cfg = sec.library || {}
+  const limit = Math.max(1, (cfg.cols || 6) * (cfg.rows || 1))
+  libraryFeeds.value[sec.key] = { items: [], loading: true }
+
+  let q = supabase.from('library_public').select('*')
+  if (cfg.kind)      q = q.eq('kind', cfg.kind)
+  if (cfg.group_key) q = q.eq('group_key', cfg.group_key)
+
+  const { data } = await q
+    .order('year', { ascending: false, nullsFirst: false })
+    .order('sort_order', { ascending: true })
+    .order('created_at', { ascending: false })
+    .limit(limit)
+
+  libraryFeeds.value[sec.key] = { items: data || [], loading: false }
+}
+
+function libraryFeedOf(key) {
+  return libraryFeeds.value[key] || { items: [], loading: true }
+}
+function showLibrarySection(key) {
+  const f = libraryFeedOf(key)
+  return f.loading || f.items.length > 0
+}
+const libGroupLabelOf    = it => libGroupLabel(it.group_key)
+const libPublisherNameOf = it => it.publisher_name || ''
+
 async function fetchNithetEvents() {
   loadingNithetEvents.value = true
   const { data } = await supabase.rpc('get_nithet_events_public')
@@ -276,6 +318,7 @@ onMounted(async () => {
   if (needsEduNewsSection.value) fetchEduNews()
   if (needsNithetCalendarSection.value) fetchNithetEvents()
   newsletterSections.value.forEach(fetchNewsletterFeed)
+  librarySections.value.forEach(fetchLibraryFeed)
 
   // รีโหลดแบบนิเทศเมื่อ tab กลับมา (หลังแก้ไขในหน้า admin)
   document.addEventListener('visibilitychange', () => {
@@ -1109,6 +1152,42 @@ const stats = [
           </div>
         </section>
 
+        <!-- ══ คลังหนังสือและคู่มือ ══ -->
+        <section v-else-if="sec.key.startsWith('library') && showLibrarySection(sec.key)"
+          :style="getBgStyle(sec)" :class="secBgClass(sec)" class="py-8 md:py-12">
+          <BgLayers :cfg="sec"/>
+          <div class="relative max-w-7xl mx-auto px-4">
+            <div class="text-center mb-8">
+              <span v-if="sec.subtitle" class="text-secondary font-bold uppercase text-xs tracking-[0.18em] mb-2 block">{{ sec.subtitle }}</span>
+              <h2 class="text-2xl md:text-3xl font-extrabold text-slate-900 accent-line-center">
+                {{ sec.title || 'คลังหนังสือและคู่มือ' }}
+              </h2>
+            </div>
+
+            <LibraryGrid
+              :items="libraryFeedOf(sec.key).items"
+              :loading="libraryFeedOf(sec.key).loading"
+              :cols="sec.library?.cols || 6"
+              :rows="sec.library?.rows || 1"
+              :animate="sec.library?.animate !== false"
+              :group-label-of="libGroupLabelOf"
+              :publisher-name-of="libPublisherNameOf"
+              @open="openLibraryItem = $event"/>
+
+            <div class="text-center mt-8">
+              <a href="#/library"
+                class="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-2xl text-sm font-bold
+                       text-primary bg-white/70 ring-1 ring-white/80 shadow-sm backdrop-blur
+                       hover:gap-3 hover:-translate-y-0.5 transition-all">
+                {{ sec.library?.link_text || 'ดูคลังหนังสือทั้งหมด' }}
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/>
+                </svg>
+              </a>
+            </div>
+          </div>
+        </section>
+
         <!-- ══ CTA ══ -->
         <section v-else-if="sec.key === 'cta'"
           :style="getBgStyle(sec)" :class="secBgClass(sec)"
@@ -1155,6 +1234,41 @@ const stats = [
 
     <!-- รายละเอียดกิจกรรม — ใช้ modal ตัวเดียวกับหน้า /nithet -->
     <EventDetailModal :event="selectedEvent" @close="selectedEvent = null"/>
+
+    <!-- อ่านหนังสือ/คู่มือ — iframe ของ Drive เลื่อนอ่านได้ครบทุกหน้าในตัว
+         ใช้ iframe ตรงนี้ได้เพราะเปิดทีละเล่มตามที่ผู้ใช้กด ไม่ใช่หลายอันพร้อมกัน -->
+    <Teleport to="body">
+      <Transition enter-active-class="transition duration-200" enter-from-class="opacity-0"
+        leave-active-class="transition duration-150" leave-to-class="opacity-0">
+        <div v-if="openLibraryItem" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+          @click.self="openLibraryItem = null">
+          <div class="glass-panel rounded-3xl w-full max-w-4xl max-h-[92vh] flex flex-col overflow-hidden">
+            <div class="flex items-start justify-between gap-3 px-5 py-3.5 border-b border-slate-100 flex-shrink-0">
+              <div class="min-w-0">
+                <span class="block text-base font-extrabold text-slate-800 leading-snug line-clamp-2">{{ openLibraryItem.title }}</span>
+                <span class="block text-[11px] text-slate-400 mt-0.5 truncate">
+                  <template v-if="openLibraryItem.publisher_name">{{ openLibraryItem.publisher_name }}</template>
+                  <template v-if="libGroupLabel(openLibraryItem.group_key)"> · {{ libGroupLabel(openLibraryItem.group_key) }}</template>
+                  <template v-if="openLibraryItem.year"> · พ.ศ. {{ openLibraryItem.year }}</template>
+                </span>
+              </div>
+              <button @click="openLibraryItem = null" class="w-8 h-8 flex-shrink-0 flex items-center justify-center rounded-full hover:bg-slate-100 text-slate-400">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+              </button>
+            </div>
+            <div class="flex-1 min-h-[50vh] bg-slate-100">
+              <iframe :src="drivePreviewUrl(openLibraryItem.file_id)" class="w-full h-full" frameborder="0" :title="openLibraryItem.title"/>
+            </div>
+            <div class="px-5 py-3 border-t border-slate-100 flex-shrink-0 flex items-center justify-end">
+              <a :href="openLibraryItem.drive_url" target="_blank" rel="noopener"
+                class="px-4 py-2 rounded-xl text-xs font-bold bg-primary text-white shadow-sm hover:-translate-y-0.5 transition-all">
+                เปิดใน Drive ↗
+              </a>
+            </div>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
 
   </div>
 </template>

@@ -8,6 +8,7 @@ export const SYSTEM_ROUTE_HEADER_KEYS = {
   '/schools':          'schools',
   '/principals':       'principals',
   '/newsletters':      'newsletters',
+  '/library':          'library',
   '/media':            'media',
   '/works':            'works',
   '/awards':           'awards',

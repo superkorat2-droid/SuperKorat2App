@@ -387,6 +387,10 @@ verify_jwt = false
 [functions.drive-list]
 verify_jwt = false
 
+# drive-check ตั้งใจไม่ใส่ไว้ที่นี่ — ให้ตรวจ JWT ตามค่าเริ่มต้น
+# เรียกจากฟอร์มหลังบ้านที่ล็อกอินแล้วเท่านั้น ถ้าเปิดสาธารณะจะกลายเป็นเครื่องมือ
+# ให้คนนอกไล่เดาว่าไฟล์ Drive id ไหนมีอยู่จริง
+
 [analytics]
 enabled = true
 port = 54327

@@ -9,6 +9,7 @@ import YoutubeGridEditor from '../../components/YoutubeGridEditor.vue'
 import DriveFolderEditor from '../../components/drive/DriveFolderEditor.vue'
 import EmbedEditor from '../../components/EmbedEditor.vue'
 import NewsletterFeedEditor from '../../components/NewsletterFeedEditor.vue'
+import LibraryFeedEditor from '../../components/LibraryFeedEditor.vue'
 import ImageCropperModal from '../../components/ImageCropperModal.vue'
 import { useExternalUpload, externalUploadEnabled } from '../../composables/useExternalUpload'
 import { useUploadGc } from '../../composables/useUploadGc'
@@ -108,6 +109,7 @@ const SECTION_ICONS = {
   embed:           'M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25',
   cta:             'M12 18v-5.25m0 0a6.01 6.01 0 001.5-.189m-1.5.189a6.01 6.01 0 01-1.5-.189m3.75 7.478a12.06 12.06 0 01-4.5 0m3.75 2.383a14.406 14.406 0 01-3 0M14.25 18v-.192c0-.983.658-1.823 1.508-2.316a7.5 7.5 0 10-7.517 0c.85.493 1.509 1.333 1.509 2.316V18',
   school_newsletters: 'M12 7.5h1.5m-1.5 3h1.5m-7.5 3h7.5m-7.5 3h7.5m3-9h3.375c.621 0 1.125.504 1.125 1.125V18a2.25 2.25 0 01-2.25 2.25M16.5 7.5V18a2.25 2.25 0 002.25 2.25M16.5 7.5V4.875c0-.621-.504-1.125-1.125-1.125H4.125C3.504 3.75 3 4.254 3 4.875V18a2.25 2.25 0 002.25 2.25h13.5M6 7.5h4.5M6 10.5h4.5',
+  library:         'M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25',
 }
 
 const SECTION_DESC = {
@@ -122,6 +124,7 @@ const SECTION_DESC = {
   cta:             'แบนเนอร์เชิญชวน + ลิงก์หลัก',
   embed:           'ฝังสื่อจากลิงก์ (YouTube, Slides, Forms, Maps ฯลฯ)',
   school_newsletters: 'จดหมายข่าวที่โรงเรียนส่งเข้ามา — ดึงอัตโนมัติ ไม่ต้องเพิ่มเอง',
+  library:         'หนังสือ/คู่มือจากคลัง — การ์ดภาพปก ชี้เมาส์แล้วขึ้นรายละเอียด',
 }
 
 // keys ของเซกชันภาพลิงก์ไม่คงที่ (image_gallery_<timestamp>) — ต้องเช็คด้วย prefix แทน exact match
@@ -131,6 +134,7 @@ function isHtmlSection(sec)    { return sec.key.startsWith('custom_html') }
 function isDriveSection(sec)   { return sec.key.startsWith('drive') }
 function isEmbedSection(sec)   { return sec.key.startsWith('embed') }
 function isNewsletterSection(sec) { return sec.key.startsWith('school_newsletters') }
+function isLibrarySection(sec) { return sec.key.startsWith('library') }
 // เซกชันที่เพิ่มเองได้จะมี key แบบ <ชนิด>_<timestamp> ต้องเช็คด้วย prefix ไม่ใช่ exact match
 function customKind(sec) {
   if (isGallerySection(sec)) return 'image_gallery'
@@ -139,6 +143,7 @@ function customKind(sec) {
   if (isDriveSection(sec))   return 'drive'
   if (isEmbedSection(sec))   return 'embed'
   if (isNewsletterSection(sec)) return 'school_newsletters'
+  if (isLibrarySection(sec))    return 'library'
   return ''
 }
 function isCustomSection(sec) { return !!customKind(sec) }
@@ -184,6 +189,16 @@ function addNewsletterSection() {
     bg: '#ffffff', bg2: '#f1f5f9', bg_type: 'none', order: sections.value.length + 1,
     newsletters: { cols: 6, rows: 2, scope: 'school', category: '',
                    link_text: 'จดหมายข่าวโรงเรียนทั้งหมด', animate: true },
+  })
+}
+
+function addLibrarySection() {
+  sections.value.push({
+    key: `library_${Date.now()}`, label: 'คลังหนังสือ/คู่มือ', subtitle: 'Library',
+    title: 'คลังหนังสือและคู่มือ', visible: true,
+    bg: '#ffffff', bg2: '#f1f5f9', bg_type: 'none', order: sections.value.length + 1,
+    library: { cols: 6, rows: 1, kind: '', group_key: '',
+               link_text: 'ดูคลังหนังสือทั้งหมด', animate: true },
   })
 }
 
@@ -233,6 +248,10 @@ onMounted(async () => {
       if (isNewsletterSection(withSubtitle) && !withSubtitle.newsletters) {
         withSubtitle.newsletters = { cols: 6, rows: 2, scope: 'school', category: '',
                                      link_text: 'จดหมายข่าวโรงเรียนทั้งหมด', animate: true }
+      }
+      if (isLibrarySection(withSubtitle) && !withSubtitle.library) {
+        withSubtitle.library = { cols: 6, rows: 1, kind: '', group_key: '',
+                                 link_text: 'ดูคลังหนังสือทั้งหมด', animate: true }
       }
       return withSubtitle
     }),
@@ -325,6 +344,11 @@ async function save() {
         class="px-4 py-2.5 rounded-xl text-sm font-bold border-2 border-dashed border-slate-300 text-slate-500
                hover:border-primary hover:text-primary transition-all">
         + เพิ่มเซกชันจดหมายข่าวโรงเรียน
+      </button>
+      <button @click="addLibrarySection" type="button"
+        class="px-4 py-2.5 rounded-xl text-sm font-bold border-2 border-dashed border-slate-300 text-slate-500
+               hover:border-primary hover:text-primary transition-all">
+        + เพิ่มเซกชันคลังหนังสือ/คู่มือ
       </button>
       <button @click="save" :disabled="saving"
         class="flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary-dark text-white font-bold rounded-2xl shadow-md transition-all hover:-translate-y-0.5 disabled:opacity-50">
@@ -427,6 +451,7 @@ async function save() {
               <template v-else-if="isDriveSection(sec)">ตั้งค่าโฟลเดอร์</template>
               <template v-else-if="isEmbedSection(sec)">ตั้งค่าลิงก์ฝัง</template>
               <template v-else-if="isNewsletterSection(sec)">ตั้งค่าจดหมายข่าว</template>
+              <template v-else-if="isLibrarySection(sec)">ตั้งค่าคลังหนังสือ</template>
               <template v-else>แก้ไขโค้ด</template>
             </button>
             <button @click="removeSection(i)" type="button"
@@ -726,6 +751,7 @@ async function save() {
                 <template v-else-if="isDriveSection(editingSection)">ตั้งค่าโฟลเดอร์ Google Drive</template>
                 <template v-else-if="isEmbedSection(editingSection)">ฝังลิงก์จากเว็บอื่น</template>
                 <template v-else-if="isNewsletterSection(editingSection)">ตั้งค่าจดหมายข่าวโรงเรียน</template>
+                <template v-else-if="isLibrarySection(editingSection)">ตั้งค่าคลังหนังสือและคู่มือ</template>
                 <template v-else>แทรกโค้ด HTML / CSS / JS</template>
               </h2>
               <button @click="editingSection = null" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 text-slate-400">
@@ -742,6 +768,8 @@ async function save() {
               <EmbedEditor v-else-if="isEmbedSection(editingSection)" :model-value="editingSection.embed"/>
 
               <NewsletterFeedEditor v-else-if="isNewsletterSection(editingSection)" :model-value="editingSection.newsletters"/>
+
+              <LibraryFeedEditor v-else-if="isLibrarySection(editingSection)" :model-value="editingSection.library"/>
 
               <div v-else class="space-y-3">
                 <textarea v-model="editingSection.html_code" rows="16" spellcheck="false"

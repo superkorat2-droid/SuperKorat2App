@@ -21,6 +21,7 @@ const KNOWN_ROUTES = [
   { key: 'schoolWebsites', label: 'เว็บไซต์โรงเรียน' },
   { key: 'principals',     label: 'ผู้บริหารสถานศึกษา' },
   { key: 'newsletters',    label: 'จดหมายข่าว' },
+  { key: 'library',        label: 'คลังหนังสือและคู่มือ' },
   { key: 'media',          label: 'คลังสื่อการเรียนรู้' },
   { key: 'studentStats',   label: 'ข้อมูลนักเรียน' },
   { key: 'news',           label: 'ข่าวสาร' },
