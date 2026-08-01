@@ -14,6 +14,7 @@ import MonthCalendar from '../components/calendar/MonthCalendar.vue'
 import YoutubeCardGrid from '../components/YoutubeCardGrid.vue'
 import DriveFolderBrowser from '../components/drive/DriveFolderBrowser.vue'
 import CustomHtmlBlock from '../components/CustomHtmlBlock.vue'
+import SchoolNewsletterGrid from '../components/SchoolNewsletterGrid.vue'
 import EventDetailModal from '../components/calendar/EventDetailModal.vue'
 import { useHolidays } from '../composables/useHolidays'
 import { getBgStyle as getBgStyleRaw, bgTextClass } from '../composables/useBgStyle'
@@ -178,6 +179,49 @@ const needsNithetCalendarSection = computed(() =>
   orderedSections.value.some(s => s.key === 'nithet_calendar' && s.visible)
 )
 
+// ── จดหมายข่าวโรงเรียน (home section) ─────────────────────────────
+// เซกชันชนิดนี้เพิ่มได้หลายอัน (key = school_newsletters_<timestamp>) และแต่ละอัน
+// ตั้งค่ากรองไม่เหมือนกัน จึงเก็บผลลัพธ์แยกตาม key ไม่ใช่ ref ตัวเดียวแบบเซกชันอื่น
+const newsletterFeeds = ref({})    // { [sec.key]: { items: [], loading: boolean } }
+
+const newsletterSections = computed(() =>
+  orderedSections.value.filter(s => s.key.startsWith('school_newsletters') && s.visible)
+)
+
+async function fetchNewsletterFeed(sec) {
+  const cfg = sec.newsletters || {}
+  const limit = Math.max(1, (cfg.cols || 6) * (cfg.rows || 2))
+  newsletterFeeds.value[sec.key] = { items: [], loading: true }
+
+  let q = supabase
+    .from('newsletters')
+    .select('id, title, drive_url, file_id, category, month, year, school_id, schools(name)')
+    .eq('is_published', true)
+
+  // school_id = NULL หมายถึงของ สพป. เอง ไม่ใช่ "โรงเรียนในสังกัด"
+  if (cfg.scope === 'school')    q = q.not('school_id', 'is', null)
+  else if (cfg.scope === 'area') q = q.is('school_id', null)
+  if (cfg.category)              q = q.eq('category', cfg.category)
+
+  // แถวเก่าบางแถว year/month เป็น null — nullsFirst:false ไม่ให้ลอยขึ้นหัวรายการ
+  const { data } = await q
+    .order('year',  { ascending: false, nullsFirst: false })
+    .order('month', { ascending: false, nullsFirst: false })
+    .order('created_at', { ascending: false })
+    .limit(limit)
+
+  newsletterFeeds.value[sec.key] = { items: data || [], loading: false }
+}
+
+// ยังโหลดไม่เสร็จให้ถือว่ามีของ ไม่งั้นเซกชันจะหายไปตอน render รอบแรกแล้วไม่กลับมา
+function newsletterFeedOf(key) {
+  return newsletterFeeds.value[key] || { items: [], loading: true }
+}
+function showNewsletterSection(key) {
+  const f = newsletterFeedOf(key)
+  return f.loading || f.items.length > 0
+}
+
 async function fetchNithetEvents() {
   loadingNithetEvents.value = true
   const { data } = await supabase.rpc('get_nithet_events_public')
@@ -231,6 +275,7 @@ onMounted(async () => {
   if (needsSupervisionSection.value) fetchSupervisionForms()
   if (needsEduNewsSection.value) fetchEduNews()
   if (needsNithetCalendarSection.value) fetchNithetEvents()
+  newsletterSections.value.forEach(fetchNewsletterFeed)
 
   // รีโหลดแบบนิเทศเมื่อ tab กลับมา (หลังแก้ไขในหน้า admin)
   document.addEventListener('visibilitychange', () => {
@@ -1027,6 +1072,40 @@ const stats = [
               <h2 class="text-3xl md:text-4xl font-extrabold text-slate-900 accent-line-center">{{ sec.title || 'ภาพลิงก์' }}</h2>
             </div>
             <ImageLinkGallery :layout="sec.gallery.layout" :items="sec.gallery.items"/>
+          </div>
+        </section>
+
+        <!-- ══ จดหมายข่าวโรงเรียน ══
+             guard ด้วยสถานะ feed ไม่ใช่ payload ของ sec เหมือนเซกชันอื่น
+             เพราะข้อมูลมาแบบ async ถ้าเช็ค items.length ตรงๆ จะไม่โผล่เลย -->
+        <section v-else-if="sec.key.startsWith('school_newsletters') && showNewsletterSection(sec.key)"
+          :style="getBgStyle(sec)" :class="secBgClass(sec)" class="py-8 md:py-12">
+          <BgLayers :cfg="sec"/>
+          <div class="relative max-w-7xl mx-auto px-4">
+            <div class="text-center mb-8">
+              <span v-if="sec.subtitle" class="text-secondary font-bold uppercase text-xs tracking-[0.18em] mb-2 block">{{ sec.subtitle }}</span>
+              <h2 class="text-2xl md:text-3xl font-extrabold text-slate-900 accent-line-center">
+                {{ sec.title || 'กิจกรรมโรงเรียนในสังกัด' }}
+              </h2>
+            </div>
+
+            <SchoolNewsletterGrid
+              :items="newsletterFeedOf(sec.key).items"
+              :loading="newsletterFeedOf(sec.key).loading"
+              :cols="sec.newsletters?.cols || 6"
+              :animate="sec.newsletters?.animate !== false"/>
+
+            <div class="text-center mt-8">
+              <a href="#/newsletters"
+                class="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-2xl text-sm font-bold
+                       text-primary bg-white/70 ring-1 ring-white/80 shadow-sm backdrop-blur
+                       hover:gap-3 hover:-translate-y-0.5 transition-all">
+                {{ sec.newsletters?.link_text || 'จดหมายข่าวโรงเรียนทั้งหมด' }}
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/>
+                </svg>
+              </a>
+            </div>
           </div>
         </section>
 

@@ -1,0 +1,43 @@
+<script setup>
+/**
+ * NewsletterThumb — ภาพปกจดหมายข่าวจากไฟล์ Drive
+ *
+ * ใช้ร่วมกันทั้งเซกชันหน้าแรกและหน้า /newsletters — อย่าทำสำเนา ไม่งั้นวันหนึ่ง
+ * แก้ที่เดียวแล้วอีกหน้าจะเพี้ยน (บทเรียนเดียวกับ PersonnelDirectory)
+ *
+ * เดิมทั้งสองที่ฝัง iframe ของ Drive แล้วครอบ pointer-events-none ให้ดูเหมือนรูป
+ * ซึ่งหนักมาก (12 ใบ = 439 คำขอ / 38 MB) เปลี่ยนมาเป็น <img> แล้วเหลือ 0.59 MB
+ *
+ * ถ้า Google เปลี่ยน endpoint วันไหน ภาพจะโหลดไม่ขึ้นแล้วตกมาที่กรอบสำรอง
+ * — เสียความสวย แต่ยังอ่านออกว่าเป็นเรื่องอะไรและกดเข้าไปดูได้ ไม่ใช่รูปแตก
+ */
+import { ref, watch } from 'vue'
+import { driveThumb } from '../composables/useGoogleDrive'
+
+const props = defineProps({
+  fileId: { type: String, default: '' },
+  title:  { type: String, default: '' },
+  size:   { type: Number, default: 600 },   // ความกว้างที่ขอจาก Google (px)
+})
+
+const failed = ref(false)
+// การ์ดถูกใช้ซ้ำตอนกรอง/เปลี่ยนหน้า ถ้าไม่รีเซ็ตจะติดสถานะพังของใบก่อนหน้า
+watch(() => props.fileId, () => { failed.value = false })
+</script>
+
+<template>
+  <img v-if="fileId && !failed"
+    :src="driveThumb(fileId, size)" :alt="title || 'ภาพปกจดหมายข่าว'"
+    loading="lazy" decoding="async" @error="failed = true"
+    class="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500"/>
+
+  <div v-else
+    class="w-full h-full flex flex-col items-center justify-center gap-1.5 p-3 text-center
+           bg-gradient-to-br from-slate-100 to-slate-200">
+    <svg class="w-10 h-10 text-slate-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+      <path stroke-linecap="round" stroke-linejoin="round"
+        d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/>
+    </svg>
+    <span class="block text-[10px] leading-snug text-slate-400 line-clamp-2">{{ title }}</span>
+  </div>
+</template>

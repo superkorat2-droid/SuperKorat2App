@@ -37,6 +37,25 @@ export function drivePreviewUrl(id) { return id ? `https://drive.google.com/file
 export function driveViewUrl(id)    { return id ? `https://drive.google.com/file/d/${id}/view` : '' }
 export function driveFolderUrl(id)  { return id ? `https://drive.google.com/drive/folders/${id}` : '' }
 
+/**
+ * ภาพปกของไฟล์ Drive — ใช้แทนการฝัง iframe เวลาต้องแสดงหลายใบพร้อมกัน
+ *
+ * วัดจริงด้วย 12 ใบ: iframe = 439 คำขอ / 37.95 MB · <img> = 7 คำขอ / 0.59 MB
+ * (ต่างกัน 64 เท่า) จึงห้ามใช้ iframe ทำ "ภาพปก" อีก — iframe เก็บไว้ใช้เฉพาะ
+ * ตอนเปิดอ่านเอกสารจริงทีละอันเท่านั้น
+ *
+ * ⚠️ URL ของ Google เปลี่ยนได้โดยไม่บอกล่วงหน้า **ให้ทุกที่เรียกฟังก์ชันนี้เท่านั้น**
+ * จะได้แก้จุดเดียวจบ และผู้เรียกต้องมี fallback ตอนโหลดภาพไม่สำเร็จเสมอ
+ * (ดู NewsletterThumb.vue) — ทดสอบแล้ว 2569-08-01 ใช้ได้ 12/12 แคชว่าง
+ * ตอบ 302 ไป lh3.googleusercontent.com แล้ว 200 image/jpeg|png
+ *
+ * หมายเหตุ: `uc?export=view&id=` เป็นตัวที่ Google เลิกใช้จริง (ทดสอบแล้วตาย 4/4)
+ * อย่าสับสนกับตัวนี้
+ */
+export function driveThumb(id, size = 600) {
+  return id ? `https://drive.google.com/thumbnail?id=${id}&sz=w${size}` : ''
+}
+
 // ── ชนิดไฟล์ ────────────────────────────────────────────────────────
 export const FOLDER_MIME = 'application/vnd.google-apps.folder'
 

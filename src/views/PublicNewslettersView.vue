@@ -4,6 +4,9 @@ import { supabase } from '../supabase'
 import { useAreaConfig } from '../composables/useAreaConfig'
 import { usePageHeader } from '../composables/usePageHeader'
 import PageHero from '../components/PageHero.vue'
+import NewsletterThumb from '../components/NewsletterThumb.vue'
+import { NEWSLETTER_CATEGORIES, MONTHS_TH,
+         newsletterCatLabel, newsletterCatColor } from '../composables/useNewsletterMeta'
 
 const { config, fetchConfig } = useAreaConfig()
 const header = usePageHeader('newsletters', { icon: 'document', title: 'จดหมายข่าว / เอกสารเผยแพร่', align: 'center' })
@@ -15,14 +18,9 @@ const filterYear   = ref('all')
 const filterSchool = ref('all')
 const previewItem  = ref(null)   // item ที่กำลัง preview
 
-const CATEGORIES = [
-  { value:'newsletter',   label:'จดหมายข่าว' },
-  { value:'announcement', label:'ประกาศ/หนังสือเวียน' },
-  { value:'circular',     label:'คำสั่ง' },
-  { value:'policy',       label:'นโยบาย' },
-  { value:'other',        label:'อื่นๆ' },
-]
-const MONTHS = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.']
+// ย้ายไป useNewsletterMeta แล้ว เพราะเซกชันหน้าแรกใช้ชุดเดียวกัน — คงชื่อเดิมไว้ให้ template
+const CATEGORIES = NEWSLETTER_CATEGORIES
+const MONTHS = MONTHS_TH
 
 onMounted(async () => {
   await fetchConfig()
@@ -62,12 +60,12 @@ function resetFilter() {
   searchQ.value = ''; filterCat.value = 'all'; filterYear.value = 'all'; filterSchool.value = 'all'
 }
 
+// ยังใช้อยู่ในโมดัล — ที่นั่นเปิดทีละอันตามที่ผู้ใช้กด ไม่ใช่ 20 อันพร้อมกันแบบการ์ด
 function embedUrl(fileId) { return `https://drive.google.com/file/d/${fileId}/preview` }
-function catLabel(c) { return CATEGORIES.find(x=>x.value===c)?.label || c }
-function catColor(c) {
-  return { newsletter:'bg-primary/10 text-primary', announcement:'bg-indigo-100 text-indigo-700',
-    circular:'bg-amber-100 text-amber-700', policy:'bg-rose-100 text-rose-700', other:'bg-slate-100 text-slate-500' }[c] || 'bg-slate-100 text-slate-500'
-}
+const catLabel = newsletterCatLabel
+// เดิมหมวด newsletter ใช้ `bg-primary/10` ซึ่ง **ไม่มีอยู่จริง** (primary ไม่ใช่สีใน
+// theme ของ Tailwind) ป้ายจึงไม่มีพื้นหลังมาตลอด — ตัวใหม่ใช้ bg-sky-100
+const catColor = newsletterCatColor
 function monthLabel(m) { return m ? MONTHS[m-1] : '' }
 </script>
 
@@ -138,21 +136,11 @@ function monthLabel(m) { return m ? MONTHS[m-1] : '' }
                  w-full sm:w-[calc(50%-8px)] md:w-[calc(33.333%-11px)] lg:w-[calc(25%-12px)]"
           @click="previewItem = n">
 
-          <!-- Embed preview (pointer-events-none = looks like static thumbnail) -->
+          <!-- ภาพปก — เดิมเป็น iframe ของ Drive ครอบ pointer-events-none ให้ดูเหมือนรูป
+               วัดจริงแล้ว 12 ใบ = 439 คำขอ / 38 MB เปลี่ยนมาเป็น <img> เหลือ 0.59 MB
+               (iframe ยังใช้อยู่ในโมดัลข้างล่าง ซึ่งเปิดทีละอันจึงไม่เป็นปัญหา) -->
           <div class="aspect-[3/4] overflow-hidden bg-slate-100 relative">
-            <iframe v-if="n.file_id"
-              :src="embedUrl(n.file_id)"
-              class="w-full h-full pointer-events-none scale-[1.02]"
-              sandbox="allow-scripts allow-same-origin"
-              loading="lazy"
-              title="preview"
-            />
-            <!-- Fallback icon -->
-            <div v-else class="w-full h-full flex items-center justify-center">
-              <svg class="w-16 h-16 text-slate-300" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
-              </svg>
-            </div>
+            <NewsletterThumb :file-id="n.file_id" :title="n.title"/>
             <!-- Hover overlay -->
             <div class="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-200 flex items-center justify-center">
               <div class="opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 rounded-2xl px-4 py-2 text-sm font-bold text-primary shadow-lg">

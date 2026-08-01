@@ -294,6 +294,36 @@ body::before {
   .brand-title-shine { animation: none; }
 }
 
+/* ── Reveal on scroll ────────────────────────────────────────────
+   ค่อยๆ โผล่ตอนเลื่อนมาถึง ใช้คู่กับ useRevealOnScroll.js
+   ตัวพ่อได้คลาส .is-revealed ลูกแต่ละใบใส่ .reveal-item + style="--i: <ลำดับ>"
+
+   ใช้ transition ล้วนไม่ใช้ keyframes เพราะไล่ delay ทีละใบง่ายกว่า
+   และไม่ต้องกังวลเรื่อง animation-fill-mode ค้าง
+
+   --i ส่งผ่าน inline style ไม่ใช่คลาส เพราะ Tailwind JIT จะ purge
+   คลาสที่ต่อจากตัวแปรทิ้ง (delay-[40ms] ที่สร้างตอนรันไม่มีอยู่จริง) */
+.reveal-item {
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity .5s ease, transform .5s ease;
+  transition-delay: calc(var(--i, 0) * 40ms);
+  will-change: opacity, transform;
+}
+.is-revealed .reveal-item {
+  opacity: 1;
+  transform: none;
+  will-change: auto;
+}
+/* คนที่ตั้งค่าเครื่องให้ลดการเคลื่อนไหว ต้องเห็นครบทันที ไม่ใช่เห็นช้ากว่าคนอื่น */
+@media (prefers-reduced-motion: reduce) {
+  .reveal-item {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
 /* ── Typography base ─────────────────────────────────────────── */
 body {
   font-family: 'Sarabun', sans-serif;
