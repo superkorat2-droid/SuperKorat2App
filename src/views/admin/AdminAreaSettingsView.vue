@@ -156,6 +156,38 @@ function removePhone(i) {
   config.value.contact_phones.forEach((x,idx)=>x.order=idx+1)
 }
 /**
+ * แยกเบอร์ที่ติดมากับชื่อกลุ่ม
+ *
+ * คนส่วนใหญ่จะก๊อปทั้งบรรทัด "กลุ่มอำนวยการ 044-399-055" มาวางในช่องชื่อ
+ * แล้วช่องเบอร์ว่าง → footer กรองแถวที่ไม่มีเบอร์ทิ้ง เลยไม่ขึ้นสักแถวแบบเงียบ ๆ
+ * จับเฉพาะกลุ่มตัวเลข/ขีด/วงเล็บที่ "ท้ายสุด" ของชื่อเท่านั้น กันไปตัดชื่อที่มีเลขปนกลางประโยค
+ */
+const PHONE_TAIL = /\s+([\d(][\d\-\s().]{5,}\d)\s*$/
+
+function splitPhone(row) {
+  if (String(row.phone || '').trim()) return false      // มีเบอร์อยู่แล้ว ไม่ยุ่ง
+  const m = String(row.label || '').match(PHONE_TAIL)
+  if (!m) return false
+  row.phone = m[1].trim()
+  row.label = row.label.slice(0, m.index).trim()
+  return true
+}
+
+// จำนวนแถวที่เบอร์ยังติดอยู่กับชื่อ — ใช้โชว์ปุ่มแก้ให้เห็นเฉพาะตอนที่จำเป็น
+const phonesNeedSplit = computed(() =>
+  (config.value?.contact_phones || []).filter(r =>
+    !String(r.phone || '').trim() && PHONE_TAIL.test(String(r.label || ''))).length
+)
+
+function splitAllPhones() {
+  let n = 0
+  ;(config.value.contact_phones || []).forEach(r => { if (splitPhone(r)) n++ })
+  Swal.fire({ icon: n ? 'success' : 'info', toast: true, position: 'top-end', timer: 2400,
+    showConfirmButton: false,
+    title: n ? `แยกเบอร์ออกจากชื่อ ${n} แถว — อย่าลืมกดบันทึก` : 'ไม่มีแถวที่ต้องแยก' })
+}
+
+/**
  * เติมชื่อกลุ่มจาก personnel_groups มาตั้งต้น (เฉพาะอันที่ยังไม่มี)
  * ไม่ได้ผูกกันถาวร — เบอร์เก็บคนละคอลัมน์โดยตั้งใจ เพราะหน่วยงานที่มีเบอร์
  * มีมากกว่ากลุ่มบุคลากร และ personnel_groups ถูกใช้ตัดสินตัวกรองอีก 20 ไฟล์
@@ -806,12 +838,25 @@ function resetToDefault() {
               <div>
                 <p class="text-sm font-extrabold text-slate-700">☎️ เบอร์ติดต่อ แต่ละกลุ่มงาน</p>
                 <p class="text-xs text-slate-400 mt-0.5">
-                  แสดงเป็นแถบเต็มความกว้างท้ายเว็บ · ไม่กรอกเบอร์ = แถวนั้นไม่ถูกแสดง
+                  แสดงเป็นแถบเต็มความกว้างท้ายเว็บ · <b class="text-amber-600">แถวที่ช่องเบอร์ว่างจะไม่ถูกแสดง</b>
+                  (ช่องเบอร์ที่ยังว่างจะขึ้นพื้นสีเหลือง)
                 </p>
               </div>
               <button @click="fillPhonesFromGroups" type="button"
                 class="px-3 py-2 rounded-xl text-xs font-bold border-2 border-blue-200 text-blue-600 hover:bg-blue-50 transition-all">
                 เติมจากกลุ่มงานบุคลากร
+              </button>
+            </div>
+
+            <!-- ขึ้นเฉพาะตอนที่ตรวจพบว่าเบอร์ยังติดอยู่กับชื่อ (เคสก๊อปทั้งบรรทัดมาวาง) -->
+            <div v-if="phonesNeedSplit" class="mb-3 px-4 py-3 rounded-2xl bg-amber-50 border border-amber-200 flex flex-wrap items-center gap-3">
+              <div class="flex-1 min-w-[220px]">
+                <p class="text-xs font-bold text-amber-800">พบ {{ phonesNeedSplit }} แถวที่เบอร์ติดอยู่ในช่องชื่อกลุ่มงาน</p>
+                <p class="text-[11px] text-amber-700 mt-0.5">แถวที่ช่องเบอร์ว่างจะไม่ถูกแสดงท้ายเว็บ กดปุ่มนี้แยกให้อัตโนมัติได้เลย</p>
+              </div>
+              <button @click="splitAllPhones" type="button"
+                class="px-3.5 py-2 rounded-xl text-xs font-bold bg-amber-500 text-white hover:bg-amber-600 transition-colors">
+                แยกเบอร์ออกจากชื่อ
               </button>
             </div>
 
@@ -828,10 +873,12 @@ function resetToDefault() {
                     <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/></svg>
                   </button>
                 </div>
-                <input v-model="p.label" type="text" placeholder="ชื่อกลุ่มงาน เช่น กลุ่มอำนวยการ"
+                <!-- @blur แยกเบอร์ให้เอง — คนวางทั้งบรรทัด "ชื่อกลุ่ม 044-xxx-xxx" เป็นเรื่องปกติ -->
+                <input v-model="p.label" @blur="splitPhone(p)" type="text" placeholder="ชื่อกลุ่มงาน เช่น กลุ่มอำนวยการ"
                   class="flex-1 min-w-[140px] px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"/>
                 <input v-model="p.phone" type="text" inputmode="tel" placeholder="044-399-055"
-                  class="w-40 px-3 py-2 border border-slate-200 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-200"/>
+                  :class="['w-40 px-3 py-2 border rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-200',
+                           String(p.phone || '').trim() ? 'border-slate-200' : 'border-amber-300 bg-amber-50']"/>
                 <button @click="removePhone(i)" type="button"
                   class="p-1.5 rounded-lg text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all flex-shrink-0" title="ลบ">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/></svg>
