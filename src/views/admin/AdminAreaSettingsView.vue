@@ -144,11 +144,53 @@ function removeFooterLink(i) {
   config.value.footer_extra_links.forEach((x,idx)=>x.order=idx+1)
 }
 
+// ── เบอร์ติดต่อแต่ละกลุ่มงาน (แถบท้ายเว็บ) ─────────────────────────────
+function movePhoneUp(i)   { const l = config.value.contact_phones; if (i>0) { [l[i-1],l[i]]=[l[i],l[i-1]]; l.forEach((x,idx)=>x.order=idx+1) } }
+function movePhoneDown(i) { const l = config.value.contact_phones; if (i<l.length-1) { [l[i],l[i+1]]=[l[i+1],l[i]]; l.forEach((x,idx)=>x.order=idx+1) } }
+function addPhone() {
+  if (!config.value.contact_phones) config.value.contact_phones = []
+  config.value.contact_phones.push({ label:'', phone:'', order: config.value.contact_phones.length+1 })
+}
+function removePhone(i) {
+  config.value.contact_phones.splice(i,1)
+  config.value.contact_phones.forEach((x,idx)=>x.order=idx+1)
+}
+/**
+ * เติมชื่อกลุ่มจาก personnel_groups มาตั้งต้น (เฉพาะอันที่ยังไม่มี)
+ * ไม่ได้ผูกกันถาวร — เบอร์เก็บคนละคอลัมน์โดยตั้งใจ เพราะหน่วยงานที่มีเบอร์
+ * มีมากกว่ากลุ่มบุคลากร และ personnel_groups ถูกใช้ตัดสินตัวกรองอีก 20 ไฟล์
+ */
+function fillPhonesFromGroups() {
+  if (!config.value.contact_phones) config.value.contact_phones = []
+  const have = new Set(config.value.contact_phones.map(p => String(p.label || '').trim()))
+  let added = 0
+  ;(config.value.personnel_groups || [])
+    .filter(g => g.visible !== false)
+    .sort((a, b) => (a.order ?? 99) - (b.order ?? 99))
+    .forEach(g => {
+      const label = String(g.label || '').trim()
+      if (!label || have.has(label)) return
+      config.value.contact_phones.push({ label, phone: '', order: config.value.contact_phones.length + 1 })
+      have.add(label); added++
+    })
+  Swal.fire({ icon: added ? 'success' : 'info', toast: true, position: 'top-end', timer: 2200,
+    showConfirmButton: false, title: added ? `เพิ่ม ${added} กลุ่ม` : 'มีครบทุกกลุ่มแล้ว' })
+}
+
+// เปิด Google Maps ให้ไปคัดลอกพิกัดสำนักงาน (แบบเดียวกับหน้าจัดการโรงเรียน)
+function openMapsForArea() {
+  const q = encodeURIComponent(config.value?.contact_address || config.value?.area_name || '')
+  window.open(`https://www.google.com/maps/search/${q}`, '_blank', 'noopener')
+}
+
 onMounted(async () => {
   const { data, error } = await supabase.from('area_config').select('*').eq('id', 1).single()
   if (!error && data) {
     config.value = { ...data }
+    // ⚠️ ต้องก๊อปทีละ item — ของที่มาจาก config เป็น readonly proxy
+    // ถ้าไม่ก๊อป v-model บนฟิลด์ซ้อนจะแก้ไม่ได้แบบเงียบ ๆ ไม่มี error ขึ้นเลย
     config.value.footer_extra_links = (data.footer_extra_links || []).map(l => ({ ...l }))
+    config.value.contact_phones     = (data.contact_phones || []).map(p => ({ ...p }))
     services.value = (data.services || DEFAULT_SERVICES).map(s => ({ ...s }))
   }
   loading.value = false
@@ -224,6 +266,52 @@ async function onPopupFileSelected(e) {
 async function clearPopupImage() {
   if (config.value.welcome_popup_image_url) await deleteUploadedFile(config.value.welcome_popup_image_url)
   config.value.welcome_popup_image_url = ''
+}
+
+// ── ภาพแผนที่สำนักงาน (การ์ดใน footer) ────────────────────────────────
+// ไม่ครอป — แอดมินแคปหน้าจอแผนที่มาเอง สัดส่วนไหนก็ได้ การ์ดใช้ object-cover
+// ใช้ <img> ไม่ใช่ iframe เพราะ footer อยู่ทุกหน้า (ดูเหตุผลใน useMapLink.js)
+const { uploadFile: uploadMapExternal } = useExternalUpload()
+const mapFileInput   = ref(null)
+const uploadingMap   = ref(false)
+const mapUploadError = ref('')
+
+function triggerMapUpload() { mapFileInput.value?.click() }
+
+async function onMapFileSelected(e) {
+  const file = e.target.files?.[0]
+  e.target.value = ''
+  if (!file) return
+  if (!/^image\//.test(file.type)) { mapUploadError.value = 'รองรับเฉพาะไฟล์รูปภาพ'; return }
+  if (file.size > 5 * 1024 * 1024) {
+    mapUploadError.value = `ไฟล์ใหญ่เกิน 5 MB (ไฟล์นี้ ${(file.size/1024/1024).toFixed(1)} MB)`
+    return
+  }
+  mapUploadError.value = ''
+  uploadingMap.value = true
+  const old = config.value.map_image_url
+  try {
+    if (externalUploadEnabled) {
+      config.value.map_image_url = await uploadMapExternal(file, 'map')
+    } else {
+      const ext = file.name.split('.').pop() || 'png'
+      const fileName = `area-map-${Date.now()}.${ext}`
+      const { data, error } = await supabase.storage.from('banners').upload(fileName, file, { contentType: file.type, upsert: false })
+      if (error) throw error
+      config.value.map_image_url = supabase.storage.from('banners').getPublicUrl(data.path).data.publicUrl
+    }
+    // ลบรูปเก่าหลังอัปตัวใหม่สำเร็จเท่านั้น กันเคสอัปไม่สำเร็จแล้วรูปเดิมหายไปด้วย
+    if (old && old !== config.value.map_image_url) await deleteUploadedFile(old)
+  } catch (err) {
+    mapUploadError.value = err.message
+  } finally {
+    uploadingMap.value = false
+  }
+}
+
+async function clearMapImage() {
+  if (config.value.map_image_url) await deleteUploadedFile(config.value.map_image_url)
+  config.value.map_image_url = ''
 }
 
 // ดึงชื่อไฟล์จาก public URL
@@ -646,6 +734,118 @@ function resetToDefault() {
               <input v-model="config.website_url" type="url" placeholder="https://..."
                 class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400"/>
             </div>
+          </div>
+
+          <!-- ══ แผนที่สำนักงาน ══════════════════════════════════ -->
+          <div class="pt-5 border-t border-slate-100">
+            <p class="text-sm font-extrabold text-slate-700">🗺️ แผนที่สำนักงาน</p>
+            <p class="text-xs text-slate-400 mt-0.5 mb-3">
+              แสดงเป็นการ์ดในคอลัมน์ "ติดต่อเรา" ท้ายเว็บ · คลิกแล้วเปิด Google Maps นำทางทันที
+            </p>
+
+            <div class="flex flex-wrap items-start gap-4">
+              <!-- ตัวอย่างภาพ -->
+              <div class="w-44 h-24 rounded-xl overflow-hidden border-2 border-dashed flex items-center justify-center flex-shrink-0"
+                :class="config.map_image_url ? 'border-slate-200 bg-white' : 'border-slate-300 bg-slate-50'">
+                <img v-if="config.map_image_url" :src="config.map_image_url" class="w-full h-full object-cover" alt="แผนที่"/>
+                <span v-else class="text-[11px] text-slate-400">ยังไม่มีภาพ</span>
+              </div>
+
+              <div class="flex-1 min-w-[240px] space-y-2">
+                <div class="flex flex-wrap gap-2">
+                  <button @click="triggerMapUpload" :disabled="uploadingMap" type="button"
+                    class="px-3.5 py-2 rounded-xl text-xs font-bold border-2 border-dashed border-slate-300 text-slate-500 hover:border-blue-400 hover:text-blue-500 transition-all disabled:opacity-50">
+                    {{ uploadingMap ? 'กำลังอัป...' : 'อัปโหลดภาพแผนที่' }}
+                  </button>
+                  <button v-if="config.map_image_url" @click="clearMapImage" type="button"
+                    class="px-3 py-2 rounded-xl text-xs font-bold text-slate-500 hover:text-red-500 transition-colors">ลบภาพ</button>
+                  <input ref="mapFileInput" type="file" accept="image/*" class="hidden" @change="onMapFileSelected"/>
+                </div>
+                <p v-if="mapUploadError" class="text-[11px] text-red-500">{{ mapUploadError }}</p>
+                <p class="text-[11px] text-slate-400 leading-relaxed">
+                  แคปหน้าจอแผนที่จาก Google Maps มาอัปได้เลย · ไม่อัปก็ได้ จะขึ้นเป็นการ์ดไอคอนหมุดแทน
+                </p>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
+              <div>
+                <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">ละติจูด (lat)</label>
+                <input v-model="config.map_lat" type="number" step="0.0000001" placeholder="14.9821234"
+                  class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400"/>
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">ลองจิจูด (lng)</label>
+                <input v-model="config.map_lng" type="number" step="0.0000001" placeholder="102.1234567"
+                  class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400"/>
+              </div>
+              <div class="flex items-end">
+                <button @click="openMapsForArea" type="button"
+                  class="w-full px-3 py-3 rounded-xl text-xs font-bold border-2 border-blue-200 text-blue-600 hover:bg-blue-50 transition-all">
+                  ค้นหาใน Google Maps
+                </button>
+              </div>
+            </div>
+            <p class="text-[11px] text-slate-400 mt-1.5">
+              กดปุ่มค้นหา → คลิกขวาตรงตำแหน่งสำนักงาน → คัดลอกพิกัด → วางลงช่อง lat/lng
+            </p>
+
+            <div class="mt-4">
+              <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">หรือวางลิงก์ Google Maps</label>
+              <input v-model="config.map_link" type="url" placeholder="https://maps.app.goo.gl/..."
+                class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400"/>
+              <p class="text-[11px] text-slate-400 mt-1">
+                ใช้เมื่อไม่ได้กรอกพิกัด · ถ้าไม่กรอกทั้งพิกัดและลิงก์ ระบบจะนำทางด้วย "ที่อยู่สำนักงาน" ข้างบนแทน
+              </p>
+            </div>
+          </div>
+
+          <!-- ══ เบอร์ติดต่อแต่ละกลุ่มงาน ═══════════════════════ -->
+          <div class="pt-5 border-t border-slate-100">
+            <div class="flex items-start justify-between gap-3 flex-wrap mb-3">
+              <div>
+                <p class="text-sm font-extrabold text-slate-700">☎️ เบอร์ติดต่อ แต่ละกลุ่มงาน</p>
+                <p class="text-xs text-slate-400 mt-0.5">
+                  แสดงเป็นแถบเต็มความกว้างท้ายเว็บ · ไม่กรอกเบอร์ = แถวนั้นไม่ถูกแสดง
+                </p>
+              </div>
+              <button @click="fillPhonesFromGroups" type="button"
+                class="px-3 py-2 rounded-xl text-xs font-bold border-2 border-blue-200 text-blue-600 hover:bg-blue-50 transition-all">
+                เติมจากกลุ่มงานบุคลากร
+              </button>
+            </div>
+
+            <div class="space-y-2">
+              <div v-for="(p, i) in config.contact_phones" :key="i"
+                class="glass-card p-3 flex items-center gap-3">
+                <div class="flex flex-col gap-0.5 flex-shrink-0">
+                  <button @click="movePhoneUp(i)" :disabled="i === 0" type="button"
+                    class="w-6 h-5 flex items-center justify-center rounded text-slate-400 hover:text-blue-500 disabled:opacity-25">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 15.75l7.5-7.5 7.5 7.5"/></svg>
+                  </button>
+                  <button @click="movePhoneDown(i)" :disabled="i === config.contact_phones.length - 1" type="button"
+                    class="w-6 h-5 flex items-center justify-center rounded text-slate-400 hover:text-blue-500 disabled:opacity-25">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/></svg>
+                  </button>
+                </div>
+                <input v-model="p.label" type="text" placeholder="ชื่อกลุ่มงาน เช่น กลุ่มอำนวยการ"
+                  class="flex-1 min-w-[140px] px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"/>
+                <input v-model="p.phone" type="text" inputmode="tel" placeholder="044-399-055"
+                  class="w-40 px-3 py-2 border border-slate-200 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-200"/>
+                <button @click="removePhone(i)" type="button"
+                  class="p-1.5 rounded-lg text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all flex-shrink-0" title="ลบ">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/></svg>
+                </button>
+              </div>
+
+              <p v-if="!config.contact_phones || config.contact_phones.length === 0"
+                class="text-sm text-slate-400 text-center py-5">ยังไม่มีเบอร์ — กด "เติมจากกลุ่มงานบุคลากร" หรือ "เพิ่มเบอร์" เพื่อเริ่ม</p>
+            </div>
+
+            <button @click="addPhone" type="button"
+              class="mt-2 px-4 py-2 rounded-xl text-sm font-bold border-2 border-dashed border-slate-300 text-slate-500 hover:border-blue-400 hover:text-blue-500 transition-all">
+              + เพิ่มเบอร์
+            </button>
           </div>
         </div>
 

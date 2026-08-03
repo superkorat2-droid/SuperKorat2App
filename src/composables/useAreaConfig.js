@@ -71,6 +71,13 @@ const DEFAULTS = {
   website_url:     '',
   footer_extra_title: '',
   footer_extra_links: [],
+  // เบอร์แต่ละกลุ่มงานที่แสดงเป็นแถบท้ายเว็บ [{label, phone, order}]
+  // คนละชุดกับ personnel_groups โดยตั้งใจ (ดู migration 0069)
+  contact_phones: [],
+  map_image_url: '',
+  map_lat: null,
+  map_lng: null,
+  map_link: '',
   logo_url:                '',
   default_school_password: 'Korat2@2569',
   banner_aspect_ratio:     '21:9',

@@ -5,6 +5,7 @@ import { supabase } from './supabase'
 import { useAreaConfig } from './composables/useAreaConfig'
 import { useNavPages } from './composables/useNavPages'
 import { fetchVisitCounter } from './composables/useVisitTracker'
+import { directionsUrl, telHref } from './composables/useMapLink'
 import { iconPath, isIconKey } from './composables/useIcons.js'
 import WelcomePopup from './components/WelcomePopup.vue'
 import ScrollToTopButton from './components/ScrollToTopButton.vue'
@@ -83,6 +84,23 @@ const footerQuickLinks = computed(() => {
 })
 
 // ── Footer: คอลัมน์เพิ่มเติมที่ admin สร้างเอง (ตั้งค่าเขต → ลิงก์ท้ายเว็บไซต์) ──
+// ── เบอร์ติดต่อแต่ละกลุ่มงาน + แผนที่ ─────────────────────────────
+// เรียงแบบเดียวกับ footerExtraLinks · ทิ้งแถวที่ยังไม่ได้กรอกเบอร์
+const contactPhones = computed(() =>
+  [...(config.value?.contact_phones || [])]
+    .filter(p => String(p?.phone || '').trim())
+    .sort((a, b) => (a.order ?? 99) - (b.order ?? 99))
+)
+
+const mapImgFailed = ref(false)
+// ไม่มีพิกัด/ลิงก์/ที่อยู่เลย → คืน '' แล้วซ่อนการ์ดทิ้ง ไม่โชว์ลิงก์เปล่า
+const mapUrl = computed(() => directionsUrl({
+  lat:     config.value?.map_lat,
+  lng:     config.value?.map_lng,
+  link:    config.value?.map_link,
+  address: contactAddress.value,
+}))
+
 const footerExtraTitle = computed(() => config.value?.footer_extra_title || '')
 const footerExtraLinks = computed(() =>
   [...(config.value?.footer_extra_links || [])].sort((a, b) => (a.order ?? 99) - (b.order ?? 99))
@@ -541,6 +559,29 @@ const handleLogout = async () => {
               <li v-if="siteWebsite">
                 <a :href="siteWebsite" target="_blank" rel="noopener noreferrer" class="hover:text-white transition-colors">{{ siteWebsite.replace(/^https?:\/\//, '') }}</a>
               </li>
+
+              <!-- แผนที่ — เป็น <a href> จริง ไม่ใช่ @click+window.open จะได้คลิกกลาง/
+                   คัดลอกลิงก์ได้ตามปกติ · ใช้ <img> ไม่ใช่ iframe เพราะ footer อยู่ทุกหน้า
+                   (กฎเดียวกับ DriveCover: iframe 12 ใบ = 38 MB, <img> = 0.59 MB) -->
+              <li v-if="mapUrl" class="pt-1.5">
+                <a :href="mapUrl" target="_blank" rel="noopener noreferrer" title="นำทางไปสำนักงาน"
+                  class="group relative block rounded-xl overflow-hidden ring-1 ring-white/20 bg-white/10">
+                  <img v-if="config?.map_image_url && !mapImgFailed" :src="config.map_image_url"
+                    alt="แผนที่สำนักงาน" loading="lazy" decoding="async" @error="mapImgFailed = true"
+                    class="w-full h-24 object-cover group-hover:scale-105 transition-transform duration-500"/>
+                  <div v-else class="h-16 flex items-center justify-center gap-2 text-white/70">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z"/>
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z"/>
+                    </svg>
+                    <span class="text-xs font-bold">ดูแผนที่</span>
+                  </div>
+                  <span class="absolute inset-x-0 bottom-0 py-1.5 text-center text-[11px] font-bold text-white
+                               bg-black/55 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity">
+                    นำทางไปที่นี่ ↗
+                  </span>
+                </a>
+              </li>
             </ul>
           </div>
 
@@ -567,6 +608,20 @@ const handleLogout = async () => {
                 <RouterLink v-else :to="l.url" class="text-sm text-white/70 hover:text-white transition-colors">{{ l.label }}</RouterLink>
               </li>
             </ul>
+          </div>
+        </div>
+
+        <!-- เบอร์ติดต่อแต่ละกลุ่มงาน — แถบเต็มความกว้าง ไม่ใช่คอลัมน์ในกริด
+             เพราะ 10 หน่วยงานชื่อยาว ถ้ายัดเป็นคอลัมน์แคบจะตกบรรทัดจนสูงมาก
+             วางตรงนี้จึงไม่ต้องแตะสูตร footerColumns เลย กริดยังเป็น 5 คอลัมน์เท่าเดิม -->
+        <div v-if="contactPhones.length" class="mt-10 pt-6 border-t border-white/10">
+          <p class="text-xs font-bold text-white/40 uppercase tracking-widest mb-4">เบอร์ติดต่อ แต่ละกลุ่มงาน</p>
+          <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-x-6 gap-y-3.5">
+            <div v-for="(p, i) in contactPhones" :key="i">
+              <span class="block text-[11px] text-white/50 leading-snug">{{ p.label }}</span>
+              <a :href="`tel:${telHref(p.phone)}`"
+                class="text-sm font-bold text-white/90 hover:text-white transition-colors">{{ p.phone }}</a>
+            </div>
           </div>
         </div>
 
