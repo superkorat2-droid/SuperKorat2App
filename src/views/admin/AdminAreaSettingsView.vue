@@ -300,6 +300,52 @@ async function clearPopupImage() {
   config.value.welcome_popup_image_url = ''
 }
 
+// ── โลโก้ท้ายเว็บ (ตราสำนักงานเขต) ────────────────────────────────────
+// ไม่ครอปเหมือนโลโก้หัวเว็บ — ตราราชการมักเป็น PNG โปร่งใสที่จัดองค์ประกอบมาแล้ว
+// ครอปแล้วขอบมักโดนกิน ปล่อยให้ object-contain จัดให้พอดีกรอบเอง
+const { uploadFile: uploadFooterLogoExternal } = useExternalUpload()
+const footerLogoInput      = ref(null)
+const uploadingFooterLogo  = ref(false)
+const footerLogoError      = ref('')
+
+function triggerFooterLogoUpload() { footerLogoInput.value?.click() }
+
+async function onFooterLogoSelected(e) {
+  const file = e.target.files?.[0]
+  e.target.value = ''
+  if (!file) return
+  if (!/^image\//.test(file.type)) { footerLogoError.value = 'รองรับเฉพาะไฟล์รูปภาพ'; return }
+  if (file.size > 5 * 1024 * 1024) {
+    footerLogoError.value = `ไฟล์ใหญ่เกิน 5 MB (ไฟล์นี้ ${(file.size/1024/1024).toFixed(1)} MB)`
+    return
+  }
+  footerLogoError.value = ''
+  uploadingFooterLogo.value = true
+  const old = config.value.footer_logo_url
+  try {
+    if (externalUploadEnabled) {
+      config.value.footer_logo_url = await uploadFooterLogoExternal(file, 'logo')
+    } else {
+      const ext = file.name.split('.').pop() || 'png'
+      const { data, error } = await supabase.storage.from('banners')
+        .upload(`footer-logo-${Date.now()}.${ext}`, file, { contentType: file.type, upsert: false })
+      if (error) throw error
+      config.value.footer_logo_url = supabase.storage.from('banners').getPublicUrl(data.path).data.publicUrl
+    }
+    // ลบของเก่าหลังอัปตัวใหม่สำเร็จเท่านั้น กันเคสอัปพลาดแล้วรูปเดิมหายไปด้วย
+    if (old && old !== config.value.footer_logo_url) await deleteUploadedFile(old)
+  } catch (err) {
+    footerLogoError.value = err.message
+  } finally {
+    uploadingFooterLogo.value = false
+  }
+}
+
+async function clearFooterLogo() {
+  if (config.value.footer_logo_url) await deleteUploadedFile(config.value.footer_logo_url)
+  config.value.footer_logo_url = ''
+}
+
 // ── ภาพแผนที่สำนักงาน (การ์ดใน footer) ────────────────────────────────
 // ไม่ครอป — แอดมินแคปหน้าจอแผนที่มาเอง สัดส่วนไหนก็ได้ การ์ดใช้ object-cover
 // ใช้ <img> ไม่ใช่ iframe เพราะ footer อยู่ทุกหน้า (ดูเหตุผลใน useMapLink.js)
@@ -695,6 +741,52 @@ function resetToDefault() {
                 </div>
 
                 <p class="text-xs text-slate-400">แนะนำ: รูปสี่เหลี่ยมจัตุรัส PNG พื้นหลังโปร่งใส ขนาด 512×512px</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="border-t border-slate-100"></div>
+
+          <!-- โลโก้ท้ายเว็บ — คนละตัวกับโลโก้บนหัวเว็บ (ตราสำนักงานเขต vs ตราของกลุ่ม) -->
+          <div>
+            <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">โลโก้ท้ายเว็บ (สำนักงานเขต)</label>
+            <p class="text-xs text-slate-400 mb-3">
+              แสดงเป็นโลโก้ใหญ่มุมซ้ายท้ายเว็บ · <b>ไม่อัปก็ได้</b> จะใช้โลโก้เขตพื้นที่ข้างบนแทนอัตโนมัติ
+            </p>
+            <div class="flex items-start gap-5">
+              <div class="flex-shrink-0">
+                <div :class="[
+                  'w-24 h-24 rounded-2xl border-2 border-dashed flex items-center justify-center overflow-hidden transition-all',
+                  config.footer_logo_url ? 'border-slate-200 bg-slate-700' : 'border-slate-300 bg-slate-50'
+                ]">
+                  <img v-if="config.footer_logo_url" :src="config.footer_logo_url" class="w-full h-full object-contain p-2"/>
+                  <span v-else class="text-[10px] text-slate-400 px-2 text-center">ใช้โลโก้เขต</span>
+                </div>
+                <p class="text-[10px] text-slate-400 text-center mt-1">ตัวอย่างบนพื้นเข้ม</p>
+              </div>
+
+              <div class="flex-1 space-y-3">
+                <div class="flex flex-wrap gap-2">
+                  <button @click="triggerFooterLogoUpload" :disabled="uploadingFooterLogo" type="button"
+                    class="flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary-dark text-white text-sm font-bold rounded-xl transition-all shadow-sm disabled:opacity-50">
+                    <svg v-if="uploadingFooterLogo" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+                    </svg>
+                    {{ uploadingFooterLogo ? 'กำลังอัปโหลด...' : 'อัปโหลดโลโก้ท้ายเว็บ' }}
+                  </button>
+                  <button v-if="config.footer_logo_url" @click="clearFooterLogo" type="button"
+                    class="text-xs font-bold text-red-500 hover:text-red-600 px-3 py-1.5 border border-red-200 hover:border-red-300 rounded-lg transition-colors">
+                    🗑️ ลบ
+                  </button>
+                  <input ref="footerLogoInput" type="file" accept="image/*" class="hidden" @change="onFooterLogoSelected"/>
+                </div>
+                <p v-if="footerLogoError" class="text-xs text-red-500">{{ footerLogoError }}</p>
+                <input v-model="config.footer_logo_url" type="url" placeholder="หรือวาง URL โลโก้โดยตรง"
+                  class="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-blue-200"/>
+                <p class="text-xs text-slate-400">
+                  แนะนำ: PNG พื้นหลังโปร่งใส สี่เหลี่ยมจัตุรัส 512×512px · ท้ายเว็บพื้นสีเข้ม โลโก้สีอ่อนจะเห็นชัดกว่า
+                </p>
               </div>
             </div>
           </div>

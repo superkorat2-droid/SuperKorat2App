@@ -74,6 +74,8 @@ const DEFAULTS = {
   // เบอร์แต่ละกลุ่มงานที่แสดงเป็นแถบท้ายเว็บ [{label, phone, order}]
   // คนละชุดกับ personnel_groups โดยตั้งใจ (ดู migration 0069)
   contact_phones: [],
+  // โลโก้ท้ายเว็บ (ตราสำนักงานเขต) — ว่าง = ใช้ logo_url แทน
+  footer_logo_url: '',
   map_image_url: '',
   map_lat: null,
   map_lng: null,
