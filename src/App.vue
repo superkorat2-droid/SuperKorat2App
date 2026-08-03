@@ -92,9 +92,14 @@ const contactPhones = computed(() =>
     .sort((a, b) => (a.order ?? 99) - (b.order ?? 99))
 )
 
-// โลโก้ท้ายเว็บใช้ตราสำนักงานเขต ส่วนหัวเว็บใช้ตราของกลุ่ม — คนละตัวกัน
-// ไม่ได้ตั้งไว้ก็ตกไปใช้ตัวเดิม ของเดิมจึงไม่พัง
+// ท้ายเว็บมีโลโก้ 2 ตัว: ตราสำนักงานเขตตัวใหญ่ด้านบน + ตรากลุ่มตัวเล็กหน้าชื่อกลุ่ม
+// ยังไม่ได้อัปตราเขตก็ตกไปใช้ logo_url ของเดิมจึงไม่พัง
 const footerLogo = computed(() => config.value?.footer_logo_url || config.value?.logo_url || '')
+// ตรากลุ่มโชว์เฉพาะตอนที่ไม่ซ้ำกับตัวบน ไม่งั้นจะเห็นโลโก้เดียวกันสองรอบ
+const groupLogo = computed(() => {
+  const l = config.value?.logo_url || ''
+  return l && l !== footerLogo.value ? l : ''
+})
 
 const mapImgFailed = ref(false)
 // ไม่มีพิกัด/ลิงก์/ที่อยู่เลย → คืน '' แล้วซ่อนการ์ดทิ้ง ไม่โชว์ลิงก์เปล่า
@@ -518,20 +523,29 @@ const handleLogout = async () => {
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-[var(--footer-cols)] gap-10"
           :style="{ '--footer-cols': footerColumns }">
 
-          <!-- แบรนด์ — โลโก้ใหญ่วางบน ชื่ออยู่ใต้ (เดิมโลโก้ 40px วางข้างชื่อ ดูโหรงเหรง) -->
+          <!-- แบรนด์ — ตราสำนักงานเขตตัวใหญ่วางบน ตรากลุ่มตัวเล็กอยู่หน้าชื่อกลุ่ม -->
           <div class="sm:col-span-2 md:col-span-1">
             <div v-if="footerLogo"
-              class="w-20 h-20 md:w-24 md:h-24 rounded-2xl overflow-hidden bg-white/10 backdrop-blur ring-1 ring-white/20 mb-3.5">
-              <img :src="footerLogo" class="w-full h-full object-contain p-2" alt="โลโก้สำนักงานเขต"/>
+              class="w-28 h-28 md:w-36 md:h-36 rounded-2xl overflow-hidden bg-white/10 backdrop-blur ring-1 ring-white/20 mb-4">
+              <img :src="footerLogo" class="w-full h-full object-contain p-2.5" alt="โลโก้สำนักงานเขต"/>
             </div>
             <div v-else
-              class="w-20 h-20 md:w-24 md:h-24 rounded-2xl bg-white/15 backdrop-blur ring-1 ring-white/20 flex items-center justify-center mb-3.5">
-              <svg class="w-9 h-9 text-white/80" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+              class="w-28 h-28 md:w-36 md:h-36 rounded-2xl bg-white/15 backdrop-blur ring-1 ring-white/20 flex items-center justify-center mb-4">
+              <svg class="w-12 h-12 text-white/80" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0012 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75z"/>
               </svg>
             </div>
-            <p class="text-sm font-extrabold text-white leading-snug">{{ areaName }}</p>
-            <p class="text-xs text-white/60 mt-1 leading-relaxed">{{ areaShort }}</p>
+
+            <div class="flex items-start gap-2.5">
+              <div v-if="groupLogo"
+                class="w-9 h-9 rounded-lg overflow-hidden bg-white/10 ring-1 ring-white/20 flex-shrink-0 mt-0.5">
+                <img :src="groupLogo" class="w-full h-full object-contain p-1" alt="โลโก้กลุ่ม"/>
+              </div>
+              <div class="min-w-0">
+                <p class="text-sm font-extrabold text-white leading-snug">{{ areaName }}</p>
+                <p class="text-xs text-white/60 mt-1 leading-relaxed">{{ areaShort }}</p>
+              </div>
+            </div>
           </div>
 
           <!-- ลิงก์ด่วน -->
