@@ -11,7 +11,8 @@
     "sb:stop": "supabase stop",
     "sb:reset": "supabase db reset",
     "sb:status": "supabase status",
-    "sb:studio": "start http://127.0.0.1:54323"
+    "sb:studio": "start http://127.0.0.1:54323",
+    "backup": "powershell -ExecutionPolicy Bypass -File scripts/backup-supabase.ps1"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.4",
