@@ -39,6 +39,9 @@ import PublicNewslettersView     from '../views/PublicNewslettersView.vue'
 import AdminNewslettersView      from '../views/admin/AdminNewslettersView.vue'
 import PublicLibraryView         from '../views/PublicLibraryView.vue'
 import AdminLibraryView          from '../views/admin/AdminLibraryView.vue'
+import PublicVideosView          from '../views/PublicVideosView.vue'
+import AdminVideosView           from '../views/admin/AdminVideosView.vue'
+import AdminVideosApproveView    from '../views/admin/AdminVideosApproveView.vue'
 import AdminMediaView           from '../views/admin/AdminMediaView.vue'
 import AdminMediaEditorView     from '../views/admin/AdminMediaEditorView.vue'
 import PublicMediaView          from '../views/PublicMediaView.vue'
@@ -121,6 +124,8 @@ const routes = [
       { path: 'newsletters',   name: 'adminNewsletters',    component: AdminNewslettersView,    meta: { title: 'จดหมายข่าว' } },
       // ไม่อยู่ใน ADMIN_ONLY_PATHS — ศน./เจ้าหน้าที่ ต้องเข้าได้ (RLS คุมว่าแก้ของใครได้)
       { path: 'library',       name: 'adminLibrary',        component: AdminLibraryView,        meta: { title: 'คลังหนังสือและคู่มือ' } },
+      { path: 'videos',         name: 'adminVideos',        component: AdminVideosView,         meta: { title: 'วีดิทัศน์การศึกษา' } },
+      { path: 'videos-approve', name: 'adminVideosApprove', component: AdminVideosApproveView,  meta: { title: 'อนุมัติวีดิทัศน์' } },
       { path: 'media',         name: 'adminMedia',          component: AdminMediaView,          meta: { title: 'คลังสื่อ' } },
       { path: 'media/new',     name: 'adminMediaNew',       component: AdminMediaEditorView,    meta: { title: 'เพิ่มสื่อ' } },
       { path: 'media/:id/edit',name: 'adminMediaEdit',      component: AdminMediaEditorView,    meta: { title: 'แก้ไขสื่อ' } },
@@ -190,6 +195,8 @@ const routes = [
       { path: 'works',                   name: 'schoolWorks',           component: AdminWorksView },
       { path: 'works/new',               name: 'schoolWorkNew',         component: AdminWorkEditorView },
       { path: 'works/:id/edit',          name: 'schoolWorkEdit',        component: AdminWorkEditorView },
+      // วีดิทัศน์: component เดียวกับหลังบ้านเขต · โรงเรียนส่งคลิปเข้าคิวรออนุมัติ
+      { path: 'videos',                  name: 'schoolVideos',          component: AdminVideosView },
       { path: 'awards',                  name: 'schoolAwards',          component: AdminAwardsView },
       { path: 'awards/new',              name: 'schoolAwardNew',        component: AdminAwardEditorView },
       { path: 'awards/:id/edit',         name: 'schoolAwardEdit',       component: AdminAwardEditorView },
@@ -202,6 +209,7 @@ const routes = [
   { path: '/principals',   name: 'principals',   component: PublicPrincipalsView, meta: { title: 'ผู้บริหารโรงเรียน' } },
   { path: '/newsletters',  name: 'newsletters',  component: PublicNewslettersView, meta: { title: 'จดหมายข่าว' } },
   { path: '/library',      name: 'library',      component: PublicLibraryView,     meta: { title: 'คลังหนังสือและคู่มือ' } },
+  { path: '/videos',       name: 'videos',       component: PublicVideosView,      meta: { title: 'วีดิทัศน์การศึกษา' } },
   { path: '/media',        name: 'media',        component: PublicMediaView, meta: { title: 'คลังสื่อการเรียนรู้' } },
   { path: '/media/:id',    name: 'mediaDetail',  component: () => import('../views/MediaDetailView.vue'), meta: { title: 'รายละเอียดสื่อ' } },
   { path: '/works',        name: 'works',        component: () => import('../views/PublicWorksView.vue'), meta: { title: 'ผลงาน/นวัตกรรม' } },

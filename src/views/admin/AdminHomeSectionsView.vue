@@ -10,6 +10,7 @@ import DriveFolderEditor from '../../components/drive/DriveFolderEditor.vue'
 import EmbedEditor from '../../components/EmbedEditor.vue'
 import NewsletterFeedEditor from '../../components/NewsletterFeedEditor.vue'
 import LibraryFeedEditor from '../../components/LibraryFeedEditor.vue'
+import VideoFeedEditor from '../../components/VideoFeedEditor.vue'
 import ImageCropperModal from '../../components/ImageCropperModal.vue'
 import { useExternalUpload, externalUploadEnabled } from '../../composables/useExternalUpload'
 import { useUploadGc } from '../../composables/useUploadGc'
@@ -110,6 +111,7 @@ const SECTION_ICONS = {
   cta:             'M12 18v-5.25m0 0a6.01 6.01 0 001.5-.189m-1.5.189a6.01 6.01 0 01-1.5-.189m3.75 7.478a12.06 12.06 0 01-4.5 0m3.75 2.383a14.406 14.406 0 01-3 0M14.25 18v-.192c0-.983.658-1.823 1.508-2.316a7.5 7.5 0 10-7.517 0c.85.493 1.509 1.333 1.509 2.316V18',
   school_newsletters: 'M12 7.5h1.5m-1.5 3h1.5m-7.5 3h7.5m-7.5 3h7.5m3-9h3.375c.621 0 1.125.504 1.125 1.125V18a2.25 2.25 0 01-2.25 2.25M16.5 7.5V18a2.25 2.25 0 002.25 2.25M16.5 7.5V4.875c0-.621-.504-1.125-1.125-1.125H4.125C3.504 3.75 3 4.254 3 4.875V18a2.25 2.25 0 002.25 2.25h13.5M6 7.5h4.5M6 10.5h4.5',
   library:         'M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25',
+  videos:          'M15.75 10.5l4.72-4.72a.75.75 0 011.28.53v11.38a.75.75 0 01-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25h-9A2.25 2.25 0 002.25 7.5v9a2.25 2.25 0 002.25 2.25z',
 }
 
 const SECTION_DESC = {
@@ -125,6 +127,7 @@ const SECTION_DESC = {
   embed:           'ฝังสื่อจากลิงก์ (YouTube, Slides, Forms, Maps ฯลฯ)',
   school_newsletters: 'จดหมายข่าวที่โรงเรียนส่งเข้ามา — ดึงอัตโนมัติ ไม่ต้องเพิ่มเอง',
   library:         'หนังสือ/คู่มือจากคลัง — การ์ดภาพปก ชี้เมาส์แล้วขึ้นรายละเอียด',
+  videos:          'วีดิทัศน์ที่อนุมัติแล้ว — การ์ด 16:9 กดแล้วเล่นในหน้าเดิม (YouTube + Drive)',
 }
 
 // keys ของเซกชันภาพลิงก์ไม่คงที่ (image_gallery_<timestamp>) — ต้องเช็คด้วย prefix แทน exact match
@@ -135,6 +138,7 @@ function isDriveSection(sec)   { return sec.key.startsWith('drive') }
 function isEmbedSection(sec)   { return sec.key.startsWith('embed') }
 function isNewsletterSection(sec) { return sec.key.startsWith('school_newsletters') }
 function isLibrarySection(sec) { return sec.key.startsWith('library') }
+function isVideoSection(sec)   { return sec.key.startsWith('videos') }
 // เซกชันที่เพิ่มเองได้จะมี key แบบ <ชนิด>_<timestamp> ต้องเช็คด้วย prefix ไม่ใช่ exact match
 function customKind(sec) {
   if (isGallerySection(sec)) return 'image_gallery'
@@ -144,6 +148,7 @@ function customKind(sec) {
   if (isEmbedSection(sec))   return 'embed'
   if (isNewsletterSection(sec)) return 'school_newsletters'
   if (isLibrarySection(sec))    return 'library'
+  if (isVideoSection(sec))      return 'videos'
   return ''
 }
 function isCustomSection(sec) { return !!customKind(sec) }
@@ -202,6 +207,16 @@ function addLibrarySection() {
   })
 }
 
+function addVideoSection() {
+  sections.value.push({
+    key: `videos_${Date.now()}`, label: 'วีดิทัศน์การศึกษา', subtitle: 'Educational Videos',
+    title: 'วีดิทัศน์การศึกษา', visible: true,
+    bg: '#ffffff', bg2: '#f1f5f9', bg_type: 'none', order: sections.value.length + 1,
+    videos: { cols: 4, rows: 1, category: '', academic_year: '', featured_only: false,
+              link_text: 'ดูวีดิทัศน์ทั้งหมด', animate: true },
+  })
+}
+
 function addGallerySection() {
   const key = `image_gallery_${Date.now()}`
   sections.value.push({
@@ -252,6 +267,10 @@ onMounted(async () => {
       if (isLibrarySection(withSubtitle) && !withSubtitle.library) {
         withSubtitle.library = { cols: 6, rows: 1, kind: '', group_key: '',
                                  link_text: 'ดูคลังหนังสือทั้งหมด', animate: true }
+      }
+      if (isVideoSection(withSubtitle) && !withSubtitle.videos) {
+        withSubtitle.videos = { cols: 4, rows: 1, category: '', academic_year: '', featured_only: false,
+                                link_text: 'ดูวีดิทัศน์ทั้งหมด', animate: true }
       }
       return withSubtitle
     }),
@@ -344,6 +363,11 @@ async function save() {
         class="px-4 py-2.5 rounded-xl text-sm font-bold border-2 border-dashed border-slate-300 text-slate-500
                hover:border-primary hover:text-primary transition-all">
         + เพิ่มเซกชันจดหมายข่าวโรงเรียน
+      </button>
+      <button @click="addVideoSection" type="button"
+        class="px-4 py-2.5 rounded-xl text-sm font-bold border-2 border-dashed border-slate-300 text-slate-500
+               hover:border-primary hover:text-primary transition-all">
+        + เพิ่มเซกชันวีดิทัศน์การศึกษา
       </button>
       <button @click="addLibrarySection" type="button"
         class="px-4 py-2.5 rounded-xl text-sm font-bold border-2 border-dashed border-slate-300 text-slate-500
@@ -770,6 +794,8 @@ async function save() {
               <NewsletterFeedEditor v-else-if="isNewsletterSection(editingSection)" :model-value="editingSection.newsletters"/>
 
               <LibraryFeedEditor v-else-if="isLibrarySection(editingSection)" :model-value="editingSection.library"/>
+
+              <VideoFeedEditor v-else-if="isVideoSection(editingSection)" :model-value="editingSection.videos"/>
 
               <div v-else class="space-y-3">
                 <textarea v-model="editingSection.html_code" rows="16" spellcheck="false"

@@ -48,6 +48,8 @@ const SYSTEM_ROUTES = [
   { route: '/news',             label: 'ข่าวสาร' },
   { route: '/education-news',   label: 'ข่าวการศึกษา' },
   { route: '/newsletters',      label: 'จดหมายข่าว / เอกสารเผยแพร่' },
+  { route: '/library',          label: 'คลังหนังสือและคู่มือ' },
+  { route: '/videos',           label: 'วีดิทัศน์การศึกษา' },
   { route: '/media',            label: 'คลังสื่อการเรียนรู้' },
   { route: '/works',            label: 'ผลงานและนวัตกรรม' },
   { route: '/awards',           label: 'ผลงานและรางวัล' },

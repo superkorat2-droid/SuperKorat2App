@@ -16,6 +16,8 @@ import DriveFolderBrowser from '../components/drive/DriveFolderBrowser.vue'
 import CustomHtmlBlock from '../components/CustomHtmlBlock.vue'
 import SchoolNewsletterGrid from '../components/SchoolNewsletterGrid.vue'
 import LibraryGrid from '../components/LibraryGrid.vue'
+import VideoGrid from '../components/VideoGrid.vue'
+import VideoPlayerModal from '../components/VideoPlayerModal.vue'
 import { useGroupOptions } from '../composables/useLibraryOptions'
 import EventDetailModal from '../components/calendar/EventDetailModal.vue'
 import { useHolidays } from '../composables/useHolidays'
@@ -262,6 +264,53 @@ function showLibrarySection(key) {
 const libGroupLabelOf    = it => libGroupLabel(it.group_key)
 const libPublisherNameOf = it => it.publisher_name || ''
 
+// ── วีดิทัศน์การศึกษา (home section) ──────────────────────────────
+// อ่านจาก view videos_public ด้วยเหตุผลเดียวกับคลังหนังสือ: view กรอง
+// status='approved' ให้แล้ว และแนบชื่อผู้เผยแพร่/โรงเรียนมาให้ anon อ่านได้
+const videoFeeds   = ref({})     // { [sec.key]: { items, loading } }
+const playingVideo = ref(null)
+
+const videoSections = computed(() =>
+  orderedSections.value.filter(s => s.key.startsWith('videos') && s.visible)
+)
+
+async function fetchVideoFeed(sec) {
+  const cfg = sec.videos || {}
+  const limit = Math.max(1, (cfg.cols || 4) * (cfg.rows || 1))
+  videoFeeds.value[sec.key] = { items: [], loading: true }
+
+  let q = supabase.from('videos_public').select('*')
+  if (cfg.category)      q = q.eq('category', cfg.category)
+  if (cfg.academic_year) q = q.eq('academic_year', Number(cfg.academic_year))
+  if (cfg.featured_only) q = q.eq('is_featured', true)
+
+  const { data } = await q
+    .order('is_featured', { ascending: false })
+    .order('sort_order', { ascending: true })
+    .order('published_at', { ascending: false, nullsFirst: false })
+    .limit(limit)
+
+  videoFeeds.value[sec.key] = { items: data || [], loading: false }
+}
+
+function videoFeedOf(key) {
+  return videoFeeds.value[key] || { items: [], loading: true }
+}
+// ต้องคืน true ตอน loading ด้วย ไม่งั้นเซกชันหายไปตอน render รอบแรกแล้วไม่กลับมา
+function showVideoSection(key) {
+  const f = videoFeedOf(key)
+  return f.loading || f.items.length > 0
+}
+
+/** นับยอดชมครั้งเดียวต่อ session — คีย์เดียวกับหน้า /videos จึงไม่นับซ้ำข้ามหน้า */
+async function playVideo(v) {
+  playingVideo.value = v
+  const key = `vv_${v.id}`
+  if (sessionStorage.getItem(key)) return
+  sessionStorage.setItem(key, '1')
+  await supabase.rpc('record_video_view', { p_video_id: v.id, p_session_id: key })
+}
+
 async function fetchNithetEvents() {
   loadingNithetEvents.value = true
   const { data } = await supabase.rpc('get_nithet_events_public')
@@ -317,6 +366,7 @@ onMounted(async () => {
   if (needsNithetCalendarSection.value) fetchNithetEvents()
   newsletterSections.value.forEach(fetchNewsletterFeed)
   librarySections.value.forEach(fetchLibraryFeed)
+  videoSections.value.forEach(fetchVideoFeed)
 
   // รีโหลดแบบนิเทศเมื่อ tab กลับมา (หลังแก้ไขในหน้า admin)
   document.addEventListener('visibilitychange', () => {
@@ -1185,6 +1235,40 @@ const stats = [
           </div>
         </section>
 
+        <!-- ══ วีดิทัศน์การศึกษา ══ -->
+        <section v-else-if="sec.key.startsWith('videos') && showVideoSection(sec.key)"
+          :style="getBgStyle(sec)" :class="secBgClass(sec)" class="py-8 md:py-12">
+          <BgLayers :cfg="sec"/>
+          <div class="relative max-w-7xl mx-auto px-4">
+            <div class="text-center mb-8">
+              <span v-if="sec.subtitle" class="text-secondary font-bold uppercase text-xs tracking-[0.18em] mb-2 block">{{ sec.subtitle }}</span>
+              <h2 class="text-2xl md:text-3xl font-extrabold text-slate-900 accent-line-center">
+                {{ sec.title || 'วีดิทัศน์การศึกษา' }}
+              </h2>
+            </div>
+
+            <VideoGrid
+              :items="videoFeedOf(sec.key).items"
+              :loading="videoFeedOf(sec.key).loading"
+              :cols="sec.videos?.cols || 4"
+              :rows="sec.videos?.rows || 1"
+              :animate="sec.videos?.animate !== false"
+              @play="playVideo"/>
+
+            <div class="text-center mt-8">
+              <a href="#/videos"
+                class="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-2xl text-sm font-bold
+                       text-primary bg-white/70 ring-1 ring-white/80 shadow-sm backdrop-blur
+                       hover:gap-3 hover:-translate-y-0.5 transition-all">
+                {{ sec.videos?.link_text || 'ดูวีดิทัศน์ทั้งหมด' }}
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/>
+                </svg>
+              </a>
+            </div>
+          </div>
+        </section>
+
         <!-- ══ CTA ══ -->
         <section v-else-if="sec.key === 'cta'"
           :style="getBgStyle(sec)" :class="secBgClass(sec)"
@@ -1231,6 +1315,9 @@ const stats = [
 
     <!-- รายละเอียดกิจกรรม — ใช้ modal ตัวเดียวกับหน้า /nithet -->
     <EventDetailModal :event="selectedEvent" @close="selectedEvent = null"/>
+
+    <!-- ตัวเดียวใช้ร่วมกันทุกเซกชันวีดิทัศน์ — วางนอก v-for ไม่งั้นได้โมดัลซ้อนกันหลายตัว -->
+    <VideoPlayerModal :item="playingVideo" @close="playingVideo = null"/>
 
 
   </div>

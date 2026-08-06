@@ -31,7 +31,7 @@ async function fetchUsers() {
   loading.value = true
   const { data } = await supabase
     .from('profiles')
-    .select('id, full_name, email, role, position, phone, school_name, is_approved, is_active, can_publish_supervision, can_manage_documents, can_manage_awards, created_at, last_login_at')
+    .select('id, full_name, email, role, position, phone, school_name, is_approved, is_active, can_publish_supervision, can_manage_documents, can_manage_awards, can_manage_videos, created_at, last_login_at')
     .order('created_at', { ascending: false })
   users.value  = data || []
   loading.value = false
@@ -72,6 +72,7 @@ async function saveUser() {
       can_publish_supervision:  editUser.value.can_publish_supervision || false,
       can_manage_documents:     editUser.value.can_manage_documents || false,
       can_manage_awards:        editUser.value.can_manage_awards || false,
+      can_manage_videos:        editUser.value.can_manage_videos || false,
     }).eq('id', editUser.value.id)
     if (error) { Swal.fire({ icon:'error', title:'ผิดพลาด', text: error.message }); saving.value = false; return }
   }
@@ -320,6 +321,16 @@ function formatDate(iso) {
                 <div>
                   <p class="text-sm font-medium text-slate-700">สิทธิ์บันทึกผลงานและรางวัลแทนผู้อื่น</p>
                   <p class="text-xs text-slate-400">กรอกรางวัลให้โรงเรียน/ครูได้ และบันทึกแล้วขึ้นทันทีไม่ต้องรออนุมัติ</p>
+                </div>
+              </label>
+            </div>
+            <!-- Videos permission — ต้องตรงกับ can_manage_all_videos() ใน migration 0071 -->
+            <div class="pt-2 border-t border-slate-100">
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input v-model="editUser.can_manage_videos" type="checkbox" class="w-4 h-4 accent-indigo-600"/>
+                <div>
+                  <p class="text-sm font-medium text-slate-700">สิทธิ์จัดการวีดิทัศน์ของผู้อื่น</p>
+                  <p class="text-xs text-slate-400">แก้ไข/ลบคลิปของคนอื่นได้ (การอนุมัติยังเป็นสิทธิ์ของผู้ดูแลและ ศน. เท่านั้น)</p>
                 </div>
               </label>
             </div>

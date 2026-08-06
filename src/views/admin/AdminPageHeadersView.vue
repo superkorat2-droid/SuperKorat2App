@@ -22,6 +22,7 @@ const KNOWN_ROUTES = [
   { key: 'principals',     label: 'ผู้บริหารสถานศึกษา' },
   { key: 'newsletters',    label: 'จดหมายข่าว' },
   { key: 'library',        label: 'คลังหนังสือและคู่มือ' },
+  { key: 'videos',         label: 'วีดิทัศน์การศึกษา' },
   { key: 'media',          label: 'คลังสื่อการเรียนรู้' },
   { key: 'studentStats',   label: 'ข้อมูลนักเรียน' },
   { key: 'news',           label: 'ข่าวสาร' },
