@@ -239,7 +239,9 @@ const pageNumbers = computed(() => pageWindow(totalPages.value, page.value))
               :alt="f.name" loading="lazy" decoding="async" referrerpolicy="no-referrer"
               @error="onThumbError(f)"
               class="absolute inset-0 w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500"/>
-            <span :class="['relative text-3xl font-black', fileKind(f.mimeType).color]">
+            <!-- ไอคอนเป็น relative ส่วนรูปเป็น absolute → ถ้าไม่ v-if ไอคอนจะถูกวาดทับกลางภาพเสมอ
+                 (DOM หลังกว่าและ positioned เหมือนกัน = อยู่บน) โชว์เฉพาะตอนไม่มีภาพปกให้ใช้ -->
+            <span v-if="!pagedThumbs[f.id]" :class="['relative text-3xl font-black', fileKind(f.mimeType).color]">
               {{ isFolder(f) ? '📁' : '📄' }}
             </span>
             <span :class="['absolute top-2 right-2 text-[10px] font-bold px-2 py-0.5 rounded-full', fileKind(f.mimeType).bg, fileKind(f.mimeType).color]">
