@@ -476,6 +476,7 @@ async function save() {
               <template v-else-if="isEmbedSection(sec)">ตั้งค่าลิงก์ฝัง</template>
               <template v-else-if="isNewsletterSection(sec)">ตั้งค่าจดหมายข่าว</template>
               <template v-else-if="isLibrarySection(sec)">ตั้งค่าคลังหนังสือ</template>
+              <template v-else-if="isVideoSection(sec)">ตั้งค่าวีดิทัศน์</template>
               <template v-else>แก้ไขโค้ด</template>
             </button>
             <button @click="removeSection(i)" type="button"
@@ -776,6 +777,7 @@ async function save() {
                 <template v-else-if="isEmbedSection(editingSection)">ฝังลิงก์จากเว็บอื่น</template>
                 <template v-else-if="isNewsletterSection(editingSection)">ตั้งค่าจดหมายข่าวโรงเรียน</template>
                 <template v-else-if="isLibrarySection(editingSection)">ตั้งค่าคลังหนังสือและคู่มือ</template>
+                <template v-else-if="isVideoSection(editingSection)">ตั้งค่าวีดิทัศน์การศึกษา</template>
                 <template v-else>แทรกโค้ด HTML / CSS / JS</template>
               </h2>
               <button @click="editingSection = null" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 text-slate-400">
