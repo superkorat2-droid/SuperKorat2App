@@ -6,7 +6,8 @@
  * ดึงข้อมูลผ่าน Edge Function `drive-list` (API key อยู่ฝั่งเซิร์ฟเวอร์เท่านั้น)
  */
 import { ref, computed, watch, onMounted } from 'vue'
-import { useDriveFolder, FILE_KINDS, fileKind, isFolder, formatSize, formatDate, driveFolderUrl } from '../../composables/useGoogleDrive'
+import { useDriveFolder, FILE_KINDS, fileKind, isFolder, formatSize, formatDate, driveFolderUrl,
+         driveThumb, resizeThumbLink, thumbSrcSet, thumbSizes, pageWindow } from '../../composables/useGoogleDrive'
 import { COL_WIDTH_CLASS } from '../../composables/useYoutubeGrid'
 import DriveFilePreviewModal from './DriveFilePreviewModal.vue'
 
@@ -109,8 +110,42 @@ function toggleSort(key) {
   if (sortBy.value === key) sortAsc.value = !sortAsc.value
   else { sortBy.value = key; sortAsc.value = true }
 }
-// thumbnailLink ของ Drive มี token อายุสั้น พังได้ → ซ่อนรูปแล้วโชว์ไอคอนแทน
-function onThumbError(e) { e.target.style.display = 'none' }
+/**
+ * ภาพปก 3 ชั้น
+ *   1) thumbnailLink ที่ขยายขนาดแล้ว — เร็วสุด ชี้ lh3 ตรง แต่ token อายุสั้น พังได้
+ *   2) driveThumb() วิธีเดียวกับจดหมายข่าว — ไม่มี token ไม่หมดอายุ แต่เด้ง 302 ช้ากว่า ~200ms
+ *   3) ไอคอน 📁/📄
+ *
+ * เก็บสถานะพังเป็น Set ไม่ใช่แก้ style ของ element ตรง ๆ แบบเดิม (e.target.style.display='none')
+ * เพราะการ์ดถูก reuse ตอนเปลี่ยนหน้า/กรอง จะค้างสถานะพังของใบก่อนหน้า
+ * (บทเรียนเดียวกับ DriveCover.vue:30-33 ที่ใช้ watch รีเซ็ตให้)
+ */
+const linkFailed  = ref(new Set())
+const thumbFailed = ref(new Set())
+watch(files, () => { linkFailed.value.clear(); thumbFailed.value.clear() })
+
+function thumbOf(f) {
+  if (isFolder(f)) return null
+  if (f.thumbnailLink && !linkFailed.value.has(f.id)) {
+    return {
+      src: resizeThumbLink(f.thumbnailLink, 480),
+      srcset: thumbSrcSet(f.thumbnailLink),
+      sizes: thumbSizes(props.cols),
+    }
+  }
+  if (!thumbFailed.value.has(f.id)) return { src: driveThumb(f.id, 600), srcset: '', sizes: '' }
+  return null
+}
+// คิดครั้งเดียวต่อหน้า ไม่ต้องเรียก thumbOf ซ้ำ 4 ครั้งต่อการ์ดใน template
+const pagedThumbs = computed(() => Object.fromEntries(paged.value.map(f => [f.id, thumbOf(f)])))
+
+function onThumbError(f) {
+  if (!linkFailed.value.has(f.id)) linkFailed.value.add(f.id)
+  else thumbFailed.value.add(f.id)
+}
+
+// 1000 ไฟล์ที่ 8 ใบ/หน้า = 125 ปุ่ม ต้องย่อเหลือ 1 … 5 6 7 … 125
+const pageNumbers = computed(() => pageWindow(totalPages.value, page.value))
 </script>
 
 <template>
@@ -198,8 +233,12 @@ function onThumbError(e) { e.target.style.display = 'none' }
         <button v-for="f in paged" :key="f.id" @click="onItemClick(f)" type="button"
           :class="['group glass-card glass-card-hover overflow-hidden text-left', widthClass]">
           <div class="relative aspect-video bg-slate-900/5 flex items-center justify-center overflow-hidden">
-            <img v-if="f.thumbnailLink" :src="f.thumbnailLink" :alt="f.name" loading="lazy" referrerpolicy="no-referrer"
-              @error="onThumbError" class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"/>
+            <!-- referrerpolicy จำเป็นกับ lh3.googleusercontent.com · object-top ให้เห็นหัวกระดาษของเอกสารแนวตั้ง -->
+            <img v-if="pagedThumbs[f.id]" :src="pagedThumbs[f.id].src"
+              :srcset="pagedThumbs[f.id].srcset || undefined" :sizes="pagedThumbs[f.id].sizes || undefined"
+              :alt="f.name" loading="lazy" decoding="async" referrerpolicy="no-referrer"
+              @error="onThumbError(f)"
+              class="absolute inset-0 w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500"/>
             <span :class="['relative text-3xl font-black', fileKind(f.mimeType).color]">
               {{ isFolder(f) ? '📁' : '📄' }}
             </span>
@@ -238,11 +277,14 @@ function onThumbError(e) { e.target.style.display = 'none' }
           class="w-9 h-9 flex items-center justify-center rounded-xl border border-white/80 bg-white/60 backdrop-blur text-slate-500 hover:border-primary/40 hover:text-primary transition-all disabled:opacity-30">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5"/></svg>
         </button>
-        <button v-for="p in totalPages" :key="p" @click="page = p"
-          :class="['w-9 h-9 rounded-xl text-sm font-bold border transition-all',
-            page === p ? 'bg-primary text-white border-primary shadow-sm' : 'border-white/80 bg-white/60 backdrop-blur text-slate-600 hover:border-primary/40']">
-          {{ p }}
-        </button>
+        <template v-for="(p, i) in pageNumbers" :key="`${p}-${i}`">
+          <span v-if="p === '…'" class="w-6 h-9 flex items-center justify-center text-slate-400 text-sm select-none">…</span>
+          <button v-else @click="page = p"
+            :class="['w-9 h-9 rounded-xl text-sm font-bold border transition-all',
+              page === p ? 'bg-primary text-white border-primary shadow-sm' : 'border-white/80 bg-white/60 backdrop-blur text-slate-600 hover:border-primary/40']">
+            {{ p }}
+          </button>
+        </template>
         <button @click="page++" :disabled="page === totalPages" aria-label="หน้าถัดไป"
           class="w-9 h-9 flex items-center justify-center rounded-xl border border-white/80 bg-white/60 backdrop-blur text-slate-500 hover:border-primary/40 hover:text-primary transition-all disabled:opacity-30">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/></svg>

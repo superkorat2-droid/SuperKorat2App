@@ -56,6 +56,64 @@ export function driveThumb(id, size = 600) {
   return id ? `https://drive.google.com/thumbnail?id=${id}&sz=w${size}` : ''
 }
 
+/**
+ * แก้ขนาดภาพของ `thumbnailLink` ที่ Drive API ส่งมากับรายการไฟล์
+ *
+ * Drive คืนลิงก์ที่ลงท้าย **`=s220`** เสมอ (ด้านยาวสุด 220px) ซึ่งเล็กเกินกว่าการ์ด
+ * ที่กว้าง ~305px บนจอ retina → ภาพเบลอ · แก้ตัวเลขท้าย URL ได้เลย Google รองรับ
+ *
+ * วัดจริง 2569-08-06: `=s220` → 220px/12KB · `=w600` → 600px/56KB · `=s1200` → 1200px/198KB
+ * และ **เร็วกว่า driveThumb() ~200ms** เพราะ thumbnailLink ชี้ lh3.googleusercontent.com ตรง
+ * ส่วน drive.google.com/thumbnail ต้องเด้ง 302 มาที่เดียวกันอีกทอด (ไบต์ที่ได้เท่ากันเป๊ะ)
+ *
+ * ใช้ `=w` ไม่ใช่ `=s` เพราะการ์ดเป็น object-cover ความคมขึ้นกับ "ความกว้าง"
+ * `=w600` การันตีกว้าง 600 เสมอ ส่วน `=s600` คุมด้านยาวสุด ภาพแนวตั้งจะได้กว้างแค่ ~450
+ *
+ * ⚠️ ลิงก์นี้มี token อายุสั้น ผู้เรียกต้องมี fallback (ดู DriveFolderBrowser)
+ */
+export function resizeThumbLink(link, width = 600) {
+  if (!link) return ''
+  const s = String(link)
+  return /=[sw]\d+(-\w+)?$/.test(s) ? s.replace(/=[sw]\d+(-\w+)?$/, `=w${width}`) : `${s}=w${width}`
+}
+
+/** srcset ให้เบราว์เซอร์เลือกขนาดเอง — จอธรรมดาโหลดเล็ก จอ retina โหลดใหญ่ */
+export function thumbSrcSet(link, widths = [240, 480, 720, 960]) {
+  if (!link) return ''
+  return widths.map(w => `${resizeThumbLink(link, w)} ${w}w`).join(', ')
+}
+
+/**
+ * sizes ของการ์ดในกริด — ต้องสะท้อน COL_WIDTH_CLASS ให้ตรง
+ * (มือถือเต็มจอ · sm 2 คอลัมน์ · md ตามที่ตั้งไว้) ไม่งั้นเบราว์เซอร์เลือกขนาดผิด
+ */
+export function thumbSizes(cols = 4) {
+  const pct = Math.max(5, Math.round(100 / (Number(cols) || 4)))
+  return `(max-width: 640px) 100vw, (max-width: 768px) 50vw, ${pct}vw`
+}
+
+/**
+ * เลขหน้าแบบย่อ — คืน array ของเลขกับ '…' เช่น [1,'…',5,6,7,'…',125]
+ *
+ * เดิมเรนเดอร์ทุกหน้า (v-for="p in totalPages") โฟลเดอร์ 1000 ไฟล์ที่ 8 ใบ/หน้า
+ * = 125 ปุ่มเรียงกันล้นจอ · แยกเป็นฟังก์ชันบริสุทธิ์เพื่อเทสต์ได้โดยไม่ต้องเปิดเบราว์เซอร์
+ */
+export function pageWindow(total, current, span = 2) {
+  const t = Math.max(1, Number(total) || 1)
+  const c = Math.min(Math.max(1, Number(current) || 1), t)
+  const keep = new Set([1, t])
+  for (let p = c - span; p <= c + span; p++) if (p >= 1 && p <= t) keep.add(p)
+
+  const out = []
+  let prev = 0
+  for (const p of [...keep].sort((a, b) => a - b)) {
+    if (prev && p - prev > 1) out.push('…')
+    out.push(p)
+    prev = p
+  }
+  return out
+}
+
 // ── ชนิดไฟล์ ────────────────────────────────────────────────────────
 export const FOLDER_MIME = 'application/vnd.google-apps.folder'
 
