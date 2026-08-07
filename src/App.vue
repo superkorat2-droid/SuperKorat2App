@@ -55,6 +55,14 @@ const visitCounter = ref(null)
 const showVisitCounter = computed(() =>
   config.value?.show_visitor_counter !== false && visitCounter.value)
 
+// วันที่เริ่มนับ — มาจาก RPC ซึ่งใช้ค่าที่แอดมินตั้งไว้ ถ้าไม่ได้ตั้งจะใช้วันแรกที่มีข้อมูลจริง
+// th-TH ให้ปี พ.ศ. มาเองอยู่แล้ว ห้าม +543 ซ้ำ
+const visitSinceText = computed(() => {
+  const d = visitCounter.value?.since
+  if (!d) return ''
+  return new Date(`${d}T00:00:00`).toLocaleDateString('th-TH', { day: 'numeric', month: 'long', year: 'numeric' })
+})
+
 // ── Footer: โซเชียล — SVG path เดียวกับที่ ContactView.vue ใช้ ──────────
 const FOOTER_ICONS = {
   facebook: 'M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244',
@@ -683,6 +691,11 @@ const handleLogout = async () => {
                   </span>
                 </div>
               </div>
+
+              <!-- ตัวเลขสะสมลอย ๆ ไม่บอกอะไรถ้าไม่รู้ว่านับมากี่วัน -->
+              <span v-if="visitSinceText" class="block text-center text-[10px] text-white/40 mt-2">
+                เริ่มนับสถิติ {{ visitSinceText }}
+              </span>
             </div>
           </div>
 

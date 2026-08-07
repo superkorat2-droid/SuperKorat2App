@@ -1130,6 +1130,26 @@ function resetToDefault() {
             </div>
           </div>
 
+          <!-- ── วันที่เริ่มนับสถิติ ─────────────────────────────── -->
+          <div v-if="config.show_visitor_counter !== false"
+            class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+            <div class="flex items-start gap-3">
+              <span class="text-2xl flex-shrink-0">📅</span>
+              <div>
+                <p class="font-bold text-sm text-slate-800">วันที่เริ่มนับสถิติ</p>
+                <p class="text-xs text-slate-400 mt-0.5">
+                  แสดงใต้ตัวนับท้ายเว็บว่า "เริ่มนับสถิติ …" ·
+                  <b>เว้นว่างไว้ = ใช้วันแรกที่มีข้อมูลจริงอัตโนมัติ</b> ตั้งเองเมื่อเว็บเปิดมาก่อนระบบนับ
+                </p>
+              </div>
+            </div>
+            <!-- input date คืน '' ตอนล้างค่า ซึ่งคอลัมน์ชนิด date รับไม่ได้ ต้องแปลงเป็น null
+                 (ใช้ || ไม่ใช่ if — inline handler ของ Vue รับได้แค่ expression คอมไพล์ statement ไม่ผ่าน) -->
+            <input v-model="config.visitor_counter_since" type="date"
+              @change="config.visitor_counter_since = config.visitor_counter_since || null"
+              class="px-3 py-2 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:border-primary flex-shrink-0"/>
+          </div>
+
           <!-- ── รหัสสมัครสมาชิก ─────────────────────────────── -->
           <div class="border-t border-slate-100 pt-5 space-y-4">
             <div class="flex items-center justify-between">
