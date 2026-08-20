@@ -15,6 +15,15 @@ const editTarget     = ref(null)
 const showCreate     = ref(false)
 const savingGroups   = ref(false)
 const personnelGroups = ref([])
+/**
+ * สำเนากลุ่มงานตอนโหลดเข้ามา — ใช้เทียบว่าแอดมินเปลี่ยนชื่อกลุ่มไหนไปบ้าง
+ *
+ * ชื่อกลุ่มงานถูกเก็บซ้ำอยู่ 2 ที่ที่ต้องตรงกันเป๊ะ (ที่นี่ กับ profiles.department
+ * ของบุคลากรแต่ละคน) หน้า /personnel จับคู่สองที่นี้ด้วย "ชื่อ" เพื่อหาลำดับกลุ่ม
+ * ถ้าแก้แค่ที่นี่ที่เดียว กลุ่มนั้นจะจับคู่ไม่ติดแล้วลำดับบนหน้าเว็บจะเพี้ยนทันที
+ * (เคยเกิดจริง 20 ส.ค. 2569 — "งานธุรการ" เด้งขึ้นไปอยู่บนสุดแทนที่จะอยู่ล่างสุด)
+ */
+const groupsSnapshot = ref([])
 
 const DEFAULT_GROUPS = [
   { key: 'nitet',     label: 'กลุ่มนิเทศ ติดตามและประเมินผลการจัดการศึกษา', visible: true, order: 1 },
@@ -29,6 +38,22 @@ const deptOptions = computed(() =>
   personnelGroups.value.map(g => g.label)
 )
 
+/**
+ * นับบุคลากรที่สังกัดแต่ละชื่อกลุ่ม — โชว์ "N คน" ข้างช่องชื่อกลุ่ม
+ *
+ * ถ้ากลุ่มไหนขึ้น "ยังไม่มีคน" ทั้งที่ควรมี แปลว่าชื่อในช่องนี้ไม่ตรงกับชื่อที่ผูก
+ * กับตัวบุคลากร ซึ่งเป็นสาเหตุที่ทำให้ลำดับบนหน้าทำเนียบเพี้ยน — เห็นได้ทันทีตรงนี้
+ */
+const deptCounts = computed(() => {
+  const m = {}
+  personnel.value.forEach(p => {
+    const d = String(p.department || '').trim()
+    if (d) m[d] = (m[d] || 0) + 1
+  })
+  return m
+})
+const groupCount = g => deptCounts.value[String(g.label || '').trim()] || 0
+
 function moveGroupUp(i) {
   if (i === 0) return
   ;[personnelGroups.value[i-1], personnelGroups.value[i]] = [personnelGroups.value[i], personnelGroups.value[i-1]]
@@ -42,15 +67,82 @@ function moveGroupDown(i) {
 function addGroup() {
   personnelGroups.value.push({ key: 'group_' + Date.now(), label: '(กลุ่มใหม่)', visible: true, order: personnelGroups.value.length + 1 })
 }
-function removeGroup(i) {
+async function removeGroup(i) {
+  const g = personnelGroups.value[i]
+  const n = groupCount(g)
+  // ลบกลุ่มที่ยังมีคนสังกัดอยู่ = คนเหล่านั้นจะกลายเป็นกลุ่มไร้สังกัด
+  // แล้วหลุดไปอยู่ท้ายสุดของหน้าทำเนียบโดยไม่มีใครรู้ตัว
+  if (n > 0) {
+    const ok = await Swal.fire({
+      icon: 'warning', title: 'กลุ่มนี้ยังมีคนอยู่',
+      html: `<b>${g.label}</b> มีบุคลากรสังกัดอยู่ <b>${n} คน</b><br><br>
+             <span class="text-sm text-slate-500">ถ้าลบกลุ่มนี้ทิ้ง คนทั้ง ${n} คนจะยังผูกกับชื่อกลุ่มเดิม
+             แต่ไม่มีกลุ่มให้จับคู่ ทำให้ตกไปอยู่ท้ายสุดของหน้าทำเนียบบุคลากร<br><br>
+             ควรย้ายคนไปกลุ่มอื่นก่อนลบ</span>`,
+      showCancelButton: true, confirmButtonText: 'ลบทิ้งเลย', cancelButtonText: 'ยกเลิก',
+      confirmButtonColor: '#dc2626',
+    })
+    if (!ok.isConfirmed) return
+  }
   personnelGroups.value.splice(i, 1)
   personnelGroups.value.forEach((g, idx) => g.order = idx + 1)
 }
+/** กลุ่มที่ถูกเปลี่ยนชื่อ เทียบจาก snapshot ตอนโหลด โดยจับคู่ด้วย key (ไม่ใช่ชื่อ) */
+const renamedGroups = computed(() =>
+  personnelGroups.value
+    .map(g => {
+      const before = groupsSnapshot.value.find(o => o.key === g.key)
+      const from = String(before?.label || '').trim()
+      const to   = String(g.label || '').trim()
+      return before && from && to && from !== to ? { from, to } : null
+    })
+    .filter(Boolean)
+)
+
 async function saveGroups() {
+  // เปลี่ยนชื่อกลุ่มไหนบ้าง → ต้องตามไปแก้ชื่อที่ผูกกับบุคลากร/งานธุรการ/เอกสารด้วย
+  const renames = renamedGroups.value
+
+  if (renames.length) {
+    const list = renames.map(r =>
+      `<div class="text-left text-sm mb-1">• <b>${r.from}</b><br><span class="text-slate-400 pl-3">↳ เปลี่ยนเป็น</span> <b>${r.to}</b></div>`
+    ).join('')
+    const ok = await Swal.fire({
+      icon: 'question',
+      title: 'เปลี่ยนชื่อกลุ่มงาน',
+      html: `${list}<hr class="my-3"><div class="text-left text-sm text-slate-500">
+             ระบบจะแก้ชื่อกลุ่มนี้ให้ทุกที่ที่ใช้อยู่ด้วย ทั้งบุคลากรที่สังกัดกลุ่มนี้
+             งานในระบบธุรการ เอกสารเผยแพร่ และเบอร์โทรกลุ่มงานท้ายเว็บ<br><br>
+             <b>ถ้าไม่แก้ตามให้ ลำดับกลุ่มงานบนหน้าทำเนียบบุคลากรจะเพี้ยน</b></div>`,
+      showCancelButton: true, confirmButtonText: 'เปลี่ยนชื่อและบันทึก', cancelButtonText: 'ยกเลิก',
+    })
+    if (!ok.isConfirmed) return
+  }
+
   savingGroups.value = true
-  await updateConfig({ personnel_groups: personnelGroups.value })
-  savingGroups.value = false
-  Swal.fire({ icon: 'success', title: 'บันทึกแล้ว', showConfirmButton: false, timer: 800 })
+  try {
+    const totals = { profiles: 0, document_tasks: 0, documents: 0, contact_phones: 0 }
+    for (const r of renames) {
+      const { data, error } = await supabase.rpc('rename_personnel_group', { p_old: r.from, p_new: r.to })
+      if (error) throw error
+      for (const k of Object.keys(totals)) totals[k] += data?.[k] || 0
+    }
+
+    await updateConfig({ personnel_groups: personnelGroups.value })
+    groupsSnapshot.value = personnelGroups.value.map(g => ({ ...g }))
+
+    // ชื่อกลุ่มที่ผูกกับตัวบุคลากรเพิ่งถูกแก้ในฐานข้อมูล — โหลดใหม่ไม่งั้นตารางบนจอยังเป็นชื่อเก่า
+    if (totals.profiles) await load()
+
+    const detail = renames.length
+      ? `แก้ชื่อตามให้แล้ว: บุคลากร ${totals.profiles} คน · งานธุรการ ${totals.document_tasks} รายการ · เอกสาร ${totals.documents} รายการ`
+      : ''
+    Swal.fire({ icon: 'success', title: 'บันทึกแล้ว', text: detail, showConfirmButton: !!detail, timer: detail ? undefined : 800 })
+  } catch (e) {
+    Swal.fire({ icon: 'error', title: 'บันทึกไม่สำเร็จ', text: e.message || String(e) })
+  } finally {
+    savingGroups.value = false
+  }
 }
 
 const createForm = ref({ email: '', password: '', full_name: '', role: 'supervisor', org_role: 'supervisor' })
@@ -136,6 +228,7 @@ async function load() {
     fetchConfig(),
   ])
   personnelGroups.value = (config.value?.personnel_groups || DEFAULT_GROUPS).map(g => ({ ...g }))
+  groupsSnapshot.value  = personnelGroups.value.map(g => ({ ...g }))
   personnel.value = (data || []).sort((a,b) => {
     const ra = ORG_ROLE_ORDER.indexOf(a.org_role)
     const rb = ORG_ROLE_ORDER.indexOf(b.org_role)
@@ -343,6 +436,13 @@ async function save() {
           <!-- label input -->
           <input v-model="g.label" type="text"
             class="flex-1 px-2 py-1 text-sm font-bold border border-slate-200 rounded-lg bg-white/70 backdrop-blur focus:outline-none focus:border-primary"/>
+          <!-- จำนวนคนในกลุ่ม — "ยังไม่มีคน" คือสัญญาณว่าชื่อไม่ตรงกับที่ผูกไว้กับบุคลากร -->
+          <span :class="['text-[11px] font-bold px-2 py-1 rounded-lg whitespace-nowrap',
+            groupCount(g) ? 'bg-slate-200 text-slate-500' : 'bg-amber-100 text-amber-700']"
+            :title="groupCount(g) ? `มีบุคลากรสังกัดกลุ่มนี้ ${groupCount(g)} คน`
+              : 'ยังไม่มีบุคลากรสังกัดกลุ่มนี้ — ถ้าเพิ่งแก้ชื่อ ให้กดบันทึกเพื่อให้ระบบแก้ชื่อตามให้ทุกที่'">
+            {{ groupCount(g) ? groupCount(g) + ' คน' : 'ยังไม่มีคน' }}
+          </span>
           <!-- visible toggle -->
           <button @click="g.visible = !g.visible" type="button"
             :class="['px-2.5 py-1 text-xs font-bold rounded-lg transition-colors',
