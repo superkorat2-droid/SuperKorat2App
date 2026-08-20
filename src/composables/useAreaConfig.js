@@ -96,6 +96,10 @@ const DEFAULTS = {
     { key:'training', label:'ลงทะเบียนอบรม',        icon:'clipboard', type:'external', url:'',           visible:true, order:7 },
     { key:'contact',  label:'ติดต่อเรา',             icon:'phone',     type:'internal', url:'/contact',   visible:true, order:8 },
   ],
+  // หัวข้อบล็อก ผอ.เขต/รอง ผอ./ผอ.กลุ่ม บนหน้าทำเนียบบุคลากร (migration 0074)
+  // ว่าง = ใช้ SECTION_TITLE_DEFAULTS ใน usePersonnel.js ซึ่งเป็นค่าเริ่มต้นจริงเพียงที่เดียว
+  // จงใจไม่ใส่ข้อความซ้ำตรงนี้ กันสองที่หลุดจากกันแบบเดียวกับที่เคยเกิดกับชื่อกลุ่มงาน
+  personnel_section_titles: {},
   personnel_groups: [
     { key: 'nitet',     label: 'กลุ่มนิเทศ ติดตามและประเมินผลการจัดการศึกษา', visible: true, order: 1 },
     { key: 'promote',   label: 'กลุ่มส่งเสริมการจัดการศึกษา',                 visible: true, order: 2 },

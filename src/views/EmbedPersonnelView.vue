@@ -39,6 +39,8 @@ const rootEl    = ref(null)
 const fullSiteUrl = `${window.location.origin}/#/personnel`
 
 const groupConfig = computed(() => config.value?.personnel_groups || [])
+// หัวข้อบล็อกผู้บริหารที่แอดมินตั้งเอง — ต้องส่งด้วย ไม่งั้นโค้ดฝังจะโชว์คนละหัวข้อกับหน้า /personnel
+const sectionTitles = computed(() => config.value?.personnel_section_titles || {})
 
 /** org_role ที่ขอให้ซ่อน — whitelist ไว้ กันค่าแปลกๆ ที่ยัดมาทาง URL */
 const HIDEABLE = ['director', 'deputy', 'group_director']
@@ -111,7 +113,8 @@ onBeforeUnmount(() => {
       </div>
 
       <PersonnelDirectory v-else
-        :personnel="shownPersonnel" :group-config="groupConfig" :link-to="fullSiteUrl"/>
+        :personnel="shownPersonnel" :group-config="groupConfig" :link-to="fullSiteUrl"
+        :section-titles="sectionTitles"/>
 
       <!-- เครดิตแหล่งข้อมูล — ให้คนดูรู้ว่าข้อมูลมาจากไหนและกดไปดูฉบับเต็มได้ -->
       <p v-if="!loading && shownPersonnel.length" class="text-center text-[11px] text-slate-400 pt-1 pb-2">

@@ -23,6 +23,8 @@ onMounted(async () => {
 
 // กลุ่มงาน config — คุมลำดับ/การซ่อนกลุ่ม ส่งต่อให้ PersonnelDirectory
 const personnelGroupConfig = computed(() => config.value?.personnel_groups || [])
+// หัวข้อบล็อก ผอ.เขต/รอง ผอ./ผอ.กลุ่ม ที่แอดมินตั้งเองได้ (ว่าง = ใช้ค่าเริ่มต้นใน component)
+const sectionTitles = computed(() => config.value?.personnel_section_titles || {})
 </script>
 
 <template>
@@ -41,7 +43,8 @@ const personnelGroupConfig = computed(() => config.value?.personnel_groups || []
         <div class="w-10 h-10 border-4 border-primary/30 border-t-primary rounded-full animate-spin"></div>
       </div>
 
-      <PersonnelDirectory v-else :personnel="personnel" :group-config="personnelGroupConfig"/>
+      <PersonnelDirectory v-else :personnel="personnel" :group-config="personnelGroupConfig"
+        :section-titles="sectionTitles"/>
     </div>
   </div>
 </template>

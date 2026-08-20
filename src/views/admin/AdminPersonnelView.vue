@@ -2,6 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { supabase } from '../../supabase'
 import { useAreaConfig } from '../../composables/useAreaConfig'
+import { SECTION_TITLE_DEFAULTS } from '../../composables/usePersonnel'
 import ImageCropperModal from '../../components/ImageCropperModal.vue'
 import Swal from 'sweetalert2'
 
@@ -24,6 +25,38 @@ const personnelGroups = ref([])
  * (เคยเกิดจริง 20 ส.ค. 2569 — "งานธุรการ" เด้งขึ้นไปอยู่บนสุดแทนที่จะอยู่ล่างสุด)
  */
 const groupsSnapshot = ref([])
+
+/**
+ * หัวข้อบล็อกผู้บริหาร 3 ชั้นบนหน้าทำเนียบ — คนละเรื่องกับกลุ่มงานข้างล่าง
+ * จงใจแยกแผงกัน ไม่เอาไปปนเป็นแถวในรายการกลุ่มงาน เพราะ 3 อันนี้ลบไม่ได้
+ * เรียงใหม่ไม่ได้ และไม่มี "จำนวนคน" แบบเดียวกัน — ปนแล้วจะงงว่าทำไมแถวบนทำอะไรไม่ได้
+ */
+const SECTION_KEYS = [
+  { key: 'director',       hint: 'บล็อกบนสุด' },
+  { key: 'deputy',         hint: 'บล็อกที่สอง' },
+  { key: 'group_director', hint: 'บล็อกที่สาม' },
+]
+const sectionTitles  = ref({})
+const savingTitles   = ref(false)
+const titlePlaceholder = k => SECTION_TITLE_DEFAULTS[k]
+
+async function saveSectionTitles() {
+  savingTitles.value = true
+  try {
+    // เก็บเฉพาะคีย์ที่พิมพ์จริง — ช่องที่เว้นว่างไม่ต้องเก็บ จะได้ถอยไปใช้ค่าเริ่มต้นเอง
+    const patch = {}
+    for (const { key } of SECTION_KEYS) {
+      const v = String(sectionTitles.value[key] || '').trim()
+      if (v && v !== SECTION_TITLE_DEFAULTS[key]) patch[key] = v
+    }
+    await updateConfig({ personnel_section_titles: patch })
+    Swal.fire({ icon: 'success', title: 'บันทึกแล้ว', showConfirmButton: false, timer: 900 })
+  } catch (e) {
+    Swal.fire({ icon: 'error', title: 'บันทึกไม่สำเร็จ', text: e.message || String(e) })
+  } finally {
+    savingTitles.value = false
+  }
+}
 
 const DEFAULT_GROUPS = [
   { key: 'nitet',     label: 'กลุ่มนิเทศ ติดตามและประเมินผลการจัดการศึกษา', visible: true, order: 1 },
@@ -229,6 +262,7 @@ async function load() {
   ])
   personnelGroups.value = (config.value?.personnel_groups || DEFAULT_GROUPS).map(g => ({ ...g }))
   groupsSnapshot.value  = personnelGroups.value.map(g => ({ ...g }))
+  sectionTitles.value   = { ...(config.value?.personnel_section_titles || {}) }
   personnel.value = (data || []).sort((a,b) => {
     const ra = ORG_ROLE_ORDER.indexOf(a.org_role)
     const rb = ORG_ROLE_ORDER.indexOf(b.org_role)
@@ -401,6 +435,30 @@ async function save() {
         </div>
       </div>
     </Transition>
+
+    <!-- หัวข้อบล็อกผู้บริหารบนหน้าทำเนียบ -->
+    <div class="glass-card p-4">
+      <div class="flex items-center justify-between mb-1">
+        <p class="text-sm font-extrabold text-slate-700 flex items-center gap-2">
+          <SvgIcon name="users" class="w-4 h-4 text-primary"/> หัวข้อบล็อกผู้บริหาร
+        </p>
+        <button @click="saveSectionTitles" :disabled="savingTitles" type="button"
+          class="px-3 py-1.5 text-xs font-bold bg-primary text-white rounded-xl disabled:opacity-50 transition-colors">
+          {{ savingTitles ? '...' : 'บันทึก' }}
+        </button>
+      </div>
+      <p class="text-[11px] text-slate-400 mb-3">
+        หัวข้อ 3 บล็อกบนสุดของหน้าทำเนียบบุคลากร · เว้นว่าง = ใช้ข้อความเริ่มต้นที่เห็นจาง ๆ ในช่อง ·
+        ลำดับของ 3 บล็อกนี้สลับไม่ได้ เพราะเป็นลำดับชั้นการบังคับบัญชา
+      </p>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
+        <div v-for="s in SECTION_KEYS" :key="s.key">
+          <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{{ s.hint }}</label>
+          <input v-model="sectionTitles[s.key]" type="text" :placeholder="titlePlaceholder(s.key)"
+            class="mt-1 w-full px-2 py-1.5 text-sm font-bold border border-slate-200 rounded-lg bg-white/70 backdrop-blur focus:outline-none focus:border-primary"/>
+        </div>
+      </div>
+    </div>
 
     <!-- จัดการกลุ่มงาน -->
     <div class="glass-card p-4">

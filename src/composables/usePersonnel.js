@@ -8,6 +8,22 @@ import { supabase } from '../supabase'
 
 export const ORG_ORDER = ['director','deputy','group_director','supervisor','staff','other']
 
+/**
+ * หัวข้อบล็อกผู้บริหาร 3 ชั้นบนสุดของหน้าทำเนียบ
+ *
+ * แอดมินแก้ทับได้ที่ area_config.personnel_section_titles (migration 0074)
+ * ค่าที่นี่คือค่าเริ่มต้นเวลายังไม่ได้ตั้ง หรือตั้งเป็นค่าว่าง
+ * ใช้ร่วมกันระหว่าง PersonnelDirectory.vue (ตอนแสดงผล) กับ
+ * AdminPersonnelView.vue (ใช้เป็น placeholder ในช่องกรอก) เพื่อไม่ให้สองที่หลุดจากกัน
+ *
+ * ลำดับของ 3 ชั้นนี้ตายตัวในเทมเพลตโดยตั้งใจ — เป็นลำดับชั้นการบังคับบัญชา ไม่ใช่ค่าที่ควรสลับ
+ */
+export const SECTION_TITLE_DEFAULTS = {
+  director:       'ผู้อำนวยการเขตพื้นที่การศึกษา',
+  deputy:         'รองผู้อำนวยการเขตพื้นที่การศึกษา',
+  group_director: 'ผู้อำนวยการกลุ่ม',
+}
+
 /** คอลัมน์ที่การ์ด + โมดัลของ PersonnelDirectory ต้องใช้ */
 export const PERSONNEL_COLUMNS =
   'id,full_name,first_name,last_name,title,position,position_level,org_role,department,' +

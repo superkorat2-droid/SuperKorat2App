@@ -8,11 +8,17 @@
  * รับข้อมูลมาทางพร็อพ ไม่ query เอง — ผู้เรียกเป็นคนกำหนดว่าจะดึงจากไหน/กรองอะไร
  */
 import { ref, computed } from 'vue'
+import { SECTION_TITLE_DEFAULTS } from '../../composables/usePersonnel'
 
 const props = defineProps({
   personnel:   { type: Array, required: true },
   /** area_config.personnel_groups — คุมลำดับและการซ่อนกลุ่มงาน */
   groupConfig: { type: Array, default: () => [] },
+  /**
+   * area_config.personnel_section_titles — หัวข้อบล็อก ผอ.เขต/รอง ผอ./ผอ.กลุ่ม
+   * ไม่ส่งมา หรือส่งคีย์ว่าง = ใช้ค่าเริ่มต้น จึงยังใช้ component นี้เดี่ยว ๆ ได้เหมือนเดิม
+   */
+  sectionTitles: { type: Object, default: () => ({}) },
   /** ปิดโมดัล/ช่องทางติดต่อ (โค้ดฝังบางที่อยากได้แค่รายชื่อ) */
   showContact: { type: Boolean, default: true },
   /**
@@ -56,6 +62,11 @@ function fitTextClass(text, tiers = [[18, 'text-sm'], [24, 'text-xs'], [Infinity
   return tiers.find(([max]) => len <= max)[1]
 }
 function isExec(p) { return ['director','deputy','group_director'].includes(p.org_role) }
+
+/** หัวข้อบล็อกผู้บริหาร — ที่แอดมินตั้งไว้ ถ้าเว้นว่างถอยไปใช้ค่าเริ่มต้น */
+function sectionTitle(key) {
+  return String(props.sectionTitles?.[key] || '').trim() || SECTION_TITLE_DEFAULTS[key]
+}
 
 function visibleSocials(p) {
   const vis = p.contact_visibility || {}
@@ -122,7 +133,7 @@ function open(p) {
     <!-- แถว 1: ผอ.เขต (director) — กลางหน้า -->
     <section v-if="directors.length" class="group-panel glass-card">
       <div class="group-header">
-        <h2 class="group-title">ผู้อำนวยการเขตพื้นที่การศึกษา</h2>
+        <h2 class="group-title">{{ sectionTitle('director') }}</h2>
         <div class="group-underline"></div>
       </div>
       <div class="flex justify-center gap-5">
@@ -146,7 +157,7 @@ function open(p) {
     <!-- แถว 2: รอง ผอ. (deputy) — กลางหน้า -->
     <section v-if="deputies.length" class="group-panel glass-card">
       <div class="group-header">
-        <h2 class="group-title">รองผู้อำนวยการเขตพื้นที่การศึกษา</h2>
+        <h2 class="group-title">{{ sectionTitle('deputy') }}</h2>
         <div class="group-underline"></div>
       </div>
       <div class="flex justify-center flex-wrap gap-5">
@@ -170,7 +181,7 @@ function open(p) {
     <!-- แถว 3: ผอ.กลุ่ม (group_director) — กลางหน้า -->
     <section v-if="groupDirs.length" class="group-panel glass-card">
       <div class="group-header">
-        <h2 class="group-title">ผู้อำนวยการกลุ่ม</h2>
+        <h2 class="group-title">{{ sectionTitle('group_director') }}</h2>
         <div class="group-underline"></div>
       </div>
       <div class="flex justify-center flex-wrap gap-5">
