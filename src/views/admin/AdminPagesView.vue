@@ -50,6 +50,7 @@ const SYSTEM_ROUTES = [
   { route: '/newsletters',      label: 'จดหมายข่าว / เอกสารเผยแพร่' },
   { route: '/library',          label: 'คลังหนังสือและคู่มือ' },
   { route: '/videos',           label: 'วีดิทัศน์การศึกษา' },
+  { route: '/nithet-visits',    label: 'บันทึกการนิเทศ' },
   { route: '/media',            label: 'คลังสื่อการเรียนรู้' },
   { route: '/works',            label: 'ผลงานและนวัตกรรม' },
   { route: '/awards',           label: 'ผลงานและรางวัล' },

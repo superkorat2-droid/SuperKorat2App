@@ -18,6 +18,7 @@ import SchoolNewsletterGrid from '../components/SchoolNewsletterGrid.vue'
 import LibraryGrid from '../components/LibraryGrid.vue'
 import VideoGrid from '../components/VideoGrid.vue'
 import VideoPlayerModal from '../components/VideoPlayerModal.vue'
+import VisitGrid from '../components/nithet/VisitGrid.vue'
 import { useGroupOptions } from '../composables/useLibraryOptions'
 import EventDetailModal from '../components/calendar/EventDetailModal.vue'
 import { useHolidays } from '../composables/useHolidays'
@@ -311,6 +312,45 @@ async function playVideo(v) {
   await supabase.rpc('record_video_view', { p_video_id: v.id, p_session_id: key })
 }
 
+// ── บันทึกการนิเทศ (home section) ─────────────────────────────────
+// อ่านจาก view nithet_visits_public — view กรอง is_public + status='final'
+// และตัดจุดที่ควรพัฒนา/ข้อเสนอแนะ/ผู้รับการนิเทศ ออกให้แล้วตั้งแต่ระดับฐานข้อมูล
+const visitFeeds = ref({})     // { [sec.key]: { items, loading } }
+
+const visitSections = computed(() =>
+  orderedSections.value.filter(s => s.key.startsWith('nithet_visits') && s.visible)
+)
+
+async function fetchVisitFeed(sec) {
+  const cfg = sec.nithet_visits || {}
+  const limit = Math.max(1, (cfg.cols || 4) * (cfg.rows || 1))
+  visitFeeds.value[sec.key] = { items: [], loading: true }
+
+  let q = supabase.from('nithet_visits_public').select('*')
+  if (cfg.visit_type)    q = q.eq('visit_type', cfg.visit_type)
+  if (cfg.academic_year) q = q.eq('academic_year', Number(cfg.academic_year))
+
+  // เผื่อดึงเกินไว้ เพราะตัวกรอง "เฉพาะที่มีรูป" ต้องทำฝั่ง client
+  // (photos เป็น jsonb array การเช็คว่าว่างผ่าน PostgREST ไม่ตรงไปตรงมา)
+  const { data } = await q
+    .order('visit_date', { ascending: false })
+    .limit(cfg.photos_only === false ? limit : limit * 4)
+
+  let list = data || []
+  if (cfg.photos_only !== false) list = list.filter(v => Array.isArray(v.photos) && v.photos.length > 0)
+
+  visitFeeds.value[sec.key] = { items: list.slice(0, limit), loading: false }
+}
+
+function visitFeedOf(key) {
+  return visitFeeds.value[key] || { items: [], loading: true }
+}
+// ต้องคืน true ตอน loading ด้วย ไม่งั้นเซกชันหายไปตอน render รอบแรกแล้วไม่กลับมา
+function showVisitSection(key) {
+  const f = visitFeedOf(key)
+  return f.loading || f.items.length > 0
+}
+
 async function fetchNithetEvents() {
   loadingNithetEvents.value = true
   const { data } = await supabase.rpc('get_nithet_events_public')
@@ -367,6 +407,7 @@ onMounted(async () => {
   newsletterSections.value.forEach(fetchNewsletterFeed)
   librarySections.value.forEach(fetchLibraryFeed)
   videoSections.value.forEach(fetchVideoFeed)
+  visitSections.value.forEach(fetchVisitFeed)
 
   // รีโหลดแบบนิเทศเมื่อ tab กลับมา (หลังแก้ไขในหน้า admin)
   document.addEventListener('visibilitychange', () => {
@@ -1261,6 +1302,39 @@ const stats = [
                        text-primary bg-white/70 ring-1 ring-white/80 shadow-sm backdrop-blur
                        hover:gap-3 hover:-translate-y-0.5 transition-all">
                 {{ sec.videos?.link_text || 'ดูวีดิทัศน์ทั้งหมด' }}
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/>
+                </svg>
+              </a>
+            </div>
+          </div>
+        </section>
+
+        <!-- ══ บันทึกการนิเทศ ══ -->
+        <section v-else-if="sec.key.startsWith('nithet_visits') && showVisitSection(sec.key)"
+          :style="getBgStyle(sec)" :class="secBgClass(sec)" class="py-8 md:py-12">
+          <BgLayers :cfg="sec"/>
+          <div class="relative max-w-7xl mx-auto px-4">
+            <div class="text-center mb-8">
+              <span v-if="sec.subtitle" class="text-secondary font-bold uppercase text-xs tracking-[0.18em] mb-2 block">{{ sec.subtitle }}</span>
+              <h2 class="text-2xl md:text-3xl font-extrabold text-slate-900 accent-line-center">
+                {{ sec.title || 'บันทึกการนิเทศ ติดตาม และประเมินผล' }}
+              </h2>
+            </div>
+
+            <VisitGrid
+              :items="visitFeedOf(sec.key).items"
+              :loading="visitFeedOf(sec.key).loading"
+              :cols="sec.nithet_visits?.cols || 4"
+              :rows="sec.nithet_visits?.rows || 1"
+              :animate="sec.nithet_visits?.animate !== false"/>
+
+            <div class="text-center mt-8">
+              <a href="#/nithet-visits"
+                class="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-2xl text-sm font-bold
+                       text-primary bg-white/70 ring-1 ring-white/80 shadow-sm backdrop-blur
+                       hover:gap-3 hover:-translate-y-0.5 transition-all">
+                {{ sec.nithet_visits?.link_text || 'ดูบันทึกการนิเทศทั้งหมด' }}
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/>
                 </svg>

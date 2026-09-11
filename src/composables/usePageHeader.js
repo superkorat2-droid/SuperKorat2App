@@ -10,6 +10,7 @@ export const SYSTEM_ROUTE_HEADER_KEYS = {
   '/newsletters':      'newsletters',
   '/library':          'library',
   '/videos':           'videos',
+  '/nithet-visits':    'nithet-visits',
   '/media':            'media',
   '/works':            'works',
   '/awards':           'awards',

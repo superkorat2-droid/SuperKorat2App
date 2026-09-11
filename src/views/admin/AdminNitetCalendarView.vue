@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { supabase } from '../../supabase'
 import Swal from 'sweetalert2'
 import MonthCalendar from '../../components/calendar/MonthCalendar.vue'
@@ -8,7 +9,9 @@ import { useHolidays } from '../../composables/useHolidays'
 import { toDateKey } from '../../composables/useCalendarGrid'
 import { useAreaConfig } from '../../composables/useAreaConfig'
 import { TYPE_LABEL, TYPE_COLOR, STATUS_LABEL, STATUS_COLOR, displayName, formatEventDateRange, formatResponsible } from '../../composables/useNithetEventMeta'
+import { VISIT_WRITER_ROLES } from '../../composables/useNithetVisits'
 
+const router = useRouter()
 const { config: areaConfig, fetchConfig } = useAreaConfig()
 const personnelGroups = computed(() => areaConfig.value?.personnel_groups || [])
 function groupLabel(key) { return personnelGroups.value.find(g => g.key === key)?.label || key }
@@ -66,6 +69,40 @@ function clearEventSchools() { form.value.school_ids = [] }
 
 function canEdit(event) {
   return isAdmin.value || event.created_by === currentUserId.value
+}
+
+// บันทึกผลได้ทุกคนที่มีสิทธิ์เขียนบันทึกนิเทศ ไม่จำกัดแค่คนที่สร้างแผน —
+// ในทางปฏิบัติคนวางแผนกับคนออกพื้นที่มักไม่ใช่คนเดียวกัน
+const canRecordVisit = computed(() => VISIT_WRITER_ROLES.includes(currentProfile.value?.role))
+
+/**
+ * ไปหน้ากรอกบันทึกผล พร้อมพารามิเตอร์ให้ฟอร์มเติมข้อมูลจากแผนให้เอง
+ * แผน 1 รายการอาจมีหลายโรงเรียน แต่บันทึกผล 1 ใบ = 1 โรงเรียน จึงต้องถามก่อนว่าโรงไหน
+ */
+async function recordVisit(event) {
+  const ids = event.school_ids || []
+  let schoolId = ids[0] || ''
+
+  if (ids.length > 1) {
+    const inputOptions = {}
+    for (const id of ids) inputOptions[id] = schools.value.find(s => s.id === id)?.name || id
+    const { isConfirmed, value } = await Swal.fire({
+      title: 'บันทึกผลของโรงเรียนไหน',
+      text: 'กรอกทีละโรงเรียน กลับมากดซ้ำเพื่อบันทึกโรงถัดไปได้',
+      input: 'radio',
+      inputOptions,
+      inputValue: ids[0],
+      showCancelButton: true,
+      confirmButtonText: 'ไปกรอกบันทึก',
+      cancelButtonText: 'ยกเลิก',
+    })
+    if (!isConfirmed) return
+    schoolId = value || ''
+  }
+
+  const query = { event: event.id }
+  if (schoolId) query.school = schoolId
+  router.push({ path: '/dashboard/nithet-visits/new', query })
 }
 
 function responsibleNamesFor(event) {
@@ -343,7 +380,16 @@ onMounted(async () => {
             </div>
           </div>
 
-          <div v-if="canEdit(event)" class="flex flex-wrap gap-2 flex-shrink-0">
+          <div v-if="canRecordVisit || canEdit(event)" class="flex flex-wrap gap-2 flex-shrink-0">
+            <button v-if="canRecordVisit" @click="recordVisit(event)"
+              title="ไปกรอกผลการนิเทศของกิจกรรมนี้ โดยเติมวันที่/เรื่อง/ผู้ร่วมนิเทศให้อัตโนมัติ"
+              class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-primary text-white rounded-xl shadow-sm hover:-translate-y-0.5 transition-all">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              บันทึกผลการนิเทศ
+            </button>
+            <template v-if="canEdit(event)">
             <button @click="openEdit(event)"
               class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-slate-100 text-slate-600 rounded-xl hover:bg-slate-200 transition-colors">
               <SvgIcon name="wrench" class="w-3.5 h-3.5"/>
@@ -363,6 +409,7 @@ onMounted(async () => {
               </svg>
               ลบ
             </button>
+            </template>
           </div>
         </div>
       </div>

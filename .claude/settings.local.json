@@ -20,7 +20,8 @@
       "Bash(npm install *)",
       "Read(//c/Users/Lenovo/AppData/Roaming/Claude/local-agent-mode-sessions/skills-plugin/da2314a7-98e2-44f0-a603-0bbc77115bd8/47826aac-c462-4219-aaf4-2457df30922d/skills/xlsx/**)",
       "Bash(python -c ' *)",
-      "Bash(python -c \"import sys; data=sys.stdin.buffer.read\\(\\); print\\(data.decode\\('utf-8', errors='replace'\\)\\)\")"
+      "Bash(python -c \"import sys; data=sys.stdin.buffer.read\\(\\); print\\(data.decode\\('utf-8', errors='replace'\\)\\)\")",
+      "Bash(docker exec supabase_db_vue_gas_supabase_superArea psql -U postgres -d postgres -c ' *)"
     ]
   }
 }

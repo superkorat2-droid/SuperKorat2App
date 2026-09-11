@@ -44,3 +44,6 @@ supabase/seed_prod.sql
 php-api/config.php
 php-api/uploads/*
 !php-api/uploads/.htaccess
+
+# Local-only project notes (ไม่ push ตามที่ user ขอ)
+PROJECT_HANDOFF.md

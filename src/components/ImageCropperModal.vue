@@ -21,6 +21,10 @@ const props = defineProps({
   outputMaxHeight:{ type: Number,  default: 1024 },
   outputType:     { type: String,  default: 'image/png' },
   outputQuality:  { type: Number,  default: 0.95 },
+  // ส่งรูปเข้ามาครอบได้เลยโดยไม่ต้องให้ผู้ใช้เลือกไฟล์ซ้ำ
+  // ⚠️ ต้องเป็น data URL หรือ blob URL เท่านั้น — รูปจากโดเมนอื่นจะทำให้ canvas
+  // ปนเปื้อนแล้ว toBlob() โยน error (ผู้เรียกต้องเก็บ blob ต้นฉบับไว้เอง)
+  src:            { type: String,  default: '' },
 })
 const emit = defineEmits(['close', 'cropped'])
 
@@ -67,8 +71,13 @@ function destroyCropper() {
   imageSrc.value = null
 }
 
-watch(() => props.show, (val) => {
-  if (!val) destroyCropper()
+watch(() => props.show, async (val) => {
+  if (!val) { destroyCropper(); return }
+  if (props.src) {
+    imageSrc.value = props.src
+    await nextTick()
+    initCropper()
+  }
 })
 
 watch(currentRatio, (val) => {

@@ -11,6 +11,7 @@ import EmbedEditor from '../../components/EmbedEditor.vue'
 import NewsletterFeedEditor from '../../components/NewsletterFeedEditor.vue'
 import LibraryFeedEditor from '../../components/LibraryFeedEditor.vue'
 import VideoFeedEditor from '../../components/VideoFeedEditor.vue'
+import VisitFeedEditor from '../../components/VisitFeedEditor.vue'
 import ImageCropperModal from '../../components/ImageCropperModal.vue'
 import { useExternalUpload, externalUploadEnabled } from '../../composables/useExternalUpload'
 import { useUploadGc } from '../../composables/useUploadGc'
@@ -112,6 +113,7 @@ const SECTION_ICONS = {
   school_newsletters: 'M12 7.5h1.5m-1.5 3h1.5m-7.5 3h7.5m-7.5 3h7.5m3-9h3.375c.621 0 1.125.504 1.125 1.125V18a2.25 2.25 0 01-2.25 2.25M16.5 7.5V18a2.25 2.25 0 002.25 2.25M16.5 7.5V4.875c0-.621-.504-1.125-1.125-1.125H4.125C3.504 3.75 3 4.254 3 4.875V18a2.25 2.25 0 002.25 2.25h13.5M6 7.5h4.5M6 10.5h4.5',
   library:         'M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25',
   videos:          'M15.75 10.5l4.72-4.72a.75.75 0 011.28.53v11.38a.75.75 0 01-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25h-9A2.25 2.25 0 002.25 7.5v9a2.25 2.25 0 002.25 2.25z',
+  nithet_visits:   'M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25z',
 }
 
 const SECTION_DESC = {
@@ -128,6 +130,7 @@ const SECTION_DESC = {
   school_newsletters: 'จดหมายข่าวที่โรงเรียนส่งเข้ามา — ดึงอัตโนมัติ ไม่ต้องเพิ่มเอง',
   library:         'หนังสือ/คู่มือจากคลัง — การ์ดภาพปก ชี้เมาส์แล้วขึ้นรายละเอียด',
   videos:          'วีดิทัศน์ที่อนุมัติแล้ว — การ์ด 16:9 กดแล้วเล่นในหน้าเดิม (YouTube + Drive)',
+  nithet_visits:   'บันทึกการนิเทศที่ ศน. เลือกเผยแพร่ — ปกใช้รูปแรกอัตโนมัติ กดแล้วไปหน้ารายละเอียด',
 }
 
 // keys ของเซกชันภาพลิงก์ไม่คงที่ (image_gallery_<timestamp>) — ต้องเช็คด้วย prefix แทน exact match
@@ -139,6 +142,7 @@ function isEmbedSection(sec)   { return sec.key.startsWith('embed') }
 function isNewsletterSection(sec) { return sec.key.startsWith('school_newsletters') }
 function isLibrarySection(sec) { return sec.key.startsWith('library') }
 function isVideoSection(sec)   { return sec.key.startsWith('videos') }
+function isVisitSection(sec)   { return sec.key.startsWith('nithet_visits') }
 // เซกชันที่เพิ่มเองได้จะมี key แบบ <ชนิด>_<timestamp> ต้องเช็คด้วย prefix ไม่ใช่ exact match
 function customKind(sec) {
   if (isGallerySection(sec)) return 'image_gallery'
@@ -149,6 +153,7 @@ function customKind(sec) {
   if (isNewsletterSection(sec)) return 'school_newsletters'
   if (isLibrarySection(sec))    return 'library'
   if (isVideoSection(sec))      return 'videos'
+  if (isVisitSection(sec))      return 'nithet_visits'
   return ''
 }
 function isCustomSection(sec) { return !!customKind(sec) }
@@ -217,6 +222,16 @@ function addVideoSection() {
   })
 }
 
+function addVisitSection() {
+  sections.value.push({
+    key: `nithet_visits_${Date.now()}`, label: 'บันทึกการนิเทศ', subtitle: 'Supervision Visits',
+    title: 'บันทึกการนิเทศ ติดตาม และประเมินผล', visible: true,
+    bg: '#ffffff', bg2: '#f1f5f9', bg_type: 'none', order: sections.value.length + 1,
+    nithet_visits: { cols: 4, rows: 1, visit_type: '', academic_year: '', photos_only: true,
+                     link_text: 'ดูบันทึกการนิเทศทั้งหมด', animate: true },
+  })
+}
+
 function addGallerySection() {
   const key = `image_gallery_${Date.now()}`
   sections.value.push({
@@ -271,6 +286,10 @@ onMounted(async () => {
       if (isVideoSection(withSubtitle) && !withSubtitle.videos) {
         withSubtitle.videos = { cols: 4, rows: 1, category: '', academic_year: '', featured_only: false,
                                 link_text: 'ดูวีดิทัศน์ทั้งหมด', animate: true }
+      }
+      if (isVisitSection(withSubtitle) && !withSubtitle.nithet_visits) {
+        withSubtitle.nithet_visits = { cols: 4, rows: 1, visit_type: '', academic_year: '', photos_only: true,
+                                       link_text: 'ดูบันทึกการนิเทศทั้งหมด', animate: true }
       }
       return withSubtitle
     }),
@@ -368,6 +387,11 @@ async function save() {
         class="px-4 py-2.5 rounded-xl text-sm font-bold border-2 border-dashed border-slate-300 text-slate-500
                hover:border-primary hover:text-primary transition-all">
         + เพิ่มเซกชันวีดิทัศน์การศึกษา
+      </button>
+      <button @click="addVisitSection" type="button"
+        class="px-4 py-2.5 rounded-xl text-sm font-bold border-2 border-dashed border-slate-300 text-slate-500
+               hover:border-primary hover:text-primary transition-all">
+        + เพิ่มเซกชันบันทึกการนิเทศ
       </button>
       <button @click="addLibrarySection" type="button"
         class="px-4 py-2.5 rounded-xl text-sm font-bold border-2 border-dashed border-slate-300 text-slate-500
@@ -477,6 +501,7 @@ async function save() {
               <template v-else-if="isNewsletterSection(sec)">ตั้งค่าจดหมายข่าว</template>
               <template v-else-if="isLibrarySection(sec)">ตั้งค่าคลังหนังสือ</template>
               <template v-else-if="isVideoSection(sec)">ตั้งค่าวีดิทัศน์</template>
+              <template v-else-if="isVisitSection(sec)">ตั้งค่าบันทึกการนิเทศ</template>
               <template v-else>แก้ไขโค้ด</template>
             </button>
             <button @click="removeSection(i)" type="button"
@@ -778,6 +803,7 @@ async function save() {
                 <template v-else-if="isNewsletterSection(editingSection)">ตั้งค่าจดหมายข่าวโรงเรียน</template>
                 <template v-else-if="isLibrarySection(editingSection)">ตั้งค่าคลังหนังสือและคู่มือ</template>
                 <template v-else-if="isVideoSection(editingSection)">ตั้งค่าวีดิทัศน์การศึกษา</template>
+                <template v-else-if="isVisitSection(editingSection)">ตั้งค่าเซกชันบันทึกการนิเทศ</template>
                 <template v-else>แทรกโค้ด HTML / CSS / JS</template>
               </h2>
               <button @click="editingSection = null" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 text-slate-400">
@@ -798,6 +824,7 @@ async function save() {
               <LibraryFeedEditor v-else-if="isLibrarySection(editingSection)" :model-value="editingSection.library"/>
 
               <VideoFeedEditor v-else-if="isVideoSection(editingSection)" :model-value="editingSection.videos"/>
+              <VisitFeedEditor v-else-if="isVisitSection(editingSection)" :model-value="editingSection.nithet_visits"/>
 
               <div v-else class="space-y-3">
                 <textarea v-model="editingSection.html_code" rows="16" spellcheck="false"

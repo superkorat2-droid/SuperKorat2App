@@ -54,6 +54,12 @@ import PublicStudentStatsView     from '../views/PublicStudentStatsView.vue'
 import AdminSupervisionFormView from '../views/admin/AdminSupervisionFormView.vue'
 import AdminSupervisionResultsView from '../views/admin/AdminSupervisionResultsView.vue'
 import AdminNitetCalendarView from '../views/admin/AdminNitetCalendarView.vue'
+import AdminNitetVisitsView       from '../views/admin/AdminNitetVisitsView.vue'
+import AdminNitetVisitEditorView from '../views/admin/AdminNitetVisitEditorView.vue'
+import AdminNitetVisitsReportView from '../views/admin/AdminNitetVisitsReportView.vue'
+import AdminNitetDashboardView   from '../views/admin/AdminNitetDashboardView.vue'
+import PublicNitetVisitsView    from '../views/PublicNitetVisitsView.vue'
+import NitetVisitDetailView     from '../views/NitetVisitDetailView.vue'
 import AdminNitetReportView from '../views/admin/AdminNitetReportView.vue'
 
 // ─── Dynamic CMS page (public) ───────────────────────────────────────────
@@ -142,6 +148,11 @@ const routes = [
       { path: 'supervision/:id/edit',  name: 'adminSupervisionEdit',    component: AdminSupervisionFormView,    meta: { title: 'แก้ไขแบบนิเทศ' } },
       { path: 'supervision/:id/results', name: 'adminSupervisionResults', component: AdminSupervisionResultsView, meta: { title: 'ผลลัพธ์แบบนิเทศ' } },
       { path: 'nithet-calendar',       name: 'adminNithetCalendar',     component: AdminNitetCalendarView,      meta: { title: 'ปฏิทินนิเทศ' } },
+      { path: 'nithet-visits',          name: 'adminNitetVisits',    component: AdminNitetVisitsView,      meta: { title: 'บันทึกการนิเทศ' } },
+      { path: 'nithet-visits/new',      name: 'adminNitetVisitNew',  component: AdminNitetVisitEditorView, meta: { title: 'บันทึกการนิเทศ' } },
+      { path: 'nithet-visits/:id/edit', name: 'adminNitetVisitEdit', component: AdminNitetVisitEditorView, meta: { title: 'แก้ไขบันทึกการนิเทศ' } },
+      { path: 'nithet-visits-report',   name: 'adminNitetVisitsReport', component: AdminNitetVisitsReportView, meta: { title: 'รายงานบันทึกการนิเทศ' } },
+      { path: 'nithet-dashboard',       name: 'adminNitetDashboard',    component: AdminNitetDashboardView,    meta: { title: 'แดชบอร์ดการนิเทศ' } },
       { path: 'nithet-report',         name: 'adminNithetReport',       component: AdminNitetReportView,        meta: { title: 'รายงานผลการนิเทศ' } },
       { path: 'news',     name: 'adminNews',      component: AdminNewsView,          meta: { title: 'จัดการข่าวสาร', icon: '📰' } },
       { path: 'pages',          name: 'adminPages',      component: AdminPagesView,      meta: { title: 'จัดการหน้าเนื้อหา', icon: '📄' } },
@@ -210,6 +221,8 @@ const routes = [
   { path: '/newsletters',  name: 'newsletters',  component: PublicNewslettersView, meta: { title: 'จดหมายข่าว' } },
   { path: '/library',      name: 'library',      component: PublicLibraryView,     meta: { title: 'คลังหนังสือและคู่มือ' } },
   { path: '/videos',       name: 'videos',       component: PublicVideosView,      meta: { title: 'วีดิทัศน์การศึกษา' } },
+  { path: '/nithet-visits',     name: 'publicNitetVisits',  component: PublicNitetVisitsView, meta: { title: 'บันทึกการนิเทศ' } },
+  { path: '/nithet-visits/:id', name: 'nitetVisitDetail',   component: NitetVisitDetailView,  meta: { title: 'รายละเอียดบันทึกการนิเทศ' } },
   { path: '/media',        name: 'media',        component: PublicMediaView, meta: { title: 'คลังสื่อการเรียนรู้' } },
   { path: '/media/:id',    name: 'mediaDetail',  component: () => import('../views/MediaDetailView.vue'), meta: { title: 'รายละเอียดสื่อ' } },
   { path: '/works',        name: 'works',        component: () => import('../views/PublicWorksView.vue'), meta: { title: 'ผลงาน/นวัตกรรม' } },
