@@ -10,6 +10,8 @@ import { toDateKey } from '../../composables/useCalendarGrid'
 import { useAreaConfig } from '../../composables/useAreaConfig'
 import { TYPE_LABEL, TYPE_COLOR, STATUS_LABEL, STATUS_COLOR, displayName, formatEventDateRange, formatResponsible } from '../../composables/useNithetEventMeta'
 import { VISIT_WRITER_ROLES } from '../../composables/useNithetVisits'
+import TopicChips from '../../components/nithet/TopicChips.vue'
+import LinkListEditor from '../../components/nithet/LinkListEditor.vue'
 
 const router = useRouter()
 const { config: areaConfig, fetchConfig } = useAreaConfig()
@@ -34,6 +36,9 @@ const currentProfile = ref(null)
 const currentUserId  = ref(null)
 
 const isAdmin = computed(() => ['super_admin','admin'].includes(currentProfile.value?.role))
+// สิทธิ์กำหนด "แผนการนิเทศ" (เลขที่คำสั่ง/ลิงก์คำสั่ง/ประเด็นย่อย) — แยกจากสิทธิ์แก้ไขกิจกรรมทั่วไป
+// บังคับจริงที่ trigger nithet_events_order_guard (migration 0076) ฝั่งนี้แค่ซ่อน/แสดง UI ให้เหมาะ
+const canManagePlan = computed(() => isAdmin.value || !!currentProfile.value?.can_manage_nithet_plan)
 
 const TYPES = ['school_visit', 'meeting', 'training', 'other']
 
@@ -125,6 +130,7 @@ function emptyForm() {
     start_date: today, end_date: today, start_time: '', end_time: '',
     school_ids: [], location: '', responsible_ids: [], responsible_group: '',
     status: 'scheduled', show_public: true,
+    order_number: '', order_date: null, order_link: '', doc_links: [], topics: [],
   }
 }
 const form = ref(emptyForm())
@@ -161,6 +167,9 @@ function openEdit(event) {
     school_ids: [...(event.school_ids || [])], location: event.location || '',
     responsible_ids: [...(event.responsible_ids || [])], responsible_group: event.responsible_group || '',
     status: event.status, show_public: event.show_public,
+    order_number: event.order_number || '', order_date: event.order_date || null,
+    order_link: event.order_link || '', doc_links: [...(event.doc_links || [])],
+    topics: [...(event.topics || [])],
   }
   showModal.value = true
 }
@@ -200,6 +209,12 @@ async function save() {
     responsible_group: form.value.responsible_group,
     status: form.value.status,
     show_public: form.value.show_public,
+    // ฟิลด์คำสั่ง — ส่งไปตามที่กรอกได้เลย คนไม่มีสิทธิ์ trigger จะเงียบ ๆ รีเซ็ตทิ้งให้เองที่ฝั่ง DB
+    order_number: form.value.order_number.trim(),
+    order_date: form.value.order_date || null,
+    order_link: form.value.order_link.trim(),
+    doc_links: form.value.doc_links.filter(l => l.url?.trim()),
+    topics: form.value.topics,
   }
   let error
   if (form.value.id) {
@@ -246,7 +261,7 @@ onMounted(async () => {
   const { data: { user } } = await supabase.auth.getUser()
   currentUserId.value = user?.id
   if (user?.id) {
-    const { data: p } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+    const { data: p } = await supabase.from('profiles').select('role, can_manage_nithet_plan').eq('id', user.id).single()
     currentProfile.value = p
   }
   const { data: sc } = await supabase.from('schools').select('id, name, district, school_group').order('district').order('name')
@@ -366,6 +381,9 @@ onMounted(async () => {
               </span>
               <span v-if="!event.show_public" class="text-xs bg-slate-100 text-slate-400 font-bold px-2.5 py-0.5 rounded-full">
                 🔒 ไม่แสดงสาธารณะ
+              </span>
+              <span v-if="event.order_number" class="text-xs bg-indigo-100 text-indigo-700 font-bold px-2.5 py-0.5 rounded-full">
+                📋 คำสั่งเลขที่ {{ event.order_number }}
               </span>
             </div>
             <h2 class="font-bold text-slate-800 text-lg leading-snug">{{ event.title }}</h2>
@@ -568,6 +586,42 @@ onMounted(async () => {
                   <p v-if="!responsibleOptions.length" class="px-3 py-2 text-xs text-slate-400">ไม่มีรายชื่อ</p>
                 </div>
               </div>
+
+              <!-- ══ ข้อมูลคำสั่ง — เฉพาะหัวหน้างานนิเทศ ══ -->
+              <template v-if="canManagePlan || form.order_number">
+                <div class="border-t border-slate-100 pt-1">
+                  <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                    ข้อมูลคำสั่ง <span v-if="!canManagePlan" class="normal-case font-normal">(กรอกได้เฉพาะหัวหน้างานนิเทศ)</span>
+                  </p>
+                </div>
+
+                <template v-if="canManagePlan">
+                  <div class="grid grid-cols-2 gap-3">
+                    <div>
+                      <label class="block text-xs font-bold text-slate-600 mb-1">เลขที่คำสั่ง</label>
+                      <input v-model="form.order_number" type="text" placeholder="เช่น ศธ 04xxx/2569" class="input-field w-full"/>
+                    </div>
+                    <div>
+                      <label class="block text-xs font-bold text-slate-600 mb-1">ลงวันที่คำสั่ง</label>
+                      <input v-model="form.order_date" type="date" class="input-field w-full"/>
+                    </div>
+                  </div>
+                  <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">ลิงก์คำสั่ง</label>
+                    <input v-model="form.order_link" type="url" placeholder="https://drive.google.com/..." class="input-field w-full"/>
+                  </div>
+                  <LinkListEditor v-model="form.doc_links"/>
+                  <TopicChips v-model="form.topics"/>
+                </template>
+
+                <!-- คนไม่มีสิทธิ์: เห็นเฉพาะตอนมีคำสั่งอยู่แล้ว แสดงแบบอ่านอย่างเดียว -->
+                <div v-else class="glass-card p-3 space-y-1.5 text-sm">
+                  <p><span class="text-slate-400">เลขที่คำสั่ง:</span> <span class="font-bold text-slate-700">{{ form.order_number }}</span></p>
+                  <p v-if="form.order_date"><span class="text-slate-400">ลงวันที่:</span> {{ form.order_date }}</p>
+                  <p v-if="form.order_link"><a :href="form.order_link" target="_blank" class="text-primary font-bold hover:underline">ดูคำสั่ง ↗</a></p>
+                  <p v-if="form.topics.length" class="text-slate-500">ประเด็น: {{ form.topics.join(' · ') }}</p>
+                </div>
+              </template>
 
               <!-- ══ สถานะและการแสดงผล ══ -->
               <div class="border-t border-slate-100 pt-1">

@@ -58,6 +58,7 @@ import AdminNitetVisitsView       from '../views/admin/AdminNitetVisitsView.vue'
 import AdminNitetVisitEditorView from '../views/admin/AdminNitetVisitEditorView.vue'
 import AdminNitetVisitsReportView from '../views/admin/AdminNitetVisitsReportView.vue'
 import AdminNitetDashboardView   from '../views/admin/AdminNitetDashboardView.vue'
+import AdminNitetAcknowledgeView from '../views/admin/AdminNitetAcknowledgeView.vue'
 import PublicNitetVisitsView    from '../views/PublicNitetVisitsView.vue'
 import NitetVisitDetailView     from '../views/NitetVisitDetailView.vue'
 import AdminNitetReportView from '../views/admin/AdminNitetReportView.vue'
@@ -153,6 +154,7 @@ const routes = [
       { path: 'nithet-visits/:id/edit', name: 'adminNitetVisitEdit', component: AdminNitetVisitEditorView, meta: { title: 'แก้ไขบันทึกการนิเทศ' } },
       { path: 'nithet-visits-report',   name: 'adminNitetVisitsReport', component: AdminNitetVisitsReportView, meta: { title: 'รายงานบันทึกการนิเทศ' } },
       { path: 'nithet-dashboard',       name: 'adminNitetDashboard',    component: AdminNitetDashboardView,    meta: { title: 'แดชบอร์ดการนิเทศ' } },
+      { path: 'nithet-acknowledge',     name: 'adminNitetAcknowledge',  component: AdminNitetAcknowledgeView,  meta: { title: 'รับทราบบันทึกการนิเทศ' } },
       { path: 'nithet-report',         name: 'adminNithetReport',       component: AdminNitetReportView,        meta: { title: 'รายงานผลการนิเทศ' } },
       { path: 'news',     name: 'adminNews',      component: AdminNewsView,          meta: { title: 'จัดการข่าวสาร', icon: '📰' } },
       { path: 'pages',          name: 'adminPages',      component: AdminPagesView,      meta: { title: 'จัดการหน้าเนื้อหา', icon: '📄' } },

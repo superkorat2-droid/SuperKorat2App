@@ -58,7 +58,7 @@ watch(mode, (m) => {
 <template>
   <div class="space-y-2">
     <div class="flex items-center justify-between gap-2">
-      <label class="text-[11px] font-bold text-slate-500">ไปที่ไหน <span class="text-red-500">*</span></label>
+      <label class="text-[11px] font-bold text-slate-500">สถานที่ <span class="text-red-500">*</span></label>
       <div class="flex gap-1 bg-slate-100 p-0.5 rounded-lg">
         <button type="button" @click="mode = 'school'"
           :class="['px-2.5 py-1 text-[11px] font-bold rounded-md transition-colors',

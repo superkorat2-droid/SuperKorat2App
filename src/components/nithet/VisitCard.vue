@@ -10,7 +10,7 @@
  */
 import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
-import { coverOf, photoCount, placeOf, typeMeta, fmtDate } from '../../composables/useNithetVisits'
+import { coverOf, photoCount, placeOf, typeMeta, visitTypeLabel, fmtDate } from '../../composables/useNithetVisits'
 
 const props = defineProps({
   item: { type: Object, required: true },
@@ -32,7 +32,7 @@ const topics = computed(() => (props.item.topics || []).slice(0, 3))
         {{ meta.icon }}
       </div>
       <span :class="['absolute top-2 left-2 text-[11px] font-bold px-2.5 py-0.5 rounded-full', meta.color]">
-        {{ meta.icon }} {{ meta.label }}
+        {{ meta.icon }} {{ visitTypeLabel(item) }}
       </span>
       <span v-if="shots > 1"
         class="absolute bottom-2 right-2 text-[11px] font-bold text-white bg-black/50 px-2 py-0.5 rounded-full">

@@ -28,6 +28,12 @@ export function typeMeta(v) {
 }
 export function typeLabel(v) { return typeMeta(v).label }
 export function typeColor(v) { return typeMeta(v).color }
+
+/** ป้ายประเภทของบันทึกจริง — รับ object ทั้งใบ เพราะ "อื่นๆ" ต้องโชว์ visit_type_other ที่พิมพ์เองแทน */
+export function visitTypeLabel(visit) {
+  if (visit?.visit_type === 'other' && visit?.visit_type_other?.trim()) return visit.visit_type_other.trim()
+  return typeLabel(visit?.visit_type)
+}
 export function statusMeta(v) { return VISIT_STATUS[v] || VISIT_STATUS.draft }
 export function followupMeta(v) { return FOLLOWUP_STATUS[v] || FOLLOWUP_STATUS.none }
 

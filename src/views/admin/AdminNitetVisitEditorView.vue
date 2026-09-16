@@ -33,14 +33,16 @@ const isNew  = computed(() => !route.params.id)
 const gc     = useUploadGc()
 
 const { config, fetchConfig } = useAreaConfig()
-const { keyFromLabel } = useGroupOptions(config)
+const { groupOptions, groupLabel, keyFromLabel } = useGroupOptions(config)
 
 const loading = ref(true)
 const saving  = ref(false)
 const canWrite = ref(true)
 const myId    = ref('')
 const people  = ref([])
-const eventTopics = ref([])
+const eventTopics  = ref([])
+const officialPlans = ref([])   // nithet_events ที่มีเลขที่คำสั่ง — ให้เลือกใช้ตอนบันทึกผล
+const planGroupFilter = ref('')
 let saved = false
 
 const emptyForm = () => ({
@@ -51,6 +53,7 @@ const emptyForm = () => ({
   place_name: '',
   visit_date: new Date().toISOString().slice(0, 10),
   visit_type: 'school_visit',
+  visit_type_other: '',
   title: '',
   topics: [],
   work_group: '',
@@ -62,6 +65,8 @@ const emptyForm = () => ({
   photos: [], links: [],
   followup_required: false, followup_due: null, followup_note: '',
   is_public: false,
+  // สำเนาจากแผนการนิเทศ (nithet_events) ที่เลือก — อ่านอย่างเดียวในฟอร์มนี้ (migration 0077)
+  order_number: '', order_date: null, order_link: '', doc_links: [],
 })
 const form = ref(emptyForm())
 
@@ -94,23 +99,20 @@ onMounted(async () => {
   people.value = pp || []
 
   if (isNew.value) {
+    // แผนการนิเทศที่มีเลขที่คำสั่งอยู่แล้ว (หัวหน้างานกำหนดไว้) — ให้เลือกจากในฟอร์มได้เลย
+    // ไม่ต้องเริ่มจากปฏิทินเสมอไป (RLS: show_public=true อ่านได้ทุกคนอยู่แล้ว ไม่ใช่แค่เจ้าของ)
+    const { data: plans } = await supabase.from('nithet_events')
+      .select('id, title, type, start_date, responsible_ids, responsible_group, order_number, order_date, order_link, doc_links, topics')
+      .neq('order_number', '').order('start_date', { ascending: false })
+    officialPlans.value = plans || []
+
     // มาจากปฏิทิน — เติมข้อมูลจากแผนให้เลย
     const eventId = route.query.event
     if (eventId) {
       const { data: ev } = await supabase.from('nithet_events')
-        .select('id, title, description, type, start_date, responsible_ids, responsible_group')
+        .select('id, title, description, type, start_date, responsible_ids, responsible_group, order_number, order_date, order_link, doc_links, topics')
         .eq('id', eventId).single()
-      if (ev) {
-        form.value.event_id = ev.id
-        form.value.title = ev.title || ''
-        form.value.visit_date = ev.start_date || form.value.visit_date
-        form.value.visit_type = ev.type === 'school_visit' ? 'school_visit'
-          : ev.type === 'training' ? 'speaker' : (ev.type || 'other')
-        form.value.co_supervisor_ids = (ev.responsible_ids || []).filter(id => id !== myId.value)
-        if (ev.responsible_group) form.value.work_group = ev.responsible_group
-        // ชื่อกิจกรรมเสนอเป็นชิปประเด็นให้กดเพิ่มได้ทันที
-        eventTopics.value = [ev.title].filter(Boolean)
-      }
+      if (ev) applyPlan(ev)
     }
     if (route.query.school) form.value.school_id = route.query.school
     restoreDraft()
@@ -149,9 +151,47 @@ function personName(p) {
   return p.full_name || '-'
 }
 
+// เติมข้อมูลจากแผนการนิเทศ (nithet_events) ที่เลือก — ใช้ทั้งตอนมาจาก ?event= ของปฏิทิน
+// และตอนเลือกเองจาก dropdown ในฟอร์มนี้ เพื่อไม่ให้ logic สองทางเพี้ยนจากกัน
+function applyPlan(ev) {
+  form.value.event_id = ev.id
+  form.value.title = ev.title || ''
+  form.value.visit_date = ev.start_date || form.value.visit_date
+  form.value.visit_type = ev.type === 'school_visit' ? 'school_visit'
+    : ev.type === 'training' ? 'speaker' : (ev.type || 'other')
+  form.value.co_supervisor_ids = (ev.responsible_ids || []).filter(id => id !== myId.value)
+  if (ev.responsible_group) form.value.work_group = ev.responsible_group
+  // ชื่อกิจกรรม + ประเด็นย่อยที่หัวหน้ากำหนดไว้ เสนอเป็นชิปประเด็นให้กดเพิ่มได้ทันที (ไม่บังคับใส่)
+  eventTopics.value = [ev.title, ...(ev.topics || [])].filter(Boolean)
+  // สำเนาข้อมูลคำสั่ง — อ่านอย่างเดียวในฟอร์มนี้ แก้ได้แค่จากปฏิทินโดยหัวหน้างานเท่านั้น
+  form.value.order_number = ev.order_number || ''
+  form.value.order_date = ev.order_date || null
+  form.value.order_link = ev.order_link || ''
+  form.value.doc_links = [...(ev.doc_links || [])]
+}
+
+const filteredPlans = computed(() =>
+  planGroupFilter.value
+    ? officialPlans.value.filter(p => p.responsible_group === planGroupFilter.value)
+    : officialPlans.value
+)
+
+function pickPlan(id) {
+  const ev = officialPlans.value.find(p => p.id === id)
+  if (ev) applyPlan(ev)
+}
+
+function clearPlan() {
+  form.value.event_id = null
+  form.value.order_number = ''
+  form.value.order_date = null
+  form.value.order_link = ''
+  form.value.doc_links = []
+}
+
 async function save(finalize) {
   if (!form.value.school_id && !form.value.place_name.trim()) {
-    Swal.fire({ icon: 'warning', title: 'ยังไม่ได้ระบุว่าไปที่ไหน' }); return
+    Swal.fire({ icon: 'warning', title: 'ยังไม่ได้ระบุสถานที่' }); return
   }
   if (!form.value.visit_date) {
     Swal.fire({ icon: 'warning', title: 'ยังไม่ได้ใส่วันที่' }); return
@@ -168,8 +208,14 @@ async function save(finalize) {
     place_name: form.value.place_name.trim(),
     visit_date: form.value.visit_date,
     visit_type: form.value.visit_type,
+    visit_type_other: form.value.visit_type === 'other' ? form.value.visit_type_other.trim() : '',
     title: form.value.title.trim(),
     topics: form.value.topics,
+    // สำเนาจากแผนที่เลือก (ถ้ามี) — ฟอร์มนี้ไม่มีช่องแก้ไขฟิลด์เหล่านี้เอง
+    order_number: form.value.order_number,
+    order_date: form.value.order_date || null,
+    order_link: form.value.order_link,
+    doc_links: form.value.doc_links,
     work_group: form.value.work_group || '',
     academic_year: form.value.academic_year ? Number(form.value.academic_year) : null,
     term: form.value.term ? Number(form.value.term) : null,
@@ -236,7 +282,7 @@ async function save(finalize) {
       <div>
         <h1 class="text-xl font-extrabold text-slate-800">{{ isNew ? 'บันทึกการนิเทศ' : 'แก้ไขบันทึกการนิเทศ' }}</h1>
         <span class="block text-xs text-slate-400 mt-0.5">
-          กรอกแค่ ไปที่ไหน + วันที่ + รูป ก็กด "บันทึกด่วน" ได้เลย แล้วค่อยกลับมาเติมทีหลัง
+          กรอกแค่ สถานที่ + วันที่ + รูป ก็กด "บันทึกด่วน" ได้เลย แล้วค่อยกลับมาเติมทีหลัง
         </span>
       </div>
       <RouterLink to="/dashboard/nithet-visits" class="text-sm font-bold text-slate-500 hover:text-primary">← กลับ</RouterLink>
@@ -253,9 +299,9 @@ async function save(finalize) {
     <div v-else class="grid grid-cols-1 lg:grid-cols-3 gap-5">
       <div class="lg:col-span-2 space-y-5">
 
-        <!-- 1. ไปไหน เมื่อไหร่ -->
+        <!-- 1. สถานที่ เมื่อไหร่ -->
         <div class="glass-card p-5 space-y-3">
-          <p class="font-bold text-sm text-slate-700">1. ไปไหน เมื่อไหร่</p>
+          <p class="font-bold text-sm text-slate-700">1. สถานที่ เมื่อไหร่</p>
 
           <PlacePicker
             :school-id="form.school_id" :place-name="form.place_name"
@@ -272,6 +318,11 @@ async function save(finalize) {
                 <option v-for="t in VISIT_TYPES" :key="t.value" :value="t.value">{{ t.icon }} {{ t.label }}</option>
               </select>
             </div>
+          </div>
+
+          <div v-if="form.visit_type === 'other'">
+            <label class="text-[11px] font-bold text-slate-500">ระบุประเภท</label>
+            <input v-model="form.visit_type_other" type="text" placeholder="เช่น ร่วมกิจกรรมของโรงเรียน" :class="inputCls"/>
           </div>
 
           <div class="grid grid-cols-2 gap-3">
@@ -304,6 +355,38 @@ async function save(finalize) {
         <!-- 2. เรื่องที่นิเทศ -->
         <div class="glass-card p-5 space-y-3">
           <p class="font-bold text-sm text-slate-700">2. เรื่องที่นิเทศ</p>
+
+          <!-- เลือกจากแผนการนิเทศที่หัวหน้างานกำหนดไว้ล่วงหน้า (มีเลขที่คำสั่ง) — ไม่บังคับ
+               มาจากปฏิทินอยู่แล้วก็เลือกซ้ำ/เปลี่ยนจากตรงนี้ได้เหมือนกัน -->
+          <div v-if="isNew && officialPlans.length" class="p-3 rounded-xl bg-indigo-50/60 border border-indigo-100 space-y-2">
+            <label class="text-[11px] font-bold text-indigo-700">เลือกจากแผนการนิเทศ (ถ้ามี)</label>
+            <div class="grid grid-cols-2 gap-2">
+              <select v-model="planGroupFilter" :class="inputCls">
+                <option value="">ทุกกลุ่มงาน</option>
+                <option v-for="g in groupOptions" :key="g.key" :value="g.key">{{ g.label }}</option>
+              </select>
+              <select :value="form.event_id" @change="pickPlan($event.target.value)" :class="inputCls">
+                <option value="">-- ไม่ใช้แผน --</option>
+                <option v-for="p in filteredPlans" :key="p.id" :value="p.id">
+                  {{ p.order_number }} · {{ p.title }}
+                </option>
+              </select>
+            </div>
+          </div>
+
+          <!-- อ้างอิงจากแผนที่เลือก — อ่านอย่างเดียว แก้ได้แค่จากปฏิทินโดยหัวหน้างานเท่านั้น -->
+          <div v-if="form.order_number" class="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs space-y-1">
+            <div class="flex items-center justify-between gap-2">
+              <span class="font-bold text-slate-600">📋 อ้างอิงคำสั่งเลขที่ {{ form.order_number }}</span>
+              <button type="button" @click="clearPlan" class="text-slate-400 hover:text-red-500 font-bold">เลิกใช้แผนนี้</button>
+            </div>
+            <p v-if="form.order_date" class="text-slate-500">ลงวันที่ {{ form.order_date }}</p>
+            <a v-if="form.order_link" :href="form.order_link" target="_blank" class="text-primary font-bold hover:underline block">ดูคำสั่ง ↗</a>
+            <a v-for="(d, i) in form.doc_links" :key="i" :href="d.url" target="_blank" class="text-primary font-bold hover:underline block">
+              {{ d.label || 'เอกสารประกอบ' }} ↗
+            </a>
+          </div>
+
           <div>
             <label class="text-[11px] font-bold text-slate-500">เรื่อง/หัวข้อ</label>
             <input v-model="form.title" type="text" placeholder="เช่น นิเทศการจัดการเรียนรู้เชิงรุก" :class="inputCls"/>

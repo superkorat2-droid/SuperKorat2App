@@ -60,6 +60,7 @@ const ICON_MAP = {
   '/dashboard/nithet-visits': 'tasks',
   '/dashboard/nithet-visits-report': 'documents',
   '/dashboard/nithet-dashboard': 'chart-bar',
+  '/dashboard/nithet-acknowledge': 'approve',
   '/dashboard/news':         'news',
   '/dashboard/pages':        'pages',
   '/dashboard/page-headers': 'banners',
@@ -128,6 +129,8 @@ const allGroups = [
       { to: '/dashboard/nithet-visits', label: 'บันทึกการนิเทศ', roles: ['super_admin','admin','supervisor','staff'] },
       { to: '/dashboard/nithet-visits-report', label: 'รายงานบันทึกการนิเทศ', roles: ['super_admin','admin','supervisor','staff'] },
       { to: '/dashboard/nithet-dashboard', label: 'แดชบอร์ดการนิเทศ', roles: ['super_admin','admin','supervisor','staff'] },
+      // เห็นเมนูได้ทุกคนเหมือนอนุมัติผลงาน/รางวัล แต่คนไม่มี can_approve_nithet เปิดแล้วเจอหน้า "ไม่มีสิทธิ์"
+      { to: '/dashboard/nithet-acknowledge', label: 'รับทราบบันทึกการนิเทศ', roles: ['super_admin','admin','supervisor','staff'] },
       // ของเดิมอ่านจาก nithet_events ซึ่งเป็น "แผน" ไม่ใช่ผล — เปลี่ยนชื่อกันสับสนกับบันทึกการนิเทศ
       { to: '/dashboard/nithet-report', label: 'รายงานแผนการนิเทศ', roles: ['super_admin','admin','supervisor','staff'] },
     ]

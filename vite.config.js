@@ -18,6 +18,17 @@ export default defineConfig({
         orientation: 'portrait-primary',
         scope: '/',
         start_url: '/',
+        // ทางลัดกดค้างที่ไอคอนแอปที่ติดตั้งแล้ว — ไม่ใช่ไอคอนที่สองแยกต่างหาก (PWA จำกัดที่ scope เดียวต่อโดเมน)
+        // url ต้องมี /#/ นำหน้าเพราะเราเตอร์เป็น hash history (createWebHashHistory)
+        shortcuts: [
+          {
+            name: 'บันทึกการนิเทศ',
+            short_name: 'บันทึกนิเทศ',
+            description: 'เข้าหน้าบันทึกการนิเทศโดยตรง ไม่ต้องไล่เมนู',
+            url: '/#/dashboard/nithet-visits',
+            icons: [{ src: '/icons/icon-192x192.png', sizes: '192x192', type: 'image/png' }],
+          },
+        ],
         icons: [
           { src: '/icons/icon-72x72.png',   sizes: '72x72',   type: 'image/png' },
           { src: '/icons/icon-96x96.png',   sizes: '96x96',   type: 'image/png' },

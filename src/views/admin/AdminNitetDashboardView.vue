@@ -21,7 +21,7 @@ import BarChart from '../../components/awards/BarChart.vue'
 import MonthTrendChart from '../../components/nithet/MonthTrendChart.vue'
 import { useAreaConfig } from '../../composables/useAreaConfig'
 import {
-  VISIT_TYPES, typeLabel, currentAcademicYear, fmtDate, placeOf,
+  VISIT_TYPES, visitTypeLabel, currentAcademicYear, fmtDate, placeOf,
 } from '../../composables/useNithetVisits'
 
 const { config, fetchConfig } = useAreaConfig()
@@ -342,7 +342,7 @@ const selCls = computed(() => ['rounded-xl border border-white/80 bg-white/70 ba
               <span :class="['font-bold text-slate-700', presenting ? 'text-lg' : 'text-sm']">{{ placeOf({ ...r, school_name: schoolById[r.school_id]?.name }) }}</span>
               <span :class="['text-slate-500 truncate', presenting ? 'text-base' : 'text-xs']">{{ r.title }}</span>
               <span :class="['ml-auto text-slate-400 flex-shrink-0', presenting ? 'text-base' : 'text-xs']">
-                {{ typeLabel(r.visit_type) }} · {{ people[r.created_by] || '—' }}
+                {{ visitTypeLabel(r) }} · {{ people[r.created_by] || '—' }}
               </span>
             </li>
           </ul>

@@ -14,7 +14,7 @@ import { useRoute, RouterLink } from 'vue-router'
 import { supabase } from '../supabase'
 import { useAreaConfig } from '../composables/useAreaConfig'
 import PhotoLightbox from '../components/nithet/PhotoLightbox.vue'
-import { typeMeta, placeOf, fmtDateLong, linkKind, LINK_ICON } from '../composables/useNithetVisits'
+import { typeMeta, visitTypeLabel, placeOf, fmtDateLong, linkKind, LINK_ICON } from '../composables/useNithetVisits'
 
 const route = useRoute()
 const { config, fetchConfig } = useAreaConfig()
@@ -73,7 +73,7 @@ async function copyLink() {
         <div class="glass-card p-5 sm:p-7 space-y-3">
           <div class="flex flex-wrap items-center gap-2">
             <span :class="['text-xs font-bold px-2.5 py-0.5 rounded-full', meta.color]">
-              {{ meta.icon }} {{ meta.label }}
+              {{ meta.icon }} {{ visitTypeLabel(item) }}
             </span>
             <span class="text-sm text-slate-400">{{ fmtDateLong(item.visit_date) }}</span>
             <span v-if="item.academic_year" class="text-sm text-slate-400">

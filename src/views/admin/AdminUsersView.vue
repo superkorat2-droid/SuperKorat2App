@@ -31,7 +31,7 @@ async function fetchUsers() {
   loading.value = true
   const { data } = await supabase
     .from('profiles')
-    .select('id, full_name, email, role, position, phone, school_name, is_approved, is_active, can_publish_supervision, can_manage_documents, can_manage_awards, can_manage_videos, created_at, last_login_at')
+    .select('id, full_name, email, role, position, phone, school_name, is_approved, is_active, can_publish_supervision, can_manage_documents, can_manage_awards, can_manage_videos, can_manage_nithet_plan, can_approve_nithet, created_at, last_login_at')
     .order('created_at', { ascending: false })
   users.value  = data || []
   loading.value = false
@@ -73,6 +73,8 @@ async function saveUser() {
       can_manage_documents:     editUser.value.can_manage_documents || false,
       can_manage_awards:        editUser.value.can_manage_awards || false,
       can_manage_videos:        editUser.value.can_manage_videos || false,
+      can_manage_nithet_plan:   editUser.value.can_manage_nithet_plan || false,
+      can_approve_nithet:       editUser.value.can_approve_nithet || false,
     }).eq('id', editUser.value.id)
     if (error) { Swal.fire({ icon:'error', title:'ผิดพลาด', text: error.message }); saving.value = false; return }
   }
@@ -331,6 +333,26 @@ function formatDate(iso) {
                 <div>
                   <p class="text-sm font-medium text-slate-700">สิทธิ์จัดการวีดิทัศน์ของผู้อื่น</p>
                   <p class="text-xs text-slate-400">แก้ไข/ลบคลิปของคนอื่นได้ (การอนุมัติยังเป็นสิทธิ์ของผู้ดูแลและ ศน. เท่านั้น)</p>
+                </div>
+              </label>
+            </div>
+            <!-- แผนการนิเทศ — ต้องตรงกับ can_manage_nithet_plan() และ trigger nithet_events_order_guard ใน migration 0076 -->
+            <div class="pt-2 border-t border-slate-100">
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input v-model="editUser.can_manage_nithet_plan" type="checkbox" class="w-4 h-4 accent-indigo-600"/>
+                <div>
+                  <p class="text-sm font-medium text-slate-700">กำหนดแผนการนิเทศ (เลขคำสั่ง)</p>
+                  <p class="text-xs text-slate-400">กรอกเลขที่คำสั่ง/ลิงก์คำสั่ง/ประเด็นย่อยในปฏิทินนิเทศได้ (ศน. คนอื่นยังสร้างนัดหมายของตัวเองได้ปกติ)</p>
+                </div>
+              </label>
+            </div>
+            <!-- ผอ.กลุ่มนิเทศ — ต้องตรงกับเช็คสิทธิ์ใน RPC acknowledge_nithet_visit ใน migration 0078 -->
+            <div class="pt-2 border-t border-slate-100">
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input v-model="editUser.can_approve_nithet" type="checkbox" class="w-4 h-4 accent-indigo-600"/>
+                <div>
+                  <p class="text-sm font-medium text-slate-700">รับทราบบันทึกการนิเทศ (ผอ.กลุ่ม)</p>
+                  <p class="text-xs text-slate-400">กดรับทราบ + ให้ข้อเสนอแนะบันทึกของ ศน. ได้ — ต้องรับทราบก่อนบันทึกนั้นถึงจะพิมพ์รายงานได้</p>
                 </div>
               </label>
             </div>

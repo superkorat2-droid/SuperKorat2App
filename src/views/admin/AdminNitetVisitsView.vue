@@ -12,7 +12,7 @@ import { ref, computed, onMounted } from 'vue'
 import { supabase } from '../../supabase'
 import Swal from 'sweetalert2'
 import {
-  VISIT_TYPES, typeLabel, typeColor, statusMeta, followupMeta,
+  VISIT_TYPES, typeColor, visitTypeLabel, statusMeta, followupMeta,
   placeOf, coverOf, photoCount, fmtDate, isOverdue, currentAcademicYear,
 } from '../../composables/useNithetVisits'
 
@@ -198,7 +198,7 @@ async function closeFollowup(r) {
 
         <div class="flex-1 min-w-0">
           <div class="flex items-center gap-2 flex-wrap">
-            <span :class="['text-[10px] font-bold px-2 py-0.5 rounded-full', typeColor(r.visit_type)]">{{ typeLabel(r.visit_type) }}</span>
+            <span :class="['text-[10px] font-bold px-2 py-0.5 rounded-full', typeColor(r.visit_type)]">{{ visitTypeLabel(r) }}</span>
             <span :class="['text-[10px] font-bold px-2 py-0.5 rounded-full', statusMeta(r.status).bg, statusMeta(r.status).text]">
               {{ statusMeta(r.status).label }}
             </span>

@@ -20,7 +20,7 @@ import { useRoute } from 'vue-router'
 import { supabase } from '../../supabase'
 import { useAreaConfig } from '../../composables/useAreaConfig'
 import {
-  VISIT_TYPES, typeLabel, placeOf, isPortrait, fmtDateLong, linkKind, LINK_ICON,
+  VISIT_TYPES, typeLabel, visitTypeLabel, placeOf, isPortrait, fmtDateLong, linkKind, LINK_ICON,
 } from '../../composables/useNithetVisits'
 
 const route = useRoute()
@@ -34,6 +34,7 @@ const loading  = ref(true)
 const mode      = ref('single')   // single | list
 const singleId  = ref('')
 const landscape = ref(false)
+const printSignerNames = ref(true)   // พิมพ์ชื่อ-ตำแหน่งผู้ลงนามอัตโนมัติ (โหมดรายบันทึกเท่านั้น)
 
 const fFrom     = ref('')
 const fTo       = ref('')
@@ -43,6 +44,7 @@ const fCenter   = ref('all')
 const fOwner    = ref('all')
 const fType     = ref('all')
 const includeDrafts = ref(false)   // ร่างไม่เข้ารายงานโดยปริยาย
+const includeUnacknowledged = ref(false)   // ที่ยังไม่รับทราบไม่เข้ารายงานโดยปริยาย (Phase 3)
 
 const personnelGroups = computed(() => config.value?.personnel_groups || [])
 function groupLabel(key) { return personnelGroups.value.find(g => g.key === key)?.label || key || '' }
@@ -128,6 +130,7 @@ const owners = computed(() => {
 
 const filtered = computed(() => decorated.value.filter(r =>
   (includeDrafts.value || r.status === 'final') &&
+  (includeUnacknowledged.value || r.status === 'draft' || r.ack_status === 'acknowledged') &&
   (!fFrom.value || r.visit_date >= fFrom.value) &&
   (!fTo.value   || r.visit_date <= fTo.value) &&
   (fSchool.value   === 'all' || r.school_id === fSchool.value) &&
@@ -141,6 +144,14 @@ const single = computed(() => decorated.value.find(r => r.id === singleId.value)
 
 function ownerName(id) { return people.value[id]?.name || '' }
 function coNames(r) { return (r.co_supervisor_ids || []).map(ownerName).filter(Boolean) }
+
+// ผู้ลงนาม = เจ้าของบันทึก + ผู้ร่วมนิเทศ กันซ้ำ (co_supervisor_ids อาจมีตัวเองหลุดมาได้ในข้อมูลเก่า)
+const signerIds = computed(() => {
+  if (!single.value) return []
+  return [...new Set([single.value.created_by, ...(single.value.co_supervisor_ids || [])].filter(Boolean))]
+})
+const showSignerNames = computed(() =>
+  mode.value === 'single' && printSignerNames.value && signerIds.value.length > 0)
 
 /**
  * จัดรูปเป็นแถว — แนวตั้ง 3 ใบ แนวนอน 2 ใบ และไม่ปนแนวกันในแถวเดียว
@@ -175,17 +186,27 @@ const scopeText = computed(() => {
   if (fOwner.value !== 'all') bits.push(`ผู้นิเทศ: ${ownerName(fOwner.value)}`)
   if (fType.value !== 'all') bits.push(typeLabel(fType.value))
   if (includeDrafts.value) bits.push('รวมฉบับร่าง')
+  if (includeUnacknowledged.value) bits.push('รวมที่ยังไม่รับทราบ')
   return bits.filter(Boolean).join(' · ') || 'ทั้งหมด'
 })
 
 const printedAt = new Date().toLocaleDateString('th-TH', { day: 'numeric', month: 'long', year: 'numeric' })
-function doPrint() { window.print() }
+function doPrint() {
+  // กัน Ctrl+P/เมนูเบราว์เซอร์เลี่ยงปุ่มที่ถูก disable ไว้
+  if (!canPrintSingle.value) return
+  window.print()
+}
 
 function resetFilter() {
   fFrom.value = fTo.value = ''
   fSchool.value = fDistrict.value = fCenter.value = fOwner.value = fType.value = 'all'
   includeDrafts.value = false
+  includeUnacknowledged.value = false
 }
+
+// โหมดรายบันทึก: พิมพ์ได้ต่อเมื่อ ผอ.กลุ่มรับทราบแล้ว (ร่างไม่ต้องรับทราบ เพราะยังไม่เข้ารายงานอยู่แล้ว)
+const canPrintSingle = computed(() =>
+  mode.value !== 'single' || !single.value || single.value.status === 'draft' || single.value.ack_status === 'acknowledged')
 
 const selCls = 'px-3 py-2 rounded-xl border border-white/80 bg-white/70 backdrop-blur text-sm text-slate-600'
 const TD = 'border:1px solid #cbd5e1; padding:6px 8px; vertical-align:top;'
@@ -201,8 +222,12 @@ const TH = 'border:1px solid #cbd5e1; padding:6px 8px; background:#f1f5f9; text-
         <label class="flex items-center gap-1.5 text-sm text-slate-600 cursor-pointer select-none">
           <input type="checkbox" v-model="landscape" class="w-4 h-4 rounded accent-[var(--color-primary)]"/> แนวนอน
         </label>
-        <button @click="doPrint"
-          class="px-5 py-2.5 text-sm font-bold bg-primary text-white rounded-2xl shadow-md hover:-translate-y-0.5 transition-all">
+        <label v-if="mode === 'single'" class="flex items-center gap-1.5 text-sm text-slate-600 cursor-pointer select-none">
+          <input type="checkbox" v-model="printSignerNames" class="w-4 h-4 rounded accent-[var(--color-primary)]"/> พิมพ์ชื่อผู้ลงนามอัตโนมัติ
+        </label>
+        <button @click="doPrint" :disabled="!canPrintSingle"
+          :title="!canPrintSingle ? 'ต้องรอ ผอ.กลุ่มรับทราบก่อนถึงจะพิมพ์ได้' : ''"
+          class="px-5 py-2.5 text-sm font-bold bg-primary text-white rounded-2xl shadow-md hover:-translate-y-0.5 transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0">
           พิมพ์ / บันทึก PDF
         </button>
       </div>
@@ -227,6 +252,10 @@ const TH = 'border:1px solid #cbd5e1; padding:6px 8px; background:#f1f5f9; text-
         </select>
         <span v-if="single?.status === 'draft'" class="text-xs font-bold text-amber-600">
           บันทึกนี้ยังเป็นร่าง ควรกดบันทึกสมบูรณ์ก่อนใช้เป็นหลักฐาน
+        </span>
+        <span v-else-if="!canPrintSingle" class="text-xs font-bold text-red-600">
+          🔒 ยังไม่ได้รับการรับทราบจาก ผอ.กลุ่ม จึงพิมพ์ไม่ได้ —
+          <RouterLink to="/dashboard/nithet-acknowledge" class="underline">ไปหน้ารับทราบ</RouterLink>
         </span>
       </div>
 
@@ -258,6 +287,9 @@ const TH = 'border:1px solid #cbd5e1; padding:6px 8px; background:#f1f5f9; text-
           <label class="flex items-center gap-1.5 text-sm text-slate-600 cursor-pointer select-none px-2">
             <input type="checkbox" v-model="includeDrafts" class="w-4 h-4 rounded accent-[var(--color-primary)]"/> รวมฉบับร่าง
           </label>
+          <label class="flex items-center gap-1.5 text-sm text-slate-600 cursor-pointer select-none px-2">
+            <input type="checkbox" v-model="includeUnacknowledged" class="w-4 h-4 rounded accent-[var(--color-primary)]"/> รวมที่ยังไม่รับทราบ
+          </label>
           <button @click="resetFilter" class="px-3 py-2 rounded-xl text-sm text-slate-500 hover:bg-slate-100">ล้างตัวกรอง</button>
           <span class="text-sm text-slate-500 ml-auto self-center">พบ {{ filtered.length.toLocaleString() }} รายการ</span>
         </div>
@@ -286,6 +318,19 @@ const TH = 'border:1px solid #cbd5e1; padding:6px 8px; background:#f1f5f9; text-
       <template v-if="mode === 'single'">
         <p v-if="!single" style="text-align:center; color:#64748b; padding:40px 0;">ยังไม่ได้เลือกบันทึก</p>
         <template v-else>
+          <!-- เรื่อง/ประเด็น/เลขที่คำสั่ง — ยกขึ้นมาเด่นเป็นหัวเรื่องเอกสาร แทนที่จะฝังในตารางข้อมูลเหมือนเดิม -->
+          <div style="margin-bottom:10px; padding-bottom:8px; border-bottom:2px solid #1e293b;">
+            <div style="display:flex; align-items:baseline; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+              <div style="font-size:16px; font-weight:800;">{{ single.title || '(ยังไม่ได้ใส่เรื่อง)' }}</div>
+              <div v-if="single.order_number" style="font-size:12px; color:#475569; white-space:nowrap;">
+                ตามคำสั่งเลขที่ {{ single.order_number }}<template v-if="single.order_date"> ลงวันที่ {{ fmtDateLong(single.order_date) }}</template>
+              </div>
+            </div>
+            <div v-if="(single.topics || []).length" style="font-size:12px; color:#475569; margin-top:2px;">
+              {{ (single.topics || []).join(' · ') }}
+            </div>
+          </div>
+
           <table style="width:100%; border-collapse:collapse; font-size:13px;">
             <tbody>
               <tr>
@@ -300,19 +345,11 @@ const TH = 'border:1px solid #cbd5e1; padding:6px 8px; background:#f1f5f9; text-
                 <th :style="TH">วันที่นิเทศ</th>
                 <td :style="TD">
                   {{ fmtDateLong(single.visit_date) }}
-                  <span style="color:#475569;"> · {{ typeLabel(single.visit_type) }}</span>
+                  <span style="color:#475569;"> · {{ visitTypeLabel(single) }}</span>
                   <span v-if="single.academic_year" style="color:#475569;">
                     · ปีการศึกษา {{ single.academic_year }}{{ single.term ? ` ภาคเรียนที่ ${single.term}` : '' }}
                   </span>
                 </td>
-              </tr>
-              <tr>
-                <th :style="TH">เรื่องที่นิเทศ</th>
-                <td :style="TD">{{ single.title || '—' }}</td>
-              </tr>
-              <tr v-if="(single.topics || []).length">
-                <th :style="TH">ประเด็นการนิเทศ</th>
-                <td :style="TD">{{ (single.topics || []).join(' · ') }}</td>
               </tr>
               <tr>
                 <th :style="TH">ผู้นิเทศ</th>
@@ -402,7 +439,7 @@ const TH = 'border:1px solid #cbd5e1; padding:6px 8px; background:#f1f5f9; text-
                 <div v-if="(r.topics || []).length" style="color:#64748b; font-size:11px;">{{ (r.topics || []).join(' · ') }}</div>
               </td>
               <td :style="TD" style="text-align:center; white-space:nowrap;">
-                {{ typeLabel(r.visit_type) }}
+                {{ visitTypeLabel(r) }}
                 <div v-if="r.status === 'draft'" style="color:#b45309; font-size:11px;">(ร่าง)</div>
               </td>
               <td :style="TD">{{ ownerName(r.created_by) || '—' }}</td>
@@ -412,9 +449,24 @@ const TH = 'border:1px solid #cbd5e1; padding:6px 8px; background:#f1f5f9; text-
         </table>
       </template>
 
-      <!-- ── ท้ายเอกสาร: เว้นว่างให้เขียนชื่อ/ตำแหน่ง และประทับตราเอง ──
-           จงใจไม่พิมพ์ชื่อผู้ใดลงไป (เลี่ยง PDPA) ให้ผู้ลงนามกรอกเองด้วยลายมือ -->
-      <div style="margin-top:1.2cm; min-height:4.6cm; page-break-inside:avoid; display:flex; align-items:flex-start; gap:12px;">
+      <!-- ── ท้ายเอกสาร: เซ็นสดเสมอ (ไม่เก็บรูปลายเซ็นจริง) แค่เลือกได้ว่าจะพิมพ์ชื่อ-ตำแหน่ง
+           กำกับใต้เส้นเซ็นหรือเว้นว่างล้วน — โหมดหลายรายการ/ปิด toggle ใช้แบบเว้นว่างเดิมเสมอ
+           เพราะไม่มี "ผู้ร่วมนิเทศ" เดี่ยว ๆ ให้อ้างอิงเหมือนโหมดรายบันทึก -->
+      <div v-if="showSignerNames"
+        style="margin-top:1.2cm; min-height:4.6cm; page-break-inside:avoid; display:flex; align-items:flex-end; justify-content:space-between; gap:16px;">
+        <div style="flex:1; display:flex; flex-wrap:wrap; justify-content:center; gap:16px 20px;">
+          <div v-for="id in signerIds" :key="id" style="flex:0 0 4.6cm; text-align:center; font-size:13px; padding-top:1.2cm;">
+            <div>ลงชื่อ ..............................................................</div>
+            <div style="margin-top:10px; font-weight:700;">( {{ people[id]?.name || '—' }} )</div>
+            <div style="margin-top:4px; color:#475569; min-height:1.2em;">{{ people[id]?.position || '' }}</div>
+          </div>
+        </div>
+        <div style="flex:0 0 3.6cm; width:3.6cm; height:3.6cm; border:1px dashed #cbd5e1; border-radius:6px;
+                    display:flex; align-items:center; justify-content:center; font-size:11px; color:#94a3b8;">
+          ประทับตรา
+        </div>
+      </div>
+      <div v-else style="margin-top:1.2cm; min-height:4.6cm; page-break-inside:avoid; display:flex; align-items:flex-start; gap:12px;">
         <div style="flex:1; text-align:center; font-size:13px; padding-top:1.2cm;">
           <div>ลงชื่อ ..............................................................</div>
           <div style="margin-top:10px;">( .............................................................. )</div>
