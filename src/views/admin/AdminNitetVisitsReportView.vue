@@ -63,11 +63,12 @@ onMounted(async () => {
     schools.value = Object.fromEntries((ss || []).map(s => [s.id, s]))
   }
 
-  // ชื่อคนใช้ทั้งผู้บันทึกและผู้ร่วมนิเทศ จึงต้องดึงทั้งสองชุด
+  // ชื่อคนใช้ทั้งผู้บันทึก ผู้ร่วมนิเทศ และ ผอ.กลุ่มที่รับทราบ จึงต้องดึงทั้งสามชุด
   const ids = new Set()
   for (const r of rows.value) {
     if (r.created_by) ids.add(r.created_by)
     for (const id of r.co_supervisor_ids || []) ids.add(id)
+    if (r.acknowledged_by) ids.add(r.acknowledged_by)
   }
   if (ids.size) {
     const { data: pp } = await supabase.from('profiles')
@@ -449,38 +450,30 @@ const TH = 'border:1px solid #cbd5e1; padding:6px 8px; background:#f1f5f9; text-
         </table>
       </template>
 
-      <!-- ── ท้ายเอกสาร: เซ็นสดเสมอ (ไม่เก็บรูปลายเซ็นจริง) แค่เลือกได้ว่าจะพิมพ์ชื่อ-ตำแหน่ง
-           กำกับใต้เส้นเซ็นหรือเว้นว่างล้วน — โหมดหลายรายการ/ปิด toggle ใช้แบบเว้นว่างเดิมเสมอ
-           เพราะไม่มี "ผู้ร่วมนิเทศ" เดี่ยว ๆ ให้อ้างอิงเหมือนโหมดรายบันทึก -->
-      <div v-if="showSignerNames"
-        style="margin-top:1.2cm; min-height:4.6cm; page-break-inside:avoid; display:flex; align-items:flex-end; justify-content:space-between; gap:16px;">
-        <div style="flex:1; display:flex; flex-wrap:wrap; justify-content:center; gap:16px 20px;">
-          <div v-for="id in signerIds" :key="id" style="flex:0 0 4.6cm; text-align:center; font-size:13px; padding-top:1.2cm;">
-            <div>ลงชื่อ ..............................................................</div>
-            <div style="margin-top:10px; font-weight:700;">( {{ people[id]?.name || '—' }} )</div>
-            <div style="margin-top:4px; color:#475569; min-height:1.2em;">{{ people[id]?.position || '' }}</div>
-          </div>
-        </div>
-        <div style="flex:0 0 3.6cm; width:3.6cm; height:3.6cm; border:1px dashed #cbd5e1; border-radius:6px;
-                    display:flex; align-items:center; justify-content:center; font-size:11px; color:#94a3b8;">
-          ประทับตรา
+      <!-- ── ท้ายเอกสาร: เซ็นสดเสมอ (ไม่เก็บรูปลายเซ็นจริง ไม่มีประทับตรา) — แถวผู้นิเทศเรียบง่าย
+           แค่เส้นว่าง+ชื่อในวงเล็บ ต่อด้วยผู้รับรองคนสุดท้ายคือ ผอ.กลุ่มที่กดรับทราบจริง
+           (ชื่อ-ตำแหน่งเต็มพิมพ์ให้เสมอเพราะเป็นข้อเท็จจริงจากระบบ ไม่ใช่ตัวเลือกเหมือนแถวผู้นิเทศ) -->
+      <div v-if="showSignerNames" style="margin-top:1.2cm; display:flex; flex-wrap:wrap; justify-content:center; gap:16px 24px; page-break-inside:avoid;">
+        <div v-for="id in signerIds" :key="id" style="flex:0 0 4.6cm; text-align:center; font-size:13px;">
+          <div>..............................................................</div>
+          <div style="margin-top:8px; font-weight:700;">( {{ people[id]?.name || '—' }} )</div>
         </div>
       </div>
-      <div v-else style="margin-top:1.2cm; min-height:4.6cm; page-break-inside:avoid; display:flex; align-items:flex-start; gap:12px;">
-        <div style="flex:1; text-align:center; font-size:13px; padding-top:1.2cm;">
-          <div>ลงชื่อ ..............................................................</div>
-          <div style="margin-top:10px;">( .............................................................. )</div>
-          <div style="margin-top:8px;">ตำแหน่ง ..........................................................</div>
+      <div v-else style="margin-top:1.2cm; display:flex; flex-wrap:wrap; justify-content:center; gap:16px 24px; page-break-inside:avoid;">
+        <div style="flex:0 0 4.6cm; text-align:center; font-size:13px;">
+          <div>..............................................................</div>
+          <div style="margin-top:8px;">( .............................................................. )</div>
         </div>
-        <div style="flex:1; text-align:center; font-size:13px; padding-top:1.2cm;">
-          <div>ลงชื่อ ..............................................................</div>
-          <div style="margin-top:10px;">( .............................................................. )</div>
-          <div style="margin-top:8px;">ตำแหน่ง ..........................................................</div>
+        <div style="flex:0 0 4.6cm; text-align:center; font-size:13px;">
+          <div>..............................................................</div>
+          <div style="margin-top:8px;">( .............................................................. )</div>
         </div>
-        <div style="width:3.6cm; height:3.6cm; border:1px dashed #cbd5e1; border-radius:6px;
-                    display:flex; align-items:center; justify-content:center; font-size:11px; color:#94a3b8;">
-          ประทับตรา
-        </div>
+      </div>
+
+      <div v-if="mode === 'single' && single?.acknowledged_by" style="margin-top:1cm; text-align:center; font-size:13px; page-break-inside:avoid;">
+        <div style="width:6cm; margin:0 auto;">..............................................................</div>
+        <div style="margin-top:8px; font-weight:700;">( {{ people[single.acknowledged_by]?.name || '—' }} )</div>
+        <div style="margin-top:4px; color:#475569;">{{ people[single.acknowledged_by]?.position || '' }}</div>
       </div>
 
     </div>
