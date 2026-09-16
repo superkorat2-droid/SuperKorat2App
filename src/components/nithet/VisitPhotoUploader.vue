@@ -163,13 +163,20 @@ onBeforeUnmount(() => {
 <template>
   <div class="space-y-3">
     <div class="flex flex-wrap items-center gap-2">
-      <!-- capture="environment" = กดแล้วเปิดกล้องหลังบนมือถือได้เลย -->
+      <!-- แยก 2 ปุ่ม: capture="environment" เปิดกล้องตรง ๆ บนมือถือ แต่ทำให้เลือกจากคลังรูปไม่ได้
+           และ multiple ใช้ไม่ได้เมื่อมี capture (ถ่ายได้ทีละใบ) จึงต้องมีอีกปุ่มไม่มี capture ไว้เลือกจากคลัง -->
+      <label class="sm:hidden px-4 py-2.5 rounded-xl text-sm font-bold border-2 border-dashed border-slate-300 text-slate-600
+                    hover:border-primary hover:text-primary transition-all cursor-pointer">
+        📷 ถ่ายรูป
+        <input type="file" accept="image/*" capture="environment" class="hidden" :disabled="busy" @change="onPick"/>
+      </label>
       <label class="px-4 py-2.5 rounded-xl text-sm font-bold border-2 border-dashed border-slate-300 text-slate-600
                     hover:border-primary hover:text-primary transition-all cursor-pointer">
-        {{ busy ? `กำลังอัป ${progress.done}/${progress.total}...` : '📷 เพิ่มรูป' }}
-        <input type="file" accept="image/*" capture="environment" multiple class="hidden" :disabled="busy" @change="onPick"/>
+        🖼️ เลือกรูปที่มีอยู่
+        <input type="file" accept="image/*" multiple class="hidden" :disabled="busy" @change="onPick"/>
       </label>
-      <span v-if="photos.length" class="text-xs text-slate-500">
+      <span v-if="busy" class="text-xs text-slate-500">กำลังอัป {{ progress.done }}/{{ progress.total }}...</span>
+      <span v-else-if="photos.length" class="text-xs text-slate-500">
         {{ photos.length }} รูป · ใบแรกใช้เป็นภาพปก
       </span>
       <span v-if="lastShrink" class="text-xs text-emerald-600">ย่อแล้ว {{ lastShrink }}</span>
