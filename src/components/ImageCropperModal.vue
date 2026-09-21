@@ -25,6 +25,9 @@ const props = defineProps({
   // ⚠️ ต้องเป็น data URL หรือ blob URL เท่านั้น — รูปจากโดเมนอื่นจะทำให้ canvas
   // ปนเปื้อนแล้ว toBlob() โยน error (ผู้เรียกต้องเก็บ blob ต้นฉบับไว้เอง)
   src:            { type: String,  default: '' },
+  // เริ่มกรอบครอบชิดขอบบนของภาพแทนกึ่งกลาง — ใช้กับต้นฉบับแนวตั้ง (เช่น A4)
+  // ที่อยากโชว์ส่วนหัว/โลโก้มากกว่ากึ่งกลางภาพ ผู้ใช้ยังลากปรับเองได้ตามปกติ
+  biasTop:        { type: Boolean, default: false },
 })
 const emit = defineEmits(['close', 'cropped'])
 
@@ -63,6 +66,12 @@ function initCropper() {
     cropBoxResizable:true,
     toggleDragModeOnDblclick: false,
     preview:         previewEl.value,
+    ready() {
+      if (props.biasTop) {
+        const box = cropper.value.getCropBoxData()
+        cropper.value.setCropBoxData({ ...box, top: 0 })
+      }
+    },
   })
 }
 

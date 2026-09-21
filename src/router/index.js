@@ -39,6 +39,8 @@ import PublicNewslettersView     from '../views/PublicNewslettersView.vue'
 import AdminNewslettersView      from '../views/admin/AdminNewslettersView.vue'
 import PublicLibraryView         from '../views/PublicLibraryView.vue'
 import AdminLibraryView          from '../views/admin/AdminLibraryView.vue'
+import PublicCertificatesView    from '../views/PublicCertificatesView.vue'
+import AdminCertificatesView     from '../views/admin/AdminCertificatesView.vue'
 import PublicVideosView          from '../views/PublicVideosView.vue'
 import AdminVideosView           from '../views/admin/AdminVideosView.vue'
 import AdminVideosApproveView    from '../views/admin/AdminVideosApproveView.vue'
@@ -131,6 +133,7 @@ const routes = [
       { path: 'newsletters',   name: 'adminNewsletters',    component: AdminNewslettersView,    meta: { title: 'จดหมายข่าว' } },
       // ไม่อยู่ใน ADMIN_ONLY_PATHS — ศน./เจ้าหน้าที่ ต้องเข้าได้ (RLS คุมว่าแก้ของใครได้)
       { path: 'library',       name: 'adminLibrary',        component: AdminLibraryView,        meta: { title: 'คลังหนังสือและคู่มือ' } },
+      { path: 'certificates',  name: 'adminCertificates',   component: AdminCertificatesView,   meta: { title: 'คลังเกียรติบัตร', icon: '📜' } },
       { path: 'videos',         name: 'adminVideos',        component: AdminVideosView,         meta: { title: 'วีดิทัศน์การศึกษา' } },
       { path: 'videos-approve', name: 'adminVideosApprove', component: AdminVideosApproveView,  meta: { title: 'อนุมัติวีดิทัศน์' } },
       { path: 'media',         name: 'adminMedia',          component: AdminMediaView,          meta: { title: 'คลังสื่อ' } },
@@ -222,6 +225,7 @@ const routes = [
   { path: '/principals',   name: 'principals',   component: PublicPrincipalsView, meta: { title: 'ผู้บริหารโรงเรียน' } },
   { path: '/newsletters',  name: 'newsletters',  component: PublicNewslettersView, meta: { title: 'จดหมายข่าว' } },
   { path: '/library',      name: 'library',      component: PublicLibraryView,     meta: { title: 'คลังหนังสือและคู่มือ' } },
+  { path: '/certificates', name: 'certificates', component: PublicCertificatesView, meta: { title: 'คลังเกียรติบัตร' } },
   { path: '/videos',       name: 'videos',       component: PublicVideosView,      meta: { title: 'วีดิทัศน์การศึกษา' } },
   { path: '/nithet-visits',     name: 'publicNitetVisits',  component: PublicNitetVisitsView, meta: { title: 'บันทึกการนิเทศ' } },
   { path: '/nithet-visits/:id', name: 'nitetVisitDetail',   component: NitetVisitDetailView,  meta: { title: 'รายละเอียดบันทึกการนิเทศ' } },

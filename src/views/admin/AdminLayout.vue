@@ -98,6 +98,7 @@ const allGroups = [
       { to: '/dashboard/principals',  label: 'ผู้บริหารโรงเรียน', roles: ['super_admin','admin'] },
       { to: '/dashboard/newsletters', label: 'จดหมายข่าว',         roles: ['super_admin','admin','supervisor','staff'] },
       { to: '/dashboard/library',     label: 'คลังหนังสือ/คู่มือ',   roles: ['super_admin','admin','supervisor','staff'] },
+      { to: '/dashboard/certificates', label: 'คลังเกียรติบัตร',    roles: ['super_admin','admin','supervisor','staff'] },
       { to: '/dashboard/media',       label: 'คลังสื่อการเรียนรู้', roles: ['super_admin','admin','supervisor','staff'] },
       { to: '/dashboard/dmc',        label: 'รอบ DMC นักเรียน', roles: ['super_admin','admin'] },
       { to: '/dashboard/students',   label: 'ข้อมูลนักเรียน',   roles: ['super_admin','admin','supervisor'] },
