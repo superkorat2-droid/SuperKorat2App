@@ -100,14 +100,19 @@ watch(() => route.query.id, id => {
 })
 
 // @page ไม่รับ class ต้องฉีด <style> เอง แล้วเก็บกวาดตอนออกจากหน้า
+//
+// margin ต้องมาจาก @page ไม่ใช่ padding ของ #print-report-root — padding ของ container
+// ใส่ครั้งเดียวตอนต้นเนื้อหาทั้งก้อน ไม่ได้ถูกใส่ซ้ำทุกครั้งที่ตัดหน้าพิมพ์ พอเนื้อหายาวจน
+// ล้นไปหน้า 2 (เช่นบล็อกลายเซ็นท้ายเอกสาร) หน้าถัดไปเลยชิดขอบบนสุดแบบไม่มีระยะ (@page margin:0 เดิม)
+// ย้าย margin มาไว้ที่ @page แทนจึงได้ระยะขอบเท่ากันทุกหน้า ไม่ว่าจะพิมพ์กี่หน้าก็ตาม
 let pageStyleEl = null
 watch(landscape, v => {
   if (!pageStyleEl) {
     pageStyleEl = document.createElement('style')
     document.head.appendChild(pageStyleEl)
   }
-  pageStyleEl.textContent = v ? '@media print { @page { size: A4 landscape; margin: 0 } }' : ''
-})
+  pageStyleEl.textContent = `@media print { @page { size: A4${v ? ' landscape' : ''}; margin: 1.5cm; } }`
+}, { immediate: true })
 onUnmounted(() => { if (pageStyleEl) pageStyleEl.remove() })
 
 function decorate(r) {
@@ -302,7 +307,7 @@ const TH = 'border:1px solid #cbd5e1; padding:6px 8px; background:#f1f5f9; text-
 
     <!-- ── ตัวรายงาน (ส่วนเดียวที่ถูกพิมพ์) ── -->
     <Teleport v-else to="body">
-    <div id="print-report-root" style="padding: 1.5cm; font-family: 'Sarabun', sans-serif; color: #0f172a; background:#fff;">
+    <div id="print-report-root" style="font-family: 'Sarabun', sans-serif; color: #0f172a; background:#fff;">
 
       <div style="text-align:center; margin-bottom:16px;">
         <img v-if="config?.logo_url" :src="config.logo_url" style="width:60px; height:60px; object-fit:contain; margin:0 auto 8px;"/>
@@ -310,6 +315,7 @@ const TH = 'border:1px solid #cbd5e1; padding:6px 8px; background:#f1f5f9; text-
           {{ mode === 'single' ? 'บันทึกผลการนิเทศ ติดตาม และประเมินผล' : 'รายงานผลการนิเทศ ติดตาม และประเมินผล' }}
         </div>
         <div style="font-size:15px; font-weight:700;">{{ config?.area_name || '' }}</div>
+        <div style="font-size:13px; color:#475569;">{{ config?.area_type }} {{ config?.province }} {{ config?.area_number }}</div>
         <div v-if="mode === 'list'" style="font-size:12px; color:#475569; margin-top:6px;">
           ขอบเขตข้อมูล: {{ scopeText }} · รวม {{ filtered.length.toLocaleString() }} รายการ · พิมพ์เมื่อ {{ printedAt }}
         </div>
