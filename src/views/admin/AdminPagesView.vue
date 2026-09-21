@@ -89,6 +89,32 @@ function moveGroupDown(i) {
   navGroups.value.forEach((g, idx) => g.order = idx + 1)
 }
 
+// ── จัดลำดับหน้าในกลุ่ม ──────────────────────────────────────────
+// เดิมต้องพิมพ์เลข nav_order เอง แทรกตรงกลางต้องไล่แก้ทุกหน้า — เปลี่ยนเป็นกด
+// ลูกศรแล้ว renumber ทั้งกลุ่มใหม่ 1..N ให้เอง (เผื่อกรณีมีเลขซ้ำเดิมอยู่แล้วด้วย
+// เพราะ nav_order ไม่มี unique constraint — สลับแค่ 2 ค่าแบบ Banners จะพังถ้าเลขซ้ำ)
+// g.items อ้าง object เดียวกับใน pages.value (มาจาก .filter() ไม่ copy) mutate
+// nav_order ตรงๆ จึงทำให้ computed `grouped` re-sort ใหม่ทันทีแบบ reactive
+function movePageUp(g, p) {
+  const idx = g.items.indexOf(p)
+  if (idx <= 0) return
+  reorderGroupPages(g.items, idx, idx - 1)
+}
+function movePageDown(g, p) {
+  const idx = g.items.indexOf(p)
+  if (idx >= g.items.length - 1) return
+  reorderGroupPages(g.items, idx, idx + 1)
+}
+async function reorderGroupPages(items, from, to) {
+  const arr = [...items]
+  const [moved] = arr.splice(from, 1)
+  arr.splice(to, 0, moved)
+  arr.forEach((item, i) => { item.nav_order = i + 1 })
+  await Promise.all(arr.map(item =>
+    supabase.from('pages').update({ nav_order: item.nav_order }).eq('id', item.id)
+  ))
+}
+
 function addGroup() {
   const label = '(กลุ่มใหม่)'
   const key   = 'group_' + Date.now()
@@ -363,6 +389,21 @@ function goHeaderSettings(p) {
         <div class="space-y-2">
           <div v-for="p in g.items" :key="p.id"
             class="glass-card px-4 py-3 flex flex-wrap items-center gap-3">
+            <!-- Up/Down: ย้ายลำดับในกลุ่ม (renumber ทั้งกลุ่มให้เอง ดู reorderGroupPages) -->
+            <div class="flex flex-col gap-0.5 flex-shrink-0">
+              <button @click="movePageUp(g, p)" :disabled="g.items.indexOf(p) === 0"
+                class="w-5 h-5 flex items-center justify-center rounded text-slate-400 hover:bg-slate-200 disabled:opacity-20 transition-colors">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 15.75l7.5-7.5 7.5 7.5"/>
+                </svg>
+              </button>
+              <button @click="movePageDown(g, p)" :disabled="g.items.indexOf(p) === g.items.length - 1"
+                class="w-5 h-5 flex items-center justify-center rounded text-slate-400 hover:bg-slate-200 disabled:opacity-20 transition-colors">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/>
+                </svg>
+              </button>
+            </div>
             <!-- Icon + title -->
             <div class="w-8 h-8 flex-shrink-0 flex items-center justify-center rounded-lg bg-slate-100">
               <svg v-if="isIconKey(p.nav_icon)" class="w-4 h-4 text-primary" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
