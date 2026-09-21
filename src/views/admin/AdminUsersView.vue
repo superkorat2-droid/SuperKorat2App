@@ -250,9 +250,9 @@ function formatDate(iso) {
     <!-- Edit Modal -->
     <Transition enter-active-class="transition duration-200" enter-from-class="opacity-0" enter-to-class="opacity-100">
       <div v-if="showModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-        <div class="glass-panel rounded-3xl w-full max-w-lg p-6 md:p-8">
-          <h2 class="text-xl font-extrabold text-slate-900 mb-5">{{ editUser?.id ? '✏️ แก้ไขผู้ใช้' : '➕ เพิ่มผู้ใช้' }}</h2>
-          <div class="space-y-4">
+        <div class="glass-panel rounded-3xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden">
+          <h2 class="text-xl font-extrabold text-slate-900 px-6 md:px-8 pt-6 md:pt-8 pb-5 flex-shrink-0">{{ editUser?.id ? '✏️ แก้ไขผู้ใช้' : '➕ เพิ่มผู้ใช้' }}</h2>
+          <div class="space-y-4 flex-1 overflow-y-auto px-6 md:px-8">
             <div>
               <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">ชื่อ-สกุล</label>
               <input v-model="editUser.full_name" type="text" placeholder="นายสมชาย ใจดี"
@@ -357,7 +357,7 @@ function formatDate(iso) {
               </label>
             </div>
           </div>
-          <div class="flex gap-3 mt-6">
+          <div class="flex gap-3 px-6 md:px-8 pt-4 pb-6 md:pb-8 flex-shrink-0">
             <button @click="saveUser" :disabled="saving"
               class="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold py-3 rounded-xl transition-colors shadow-md">
               {{ saving ? 'กำลังบันทึก...' : '💾 บันทึก' }}
