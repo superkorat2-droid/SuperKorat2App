@@ -312,7 +312,14 @@ router.beforeEach(async (to, from, next) => {
   }
 
   // ถ้าล็อกอินแล้วพยายามเข้า /login ให้ redirect ตาม role
+  // ถ้ามี ?next= แนบมาด้วย (เช่นลิงก์ปุ่มหน้าแรกที่ชี้ /login?next=/dashboard/xxx)
+  // ต้องไปตาม next ก่อนเสมอ ไม่งั้นคนที่ล็อกอินค้างอยู่แล้วกดลิงก์จะโดนเด้งไป
+  // /dashboard เฉย ๆ แทนที่จะไปหน้าที่ตั้งใจ
   if (to.name === 'login' && session) {
+    if (to.query.next) {
+      next(String(to.query.next))
+      return
+    }
     const { data: profile } = await supabase
       .from('profiles').select('role').eq('id', session.user.id).single()
     if (profile?.role === 'school') {
