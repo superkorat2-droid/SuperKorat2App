@@ -13,6 +13,8 @@ const props = defineProps({
 const { internalPages } = useInternalPages()
 
 const LAYOUTS = [
+  { value: 'banner-wide', group: 'แบนเนอร์เน้นพิเศษ', label: 'แบนเนอร์เต็มความกว้าง 4:1', hint: 'ภาพเต็มความกว้างหน้าจอ เตี้ย + ข้อความซ้อนล่างเสมอ — สำหรับป้าย/ปุ่มเดียวที่ต้องการเน้น', ratio: 4/1, size: '1600×400 px (4:1)', caption: 'overlay-always', fullWidth: true },
+
   { value: 'card',      group: 'การ์ด/รายการ', label: 'การ์ดแนวนอน 2:1',        hint: 'ภาพเต็มการ์ด + ข้อความซ้อนล่าง เสมอ', ratio: 2/1, size: '1200×600 px (2:1)', caption: 'overlay-always' },
   { value: 'list',      group: 'การ์ด/รายการ', label: 'รายการแนวนอน',          hint: 'ภาพซ้าย + ข้อความขวา',              ratio: 1,   size: '400×400 px (1:1)',   caption: 'side' },
 
@@ -25,7 +27,7 @@ const LAYOUTS = [
   { value: 'rect-landscape-below',   group: 'สี่เหลี่ยมผืนผ้า', label: 'แนวนอน 4 คอลัมน์ + ข้อความ',  hint: 'ข้อความอยู่ใต้ภาพแบบการ์ด',  ratio: 4/3, size: '1200×900 px (4:3)', caption: 'below' },
   { value: 'rect-portrait',          group: 'สี่เหลี่ยมผืนผ้า', label: 'แนวตั้ง 4 คอลัมน์',          hint: 'ภาพล้วน ไม่มีข้อความ',       ratio: 3/4, size: '900×1200 px (3:4)', caption: 'none' },
 ]
-const LAYOUT_GROUPS = ['การ์ด/รายการ', 'ผืนผ้าเตี้ย 8:3', 'สี่เหลี่ยมผืนผ้า']
+const LAYOUT_GROUPS = ['แบนเนอร์เน้นพิเศษ', 'การ์ด/รายการ', 'ผืนผ้าเตี้ย 8:3', 'สี่เหลี่ยมผืนผ้า']
 const currentLayout = computed(() => LAYOUTS.find(l => l.value === props.gallery.layout) || LAYOUTS[0])
 
 function newItem() {
@@ -104,6 +106,10 @@ async function onCropped({ blob }) {
                 <div class="w-3 h-full rounded bg-slate-300 flex-shrink-0"></div>
                 <div class="flex-1 h-1 bg-slate-200 rounded-sm"></div>
               </div>
+            </div>
+            <!-- แบนเนอร์เต็มความกว้าง: 1 ชิ้นเดียวเต็มแถว ไม่ใช่กริดหลายคอลัมน์เหมือนแบบอื่น -->
+            <div v-else-if="l.fullWidth" class="h-8 mb-1.5 relative rounded-sm bg-slate-200 overflow-hidden" :style="{ aspectRatio: l.ratio }">
+              <div class="absolute inset-x-0 bottom-0 h-1.5 bg-slate-400/60"></div>
             </div>
             <div v-else class="h-8 mb-1.5 flex items-end gap-0.5">
               <div v-for="n in 3" :key="n" class="flex-1 relative rounded-sm bg-slate-200 overflow-hidden" :style="{ aspectRatio: l.ratio }">

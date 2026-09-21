@@ -7,17 +7,23 @@ const props = defineProps({
 
 // ── โครงสร้างต่อ layout: ทุกแบบใช้ 1 ใน 5 pattern (full/card/plain/caption/list) ──
 // ต่างกันแค่จำนวนคอลัมน์ (desktop) กับสัดส่วนภาพ — กันโค้ดซ้ำ
+//
+// flex-wrap + width ต่อชิ้น (ไม่ใช่ CSS grid) ตาม pattern เดียวกับ useYoutubeGrid.js/COL_WIDTH_CLASS
+// เพราะ grid-cols ปกติแถวสุดท้ายที่เหลือไม่ครบคอลัมน์จะชิดซ้าย ไม่จัดกึ่งกลางให้ — flex-wrap
+// + justify-center บนคอนเทนเนอร์ทำให้แถวสุดท้ายที่เหลือ 1-2 ชิ้นอยู่กึ่งกลางแทน
+// ต้องเขียน width เป็น class เต็มคำเสมอ (ไม่ต่อ string) ไม่งั้น Tailwind JIT purge ทิ้ง
 const LAYOUT_META = {
-  'card':                    { pattern: 'full',    cols: 'grid-cols-1 sm:grid-cols-2 md:grid-cols-4', aspect: 'aspect-[2/1]' },
-  'rect-landscape-below':    { pattern: 'card',    cols: 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4', aspect: 'aspect-[4/3]' },
+  'card':                    { pattern: 'full',    gap: 'gap-5', cols: 'w-full sm:w-[calc(50%-10px)] md:w-[calc(25%-15px)]',                aspect: 'aspect-[2/1]' },
+  'banner-wide':             { pattern: 'full',    gap: 'gap-5', cols: 'w-full',                                                              aspect: 'aspect-[4/1]' },
+  'rect-landscape-below':    { pattern: 'card',    gap: 'gap-5', cols: 'w-[calc(50%-10px)] sm:w-[calc(33.333%-13.33px)] md:w-[calc(25%-15px)]', aspect: 'aspect-[4/3]' },
 
-  'rect-half-3':             { pattern: 'plain',   cols: 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3', aspect: 'aspect-[8/3]' },
-  'rect-half-4':             { pattern: 'plain',   cols: 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4', aspect: 'aspect-[8/3]' },
-  'rect-landscape':          { pattern: 'plain',   cols: 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3', aspect: 'aspect-[4/3]' },
-  'rect-portrait':           { pattern: 'plain',   cols: 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4', aspect: 'aspect-[3/4]' },
+  'rect-half-3':             { pattern: 'plain',   gap: 'gap-3', cols: 'w-full sm:w-[calc(50%-6px)] md:w-[calc(33.333%-8px)]',                aspect: 'aspect-[8/3]' },
+  'rect-half-4':             { pattern: 'plain',   gap: 'gap-3', cols: 'w-[calc(50%-6px)] sm:w-[calc(33.333%-8px)] md:w-[calc(25%-9px)]',      aspect: 'aspect-[8/3]' },
+  'rect-landscape':          { pattern: 'plain',   gap: 'gap-3', cols: 'w-full sm:w-[calc(50%-6px)] md:w-[calc(33.333%-8px)]',                aspect: 'aspect-[4/3]' },
+  'rect-portrait':           { pattern: 'plain',   gap: 'gap-3', cols: 'w-[calc(50%-6px)] sm:w-[calc(33.333%-8px)] md:w-[calc(25%-9px)]',      aspect: 'aspect-[3/4]' },
 
-  'rect-half-caption':       { pattern: 'caption', cols: 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3', aspect: 'aspect-[8/3]' },
-  'rect-landscape-caption':  { pattern: 'caption', cols: 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3', aspect: 'aspect-[4/3]' },
+  'rect-half-caption':       { pattern: 'caption', gap: 'gap-3', cols: 'w-full sm:w-[calc(50%-6px)] md:w-[calc(33.333%-8px)]',                aspect: 'aspect-[8/3]' },
+  'rect-landscape-caption':  { pattern: 'caption', gap: 'gap-3', cols: 'w-full sm:w-[calc(50%-6px)] md:w-[calc(33.333%-8px)]',                aspect: 'aspect-[4/3]' },
 
   'list':                    { pattern: 'list' },
 }
@@ -45,10 +51,10 @@ function linkAttrs(item) {
     <h3 v-if="title" class="text-xl font-extrabold text-slate-800 mb-4">{{ title }}</h3>
 
     <!-- Pattern: full (ภาพเต็มการ์ด + ข้อความซ้อนทับด้านล่างเสมอ ไม่มี zoom hover) -->
-    <div v-if="meta(layout).pattern === 'full'" class="grid gap-5" :class="meta(layout).cols">
+    <div v-if="meta(layout).pattern === 'full'" :class="['flex flex-wrap justify-center', meta(layout).gap]">
       <component :is="itemTag(item)" v-for="item in items" :key="item.id"
         v-bind="linkAttrs(item)"
-        :class="['group relative block glass-card glass-card-hover overflow-hidden', meta(layout).aspect]">
+        :class="['group relative block glass-card glass-card-hover overflow-hidden', meta(layout).aspect, meta(layout).cols]">
         <img v-if="item.image_url" :src="item.image_url" :alt="item.title" class="w-full h-full object-cover"/>
         <div v-if="item.title || item.caption" class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent p-3 pt-6">
           <p v-if="item.title" class="text-white text-sm font-bold leading-snug break-words">{{ item.title }}</p>
@@ -58,10 +64,10 @@ function linkAttrs(item) {
     </div>
 
     <!-- Pattern: card (ภาพ + หัวข้อใต้ภาพ เสมอ) -->
-    <div v-else-if="meta(layout).pattern === 'card'" class="grid gap-5" :class="meta(layout).cols">
+    <div v-else-if="meta(layout).pattern === 'card'" :class="['flex flex-wrap justify-center', meta(layout).gap]">
       <component :is="itemTag(item)" v-for="item in items" :key="item.id"
         v-bind="linkAttrs(item)"
-        class="group block glass-card glass-card-hover overflow-hidden">
+        :class="['group block glass-card glass-card-hover overflow-hidden', meta(layout).cols]">
         <div :class="['bg-slate-100/60 overflow-hidden', meta(layout).aspect]">
           <img v-if="item.image_url" :src="item.image_url" :alt="item.title"
             class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"/>
@@ -74,20 +80,20 @@ function linkAttrs(item) {
     </div>
 
     <!-- Pattern: plain (ภาพล้วน ไม่มีข้อความเลย) -->
-    <div v-else-if="meta(layout).pattern === 'plain'" class="grid gap-3" :class="meta(layout).cols">
+    <div v-else-if="meta(layout).pattern === 'plain'" :class="['flex flex-wrap justify-center', meta(layout).gap]">
       <component :is="itemTag(item)" v-for="item in items" :key="item.id"
         v-bind="linkAttrs(item)"
-        :class="['group relative block glass-card glass-card-hover overflow-hidden', meta(layout).aspect]">
+        :class="['group relative block glass-card glass-card-hover overflow-hidden', meta(layout).aspect, meta(layout).cols]">
         <img v-if="item.image_url" :src="item.image_url" :alt="item.title"
           class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"/>
       </component>
     </div>
 
     <!-- Pattern: caption (ภาพ + ข้อความซ้อนทับ แสดงตอน hover) -->
-    <div v-else-if="meta(layout).pattern === 'caption'" class="grid gap-3" :class="meta(layout).cols">
+    <div v-else-if="meta(layout).pattern === 'caption'" :class="['flex flex-wrap justify-center', meta(layout).gap]">
       <component :is="itemTag(item)" v-for="item in items" :key="item.id"
         v-bind="linkAttrs(item)"
-        :class="['group relative block glass-card glass-card-hover overflow-hidden', meta(layout).aspect]">
+        :class="['group relative block glass-card glass-card-hover overflow-hidden', meta(layout).aspect, meta(layout).cols]">
         <img v-if="item.image_url" :src="item.image_url" :alt="item.title"
           class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"/>
         <div v-if="item.title" class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-3 opacity-0 group-hover:opacity-100 transition-opacity">
