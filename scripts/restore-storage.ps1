@@ -39,7 +39,17 @@ try {
   foreach ($f in $files) {
     $key = $f.FullName.Substring($StorageRoot.Length + 1) -replace '\\', '/'
     $src = Resolve-Path -Relative $f.FullName
-    $out = supabase storage cp $src "ss:///$key" $target --experimental 2>&1
+    # native stderr (even benign CLI notices, or an expected per-file failure we want to
+    # record and move past) becomes a terminating error under $ErrorActionPreference="Stop"
+    # set at the top of this script — relax it just for this call so one bad/slow file
+    # doesn't abort the whole batch; real script bugs elsewhere still fail loudly.
+    $out = $null
+    try {
+      $ErrorActionPreference = "Continue"
+      $out = supabase storage cp $src "ss:///$key" $target --experimental 2>&1
+    } finally {
+      $ErrorActionPreference = "Stop"
+    }
     if ($LASTEXITCODE -eq 0 -and $out -notmatch "Error|failed") {
       $ok++
     } else {
