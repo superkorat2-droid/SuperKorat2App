@@ -44,7 +44,7 @@ function onOpen() {
         {{ item.title }}
       </h3>
       <div class="flex items-center gap-2 text-[11px] text-slate-400">
-        <span class="truncate">{{ item.responsible_name || '' }}</span>
+        <span class="truncate">{{ item.responsible_names || '' }}</span>
         <span v-if="item.cert_date" class="flex-shrink-0">{{ fmtDate(item.cert_date) }}</span>
         <span class="ml-auto flex-shrink-0">👁 {{ item.open_count || 0 }}</span>
       </div>

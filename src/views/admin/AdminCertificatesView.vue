@@ -17,7 +17,7 @@ import { useAreaConfig } from '../../composables/useAreaConfig'
 import { useExternalUpload, externalUploadEnabled } from '../../composables/useExternalUpload'
 import { useUploadGc } from '../../composables/useUploadGc'
 import { useGroupOptions, usePublisherOptions, personDisplayName } from '../../composables/useLibraryOptions'
-import { certCoverSrc, fmtDate } from '../../composables/useCertificates'
+import { certCoverSrc, fmtDate, responsibleNames } from '../../composables/useCertificates'
 import ImageCropperModal from '../../components/ImageCropperModal.vue'
 
 const { config, fetchConfig } = useAreaConfig()
@@ -37,7 +37,7 @@ const filterGroup = ref('all')
 
 const showModal = ref(false)
 const emptyForm = () => ({
-  id: null, title: '', group_key: '', responsible_id: '',
+  id: null, title: '', group_key: '', responsible_ids: [],
   cert_date: '', link_url: '',
   cover_source: 'upload', cover_url: '', cover_drive_id: '',
   is_published: true,
@@ -79,9 +79,11 @@ const filtered = computed(() => {
   return list
 })
 
-function publisherName(id) {
-  const p = publisherById.value[id]
-  return p ? personDisplayName(p) : ''
+function toggleResponsible(id) {
+  const list = form.value.responsible_ids
+  const i = list.indexOf(id)
+  if (i === -1) list.push(id)
+  else list.splice(i, 1)
 }
 
 // ── ปก: อัปโหลด+ครอบ ─────────────────────────────────────────────────
@@ -129,7 +131,7 @@ function openAdd() {
   driveCoverInput.value = ''
   const me = publisherById.value[myId.value]
   if (me) {
-    form.value.responsible_id = myId.value
+    form.value.responsible_ids = [myId.value]
     form.value.group_key = keyFromLabel(me.department) || ''
   }
   showModal.value = true
@@ -139,7 +141,7 @@ function openEdit(it) {
   form.value = {
     ...emptyForm(), ...it,
     group_key: it.group_key || '',
-    responsible_id: it.responsible_id || '',
+    responsible_ids: [...(it.responsible_ids || [])],
     cert_date: it.cert_date || '',
     link_url: it.link_url || '',
     cover_source: it.cover_source || 'upload',
@@ -165,7 +167,7 @@ async function save() {
   const payload = {
     title: form.value.title.trim(),
     group_key: form.value.group_key || null,
-    responsible_id: form.value.responsible_id || null,
+    responsible_ids: form.value.responsible_ids,
     cert_date: form.value.cert_date || null,
     link_url: form.value.link_url.trim(),
     cover_source: form.value.cover_source,
@@ -269,7 +271,7 @@ async function togglePublish(it) {
                 class="font-bold text-slate-700 hover:text-primary line-clamp-2">{{ it.title }} ↗</a>
             </td>
             <td class="px-4 py-2.5 text-xs text-slate-500">{{ groupLabel(it.group_key) || '—' }}</td>
-            <td class="px-4 py-2.5 text-xs text-slate-500">{{ publisherName(it.responsible_id) || '—' }}</td>
+            <td class="px-4 py-2.5 text-xs text-slate-500">{{ responsibleNames(it.responsible_ids, publisherById, personDisplayName) || '—' }}</td>
             <td class="px-4 py-2.5 text-xs text-slate-500">{{ fmtDate(it.cert_date) || '—' }}</td>
             <td class="px-4 py-2.5 text-xs text-slate-500">{{ it.open_count || 0 }}</td>
             <td class="px-4 py-2.5">
@@ -318,7 +320,7 @@ async function togglePublish(it) {
                   class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm font-mono bg-white focus:outline-none focus:border-primary"/>
               </div>
 
-              <div class="grid sm:grid-cols-3 gap-3">
+              <div class="grid sm:grid-cols-2 gap-3">
                 <div>
                   <label class="text-[11px] font-bold text-slate-500">กลุ่มงาน</label>
                   <select v-model="form.group_key" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:border-primary">
@@ -327,16 +329,22 @@ async function togglePublish(it) {
                   </select>
                 </div>
                 <div>
-                  <label class="text-[11px] font-bold text-slate-500">ผู้รับผิดชอบ</label>
-                  <select v-model="form.responsible_id" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:border-primary">
-                    <option value="">— ไม่ระบุ —</option>
-                    <option v-for="p in publishers" :key="p.id" :value="p.id">{{ p.display }}</option>
-                  </select>
-                </div>
-                <div>
                   <label class="text-[11px] font-bold text-slate-500">วันที่</label>
                   <input v-model="form.cert_date" type="date"
                     class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:border-primary"/>
+                </div>
+              </div>
+
+              <div>
+                <label class="text-[11px] font-bold text-slate-500">ผู้รับผิดชอบ (เลือกได้มากกว่า 1 คน)</label>
+                <div class="max-h-36 overflow-y-auto rounded-xl border border-slate-200 bg-white divide-y divide-slate-50">
+                  <label v-for="p in publishers" :key="p.id"
+                    class="flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 cursor-pointer select-none">
+                    <input type="checkbox" :checked="form.responsible_ids.includes(p.id)" @change="toggleResponsible(p.id)"
+                      class="w-4 h-4 rounded accent-[var(--color-primary)]"/>
+                    {{ p.display }}
+                  </label>
+                  <span v-if="!publishers.length" class="block px-3 py-2 text-xs text-slate-400">ไม่มีสมาชิกให้เลือก</span>
                 </div>
               </div>
 

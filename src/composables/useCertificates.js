@@ -3,9 +3,20 @@ import { driveThumb } from './useGoogleDrive'
 /**
  * useCertificates — ตัวช่วยเล็กๆ ของคลังเกียรติบัตร
  *
- * ตัวเลือก "กลุ่มงาน" (useGroupOptions) และ "ผู้รับผิดชอบ" (usePublisherOptions)
- * ใช้ของ useLibraryOptions.js ตรงๆ ไม่สร้างซ้ำ — โครงสร้างข้อมูลเหมือนกันเป๊ะ
+ * ตัวเลือก "กลุ่มงาน" (useGroupOptions) และรายชื่อผู้ที่เลือกเป็น "ผู้รับผิดชอบ" ได้
+ * (usePublisherOptions) ใช้ของ useLibraryOptions.js ตรงๆ ไม่สร้างซ้ำ
+ *
+ * ผู้รับผิดชอบเก็บเป็น responsible_ids uuid[] (เลือกได้หลายคน — งานบางชิ้นทำร่วมกัน)
+ * หน้าสาธารณะอ่านชื่อที่รวมมาแล้วจาก view certificates_public.responsible_names ตรงๆ
  */
+
+/** รวมชื่อผู้รับผิดชอบหลายคน (จาก usePublisherOptions().publisherById) ให้เป็นข้อความเดียว — ใช้ฝั่งแอดมิน */
+export function responsibleNames(ids, publisherById, personDisplayName) {
+  return (ids || [])
+    .map(id => publisherById[id] ? personDisplayName(publisherById[id]) : '')
+    .filter(Boolean)
+    .join(', ')
+}
 
 /** ภาพปกที่จะใช้แสดงบนการ์ด ตาม cover_source ของแถว */
 export function certCoverSrc(item, size = 480) {

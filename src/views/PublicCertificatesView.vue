@@ -50,7 +50,7 @@ const filtered = computed(() => {
   if (q) {
     list = list.filter(i =>
       (i.title || '').toLowerCase().includes(q) ||
-      (i.responsible_name || '').toLowerCase().includes(q))
+      (i.responsible_names || '').toLowerCase().includes(q))
   }
   return list
 })
