@@ -72,6 +72,45 @@ const filteredUploads = computed(() => {
   return list
 })
 
+// ── ขอบเขตชั้นที่กำลังดู (null = ทุกชั้น) ────────────────────────────────────
+// ปุ่มช่วงชั้น/สิทธิ์สอบ ไม่ได้แค่ "เลือกโรงเรียนที่มีชั้นนี้" แต่ต้องนับตัวเลข
+// เฉพาะชั้นนั้นด้วย — ไม่ใช่โชว์ยอดรวมทั้งโรงเรียนที่บังเอิญมีชั้นนี้ปนอยู่
+const activeGradeScope = computed(() => {
+  if (filterExam.value !== null) {
+    const exam = EXAM_ELIGIBILITY.find(e => e.key === filterExam.value)
+    return exam ? [exam.grade] : null
+  }
+  if (filterKeyStage.value !== null) {
+    const stage = KEY_STAGES.find(s => s.key === filterKeyStage.value)
+    return stage ? stage.grades : null
+  }
+  return null
+})
+
+// ยอดของโรงเรียนหนึ่ง — ถ้ามีขอบเขตชั้นอยู่ นับเฉพาะชั้นในขอบเขตจาก by_grade
+// ถ้าไม่มีขอบเขต ใช้ total/gender ที่คำนวณไว้แล้วตามเดิม (ตรงกับพฤติกรรมเดิมทุกจุด)
+function scopedTotals(u) {
+  if (!activeGradeScope.value) {
+    return { total: u.total || 0, male: u.summary?.gender?.male || 0, female: u.summary?.gender?.female || 0 }
+  }
+  const byGrade = u.summary?.by_grade || {}
+  let total = 0, male = 0, female = 0
+  activeGradeScope.value.forEach(g => {
+    const d = byGrade[g]
+    if (d) { total += d.total || 0; male += d.male || 0; female += d.female || 0 }
+  })
+  return { total, male, female }
+}
+
+// by_grade ของโรงเรียนหนึ่ง ตัดให้เหลือเฉพาะชั้นในขอบเขตที่เลือกไว้ (ถ้ามี)
+function scopedByGrade(u) {
+  const byGrade = u.summary?.by_grade || {}
+  if (!activeGradeScope.value) return byGrade
+  const result = {}
+  activeGradeScope.value.forEach(g => { if (byGrade[g]) result[g] = byGrade[g] })
+  return result
+}
+
 // ── Admin upload on behalf ─────────────────────────────────────────────────
 const uploadModal   = ref({ open: false, school: null })
 const adminFile     = ref(null)
@@ -268,13 +307,16 @@ async function load() {
 onMounted(load)
 
 // ── Aggregate computeds (คิดจากข้อมูลที่กรองแล้ว) ───────────────────────────
-const totalStudents = computed(() => filteredUploads.value.reduce((s, u) => s + u.total, 0))
+// ถ้ามีตัวกรองช่วงชั้น/สิทธิ์สอบอยู่ ต้องนับเฉพาะชั้นในขอบเขตนั้น (scopedTotals)
+// ไม่ใช่ยอดรวมทั้งโรงเรียนที่บังเอิญมีชั้นนั้นปนอยู่ — ไม่งั้นตัวเลขแทบไม่ขยับตอนกรอง
+const totalStudents = computed(() => filteredUploads.value.reduce((s, u) => s + scopedTotals(u).total, 0))
 
 const genderAgg = computed(() => {
   let male = 0, female = 0
   filteredUploads.value.forEach(u => {
-    male   += u.summary?.gender?.male   || 0
-    female += u.summary?.gender?.female || 0
+    const t = scopedTotals(u)
+    male   += t.male
+    female += t.female
   })
   return { male, female }
 })
@@ -282,7 +324,7 @@ const genderAgg = computed(() => {
 const gradeAgg = computed(() => {
   const map = {}
   filteredUploads.value.forEach(u => {
-    const bg = u.summary?.by_grade || {}
+    const bg = scopedByGrade(u)
     Object.entries(bg).forEach(([g, d]) => {
       if (!map[g]) map[g] = { total: 0, male: 0, female: 0 }
       map[g].total  += d.total  || 0
@@ -307,10 +349,14 @@ const bmiAgg = computed(() => {
   return { underweight: u, normal: n, overweight: o, obese: ob, total }
 })
 
+// BMI/ความด้อยโอกาส เป็นยอดทั้งโรงเสมอ (ไม่มีข้อมูลแยกรายชั้น) จึงไม่ scope ตามช่วงชั้น/สิทธิ์สอบ
+// และต้องหารด้วยยอดทั้งโรงเช่นกัน ไม่ใช่ totalStudents ที่อาจถูก scope แล้ว ไม่งั้น % จะเพี้ยน
+const wholeSchoolTotal = computed(() => filteredUploads.value.reduce((s, u) => s + (u.total || 0), 0))
+
 const disadvantagedAgg = computed(() => {
   let count = 0
   filteredUploads.value.forEach(u => { count += u.summary?.disadvantaged?.count || 0 })
-  return { count, pct: totalStudents.value > 0 ? ((count/totalStudents.value)*100).toFixed(1) : '0' }
+  return { count, pct: wholeSchoolTotal.value > 0 ? ((count/wholeSchoolTotal.value)*100).toFixed(1) : '0' }
 })
 
 const guardianAgg = computed(() => {
@@ -336,7 +382,7 @@ const clusterAgg = computed(() => {
   const map = {}
   filteredUploads.value.forEach(u => {
     const key = schoolOf(u)?.school_group || 'ไม่ระบุศูนย์'
-    map[key] = (map[key] || 0) + u.total
+    map[key] = (map[key] || 0) + scopedTotals(u).total
   })
   return Object.entries(map)
     .sort((a, b) => b[1] - a[1])
@@ -344,10 +390,11 @@ const clusterAgg = computed(() => {
 })
 
 // นับจากรายชั้นจริง (by_grade) ไม่ใช่ประเภทโรงเรียน — กันยอดอนุบาลไปหลบใต้ "ประถมศึกษา"
+// (ใช้ scopedByGrade เพื่อให้เคารพตัวกรองช่วงชั้น/สิทธิ์สอบด้วย)
 const levelAgg = computed(() => {
   const map = {}
   filteredUploads.value.forEach(u => {
-    Object.entries(u.summary?.by_grade || {}).forEach(([g, d]) => {
+    Object.entries(scopedByGrade(u)).forEach(([g, d]) => {
       const grp = gradeLevelGroup(g)
       map[grp] = (map[grp] || 0) + (d.total || 0)
     })
@@ -564,6 +611,11 @@ async function exportCSV() {
             {{ e.label }}
           </button>
         </div>
+
+        <p v-if="activeGradeScope" class="text-xs text-amber-600 bg-amber-50 rounded-lg px-3 py-2">
+          ⚠️ กำลังกรองเฉพาะ {{ activeGradeScope.join(', ') }} — ตัวเลข "นักเรียนทั้งหมด/ชาย/หญิง" ด้านล่างนับเฉพาะชั้นนี้แล้ว
+          แต่ข้อมูล BMI/ความด้อยโอกาส/ครอบครัว (แท็บ "สุขภาพ/BMI" และ "ครอบครัว") ยังเป็นยอดทั้งโรงเรียน เพราะไฟล์ต้นทางไม่มีข้อมูลแยกรายชั้น
+        </p>
       </div>
 
       <!-- ── Overview ── -->
@@ -607,7 +659,7 @@ async function exportCSV() {
               <p :class="['text-5xl font-extrabold', Number(disadvantagedAgg.pct) > 50 ? 'text-red-600' : 'text-amber-600']">
                 {{ disadvantagedAgg.pct }}%
               </p>
-              <p class="text-slate-600 mt-2">{{ disadvantagedAgg.count.toLocaleString() }} คน จาก {{ totalStudents.toLocaleString() }} คน</p>
+              <p class="text-slate-600 mt-2">{{ disadvantagedAgg.count.toLocaleString() }} คน จาก {{ wholeSchoolTotal.toLocaleString() }} คน (ทั้งโรงเรียน)</p>
               <p v-if="Number(disadvantagedAgg.pct) > 50" class="text-red-500 text-xs mt-2 font-bold">⚠️ สูงกว่าค่าเฉลี่ยทั่วไป</p>
             </div>
           </div>

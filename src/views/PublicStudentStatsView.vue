@@ -103,21 +103,59 @@ function resetFilter() {
 }
 function onDistrictChange() { filterSchool.value = 'all' }
 
+// ── ขอบเขตชั้นที่กำลังดู (null = ทุกชั้น) — ปุ่มช่วงชั้น/สิทธิ์สอบ ไม่ได้แค่
+// เลือกโรงเรียนที่มีชั้นนี้ แต่ต้องนับตัวเลขเฉพาะชั้นนั้นด้วย ไม่ใช่ยอดรวมทั้งโรงเรียน
+const activeGradeScope = computed(() => {
+  if (filterExam.value !== null) {
+    const exam = EXAM_ELIGIBILITY.find(e => e.key === filterExam.value)
+    return exam ? [exam.grade] : null
+  }
+  if (filterKeyStage.value !== null) {
+    const stage = KEY_STAGES.find(s => s.key === filterKeyStage.value)
+    return stage ? stage.grades : null
+  }
+  return null
+})
+
+function scopedTotals(u) {
+  if (!activeGradeScope.value) {
+    return { total: u.total || 0, male: u.summary?.gender?.male || 0, female: u.summary?.gender?.female || 0 }
+  }
+  const byGrade = u.summary?.by_grade || {}
+  let total = 0, male = 0, female = 0
+  activeGradeScope.value.forEach(g => {
+    const d = byGrade[g]
+    if (d) { total += d.total || 0; male += d.male || 0; female += d.female || 0 }
+  })
+  return { total, male, female }
+}
+
+function scopedByGrade(u) {
+  const byGrade = u.summary?.by_grade || {}
+  if (!activeGradeScope.value) return byGrade
+  const result = {}
+  activeGradeScope.value.forEach(g => { if (byGrade[g]) result[g] = byGrade[g] })
+  return result
+}
+
 // ── ยอดแยกตามศูนย์เครือข่าย ──────────────────────────────────────────────
 const clusterAgg = computed(() => {
   const map = {}
   filteredUploads.value.forEach(u => {
     const key = u.school_group || 'ไม่ระบุศูนย์'
-    map[key] = (map[key] || 0) + (u.total || 0)
+    map[key] = (map[key] || 0) + scopedTotals(u).total
   })
   return Object.entries(map).sort((a,b) => b[1]-a[1]).map(([label, value]) => ({ label, value, bar: 'bg-primary' }))
 })
 
-const totalStudents = computed(() => filteredUploads.value.reduce((s, u) => s + u.total, 0))
-const genderMale    = computed(() => filteredUploads.value.reduce((s, u) => s + (u.summary?.gender?.male || 0), 0))
-const genderFemale  = computed(() => filteredUploads.value.reduce((s, u) => s + (u.summary?.gender?.female || 0), 0))
+const totalStudents = computed(() => filteredUploads.value.reduce((s, u) => s + scopedTotals(u).total, 0))
+const genderMale    = computed(() => filteredUploads.value.reduce((s, u) => s + scopedTotals(u).male, 0))
+const genderFemale  = computed(() => filteredUploads.value.reduce((s, u) => s + scopedTotals(u).female, 0))
 const disadvCount   = computed(() => filteredUploads.value.reduce((s, u) => s + (u.summary?.disadvantaged?.count || 0), 0))
-const disadvPct     = computed(() => totalStudents.value > 0 ? ((disadvCount.value / totalStudents.value) * 100).toFixed(1) : '0')
+// BMI/ความด้อยโอกาส เป็นยอดทั้งโรงเสมอ (ไม่มีข้อมูลแยกรายชั้น) — หารด้วยยอดทั้งโรง
+// ไม่ใช่ totalStudents ที่อาจถูกกรองเหลือแค่บางชั้นแล้ว ไม่งั้น % จะเพี้ยน
+const wholeSchoolTotal = computed(() => filteredUploads.value.reduce((s, u) => s + (u.total || 0), 0))
+const disadvPct     = computed(() => wholeSchoolTotal.value > 0 ? ((disadvCount.value / wholeSchoolTotal.value) * 100).toFixed(1) : '0')
 
 const bmiAgg = computed(() => {
   let u=0,n=0,o=0,ob=0
@@ -130,7 +168,7 @@ const bmiAgg = computed(() => {
 const gradeAgg = computed(() => {
   const map = {}
   filteredUploads.value.forEach(u => {
-    Object.entries(u.summary?.by_grade||{}).forEach(([g,d]) => {
+    Object.entries(scopedByGrade(u)).forEach(([g,d]) => {
       if (!map[g]) map[g] = { total:0, male:0, female:0 }
       map[g].total+=d.total||0; map[g].male+=d.male||0; map[g].female+=d.female||0
     })
@@ -175,12 +213,17 @@ const guardianOpts = computed(() => ({
 }))
 
 const schoolTableData = computed(() =>
-  filteredUploads.value.map(u => ({
-    id: u.school_id, name: u.school_name, total: u.total,
-    male: u.summary?.gender?.male||0, female: u.summary?.gender?.female||0,
-    disadv: u.summary?.disadvantaged?.count||0, disadvPct: u.summary?.disadvantaged?.pct||'0',
-    bmiNormal: u.summary?.bmi?.normal||0,
-  })).sort((a,b)=>b.total-a.total)
+  filteredUploads.value.map(u => {
+    const t = scopedTotals(u)
+    return {
+      id: u.school_id, name: u.school_name, total: t.total, male: t.male, female: t.female,
+      // BMI/ความด้อยโอกาส เป็นยอดทั้งโรงเสมอ ไม่ได้ scope ตามช่วงชั้น/สิทธิ์สอบ — เก็บ wholeTotal
+      // ไว้แยกต่างหาก เพื่อใช้เป็นตัวหารของ BMI% ในตาราง ไม่ใช่ total ที่อาจถูกกรองแล้ว
+      wholeTotal: u.total || 0,
+      disadv: u.summary?.disadvantaged?.count||0, disadvPct: u.summary?.disadvantaged?.pct||'0',
+      bmiNormal: u.summary?.bmi?.normal||0,
+    }
+  }).sort((a,b)=>b.total-a.total)
 )
 
 function formatDate(d) {
@@ -202,7 +245,7 @@ function exportFilteredCSV() {
     if (vis.value.total)    row.push(s.total)
     if (vis.value.gender)   row.push(s.male, s.female)
     if (vis.value.disadvantaged) row.push(s.disadvPct)
-    if (vis.value.bmi)      row.push(s.total > 0 ? ((s.bmiNormal/s.total)*100).toFixed(1) : '0')
+    if (vis.value.bmi)      row.push(s.wholeTotal > 0 ? ((s.bmiNormal/s.wholeTotal)*100).toFixed(1) : '0')
     return row
   })
   const csv = [header, ...rows].map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n')
@@ -327,6 +370,11 @@ const trendSeries = computed(() => [{ name: 'นักเรียนรวม',
             {{ e.label }}
           </button>
         </div>
+
+        <p v-if="activeGradeScope" class="text-xs text-amber-600 bg-amber-50 rounded-lg px-3 py-2 mt-3">
+          ⚠️ กำลังกรองเฉพาะ {{ activeGradeScope.join(', ') }} — ตัวเลขนักเรียนทั้งหมด/ชาย/หญิงด้านล่างนับเฉพาะชั้นนี้แล้ว
+          ส่วนข้อมูล BMI/ความด้อยโอกาสยังเป็นยอดทั้งโรงเรียน เพราะไฟล์ต้นทางไม่มีข้อมูลแยกรายชั้น
+        </p>
       </div>
 
       <!-- Stats cards -->
@@ -407,7 +455,7 @@ const trendSeries = computed(() => [{ name: 'นักเรียนรวม',
                 <td v-if="vis.gender" class="px-4 py-3 text-right text-blue-600">{{ s.male.toLocaleString() }}</td>
                 <td v-if="vis.gender" class="px-4 py-3 text-right text-pink-500">{{ s.female.toLocaleString() }}</td>
                 <td v-if="vis.disadvantaged" class="px-4 py-3 text-right"><span :class="['font-bold',Number(s.disadvPct)>50?'text-red-500':'text-amber-600']">{{ s.disadvPct }}%</span></td>
-                <td v-if="vis.bmi" class="px-4 py-3 text-right text-emerald-600 font-bold">{{ s.total>0?((s.bmiNormal/s.total)*100).toFixed(1):0 }}%</td>
+                <td v-if="vis.bmi" class="px-4 py-3 text-right text-emerald-600 font-bold">{{ s.wholeTotal>0?((s.bmiNormal/s.wholeTotal)*100).toFixed(1):0 }}%</td>
               </tr>
             </tbody>
           </table>
