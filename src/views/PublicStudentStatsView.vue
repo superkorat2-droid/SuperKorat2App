@@ -430,7 +430,6 @@ const trendSeries = computed(() => [{ name: 'นักเรียนรวม',
 
         <p v-if="activeGradeScope" class="text-xs text-amber-600 bg-amber-50 rounded-lg px-3 py-2 mt-3">
           ⚠️ กำลังกรองเฉพาะ {{ activeGradeScope.join(', ') }} — ตัวเลขนักเรียนทั้งหมด/ชาย/หญิงด้านล่างนับเฉพาะชั้นนี้แล้ว
-          ส่วนข้อมูล BMI/ความด้อยโอกาสยังเป็นยอดทั้งโรงเรียน เพราะไฟล์ต้นทางไม่มีข้อมูลแยกรายชั้น
         </p>
       </div>
 

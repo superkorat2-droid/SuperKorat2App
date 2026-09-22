@@ -614,7 +614,6 @@ async function exportCSV() {
 
         <p v-if="activeGradeScope" class="text-xs text-amber-600 bg-amber-50 rounded-lg px-3 py-2">
           ⚠️ กำลังกรองเฉพาะ {{ activeGradeScope.join(', ') }} — ตัวเลข "นักเรียนทั้งหมด/ชาย/หญิง" ด้านล่างนับเฉพาะชั้นนี้แล้ว
-          แต่ข้อมูล BMI/ความด้อยโอกาส/ครอบครัว (แท็บ "สุขภาพ/BMI" และ "ครอบครัว") ยังเป็นยอดทั้งโรงเรียน เพราะไฟล์ต้นทางไม่มีข้อมูลแยกรายชั้น
         </p>
       </div>
 
