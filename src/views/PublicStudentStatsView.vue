@@ -194,6 +194,18 @@ const gradeOpts = computed(() => ({
   xaxis: { categories: Object.keys(gradeAgg.value), labels:{ style:{ fontFamily:'Sarabun', fontSize:'11px' } } },
   legend: { position:'top', fontFamily:'Sarabun' }, dataLabels:{enabled:false},
   tooltip: { y:{ formatter: v => v.toLocaleString()+' คน' } },
+  // ยอดรวมตัวเล็กๆ เหนือแท่งที่สูงกว่าของแต่ละระดับชั้น (ชาย+หญิง)
+  annotations: {
+    points: Object.entries(gradeAgg.value).map(([grade, d]) => ({
+      x: grade, y: Math.max(d.male||0, d.female||0),
+      marker: { size: 0 },
+      label: {
+        text: ((d.male||0) + (d.female||0)).toLocaleString(),
+        borderWidth: 0, offsetY: -6,
+        style: { fontSize: '10px', fontFamily: 'Sarabun', color: '#64748b', background: 'transparent' },
+      },
+    })),
+  },
 }))
 
 const bmiOpts = computed(() => ({

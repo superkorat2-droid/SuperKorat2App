@@ -425,6 +425,18 @@ const gradeChartOpts = computed(() => ({
   legend: { position: 'top', fontFamily: 'Sarabun', labels: { colors: '#64748b' } },
   dataLabels: { enabled: false },
   tooltip: { y: { formatter: v => v.toLocaleString() + ' คน' } },
+  // ยอดรวมตัวเล็กๆ เหนือแท่งที่สูงกว่าของแต่ละระดับชั้น (ชาย+หญิง)
+  annotations: {
+    points: Object.entries(gradeAgg.value).map(([grade, d]) => ({
+      x: grade, y: Math.max(d.male || 0, d.female || 0),
+      marker: { size: 0 },
+      label: {
+        text: ((d.male || 0) + (d.female || 0)).toLocaleString(),
+        borderWidth: 0, offsetY: -6,
+        style: { fontSize: '10px', fontFamily: 'Sarabun', color: '#64748b', background: 'transparent' },
+      },
+    })),
+  },
 }))
 
 const gradeChartSeries = computed(() => [
