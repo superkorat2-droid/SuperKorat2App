@@ -77,8 +77,9 @@ const schoolsInDistrict = computed(() => {
   return allUploads.value.filter(u => u.district === filterDistrict.value)
 })
 
-const filteredUploads = computed(() => {
-  let list = allUploads.value
+// ตัวกรองชุดเดียวกันนี้ใช้ทั้งกับยอดรอบปัจจุบัน (filteredUploads) และกราฟแนวโน้ม
+// ข้ามรอบด้านล่าง (ใช้ apply ซ้ำกับ uploads ของแต่ละรอบในอดีตได้เลย ไม่ต้องเขียนใหม่)
+function applyFilters(list) {
   if (filterDistrict.value !== 'all') list = list.filter(u => u.district === filterDistrict.value)
   if (filterCluster.value  !== 'all') list = list.filter(u => u.school_group === filterCluster.value)
   if (filterLevel.value    !== 'all') list = list.filter(u => u.level === filterLevel.value)
@@ -90,7 +91,9 @@ const filteredUploads = computed(() => {
     list = list.filter(u => u.school_name?.toLowerCase().includes(q))
   }
   return list
-})
+}
+
+const filteredUploads = computed(() => applyFilters(allUploads.value))
 
 const isFiltered = computed(() =>
   filterDistrict.value !== 'all' || filterCluster.value !== 'all' || filterLevel.value !== 'all' ||
@@ -287,8 +290,18 @@ function exportFilteredCSV() {
   URL.revokeObjectURL(a.href)
 }
 
-// ── กราฟแนวโน้มข้ามภาคเรียน (static) — เส้นโค้งนุ่มๆ พร้อมพื้นที่แรเงาใต้เส้น ──
-const trendLabels = computed(() => trend.value.map(t => t.title || `${t.academic_year}/${t.semester}`))
+// ── กราฟแนวโน้มข้ามภาคเรียน — แอกทีฟตามตัวกรองด้านบนด้วย ─────────────────────
+// เอาตัวกรองชุดเดียวกับยอดรอบปัจจุบัน (applyFilters + scopedTotals) ไป apply ซ้ำ
+// กับ uploads ของทุกรอบที่เผยแพร่ไว้ — ไม่ต้องเขียนตรรกะกรองใหม่เลย
+const trendPoints = computed(() => {
+  return trend.value
+    .filter(p => p.visibility?.total !== false) // เคารพสวิตช์ "แสดงผล" ของแต่ละรอบเอง
+    .map(p => {
+      const filtered = applyFilters(p.uploads || [])
+      const total = filtered.reduce((s, u) => s + scopedTotals(u).total, 0)
+      return { label: p.title || `${p.academic_year}/${p.semester}`, total, schools: filtered.length }
+    })
+})
 const trendOpts = computed(() => ({
   chart: { type: 'area', height: 280, toolbar: { show: false } },
   stroke: { curve: 'smooth', width: 3 },
@@ -296,12 +309,12 @@ const trendOpts = computed(() => ({
   fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.35, opacityTo: 0.03, stops: [0, 90, 100] } },
   colors: ['#2563eb'],
   grid: { borderColor: '#f1f5f9' },
-  xaxis: { categories: trendLabels.value, labels: { style: { fontFamily: 'Sarabun', fontSize: '11px' } } },
+  xaxis: { categories: trendPoints.value.map(p => p.label), labels: { style: { fontFamily: 'Sarabun', fontSize: '11px' } } },
   yaxis: { labels: { formatter: v => v.toLocaleString(), style: { fontFamily: 'Sarabun', fontSize: '11px' } } },
   dataLabels: { enabled: true, style: { fontSize: '11px', fontFamily: 'Sarabun' }, offsetY: -8, formatter: v => v.toLocaleString() },
   tooltip: { y: { formatter: v => (v || 0).toLocaleString() + ' คน' } },
 }))
-const trendSeries = computed(() => [{ name: 'นักเรียนรวม', data: trend.value.map(t => t.total) }])
+const trendSeries = computed(() => [{ name: 'นักเรียนรวม', data: trendPoints.value.map(p => p.total) }])
 </script>
 
 <template>
@@ -502,11 +515,13 @@ const trendSeries = computed(() => [{ name: 'นักเรียนรวม',
         </div>
       </div>
 
-      <!-- ── แนวโน้มข้ามภาคเรียน (ท้ายหน้า) — ข้อมูลนิ่ง ไม่ผูกกับตัวกรองด้านบน ── -->
-      <div v-if="!loadingTrend && trend.length >= 2" class="glass-tile p-5">
-        <h3 class="font-bold text-slate-700 text-center">แนวโน้มจำนวนนักเรียนย้อนหลัง</h3>
-        <p class="text-sm text-slate-400 text-center mb-4">ยอดรวมทั้งเขตในแต่ละภาคเรียนที่เผยแพร่ต่อสาธารณะ</p>
-        <apexchart type="area" :height="280" :options="trendOpts" :series="trendSeries"/>
+      <!-- ── แนวโน้มข้ามภาคเรียน (ท้ายหน้า) — แอกทีฟตามตัวกรองด้านบนแล้ว ── -->
+      <div v-if="!loadingTrend && trendPoints.length >= 2" class="glass-tile p-5">
+        <h3 class="font-bold text-slate-700 text-center">แนวโน้มจำนวนนักเรียน</h3>
+        <p class="text-sm text-slate-400 text-center mb-4">
+          {{ isFiltered ? 'ตามตัวกรองที่เลือกไว้ด้านบน' : 'ยอดรวมทั้งเขต' }} ในแต่ละภาคเรียนที่เผยแพร่ต่อสาธารณะ
+        </p>
+        <apexchart type="area" :height="280" :options="trendOpts" :series="trendSeries" :key="`trend-${trendPoints.map(p=>p.total).join('-')}`"/>
       </div>
 
       <p class="text-center text-sm text-slate-400 pb-6">ข้อมูลจากระบบ DMC · {{ config?.area_name }}<span v-if="isFiltered"> · <button @click="resetFilter" class="text-primary hover:underline">ล้างตัวกรอง</button></span></p>
