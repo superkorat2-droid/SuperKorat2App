@@ -212,6 +212,36 @@ const guardianOpts = computed(() => ({
   tooltip: { y:{ formatter: v => v.toLocaleString()+' คน' } },
 }))
 
+// ── การ์ดสถิติหลัก — ทำเป็น array แทนที่จะ hardcode ทีละใบ เพื่อให้ grid เต็มคอนเทนเนอร์
+// พอดีกับจำนวนใบที่โชว์จริง (บางรอบไม่เปิด BMI/ความด้อยโอกาส ก็ไม่เหลือช่องว่าง)
+const USER_ICON = 'M17.982 18.725A7.488 7.488 0 0012 15.75a7.488 7.488 0 00-5.982 2.975m11.963 0a9 9 0 10-11.963 0m11.963 0A8.966 8.966 0 0112 21a8.966 8.966 0 01-5.982-2.275M15 9.75a3 3 0 11-6 0 3 3 0 016 0z'
+const HEART_ICON = 'M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z'
+const USERS_ICON = 'M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z'
+
+const statCards = computed(() => {
+  const cards = []
+  if (vis.value.total || vis.value.gender) {
+    cards.push({ key: 'total', label: 'นักเรียนทั้งหมด', value: totalStudents.value.toLocaleString(),
+      icon: USERS_ICON, bg: 'style', border: 'var(--color-primary-ring)', chipBg: 'var(--color-primary-light)', chipBg2: 'var(--color-primary-ring)', text: 'text-primary', iconText: 'text-primary' })
+  }
+  if (vis.value.gender) {
+    cards.push({ key: 'male', label: 'ชาย', value: genderMale.value.toLocaleString(),
+      icon: USER_ICON, bg: 'class', cls: 'border-blue-100 bg-blue-50', chipCls: 'bg-blue-500/15', text: 'text-blue-600', iconText: 'text-blue-600' })
+    cards.push({ key: 'female', label: 'หญิง', value: genderFemale.value.toLocaleString(),
+      icon: USER_ICON, bg: 'class', cls: 'border-pink-100 bg-pink-50', chipCls: 'bg-pink-500/15', text: 'text-pink-500', iconText: 'text-pink-500' })
+  }
+  if (vis.value.disadvantaged) {
+    const high = Number(disadvPct.value) > 50
+    cards.push({ key: 'disadv', label: `เด็กยากจน ${disadvCount.value.toLocaleString()} คน`, value: disadvPct.value + '%',
+      icon: HEART_ICON, bg: 'class', cls: high ? 'border-red-200 bg-red-50' : 'border-amber-100 bg-amber-50',
+      chipCls: high ? 'bg-red-500/15' : 'bg-amber-500/15', text: high ? 'text-red-600' : 'text-amber-600', iconText: high ? 'text-red-600' : 'text-amber-600' })
+  }
+  return cards
+})
+// Tailwind ต้องเจอ class เต็มตัวอักษรถึงจะไม่ถูก purge ทิ้ง — เขียนไว้ตรงๆ ทีละจำนวนแทนการต่อ string
+const STAT_GRID_COLS = { 1: 'sm:grid-cols-1', 2: 'sm:grid-cols-2', 3: 'sm:grid-cols-3', 4: 'sm:grid-cols-4' }
+const statGridClass = computed(() => STAT_GRID_COLS[statCards.value.length] || 'sm:grid-cols-4')
+
 const schoolTableData = computed(() =>
   filteredUploads.value.map(u => {
     const t = scopedTotals(u)
@@ -257,14 +287,18 @@ function exportFilteredCSV() {
   URL.revokeObjectURL(a.href)
 }
 
-// ── กราฟแนวโน้มข้ามภาคเรียน (static) ─────────────────────────────────────────
+// ── กราฟแนวโน้มข้ามภาคเรียน (static) — เส้นโค้งนุ่มๆ พร้อมพื้นที่แรเงาใต้เส้น ──
 const trendLabels = computed(() => trend.value.map(t => t.title || `${t.academic_year}/${t.semester}`))
 const trendOpts = computed(() => ({
-  chart: { type: 'bar', height: 260, toolbar: { show: false } },
-  plotOptions: { bar: { borderRadius: 4, columnWidth: '50%' } },
+  chart: { type: 'area', height: 280, toolbar: { show: false } },
+  stroke: { curve: 'smooth', width: 3 },
+  markers: { size: 5, colors: ['#fff'], strokeColors: '#2563eb', strokeWidth: 2, hover: { size: 7 } },
+  fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.35, opacityTo: 0.03, stops: [0, 90, 100] } },
   colors: ['#2563eb'],
+  grid: { borderColor: '#f1f5f9' },
   xaxis: { categories: trendLabels.value, labels: { style: { fontFamily: 'Sarabun', fontSize: '11px' } } },
-  dataLabels: { enabled: true, style: { fontSize: '11px' }, formatter: v => v.toLocaleString() },
+  yaxis: { labels: { formatter: v => v.toLocaleString(), style: { fontFamily: 'Sarabun', fontSize: '11px' } } },
+  dataLabels: { enabled: true, style: { fontSize: '11px', fontFamily: 'Sarabun' }, offsetY: -8, formatter: v => v.toLocaleString() },
   tooltip: { y: { formatter: v => (v || 0).toLocaleString() + ' คน' } },
 }))
 const trendSeries = computed(() => [{ name: 'นักเรียนรวม', data: trend.value.map(t => t.total) }])
@@ -291,12 +325,22 @@ const trendSeries = computed(() => [{ name: 'นักเรียนรวม',
         <p class="text-sm text-slate-500">
           ปีการศึกษา {{ period.academic_year }} ภาคเรียนที่ {{ period.semester }} · เผยแพร่ {{ formatDate(period.archived_at) }}
         </p>
-        <div class="flex justify-center gap-4 flex-wrap">
-          <div class="glass-tile px-6 py-4 text-center min-w-[140px]">
-            <p class="text-3xl font-extrabold text-primary">{{ data.total_schools }}</p>
+        <div class="grid grid-cols-2 gap-4 max-w-md mx-auto">
+          <div class="rounded-2xl border border-indigo-100 bg-indigo-50 shadow-sm px-6 py-5 text-center">
+            <div class="w-12 h-12 mx-auto mb-3 rounded-2xl bg-indigo-500/15 flex items-center justify-center">
+              <svg class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3.75h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008z"/>
+              </svg>
+            </div>
+            <p class="text-3xl font-extrabold text-indigo-600">{{ data.total_schools }}</p>
             <p class="text-sm text-slate-500 mt-1">โรงเรียน</p>
           </div>
-          <div class="glass-tile px-6 py-4 text-center min-w-[140px]">
+          <div class="rounded-2xl border shadow-sm px-6 py-5 text-center" style="border-color: var(--color-primary-ring); background: var(--color-primary-light);">
+            <div class="w-12 h-12 mx-auto mb-3 rounded-2xl flex items-center justify-center" style="background: var(--color-primary-ring);">
+              <svg class="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/>
+              </svg>
+            </div>
             <p class="text-3xl font-extrabold text-primary">{{ allUploads.reduce((s,u)=>s+u.total,0).toLocaleString() }}</p>
             <p class="text-sm text-slate-500 mt-1">นักเรียนทั้งเขต</p>
           </div>
@@ -377,23 +421,19 @@ const trendSeries = computed(() => [{ name: 'นักเรียนรวม',
         </p>
       </div>
 
-      <!-- Stats cards -->
-      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div v-if="vis.total || vis.gender" class="glass-tile p-4 text-center">
-          <p class="text-3xl font-extrabold text-primary">{{ totalStudents.toLocaleString() }}</p>
-          <p class="text-xs text-slate-500 mt-1">นักเรียนทั้งหมด</p>
-        </div>
-        <div v-if="vis.gender" class="bg-blue-50 rounded-2xl border border-blue-100 shadow-sm p-4 text-center">
-          <p class="text-3xl font-extrabold text-blue-600">{{ genderMale.toLocaleString() }}</p>
-          <p class="text-xs text-slate-500 mt-1">ชาย</p>
-        </div>
-        <div v-if="vis.gender" class="bg-pink-50 rounded-2xl border border-pink-100 shadow-sm p-4 text-center">
-          <p class="text-3xl font-extrabold text-pink-500">{{ genderFemale.toLocaleString() }}</p>
-          <p class="text-xs text-slate-500 mt-1">หญิง</p>
-        </div>
-        <div v-if="vis.disadvantaged" :class="['rounded-2xl border shadow-sm p-4 text-center', Number(disadvPct)>50?'bg-red-50 border-red-200':'bg-amber-50 border-amber-100']">
-          <p :class="['text-3xl font-extrabold', Number(disadvPct)>50?'text-red-600':'text-amber-600']">{{ disadvPct }}%</p>
-          <p class="text-xs text-slate-500 mt-1">เด็กยากจน {{ disadvCount.toLocaleString() }} คน</p>
+      <!-- Stats cards — จำนวนใบไม่ตายตัว ขึ้นกับหมวดที่เปิดไว้ จึงเติมเต็มความกว้างเสมอ -->
+      <div :class="['grid grid-cols-1 gap-4', statGridClass]">
+        <div v-for="card in statCards" :key="card.key"
+          :class="['rounded-2xl border shadow-sm p-5 text-center', card.bg === 'class' ? card.cls : '']"
+          :style="card.bg === 'style' ? `border-color:${card.border}; background:${card.chipBg}` : ''">
+          <div :class="['w-12 h-12 mx-auto mb-3 rounded-2xl flex items-center justify-center', card.bg === 'class' ? card.chipCls : '']"
+            :style="card.bg === 'style' ? `background:${card.chipBg2}` : ''">
+            <svg :class="['w-6 h-6', card.iconText]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" :d="card.icon"/>
+            </svg>
+          </div>
+          <p :class="['text-3xl font-extrabold', card.text]">{{ card.value }}</p>
+          <p class="text-sm text-slate-500 mt-1">{{ card.label }}</p>
         </div>
       </div>
 
@@ -431,8 +471,8 @@ const trendSeries = computed(() => [{ name: 'นักเรียนรวม',
 
       <!-- School table -->
       <div class="glass-tile overflow-hidden">
-        <div class="px-5 py-4 border-b border-slate-50">
-          <h3 class="font-bold text-slate-700">ข้อมูลรายโรงเรียน ({{ filteredUploads.length }} โรง)</h3>
+        <div class="px-5 py-4 border-b border-slate-50 text-center">
+          <h3 class="font-bold text-slate-700">ข้อมูลรายโรงเรียน ({{ filteredUploads.length }} โรงเรียน)</h3>
         </div>
         <div class="overflow-x-auto">
           <table class="w-full text-xs">
@@ -466,7 +506,7 @@ const trendSeries = computed(() => [{ name: 'นักเรียนรวม',
       <div v-if="!loadingTrend && trend.length >= 2" class="glass-tile p-5">
         <h3 class="font-bold text-slate-700 text-center">แนวโน้มจำนวนนักเรียนย้อนหลัง</h3>
         <p class="text-sm text-slate-400 text-center mb-4">ยอดรวมทั้งเขตในแต่ละภาคเรียนที่เผยแพร่ต่อสาธารณะ</p>
-        <apexchart type="bar" :height="260" :options="trendOpts" :series="trendSeries"/>
+        <apexchart type="area" :height="280" :options="trendOpts" :series="trendSeries"/>
       </div>
 
       <p class="text-center text-sm text-slate-400 pb-6">ข้อมูลจากระบบ DMC · {{ config?.area_name }}<span v-if="isFiltered"> · <button @click="resetFilter" class="text-primary hover:underline">ล้างตัวกรอง</button></span></p>

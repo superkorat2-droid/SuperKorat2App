@@ -1170,20 +1170,40 @@ const stats = [
               <p class="text-slate-400 text-xs text-center mb-5">
                 {{ dmcStats.period?.title }} · ปีการศึกษา {{ dmcStats.period?.academic_year }} ภาคเรียน {{ dmcStats.period?.semester }}
               </p>
-              <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                <div class="glass-card p-4 text-center">
+              <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                <div class="rounded-2xl border border-indigo-100 bg-indigo-50 shadow-sm p-5 text-center">
+                  <div class="w-12 h-12 mx-auto mb-3 rounded-2xl bg-indigo-500/15 flex items-center justify-center">
+                    <svg class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3.75h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008z"/>
+                    </svg>
+                  </div>
+                  <p class="text-3xl font-extrabold text-indigo-600">{{ dmcStatsTotals.schools }}</p>
+                  <p class="text-xs text-slate-500 mt-1">โรงเรียน</p>
+                </div>
+                <div class="rounded-2xl border shadow-sm p-5 text-center" style="border-color: var(--color-primary-ring); background: var(--color-primary-light);">
+                  <div class="w-12 h-12 mx-auto mb-3 rounded-2xl flex items-center justify-center" style="background: var(--color-primary-ring);">
+                    <svg class="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/>
+                    </svg>
+                  </div>
                   <p class="text-3xl font-extrabold text-primary">{{ dmcStatsTotals.total.toLocaleString() }}</p>
                   <p class="text-xs text-slate-500 mt-1">นักเรียนทั้งเขต</p>
                 </div>
-                <div class="glass-card p-4 text-center">
-                  <p class="text-3xl font-extrabold text-slate-700">{{ dmcStatsTotals.schools }}</p>
-                  <p class="text-xs text-slate-500 mt-1">โรงเรียน</p>
-                </div>
-                <div class="glass-card p-4 text-center">
+                <div class="rounded-2xl border border-blue-100 bg-blue-50 shadow-sm p-5 text-center">
+                  <div class="w-12 h-12 mx-auto mb-3 rounded-2xl bg-blue-500/15 flex items-center justify-center">
+                    <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M17.982 18.725A7.488 7.488 0 0012 15.75a7.488 7.488 0 00-5.982 2.975m11.963 0a9 9 0 10-11.963 0m11.963 0A8.966 8.966 0 0112 21a8.966 8.966 0 01-5.982-2.275M15 9.75a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                  </div>
                   <p class="text-3xl font-extrabold text-blue-600">{{ dmcStatsTotals.male.toLocaleString() }}</p>
                   <p class="text-xs text-slate-500 mt-1">ชาย</p>
                 </div>
-                <div class="glass-card p-4 text-center">
+                <div class="rounded-2xl border border-pink-100 bg-pink-50 shadow-sm p-5 text-center">
+                  <div class="w-12 h-12 mx-auto mb-3 rounded-2xl bg-pink-500/15 flex items-center justify-center">
+                    <svg class="w-6 h-6 text-pink-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M17.982 18.725A7.488 7.488 0 0012 15.75a7.488 7.488 0 00-5.982 2.975m11.963 0a9 9 0 10-11.963 0m11.963 0A8.966 8.966 0 0112 21a8.966 8.966 0 01-5.982-2.275M15 9.75a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                  </div>
                   <p class="text-3xl font-extrabold text-pink-500">{{ dmcStatsTotals.female.toLocaleString() }}</p>
                   <p class="text-xs text-slate-500 mt-1">หญิง</p>
                 </div>
