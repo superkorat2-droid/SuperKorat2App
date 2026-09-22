@@ -56,6 +56,41 @@ export const GRADE_GROUP_LABEL = {
   upper_secondary:  'มัธยมปลาย/ปวช.',
 }
 
+// ── ช่วงชั้น (หลักสูตรแกนกลางการศึกษาขั้นพื้นฐาน 2551) ────────────────────────
+// ใช้กรอง "โรงเรียน/ข้อมูลที่มีนักเรียนอยู่ในช่วงชั้นนี้" — เช็คจาก by_grade ตรงๆ
+// ไม่ต้องมีข้อมูลเพิ่มจากไฟล์ DMC เลย เพราะ by_grade มีครบทุกชั้นอยู่แล้ว
+export const KEY_STAGES = [
+  { key: 1, label: 'ช่วงชั้นที่ 1 (ป.1-3)', grades: ['ป.1', 'ป.2', 'ป.3'] },
+  { key: 2, label: 'ช่วงชั้นที่ 2 (ป.4-6)', grades: ['ป.4', 'ป.5', 'ป.6'] },
+  { key: 3, label: 'ช่วงชั้นที่ 3 (ม.1-3)', grades: ['ม.1', 'ม.2', 'ม.3'] },
+  { key: 4, label: 'ช่วงชั้นที่ 4 (ม.4-6)', grades: ['ม.4', 'ม.5', 'ม.6'] },
+]
+
+// ── สิทธิ์สอบระดับชาติ — แต่ละสนามสอบจัดเฉพาะชั้นที่กำหนดไว้ตายตัว ────────────
+// RT (ประเมินการอ่าน) = ป.1 เท่านั้น, NT (ประเมินคุณภาพผู้เรียน) = ป.3 เท่านั้น,
+// O-NET จัดสอบ 3 ชั้น คือ ป.6 / ม.3 / ม.6 — เช็คจาก by_grade[ชั้นนั้น] ตรงๆ เช่นกัน
+export const EXAM_ELIGIBILITY = [
+  { key: 'rt',      label: 'มีสิทธิ์สอบ RT',       grade: 'ป.1' },
+  { key: 'nt',      label: 'มีสิทธิ์สอบ NT',       grade: 'ป.3' },
+  { key: 'onet_p6', label: 'มีสิทธิ์สอบ O-NET ป.6', grade: 'ป.6' },
+  { key: 'onet_m3', label: 'มีสิทธิ์สอบ O-NET ม.3', grade: 'ม.3' },
+  { key: 'onet_m6', label: 'มีสิทธิ์สอบ O-NET ม.6', grade: 'ม.6' },
+]
+
+function gradeHasStudents(byGrade, gradeKey) {
+  return (byGrade?.[gradeKey]?.total || 0) > 0
+}
+
+export function matchesKeyStage(byGrade, stageKey) {
+  const stage = KEY_STAGES.find(s => s.key === stageKey)
+  return !!stage && stage.grades.some(g => gradeHasStudents(byGrade, g))
+}
+
+export function matchesExam(byGrade, examKey) {
+  const exam = EXAM_ELIGIBILITY.find(e => e.key === examKey)
+  return !!exam && gradeHasStudents(byGrade, exam.grade)
+}
+
 // ── BMI classification ───────────────────────────────────────────────────────
 function bmiClass(w, h) {
   if (!w || !h || h === 0) return null

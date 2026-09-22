@@ -2,7 +2,10 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { supabase } from '../../supabase'
-import { parseDmcFile, LEVEL_LABEL, gradeLevelGroup, GRADE_GROUP_LABEL, sortedGrades } from '../../composables/useDmcParser'
+import {
+  parseDmcFile, LEVEL_LABEL, gradeLevelGroup, GRADE_GROUP_LABEL, sortedGrades,
+  KEY_STAGES, EXAM_ELIGIBILITY, matchesKeyStage, matchesExam,
+} from '../../composables/useDmcParser'
 import { parseDmcDistrictFile } from '../../composables/useDmcDistrictParser'
 import BarChart from '../../components/awards/BarChart.vue'
 import Swal from 'sweetalert2'
@@ -40,6 +43,18 @@ const LEVEL_OPTIONS = [
 
 function schoolOf(upload) { return schools.value.find(s => s.id === upload.school_id) }
 
+// ── ปุ่มช่วงชั้น / สิทธิ์สอบ — ซ่อนปุ่มที่ไม่มีโรงเรียนไหนเข้าเงื่อนไขเลยในรอบนี้
+// (เช็คจาก uploads ทั้งหมดที่ยังไม่กรอง กันปุ่มโผล่/หายเวลาสลับตัวกรองอื่น)
+const filterKeyStage = ref(null) // 1-4 หรือ null
+const filterExam     = ref(null) // key ใน EXAM_ELIGIBILITY หรือ null
+
+const availableKeyStages = computed(() =>
+  KEY_STAGES.filter(s => uploads.value.some(u => matchesKeyStage(u.summary?.by_grade, s.key)))
+)
+const availableExams = computed(() =>
+  EXAM_ELIGIBILITY.filter(e => uploads.value.some(u => matchesExam(u.summary?.by_grade, e.key)))
+)
+
 const filteredUploads = computed(() => {
   let list = uploads.value
   if (filterCluster.value !== 'all') {
@@ -47,6 +62,12 @@ const filteredUploads = computed(() => {
   }
   if (filterLevel.value !== 'all') {
     list = list.filter(u => u.summary?.level === filterLevel.value)
+  }
+  if (filterKeyStage.value !== null) {
+    list = list.filter(u => matchesKeyStage(u.summary?.by_grade, filterKeyStage.value))
+  }
+  if (filterExam.value !== null) {
+    list = list.filter(u => matchesExam(u.summary?.by_grade, filterExam.value))
   }
   return list
 })
@@ -503,21 +524,46 @@ async function exportCSV() {
       </div>
 
       <!-- Filter: ศูนย์เครือข่าย / ระดับ -->
-      <div class="glass-card p-4 flex flex-wrap items-center gap-3">
-        <select v-model="filterCluster" class="px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-primary">
-          <option value="all">ทุกศูนย์เครือข่าย</option>
-          <option v-for="c in clusterOptions" :key="c" :value="c">{{ c }}</option>
-        </select>
-        <select v-model="filterLevel" class="px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-primary">
-          <option value="all">ทุกระดับ</option>
-          <option v-for="lv in LEVEL_OPTIONS" :key="lv.value" :value="lv.value">{{ lv.label }}</option>
-        </select>
-        <span v-if="filterCluster !== 'all' || filterLevel !== 'all'" class="text-xs text-primary font-medium">
-          กรองแล้ว {{ filteredUploads.length }} โรงเรียน · {{ totalStudents.toLocaleString() }} คน
-        </span>
-        <button v-if="filterCluster !== 'all' || filterLevel !== 'all'"
-          @click="filterCluster='all'; filterLevel='all'"
-          class="text-xs text-slate-400 hover:text-red-500 ml-auto">ล้างตัวกรอง</button>
+      <div class="glass-card p-4 space-y-3">
+        <div class="flex flex-wrap items-center gap-3">
+          <select v-model="filterCluster" class="px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-primary">
+            <option value="all">ทุกศูนย์เครือข่าย</option>
+            <option v-for="c in clusterOptions" :key="c" :value="c">{{ c }}</option>
+          </select>
+          <select v-model="filterLevel" class="px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-primary">
+            <option value="all">ทุกระดับ</option>
+            <option v-for="lv in LEVEL_OPTIONS" :key="lv.value" :value="lv.value">{{ lv.label }}</option>
+          </select>
+          <span v-if="filterCluster !== 'all' || filterLevel !== 'all' || filterKeyStage !== null || filterExam !== null"
+            class="text-xs text-primary font-medium">
+            กรองแล้ว {{ filteredUploads.length }} โรงเรียน · {{ totalStudents.toLocaleString() }} คน
+          </span>
+          <button v-if="filterCluster !== 'all' || filterLevel !== 'all' || filterKeyStage !== null || filterExam !== null"
+            @click="filterCluster='all'; filterLevel='all'; filterKeyStage=null; filterExam=null"
+            class="text-xs text-slate-400 hover:text-red-500 ml-auto">ล้างตัวกรอง</button>
+        </div>
+
+        <!-- ปุ่มช่วงชั้น -->
+        <div v-if="availableKeyStages.length > 0" class="flex flex-wrap items-center gap-2">
+          <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">ช่วงชั้น</span>
+          <button v-for="s in availableKeyStages" :key="s.key"
+            @click="filterKeyStage = filterKeyStage === s.key ? null : s.key"
+            :class="['px-3 py-1.5 text-xs font-bold rounded-full border transition-colors',
+              filterKeyStage === s.key ? 'bg-primary text-white border-primary' : 'bg-white text-slate-600 border-slate-200 hover:border-primary']">
+            {{ s.label }}
+          </button>
+        </div>
+
+        <!-- ปุ่มสิทธิ์สอบ -->
+        <div v-if="availableExams.length > 0" class="flex flex-wrap items-center gap-2">
+          <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">สิทธิ์สอบ</span>
+          <button v-for="e in availableExams" :key="e.key"
+            @click="filterExam = filterExam === e.key ? null : e.key"
+            :class="['px-3 py-1.5 text-xs font-bold rounded-full border transition-colors',
+              filterExam === e.key ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-slate-600 border-slate-200 hover:border-indigo-400']">
+            {{ e.label }}
+          </button>
+        </div>
       </div>
 
       <!-- ── Overview ── -->

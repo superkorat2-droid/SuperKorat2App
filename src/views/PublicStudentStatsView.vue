@@ -3,7 +3,9 @@ import { ref, computed, onMounted } from 'vue'
 import { supabase } from '../supabase'
 import { useAreaConfig } from '../composables/useAreaConfig'
 import { usePageHeader } from '../composables/usePageHeader'
-import { LEVEL_LABEL, sortedGrades } from '../composables/useDmcParser'
+import {
+  LEVEL_LABEL, sortedGrades, KEY_STAGES, EXAM_ELIGIBILITY, matchesKeyStage, matchesExam,
+} from '../composables/useDmcParser'
 import PageHero from '../components/PageHero.vue'
 import BarChart from '../components/awards/BarChart.vue'
 
@@ -59,6 +61,16 @@ const filterCluster   = ref('all')
 const filterLevel     = ref('all')
 const filterSchool    = ref('all')
 const searchQ         = ref('')
+const filterKeyStage  = ref(null) // 1-4 หรือ null
+const filterExam      = ref(null) // key ใน EXAM_ELIGIBILITY หรือ null
+
+// ปุ่มไหนไม่มีโรงเรียนเข้าเงื่อนไขเลยในรอบนี้ (เช็คจากข้อมูลทั้งหมด ไม่ใช่ที่กรองแล้ว) ไม่ต้องแสดง
+const availableKeyStages = computed(() =>
+  KEY_STAGES.filter(s => allUploads.value.some(u => matchesKeyStage(u.summary?.by_grade, s.key)))
+)
+const availableExams = computed(() =>
+  EXAM_ELIGIBILITY.filter(e => allUploads.value.some(u => matchesExam(u.summary?.by_grade, e.key)))
+)
 
 const schoolsInDistrict = computed(() => {
   if (filterDistrict.value === 'all') return allUploads.value
@@ -71,6 +83,8 @@ const filteredUploads = computed(() => {
   if (filterCluster.value  !== 'all') list = list.filter(u => u.school_group === filterCluster.value)
   if (filterLevel.value    !== 'all') list = list.filter(u => u.level === filterLevel.value)
   if (filterSchool.value !== 'all')   list = list.filter(u => u.school_id === filterSchool.value)
+  if (filterKeyStage.value !== null)  list = list.filter(u => matchesKeyStage(u.summary?.by_grade, filterKeyStage.value))
+  if (filterExam.value !== null)      list = list.filter(u => matchesExam(u.summary?.by_grade, filterExam.value))
   if (searchQ.value.trim()) {
     const q = searchQ.value.trim().toLowerCase()
     list = list.filter(u => u.school_name?.toLowerCase().includes(q))
@@ -80,12 +94,12 @@ const filteredUploads = computed(() => {
 
 const isFiltered = computed(() =>
   filterDistrict.value !== 'all' || filterCluster.value !== 'all' || filterLevel.value !== 'all' ||
-  filterSchool.value !== 'all' || searchQ.value.trim()
+  filterSchool.value !== 'all' || searchQ.value.trim() || filterKeyStage.value !== null || filterExam.value !== null
 )
 
 function resetFilter() {
   filterDistrict.value = 'all'; filterCluster.value = 'all'; filterLevel.value = 'all'
-  filterSchool.value = 'all'; searchQ.value = ''
+  filterSchool.value = 'all'; searchQ.value = ''; filterKeyStage.value = null; filterExam.value = null
 }
 function onDistrictChange() { filterSchool.value = 'all' }
 
@@ -290,6 +304,28 @@ const trendSeries = computed(() => [{ name: 'นักเรียนรวม',
         <div v-if="isFiltered" class="mt-2 flex items-center gap-2">
           <div class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"/>
           <p class="text-sm text-primary font-medium">กรองแล้ว: {{ filteredUploads.length }} โรงเรียน · {{ totalStudents.toLocaleString() }} นักเรียน</p>
+        </div>
+
+        <!-- ปุ่มช่วงชั้น -->
+        <div v-if="availableKeyStages.length > 0" class="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-slate-100">
+          <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">ช่วงชั้น</span>
+          <button v-for="s in availableKeyStages" :key="s.key"
+            @click="filterKeyStage = filterKeyStage === s.key ? null : s.key"
+            :class="['px-3 py-1.5 text-xs font-bold rounded-full border transition-colors',
+              filterKeyStage === s.key ? 'bg-primary text-white border-primary' : 'bg-white text-slate-600 border-slate-200 hover:border-primary']">
+            {{ s.label }}
+          </button>
+        </div>
+
+        <!-- ปุ่มสิทธิ์สอบ -->
+        <div v-if="availableExams.length > 0" class="flex flex-wrap items-center gap-2 mt-3">
+          <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">สิทธิ์สอบ</span>
+          <button v-for="e in availableExams" :key="e.key"
+            @click="filterExam = filterExam === e.key ? null : e.key"
+            :class="['px-3 py-1.5 text-xs font-bold rounded-full border transition-colors',
+              filterExam === e.key ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-slate-600 border-slate-200 hover:border-indigo-400']">
+            {{ e.label }}
+          </button>
         </div>
       </div>
 
