@@ -1,10 +1,11 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, nextTick } from 'vue'
 import { supabase } from '../supabase'
 import { useAreaConfig } from '../composables/useAreaConfig'
 import { usePageHeader } from '../composables/usePageHeader'
 import {
-  LEVEL_LABEL, sortedGrades, KEY_STAGES, EXAM_ELIGIBILITY, matchesKeyStage, matchesExam,
+  sortedGrades, KEY_STAGES, EXAM_ELIGIBILITY, matchesKeyStage, matchesExam,
+  BROAD_LEVEL_GRADES, BROAD_LEVEL_LABEL, matchesGrades,
 } from '../composables/useDmcParser'
 import PageHero from '../components/PageHero.vue'
 import BarChart from '../components/awards/BarChart.vue'
@@ -22,11 +23,18 @@ const userSession = ref(null)
 const trend        = ref([])
 const loadingTrend = ref(true)
 
+// ApexCharts บางทีไม่วาด point annotation ตอน mount รอบแรก (ต้องมี re-render อีกรอบ
+// annotation ถึงจะขึ้น) — บังคับ re-render กราฟรายชั้นอีกครั้งอัตโนมัติหลังข้อมูลมาครบ
+// โดยผู้ใช้ไม่ต้องกดตัวกรองก่อน (ดู :key ของ apexchart รายชั้นด้านล่าง)
+const chartRenderTick = ref(0)
+
 onMounted(async () => {
   const { data: d, error: e } = await supabase.rpc('get_dmc_public_stats')
   if (e || d?.error) { error.value = 'ยังไม่มีข้อมูลสถิตินักเรียนสาธารณะ'; loading.value = false; return }
   data.value    = d
   loading.value = false
+  await nextTick()
+  chartRenderTick.value++
 
   const { data: { session: s } } = await supabase.auth.getSession()
   userSession.value = s
@@ -45,16 +53,16 @@ const districts = computed(() => {
   allUploads.value.forEach(u => { if (u.district) set.add(u.district) })
   return [...set].sort()
 })
+// ศูนย์เครือข่ายต้องสัมพันธ์กับอำเภอที่เลือกไว้ — ไม่งั้นเลือกอำเภอแล้วยังเห็นศูนย์
+// จากอำเภออื่นปนอยู่ ดูไม่สัมพันธ์กัน
 const clusters = computed(() => {
+  const scoped = filterDistrict.value === 'all'
+    ? allUploads.value
+    : allUploads.value.filter(u => u.district === filterDistrict.value)
   const set = new Set()
-  allUploads.value.forEach(u => { if (u.school_group) set.add(u.school_group) })
+  scoped.forEach(u => { if (u.school_group) set.add(u.school_group) })
   return [...set].sort()
 })
-const LEVEL_OPTIONS = [
-  { value: 'primary',   label: LEVEL_LABEL.primary },
-  { value: 'extended',  label: LEVEL_LABEL.extended },
-  { value: 'secondary', label: LEVEL_LABEL.secondary },
-]
 
 const filterDistrict  = ref('all')
 const filterCluster   = ref('all')
@@ -64,17 +72,25 @@ const searchQ         = ref('')
 const filterKeyStage  = ref(null) // 1-4 หรือ null
 const filterExam      = ref(null) // key ใน EXAM_ELIGIBILITY หรือ null
 
-// ปุ่มไหนไม่มีโรงเรียนเข้าเงื่อนไขเลยในรอบนี้ (เช็คจากข้อมูลทั้งหมด ไม่ใช่ที่กรองแล้ว) ไม่ต้องแสดง
+// ปุ่ม/ตัวเลือกไหนไม่มีโรงเรียนเข้าเงื่อนไขเลยในรอบนี้ (เช็คจากข้อมูลทั้งหมด ไม่ใช่ที่กรองแล้ว) ไม่ต้องแสดง
 const availableKeyStages = computed(() =>
   KEY_STAGES.filter(s => allUploads.value.some(u => matchesKeyStage(u.summary?.by_grade, s.key)))
 )
 const availableExams = computed(() =>
   EXAM_ELIGIBILITY.filter(e => allUploads.value.some(u => matchesExam(u.summary?.by_grade, e.key)))
 )
+const availableLevels = computed(() =>
+  Object.keys(BROAD_LEVEL_LABEL).filter(k =>
+    allUploads.value.some(u => matchesGrades(u.summary?.by_grade, BROAD_LEVEL_GRADES[k]))
+  )
+)
 
+// โรงเรียนในตัวเลือก dropdown ต้องสัมพันธ์กับทั้งอำเภอ + ศูนย์เครือข่ายที่เลือกไว้
 const schoolsInDistrict = computed(() => {
-  if (filterDistrict.value === 'all') return allUploads.value
-  return allUploads.value.filter(u => u.district === filterDistrict.value)
+  let list = allUploads.value
+  if (filterDistrict.value !== 'all') list = list.filter(u => u.district === filterDistrict.value)
+  if (filterCluster.value  !== 'all') list = list.filter(u => u.school_group === filterCluster.value)
+  return list
 })
 
 // ตัวกรองชุดเดียวกันนี้ใช้ทั้งกับยอดรอบปัจจุบัน (filteredUploads) และกราฟแนวโน้ม
@@ -82,7 +98,7 @@ const schoolsInDistrict = computed(() => {
 function applyFilters(list) {
   if (filterDistrict.value !== 'all') list = list.filter(u => u.district === filterDistrict.value)
   if (filterCluster.value  !== 'all') list = list.filter(u => u.school_group === filterCluster.value)
-  if (filterLevel.value    !== 'all') list = list.filter(u => u.level === filterLevel.value)
+  if (filterLevel.value    !== 'all') list = list.filter(u => matchesGrades(u.summary?.by_grade, BROAD_LEVEL_GRADES[filterLevel.value]))
   if (filterSchool.value !== 'all')   list = list.filter(u => u.school_id === filterSchool.value)
   if (filterKeyStage.value !== null)  list = list.filter(u => matchesKeyStage(u.summary?.by_grade, filterKeyStage.value))
   if (filterExam.value !== null)      list = list.filter(u => matchesExam(u.summary?.by_grade, filterExam.value))
@@ -104,20 +120,32 @@ function resetFilter() {
   filterDistrict.value = 'all'; filterCluster.value = 'all'; filterLevel.value = 'all'
   filterSchool.value = 'all'; searchQ.value = ''; filterKeyStage.value = null; filterExam.value = null
 }
-function onDistrictChange() { filterSchool.value = 'all' }
+// เปลี่ยนอำเภอ → ศูนย์เครือข่าย/โรงเรียนที่เคยเลือกไว้อาจไม่มีอยู่ในอำเภอใหม่แล้ว รีเซ็ตกัน
+// ตัวเลือกค้างที่ไม่มีอยู่จริง / เปลี่ยนศูนย์เครือข่าย → โรงเรียนที่เคยเลือกไว้ก็รีเซ็ตเช่นกัน
+function onDistrictChange() { filterCluster.value = 'all'; filterSchool.value = 'all' }
+function onClusterChange()  { filterSchool.value = 'all' }
 
-// ── ขอบเขตชั้นที่กำลังดู (null = ทุกชั้น) — ปุ่มช่วงชั้น/สิทธิ์สอบ ไม่ได้แค่
-// เลือกโรงเรียนที่มีชั้นนี้ แต่ต้องนับตัวเลขเฉพาะชั้นนั้นด้วย ไม่ใช่ยอดรวมทั้งโรงเรียน
+// ── ขอบเขตชั้นที่กำลังดู (null = ทุกชั้น) — รวมทุกตัวกรองที่ตัดกรอบชั้นได้
+// (ระดับ/ช่วงชั้น/สิทธิ์สอบ) เข้าด้วยกันแบบ intersect เผื่อเลือกพร้อมกันหลายตัว
+// ปุ่มพวกนี้ไม่ได้แค่เลือกโรงเรียนที่มีชั้นนี้ แต่ต้องนับตัวเลขเฉพาะชั้นนั้นด้วย
+// ไม่ใช่ยอดรวมทั้งโรงเรียน
+function intersectGrades(a, b) {
+  if (!a) return b
+  if (!b) return a
+  return a.filter(g => b.includes(g))
+}
 const activeGradeScope = computed(() => {
-  if (filterExam.value !== null) {
-    const exam = EXAM_ELIGIBILITY.find(e => e.key === filterExam.value)
-    return exam ? [exam.grade] : null
-  }
+  let scope = null
+  if (filterLevel.value !== 'all') scope = intersectGrades(scope, BROAD_LEVEL_GRADES[filterLevel.value])
   if (filterKeyStage.value !== null) {
     const stage = KEY_STAGES.find(s => s.key === filterKeyStage.value)
-    return stage ? stage.grades : null
+    scope = intersectGrades(scope, stage ? stage.grades : [])
   }
-  return null
+  if (filterExam.value !== null) {
+    const exam = EXAM_ELIGIBILITY.find(e => e.key === filterExam.value)
+    scope = intersectGrades(scope, exam ? [exam.grade] : [])
+  }
+  return scope
 })
 
 function scopedTotals(u) {
@@ -385,7 +413,7 @@ const trendSeries = computed(() => [{ name: 'นักเรียนรวม',
             <option value="all">ทุกอำเภอ</option>
             <option v-for="d in districts" :key="d" :value="d">อ.{{ d }}</option>
           </select>
-          <select v-model="filterCluster"
+          <select v-model="filterCluster" @change="onClusterChange"
             class="px-3 py-2.5 border border-white/80 bg-white/70 backdrop-blur rounded-xl text-sm focus:outline-none focus:border-primary">
             <option value="all">ทุกศูนย์เครือข่าย</option>
             <option v-for="c in clusters" :key="c" :value="c">{{ c }}</option>
@@ -393,7 +421,7 @@ const trendSeries = computed(() => [{ name: 'นักเรียนรวม',
           <select v-model="filterLevel"
             class="px-3 py-2.5 border border-white/80 bg-white/70 backdrop-blur rounded-xl text-sm focus:outline-none focus:border-primary">
             <option value="all">ทุกระดับ</option>
-            <option v-for="lv in LEVEL_OPTIONS" :key="lv.value" :value="lv.value">{{ lv.label }}</option>
+            <option v-for="lv in availableLevels" :key="lv" :value="lv">{{ BROAD_LEVEL_LABEL[lv] }}</option>
           </select>
           <select v-model="filterSchool"
             class="px-3 py-2.5 border border-white/80 bg-white/70 backdrop-blur rounded-xl text-sm focus:outline-none focus:border-primary min-w-[180px]">
@@ -472,7 +500,7 @@ const trendSeries = computed(() => [{ name: 'นักเรียนรวม',
         <h3 class="font-bold text-slate-700 mb-4 text-center">จำนวนนักเรียนแยกตามระดับชั้น</h3>
         <apexchart type="bar" :height="240" :options="gradeOpts"
           :series="[{ name:'ชาย', data:Object.values(gradeAgg).map(g=>g.male) },{ name:'หญิง', data:Object.values(gradeAgg).map(g=>g.female) }]"
-          :key="`grade-${filteredUploads.length}`"/>
+          :key="`grade-${filteredUploads.length}-${chartRenderTick}`"/>
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-5">

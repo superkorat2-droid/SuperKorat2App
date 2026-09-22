@@ -1210,8 +1210,8 @@ const stats = [
               </div>
               <div class="text-center mt-6">
                 <router-link to="/student-stats"
-                  class="inline-flex items-center gap-1.5 text-sm font-bold text-primary hover:underline">
-                  ดูข้อมูลทั้งหมด
+                  class="inline-flex items-center gap-2 px-6 py-3 text-sm font-bold text-white bg-primary rounded-2xl shadow-md hover:-translate-y-0.5 hover:shadow-lg transition-all">
+                  ตรวจสอบและดูข้อมูลทั้งหมด
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M17.25 8.25L21 12m0 0l-3.75 3.75M21 12H3"/>
                   </svg>

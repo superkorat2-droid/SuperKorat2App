@@ -91,6 +91,26 @@ export function matchesExam(byGrade, examKey) {
   return !!exam && gradeHasStudents(byGrade, exam.grade)
 }
 
+// ── ระดับแบบกว้าง (อนุบาล/ประถม/มัธยม) — ใช้เป็นตัวกรองหน้าเว็บแทนประเภทโรงเรียน ──
+// ต่างจาก classifyLevel() (บนสุดของไฟล์) ตรงที่นี่ยึดตาม "ชั้นที่มีนักเรียนจริง"
+// ไม่ใช่การจัดประเภทโรงเรียนทั้งโรง จึงกรอง/นับเฉพาะช่วงนั้นได้ตรงไปตรงมาเหมือน
+// ช่วงชั้น/สิทธิ์สอบ — เพิ่ม "อนุบาล" ที่ช่วงชั้น (KEY_STAGES) ไม่ครอบคลุมด้วย
+export const BROAD_LEVEL_GRADES = {
+  kindergarten: ['อ.1', 'อ.2', 'อ.3'],
+  primary:      ['ป.1', 'ป.2', 'ป.3', 'ป.4', 'ป.5', 'ป.6'],
+  secondary:    ['ม.1', 'ม.2', 'ม.3', 'ม.4', 'ม.5', 'ม.6', 'ปวช.1', 'ปวช.2', 'ปวช.3'],
+}
+
+export const BROAD_LEVEL_LABEL = {
+  kindergarten: 'อนุบาล',
+  primary:      'ประถมศึกษา',
+  secondary:    'มัธยมศึกษา',
+}
+
+export function matchesGrades(byGrade, gradeKeys) {
+  return Array.isArray(gradeKeys) && gradeKeys.some(g => gradeHasStudents(byGrade, g))
+}
+
 // ── BMI classification ───────────────────────────────────────────────────────
 function bmiClass(w, h) {
   if (!w || !h || h === 0) return null

@@ -1,10 +1,11 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { supabase } from '../../supabase'
 import {
   parseDmcFile, LEVEL_LABEL, gradeLevelGroup, GRADE_GROUP_LABEL, sortedGrades,
   KEY_STAGES, EXAM_ELIGIBILITY, matchesKeyStage, matchesExam,
+  BROAD_LEVEL_GRADES, BROAD_LEVEL_LABEL, matchesGrades,
 } from '../../composables/useDmcParser'
 import { parseDmcDistrictFile } from '../../composables/useDmcDistrictParser'
 import BarChart from '../../components/awards/BarChart.vue'
@@ -35,11 +36,12 @@ const clusterOptions = computed(() => {
   const set = new Set(schools.value.map(s => s.school_group).filter(Boolean))
   return [...set].sort()
 })
-const LEVEL_OPTIONS = [
-  { value: 'primary',   label: LEVEL_LABEL.primary },
-  { value: 'extended',  label: LEVEL_LABEL.extended },
-  { value: 'secondary', label: LEVEL_LABEL.secondary },
-]
+// เฉพาะระดับที่มีข้อมูลจริงในรอบนี้ (เหมือนปุ่มช่วงชั้น/สิทธิ์สอบด้านล่าง)
+const availableLevels = computed(() =>
+  Object.keys(BROAD_LEVEL_LABEL).filter(k =>
+    uploads.value.some(u => matchesGrades(u.summary?.by_grade, BROAD_LEVEL_GRADES[k]))
+  )
+)
 
 function schoolOf(upload) { return schools.value.find(s => s.id === upload.school_id) }
 
@@ -61,7 +63,7 @@ const filteredUploads = computed(() => {
     list = list.filter(u => schoolOf(u)?.school_group === filterCluster.value)
   }
   if (filterLevel.value !== 'all') {
-    list = list.filter(u => u.summary?.level === filterLevel.value)
+    list = list.filter(u => matchesGrades(u.summary?.by_grade, BROAD_LEVEL_GRADES[filterLevel.value]))
   }
   if (filterKeyStage.value !== null) {
     list = list.filter(u => matchesKeyStage(u.summary?.by_grade, filterKeyStage.value))
@@ -72,19 +74,27 @@ const filteredUploads = computed(() => {
   return list
 })
 
-// ── ขอบเขตชั้นที่กำลังดู (null = ทุกชั้น) ────────────────────────────────────
-// ปุ่มช่วงชั้น/สิทธิ์สอบ ไม่ได้แค่ "เลือกโรงเรียนที่มีชั้นนี้" แต่ต้องนับตัวเลข
-// เฉพาะชั้นนั้นด้วย — ไม่ใช่โชว์ยอดรวมทั้งโรงเรียนที่บังเอิญมีชั้นนี้ปนอยู่
+// ── ขอบเขตชั้นที่กำลังดู (null = ทุกชั้น) — รวมทุกตัวกรองที่ตัดกรอบชั้นได้
+// (ระดับ/ช่วงชั้น/สิทธิ์สอบ) เข้าด้วยกันแบบ intersect เผื่อเลือกพร้อมกันหลายตัว
+// ปุ่มพวกนี้ไม่ได้แค่ "เลือกโรงเรียนที่มีชั้นนี้" แต่ต้องนับตัวเลขเฉพาะชั้นนั้นด้วย
+// ไม่ใช่โชว์ยอดรวมทั้งโรงเรียนที่บังเอิญมีชั้นนี้ปนอยู่
+function intersectGrades(a, b) {
+  if (!a) return b
+  if (!b) return a
+  return a.filter(g => b.includes(g))
+}
 const activeGradeScope = computed(() => {
-  if (filterExam.value !== null) {
-    const exam = EXAM_ELIGIBILITY.find(e => e.key === filterExam.value)
-    return exam ? [exam.grade] : null
-  }
+  let scope = null
+  if (filterLevel.value !== 'all') scope = intersectGrades(scope, BROAD_LEVEL_GRADES[filterLevel.value])
   if (filterKeyStage.value !== null) {
     const stage = KEY_STAGES.find(s => s.key === filterKeyStage.value)
-    return stage ? stage.grades : null
+    scope = intersectGrades(scope, stage ? stage.grades : [])
   }
-  return null
+  if (filterExam.value !== null) {
+    const exam = EXAM_ELIGIBILITY.find(e => e.key === filterExam.value)
+    scope = intersectGrades(scope, exam ? [exam.grade] : [])
+  }
+  return scope
 })
 
 // ยอดของโรงเรียนหนึ่ง — ถ้ามีขอบเขตชั้นอยู่ นับเฉพาะชั้นในขอบเขตจาก by_grade
@@ -291,6 +301,10 @@ async function saveBulkImport() {
   Swal.fire({ icon: 'success', title: `นำเข้าสำเร็จ ${rows.length} โรงเรียน`, showConfirmButton: false, timer: 2000 })
 }
 
+// ApexCharts บางทีไม่วาด point annotation ตอน mount รอบแรก (ต้องมี re-render อีกรอบ
+// annotation ถึงจะขึ้น) — บังคับ re-render กราฟรายชั้นอีกครั้งอัตโนมัติหลังโหลดเสร็จ
+const chartRenderTick = ref(0)
+
 async function load() {
   loading.value = true
   const [{ data: p }, { data: u }, { data: sc }] = await Promise.all([
@@ -302,6 +316,8 @@ async function load() {
   uploads.value = u || []
   schools.value = sc || []
   loading.value = false
+  await nextTick()
+  chartRenderTick.value++
 }
 
 onMounted(load)
@@ -591,7 +607,7 @@ async function exportCSV() {
           </select>
           <select v-model="filterLevel" class="px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-primary">
             <option value="all">ทุกระดับ</option>
-            <option v-for="lv in LEVEL_OPTIONS" :key="lv.value" :value="lv.value">{{ lv.label }}</option>
+            <option v-for="lv in availableLevels" :key="lv" :value="lv">{{ BROAD_LEVEL_LABEL[lv] }}</option>
           </select>
         </div>
         <div v-if="filterCluster !== 'all' || filterLevel !== 'all' || filterKeyStage !== null || filterExam !== null"
@@ -684,7 +700,8 @@ async function exportCSV() {
         <!-- Grade chart -->
         <div v-if="Object.keys(gradeAgg).length > 0" class="glass-card p-5">
           <h3 class="font-bold text-slate-700 mb-4">จำนวนแยกตามระดับชั้น</h3>
-          <apexchart type="bar" :height="250" :options="gradeChartOpts" :series="gradeChartSeries"/>
+          <apexchart type="bar" :height="250" :options="gradeChartOpts" :series="gradeChartSeries"
+            :key="`grade-${filteredUploads.length}-${chartRenderTick}`"/>
         </div>
       </template>
 
