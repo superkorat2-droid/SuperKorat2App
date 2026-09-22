@@ -184,6 +184,29 @@ const needsNithetCalendarSection = computed(() =>
   orderedSections.value.some(s => s.key === 'nithet_calendar' && s.visible)
 )
 
+// ── สถิตินักเรียนทั้งเขต (home section) ────────────────────────────
+// ดึงจาก RPC เดียวกับหน้า /student-stats — โชว์แค่ตัวเลขสรุป ส่วนรายละเอียด/ตัวกรองอยู่ที่หน้านั้น
+const dmcStats        = ref(null)
+const loadingDmcStats = ref(false)
+const needsDmcStatsSection = computed(() =>
+  orderedSections.value.some(s => s.key === 'dmc_stats' && s.visible)
+)
+async function fetchDmcStats() {
+  loadingDmcStats.value = true
+  const { data, error } = await supabase.rpc('get_dmc_public_stats')
+  if (!error && !data?.error) dmcStats.value = data
+  loadingDmcStats.value = false
+}
+const dmcStatsTotals = computed(() => {
+  const uploads = dmcStats.value?.uploads || []
+  return {
+    schools: uploads.length,
+    total:   uploads.reduce((s, u) => s + (u.total || 0), 0),
+    male:    uploads.reduce((s, u) => s + (u.summary?.gender?.male   || 0), 0),
+    female:  uploads.reduce((s, u) => s + (u.summary?.gender?.female || 0), 0),
+  }
+})
+
 // ── จดหมายข่าวโรงเรียน (home section) ─────────────────────────────
 // เซกชันชนิดนี้เพิ่มได้หลายอัน (key = school_newsletters_<timestamp>) และแต่ละอัน
 // ตั้งค่ากรองไม่เหมือนกัน จึงเก็บผลลัพธ์แยกตาม key ไม่ใช่ ref ตัวเดียวแบบเซกชันอื่น
@@ -404,6 +427,7 @@ onMounted(async () => {
   if (needsSupervisionSection.value) fetchSupervisionForms()
   if (needsEduNewsSection.value) fetchEduNews()
   if (needsNithetCalendarSection.value) fetchNithetEvents()
+  if (needsDmcStatsSection.value) fetchDmcStats()
   newsletterSections.value.forEach(fetchNewsletterFeed)
   librarySections.value.forEach(fetchLibraryFeed)
   videoSections.value.forEach(fetchVideoFeed)
@@ -1126,6 +1150,54 @@ const stats = [
                 </component>
               </div>
             </div>
+          </div>
+        </section>
+
+        <!-- ══ DMC STATS (สถิตินักเรียนทั้งเขต) ══ -->
+        <section v-else-if="sec.key === 'dmc_stats'" :style="getBgStyle(sec)" :class="secBgClass(sec)" class="py-8 md:py-12">
+          <BgLayers :cfg="sec"/>
+          <div class="relative max-w-5xl mx-auto px-4">
+            <div class="text-center mb-8">
+              <span v-if="sec.subtitle" class="text-secondary font-bold uppercase text-xs tracking-[0.18em] mb-2 block">{{ sec.subtitle }}</span>
+              <h2 class="text-3xl md:text-4xl font-extrabold text-slate-900 accent-line-center">{{ sec.title || 'สารสนเทศนักเรียนทั้งเขต' }}</h2>
+            </div>
+
+            <div v-if="loadingDmcStats" class="flex justify-center py-12">
+              <div class="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin"/>
+            </div>
+            <div v-else-if="!dmcStats" class="text-center py-8 text-slate-400 text-sm">ยังไม่มีข้อมูลสถิตินักเรียนสาธารณะ</div>
+            <template v-else>
+              <p class="text-slate-400 text-xs text-center mb-5">
+                {{ dmcStats.period?.title }} · ปีการศึกษา {{ dmcStats.period?.academic_year }} ภาคเรียน {{ dmcStats.period?.semester }}
+              </p>
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div class="glass-card p-4 text-center">
+                  <p class="text-3xl font-extrabold text-primary">{{ dmcStatsTotals.total.toLocaleString() }}</p>
+                  <p class="text-xs text-slate-500 mt-1">นักเรียนทั้งเขต</p>
+                </div>
+                <div class="glass-card p-4 text-center">
+                  <p class="text-3xl font-extrabold text-slate-700">{{ dmcStatsTotals.schools }}</p>
+                  <p class="text-xs text-slate-500 mt-1">โรงเรียน</p>
+                </div>
+                <div class="glass-card p-4 text-center">
+                  <p class="text-3xl font-extrabold text-blue-600">{{ dmcStatsTotals.male.toLocaleString() }}</p>
+                  <p class="text-xs text-slate-500 mt-1">ชาย</p>
+                </div>
+                <div class="glass-card p-4 text-center">
+                  <p class="text-3xl font-extrabold text-pink-500">{{ dmcStatsTotals.female.toLocaleString() }}</p>
+                  <p class="text-xs text-slate-500 mt-1">หญิง</p>
+                </div>
+              </div>
+              <div class="text-center mt-6">
+                <router-link to="/student-stats"
+                  class="inline-flex items-center gap-1.5 text-sm font-bold text-primary hover:underline">
+                  ดูข้อมูลทั้งหมด
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M17.25 8.25L21 12m0 0l-3.75 3.75M21 12H3"/>
+                  </svg>
+                </router-link>
+              </div>
+            </template>
           </div>
         </section>
 

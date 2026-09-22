@@ -3,7 +3,9 @@ import { ref, computed, onMounted } from 'vue'
 import { supabase } from '../supabase'
 import { useAreaConfig } from '../composables/useAreaConfig'
 import { usePageHeader } from '../composables/usePageHeader'
+import { LEVEL_LABEL } from '../composables/useDmcParser'
 import PageHero from '../components/PageHero.vue'
+import BarChart from '../components/awards/BarChart.vue'
 
 const { config } = useAreaConfig()
 const header = usePageHeader('studentStats', { icon: 'students', title: 'สารสนเทศนักเรียน', align: 'left' })
@@ -24,22 +26,37 @@ const allUploads = computed(() => data.value?.uploads || [])
 
 const districts = computed(() => {
   const set = new Set()
-  allUploads.value.forEach(u => { if (u.summary?.district) set.add(u.summary.district) })
+  allUploads.value.forEach(u => { if (u.district) set.add(u.district) })
   return [...set].sort()
 })
+const clusters = computed(() => {
+  const set = new Set()
+  allUploads.value.forEach(u => { if (u.school_group) set.add(u.school_group) })
+  return [...set].sort()
+})
+const LEVEL_OPTIONS = [
+  { value: 'kindergarten', label: LEVEL_LABEL.kindergarten },
+  { value: 'primary',      label: LEVEL_LABEL.primary },
+  { value: 'extended',     label: LEVEL_LABEL.extended },
+  { value: 'secondary',    label: LEVEL_LABEL.secondary },
+]
 
 const filterDistrict  = ref('all')
+const filterCluster   = ref('all')
+const filterLevel     = ref('all')
 const filterSchool    = ref('all')
 const searchQ         = ref('')
 
 const schoolsInDistrict = computed(() => {
   if (filterDistrict.value === 'all') return allUploads.value
-  return allUploads.value.filter(u => u.summary?.district === filterDistrict.value)
+  return allUploads.value.filter(u => u.district === filterDistrict.value)
 })
 
 const filteredUploads = computed(() => {
   let list = allUploads.value
-  if (filterDistrict.value !== 'all') list = list.filter(u => u.summary?.district === filterDistrict.value)
+  if (filterDistrict.value !== 'all') list = list.filter(u => u.district === filterDistrict.value)
+  if (filterCluster.value  !== 'all') list = list.filter(u => u.school_group === filterCluster.value)
+  if (filterLevel.value    !== 'all') list = list.filter(u => u.level === filterLevel.value)
   if (filterSchool.value !== 'all')   list = list.filter(u => u.school_id === filterSchool.value)
   if (searchQ.value.trim()) {
     const q = searchQ.value.trim().toLowerCase()
@@ -49,11 +66,25 @@ const filteredUploads = computed(() => {
 })
 
 const isFiltered = computed(() =>
-  filterDistrict.value !== 'all' || filterSchool.value !== 'all' || searchQ.value.trim()
+  filterDistrict.value !== 'all' || filterCluster.value !== 'all' || filterLevel.value !== 'all' ||
+  filterSchool.value !== 'all' || searchQ.value.trim()
 )
 
-function resetFilter() { filterDistrict.value = 'all'; filterSchool.value = 'all'; searchQ.value = '' }
+function resetFilter() {
+  filterDistrict.value = 'all'; filterCluster.value = 'all'; filterLevel.value = 'all'
+  filterSchool.value = 'all'; searchQ.value = ''
+}
 function onDistrictChange() { filterSchool.value = 'all' }
+
+// ── ยอดแยกตามศูนย์เครือข่าย ──────────────────────────────────────────────
+const clusterAgg = computed(() => {
+  const map = {}
+  filteredUploads.value.forEach(u => {
+    const key = u.school_group || 'ไม่ระบุศูนย์'
+    map[key] = (map[key] || 0) + (u.total || 0)
+  })
+  return Object.entries(map).sort((a,b) => b[1]-a[1]).map(([label, value]) => ({ label, value, bar: 'bg-primary' }))
+})
 
 const totalStudents = computed(() => filteredUploads.value.reduce((s, u) => s + u.total, 0))
 const genderMale    = computed(() => filteredUploads.value.reduce((s, u) => s + (u.summary?.gender?.male || 0), 0))
@@ -180,6 +211,16 @@ function formatDate(d) {
             <option value="all">ทุกอำเภอ</option>
             <option v-for="d in districts" :key="d" :value="d">อ.{{ d }}</option>
           </select>
+          <select v-model="filterCluster"
+            class="px-3 py-2.5 border border-white/80 bg-white/70 backdrop-blur rounded-xl text-sm focus:outline-none focus:border-primary">
+            <option value="all">ทุกศูนย์เครือข่าย</option>
+            <option v-for="c in clusters" :key="c" :value="c">{{ c }}</option>
+          </select>
+          <select v-model="filterLevel"
+            class="px-3 py-2.5 border border-white/80 bg-white/70 backdrop-blur rounded-xl text-sm focus:outline-none focus:border-primary">
+            <option value="all">ทุกระดับ</option>
+            <option v-for="lv in LEVEL_OPTIONS" :key="lv.value" :value="lv.value">{{ lv.label }}</option>
+          </select>
           <select v-model="filterSchool"
             class="px-3 py-2.5 border border-white/80 bg-white/70 backdrop-blur rounded-xl text-sm focus:outline-none focus:border-primary min-w-[180px]">
             <option value="all">ทุกโรงเรียน</option>
@@ -214,6 +255,12 @@ function formatDate(d) {
           <p :class="['text-3xl font-extrabold', Number(disadvPct)>50?'text-red-600':'text-amber-600']">{{ disadvPct }}%</p>
           <p class="text-xs text-slate-500 mt-1">เด็กยากจน {{ disadvCount.toLocaleString() }} คน</p>
         </div>
+      </div>
+
+      <!-- ศูนย์เครือข่าย -->
+      <div v-if="clusterAgg.length > 0" class="glass-tile p-5">
+        <h3 class="font-bold text-slate-700 mb-4">นักเรียนแยกตามศูนย์เครือข่าย</h3>
+        <BarChart :items="clusterAgg"/>
       </div>
 
       <!-- Grade chart -->

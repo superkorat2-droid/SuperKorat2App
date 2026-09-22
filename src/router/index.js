@@ -52,6 +52,7 @@ import SchoolAdminsView          from '../views/school/SchoolAdminsView.vue'
 import SchoolMediaView           from '../views/school/SchoolMediaView.vue'
 import SchoolMediaEditorView     from '../views/school/SchoolMediaEditorView.vue'
 import AdminDmcResultsView        from '../views/admin/AdminDmcResultsView.vue'
+import AdminDmcTrendView          from '../views/admin/AdminDmcTrendView.vue'
 import PublicStudentStatsView     from '../views/PublicStudentStatsView.vue'
 import AdminSupervisionFormView from '../views/admin/AdminSupervisionFormView.vue'
 import AdminSupervisionResultsView from '../views/admin/AdminSupervisionResultsView.vue'
@@ -141,6 +142,7 @@ const routes = [
       { path: 'media/:id/edit',name: 'adminMediaEdit',      component: AdminMediaEditorView,    meta: { title: 'แก้ไขสื่อ' } },
       { path: 'dmc',         name: 'adminDmc',         component: AdminDmcPeriodsView,  meta: { title: 'รอบ DMC', icon: '📊' } },
       { path: 'dmc/:id',     name: 'adminDmcResults',  component: AdminDmcResultsView,  meta: { title: 'สถิติ DMC' } },
+      { path: 'dmc-trend',   name: 'adminDmcTrend',    component: AdminDmcTrendView,    meta: { title: 'แนวโน้ม DMC' } },
       { path: 'enrollment',  name: 'adminEnrollment',  component: AdminEnrollmentView,  meta: { title: 'สถิติย้อนหลัง', icon: '📊' } },
       { path: 'visit-stats', name: 'adminVisitStats',  component: AdminVisitStatsView,  meta: { title: 'สถิติการเข้าชม', icon: '👁️' } },
       { path: 'image-library', name: 'adminImageLibrary', component: AdminImageLibraryView, meta: { title: 'คลังภาพ', icon: '🖼️' } },

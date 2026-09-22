@@ -5,13 +5,40 @@
 import { read, utils } from 'xlsx'
 
 // ── Grade order ──────────────────────────────────────────────────────────────
-const GRADE_ORDER = ['ป.1','ป.2','ป.3','ป.4','ป.5','ป.6','ม.1','ม.2','ม.3','ม.4','ม.5','ม.6']
+// ครอบคลุมตั้งแต่อนุบาลถึง ปวช. เพื่อให้ใช้ร่วมกันได้ทั้งไฟล์รายบุคคล (ต่อโรง) และไฟล์สรุปทั้งเขต
+export const GRADE_ORDER = [
+  'อ.1','อ.2','อ.3',
+  'ป.1','ป.2','ป.3','ป.4','ป.5','ป.6',
+  'ม.1','ม.2','ม.3','ม.4','ม.5','ม.6',
+  'ปวช.1','ปวช.2','ปวช.3',
+]
 
-function sortedGrades(map) {
+export function sortedGrades(map) {
   const result = {}
   GRADE_ORDER.forEach(g => { if (map[g]) result[g] = map[g] })
   Object.keys(map).forEach(g => { if (!result[g]) result[g] = map[g] })
   return result
+}
+
+// ── Level classification (4 กลุ่ม) ───────────────────────────────────────────
+// ใช้ร่วมกันทั้งไฟล์รายบุคคลและไฟล์สรุปทั้งเขต: ดูจากชุดระดับชั้นที่มีนักเรียนจริง
+export function classifyLevel(gradeKeys) {
+  const hasK = gradeKeys.some(g => g.startsWith('อ.'))
+  const hasP = gradeKeys.some(g => g.startsWith('ป.'))
+  const hasM = gradeKeys.some(g => g.startsWith('ม.') || g.startsWith('ปวช'))
+  if (hasP && hasM) return 'extended'      // ขยายโอกาส (ประถม + มัธยมต้น/ปลาย)
+  if (hasM) return 'secondary'             // มัธยมศึกษา / ปวช.
+  if (hasP) return 'primary'               // ประถมศึกษา
+  if (hasK) return 'kindergarten'          // อนุบาลอย่างเดียว
+  return 'unknown'
+}
+
+export const LEVEL_LABEL = {
+  kindergarten: 'อนุบาล',
+  primary:      'ประถมศึกษา',
+  extended:     'ขยายโอกาส',
+  secondary:    'มัธยมศึกษา',
+  unknown:      'ไม่ระบุ',
 }
 
 // ── BMI classification ───────────────────────────────────────────────────────
@@ -117,10 +144,7 @@ function computeSummary(rows, C) {
   const by_grade = sortedGrades(gradeRaw)
 
   // ── Detect level ─────────────────────────────────────────────
-  const grades   = Object.keys(by_grade)
-  const hasP     = grades.some(g => g.startsWith('ป.'))
-  const hasM     = grades.some(g => g.startsWith('ม.'))
-  const level    = hasP && hasM ? 'mixed' : hasP ? 'primary' : 'secondary'
+  const level = classifyLevel(Object.keys(by_grade))
 
   // ── BMI ──────────────────────────────────────────────────────
   const bmiCounts = { underweight: 0, normal: 0, overweight: 0, obese: 0 }
@@ -164,6 +188,7 @@ function computeSummary(rows, C) {
   const age_avg = ages.length ? (ages.reduce((a, b) => a + b, 0) / ages.length).toFixed(1) : null
 
   return {
+    source: 'school_detail',
     school_code: schoolCode,
     school_name: schoolName,
     level,

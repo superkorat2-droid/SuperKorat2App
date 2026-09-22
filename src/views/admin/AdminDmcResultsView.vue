@@ -2,7 +2,9 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { supabase } from '../../supabase'
-import { parseDmcFile } from '../../composables/useDmcParser'
+import { parseDmcFile, LEVEL_LABEL } from '../../composables/useDmcParser'
+import { parseDmcDistrictFile } from '../../composables/useDmcDistrictParser'
+import BarChart from '../../components/awards/BarChart.vue'
 import Swal from 'sweetalert2'
 
 const router  = useRouter()
@@ -21,6 +23,34 @@ const TABS = [
   { key: 'family',    label: 'ครอบครัว' },
   { key: 'status',    label: 'สถานะโรงเรียน' },
 ]
+
+// ── Filter: ศูนย์เครือข่าย / ระดับ ──────────────────────────────────────────
+const filterCluster = ref('all')
+const filterLevel   = ref('all')
+
+const clusterOptions = computed(() => {
+  const set = new Set(schools.value.map(s => s.school_group).filter(Boolean))
+  return [...set].sort()
+})
+const LEVEL_OPTIONS = [
+  { value: 'kindergarten', label: LEVEL_LABEL.kindergarten },
+  { value: 'primary',      label: LEVEL_LABEL.primary },
+  { value: 'extended',     label: LEVEL_LABEL.extended },
+  { value: 'secondary',    label: LEVEL_LABEL.secondary },
+]
+
+function schoolOf(upload) { return schools.value.find(s => s.id === upload.school_id) }
+
+const filteredUploads = computed(() => {
+  let list = uploads.value
+  if (filterCluster.value !== 'all') {
+    list = list.filter(u => schoolOf(u)?.school_group === filterCluster.value)
+  }
+  if (filterLevel.value !== 'all') {
+    list = list.filter(u => u.summary?.level === filterLevel.value)
+  }
+  return list
+})
 
 // ── Admin upload on behalf ─────────────────────────────────────────────────
 const uploadModal   = ref({ open: false, school: null })
@@ -101,11 +131,105 @@ function viewUploadDetail(school) {
         <p>👥 นักเรียน: <b>${upload.total.toLocaleString()} คน</b> (ชาย ${s.gender?.male||0} หญิง ${s.gender?.female||0})</p>
         <p>🍎 ยากจน: <b>${s.disadvantaged?.count||0} คน (${s.disadvantaged?.pct||0}%)</b></p>
         <p>📏 BMI ต่ำกว่าเกณฑ์: <b>${s.bmi?.underweight||0} คน</b></p>
-        <p>🏫 ระดับ: <b>${s.level === 'primary' ? 'ประถม' : s.level === 'secondary' ? 'มัธยม' : 'ประถม+มัธยม'}</b></p>
+        <p>🏫 ระดับ: <b>${LEVEL_LABEL[s.level] || 'ไม่ระบุ'}</b></p>
+        <p>📥 ที่มา: <b>${s.source === 'district_bulk' ? 'นำเข้าไฟล์เขต' : 'ไฟล์รายบุคคล'}</b></p>
       </div>`,
     confirmButtonText: 'ปิด',
     confirmButtonColor: 'var(--color-primary, #2563eb)',
   })
+}
+
+// ── นำเข้าจากไฟล์เขต (ทุกโรงเรียนในครั้งเดียว) ──────────────────────────────
+const bulkModal    = ref({ open: false })
+const bulkFile     = ref(null)
+const bulkParsed   = ref(null)   // { schools, skippedRows }
+const bulkParsing  = ref(false)
+const bulkSaving   = ref(false)
+const bulkOverrideConflicts = ref(new Set())
+
+function openBulkModal() {
+  bulkModal.value = { open: true }
+  bulkFile.value = null
+  bulkParsed.value = null
+  bulkOverrideConflicts.value = new Set()
+}
+function closeBulkModal() {
+  bulkModal.value = { open: false }
+  bulkFile.value = null
+  bulkParsed.value = null
+  bulkOverrideConflicts.value = new Set()
+}
+
+async function onBulkFileChange(e) {
+  const file = e.target.files?.[0]
+  if (!file) return
+  e.target.value = ''
+  bulkFile.value = file
+  bulkParsed.value = null
+  bulkOverrideConflicts.value = new Set()
+  bulkParsing.value = true
+  try {
+    bulkParsed.value = await parseDmcDistrictFile(file)
+  } catch (err) {
+    Swal.fire({ icon: 'error', title: 'อ่านไฟล์ไม่ได้', text: err.message })
+    bulkFile.value = null
+  }
+  bulkParsing.value = false
+}
+
+// จับคู่แต่ละแถวในไฟล์กับโรงเรียนในระบบ (โดย dmc_code) แล้วจัดกลุ่ม matched/unmatched/conflict
+const bulkRows = computed(() => {
+  if (!bulkParsed.value) return []
+  return bulkParsed.value.schools.map(row => {
+    const school = schools.value.find(s => s.dmc_code === row.dmc_code)
+    const existing = school ? uploads.value.find(u => u.school_id === school.id) : null
+    const isConflict = !!school && existing?.summary?.source === 'school_detail'
+    return { ...row, school, existing, isConflict }
+  })
+})
+const bulkMatched    = computed(() => bulkRows.value.filter(r => r.school))
+const bulkUnmatched  = computed(() => bulkRows.value.filter(r => !r.school))
+const bulkConflicts  = computed(() => bulkMatched.value.filter(r => r.isConflict))
+const bulkClusterPreview = computed(() => {
+  const map = {}
+  bulkMatched.value.forEach(r => {
+    const key = r.school.school_group || 'ไม่ระบุศูนย์'
+    map[key] = (map[key] || 0) + (r.summary.total || 0)
+  })
+  return Object.entries(map).sort((a,b) => b[1]-a[1]).map(([label, value]) => ({ label, value }))
+})
+const bulkTotalStudents = computed(() => bulkMatched.value.reduce((s, r) => s + (r.summary.total || 0), 0))
+const bulkRowsToSave = computed(() =>
+  bulkMatched.value.filter(r => !r.isConflict || bulkOverrideConflicts.value.has(r.school.id)).length
+)
+
+function toggleBulkOverride(schoolId) {
+  const set = new Set(bulkOverrideConflicts.value)
+  if (set.has(schoolId)) set.delete(schoolId); else set.add(schoolId)
+  bulkOverrideConflicts.value = set
+}
+
+async function saveBulkImport() {
+  const rows = bulkMatched.value
+    .filter(r => !r.isConflict || bulkOverrideConflicts.value.has(r.school.id))
+    .map(r => ({
+      period_id:   periodId.value,
+      school_id:   r.school.id,
+      total:       r.summary.total,
+      summary:     r.summary,
+      uploaded_at: new Date().toISOString(),
+    }))
+  if (rows.length === 0) {
+    Swal.fire({ icon: 'warning', title: 'ไม่มีข้อมูลที่จะบันทึก' }); return
+  }
+  bulkSaving.value = true
+  const { error } = await supabase.from('dmc_school_uploads')
+    .upsert(rows, { onConflict: 'period_id,school_id' })
+  bulkSaving.value = false
+  if (error) { Swal.fire({ icon: 'error', title: 'บันทึกไม่สำเร็จ', text: error.message }); return }
+  closeBulkModal()
+  await load()
+  Swal.fire({ icon: 'success', title: `นำเข้าสำเร็จ ${rows.length} โรงเรียน`, showConfirmButton: false, timer: 2000 })
 }
 
 async function load() {
@@ -113,7 +237,7 @@ async function load() {
   const [{ data: p }, { data: u }, { data: sc }] = await Promise.all([
     supabase.from('dmc_periods').select('*').eq('id', periodId.value).single(),
     supabase.from('dmc_school_uploads').select('*').eq('period_id', periodId.value),
-    supabase.from('schools').select('id, name, district, school_group').order('district').order('name'),
+    supabase.from('schools').select('id, name, dmc_code, district, school_group').order('district').order('name'),
   ])
   period.value  = p
   uploads.value = u || []
@@ -123,12 +247,12 @@ async function load() {
 
 onMounted(load)
 
-// ── Aggregate computeds ────────────────────────────────────────────────────
-const totalStudents = computed(() => uploads.value.reduce((s, u) => s + u.total, 0))
+// ── Aggregate computeds (คิดจากข้อมูลที่กรองแล้ว) ───────────────────────────
+const totalStudents = computed(() => filteredUploads.value.reduce((s, u) => s + u.total, 0))
 
 const genderAgg = computed(() => {
   let male = 0, female = 0
-  uploads.value.forEach(u => {
+  filteredUploads.value.forEach(u => {
     male   += u.summary?.gender?.male   || 0
     female += u.summary?.gender?.female || 0
   })
@@ -137,7 +261,7 @@ const genderAgg = computed(() => {
 
 const gradeAgg = computed(() => {
   const map = {}
-  uploads.value.forEach(u => {
+  filteredUploads.value.forEach(u => {
     const bg = u.summary?.by_grade || {}
     Object.entries(bg).forEach(([g, d]) => {
       if (!map[g]) map[g] = { total: 0, male: 0, female: 0 }
@@ -151,7 +275,7 @@ const gradeAgg = computed(() => {
 
 const bmiAgg = computed(() => {
   let u=0, n=0, o=0, ob=0
-  uploads.value.forEach(up => {
+  filteredUploads.value.forEach(up => {
     const b = up.summary?.bmi || {}
     u  += b.underweight || 0
     n  += b.normal      || 0
@@ -164,13 +288,13 @@ const bmiAgg = computed(() => {
 
 const disadvantagedAgg = computed(() => {
   let count = 0
-  uploads.value.forEach(u => { count += u.summary?.disadvantaged?.count || 0 })
+  filteredUploads.value.forEach(u => { count += u.summary?.disadvantaged?.count || 0 })
   return { count, pct: totalStudents.value > 0 ? ((count/totalStudents.value)*100).toFixed(1) : '0' }
 })
 
 const guardianAgg = computed(() => {
   const map = {}
-  uploads.value.forEach(u => {
+  filteredUploads.value.forEach(u => {
     const gr = u.summary?.guardian_relation || {}
     Object.entries(gr).forEach(([k, v]) => { map[k] = (map[k]||0) + v })
   })
@@ -179,11 +303,34 @@ const guardianAgg = computed(() => {
 
 const parentJobsAgg = computed(() => {
   const map = {}
-  uploads.value.forEach(u => {
+  filteredUploads.value.forEach(u => {
     const pj = u.summary?.parent_jobs || {}
     Object.entries(pj).forEach(([k, v]) => { map[k] = (map[k]||0) + v })
   })
   return Object.entries(map).sort((a,b) => b[1]-a[1]).slice(0, 8)
+})
+
+// ── ยอดแยกตามศูนย์เครือข่าย / ระดับ (ใช้ BarChart.vue ที่มีอยู่แล้ว) ────────
+const clusterAgg = computed(() => {
+  const map = {}
+  filteredUploads.value.forEach(u => {
+    const key = schoolOf(u)?.school_group || 'ไม่ระบุศูนย์'
+    map[key] = (map[key] || 0) + u.total
+  })
+  return Object.entries(map)
+    .sort((a, b) => b[1] - a[1])
+    .map(([label, value]) => ({ label, value }))
+})
+
+const levelAgg = computed(() => {
+  const map = {}
+  filteredUploads.value.forEach(u => {
+    const key = u.summary?.level || 'unknown'
+    map[key] = (map[key] || 0) + u.total
+  })
+  return Object.keys(LEVEL_LABEL)
+    .filter(k => map[k])
+    .map(k => ({ label: LEVEL_LABEL[k], value: map[k] }))
 })
 
 const respondedIds  = computed(() => new Set(uploads.value.map(u => u.school_id)))
@@ -282,13 +429,22 @@ async function exportCSV() {
         <h1 class="text-2xl font-extrabold text-slate-800">{{ period?.title }}</h1>
         <p class="text-sm text-slate-500 mt-0.5">ปีการศึกษา {{ period?.academic_year }} ภาคเรียน {{ period?.semester }}</p>
       </div>
-      <button @click="exportCSV" :disabled="uploads.length === 0"
-        class="flex items-center gap-2 px-4 py-2.5 text-sm font-bold bg-emerald-600 text-white rounded-2xl hover:-translate-y-0.5 shadow-md transition-all disabled:opacity-50">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/>
-        </svg>
-        Export CSV
-      </button>
+      <div class="flex flex-wrap gap-2">
+        <button @click="openBulkModal" :disabled="period?.is_archived"
+          class="flex items-center gap-2 px-4 py-2.5 text-sm font-bold bg-primary text-white rounded-2xl hover:-translate-y-0.5 shadow-md transition-all disabled:opacity-50">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/>
+          </svg>
+          นำเข้าจากไฟล์เขต (ทุกโรงเรียน)
+        </button>
+        <button @click="exportCSV" :disabled="uploads.length === 0"
+          class="flex items-center gap-2 px-4 py-2.5 text-sm font-bold bg-emerald-600 text-white rounded-2xl hover:-translate-y-0.5 shadow-md transition-all disabled:opacity-50">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/>
+          </svg>
+          Export CSV
+        </button>
+      </div>
     </div>
 
     <div v-if="loading" class="flex justify-center py-16">
@@ -340,8 +496,39 @@ async function exportCSV() {
         </button>
       </div>
 
+      <!-- Filter: ศูนย์เครือข่าย / ระดับ -->
+      <div class="glass-card p-4 flex flex-wrap items-center gap-3">
+        <select v-model="filterCluster" class="px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-primary">
+          <option value="all">ทุกศูนย์เครือข่าย</option>
+          <option v-for="c in clusterOptions" :key="c" :value="c">{{ c }}</option>
+        </select>
+        <select v-model="filterLevel" class="px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-primary">
+          <option value="all">ทุกระดับ</option>
+          <option v-for="lv in LEVEL_OPTIONS" :key="lv.value" :value="lv.value">{{ lv.label }}</option>
+        </select>
+        <span v-if="filterCluster !== 'all' || filterLevel !== 'all'" class="text-xs text-primary font-medium">
+          กรองแล้ว {{ filteredUploads.length }} โรงเรียน · {{ totalStudents.toLocaleString() }} คน
+        </span>
+        <button v-if="filterCluster !== 'all' || filterLevel !== 'all'"
+          @click="filterCluster='all'; filterLevel='all'"
+          class="text-xs text-slate-400 hover:text-red-500 ml-auto">ล้างตัวกรอง</button>
+      </div>
+
       <!-- ── Overview ── -->
       <template v-if="activeTab === 'overview'">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          <!-- ศูนย์เครือข่าย -->
+          <div class="glass-card p-5">
+            <h3 class="font-bold text-slate-700 mb-4">นักเรียนแยกตามศูนย์เครือข่าย</h3>
+            <BarChart :items="clusterAgg.map(c => ({ label: c.label, value: c.value, bar: 'bg-primary' }))"/>
+          </div>
+          <!-- ระดับ -->
+          <div class="glass-card p-5">
+            <h3 class="font-bold text-slate-700 mb-4">นักเรียนแยกตามระดับ</h3>
+            <BarChart :items="levelAgg.map(l => ({ label: l.label, value: l.value, bar: 'bg-indigo-500' }))"/>
+          </div>
+        </div>
+
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
           <!-- Gender -->
           <div class="glass-card p-5">
@@ -601,6 +788,112 @@ async function exportCSV() {
                 <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
               </svg>
               {{ adminSaving ? 'กำลังบันทึก...' : 'บันทึกข้อมูล' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </Transition>
+  </Teleport>
+
+  <!-- ── Bulk Import Modal (นำเข้าจากไฟล์เขต) ──────────────────────────── -->
+  <Teleport to="body">
+    <Transition name="fade">
+      <div v-if="bulkModal.open"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 font-sarabun">
+        <div class="glass-panel rounded-[1.25rem] w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
+
+          <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between flex-shrink-0">
+            <div>
+              <h2 class="font-extrabold text-slate-800">นำเข้าข้อมูลจากไฟล์เขต</h2>
+              <p class="text-xs text-slate-400 mt-0.5">ไฟล์สรุปจำนวนนักเรียนรายโรงเรียน (CSV จาก DMC ระดับเขต)</p>
+            </div>
+            <button @click="closeBulkModal" class="w-7 h-7 flex items-center justify-center rounded-full hover:bg-slate-100 text-slate-400">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </button>
+          </div>
+
+          <div class="flex-1 overflow-y-auto px-6 py-5 space-y-4">
+
+            <!-- File picker -->
+            <div v-if="!bulkParsed">
+              <input type="file" id="bulk-file-input" accept=".csv" class="sr-only" @change="onBulkFileChange"/>
+              <label for="bulk-file-input"
+                class="flex flex-col items-center justify-center gap-2 p-8 border-2 border-dashed border-slate-300 rounded-2xl cursor-pointer hover:border-primary hover:bg-primary/5 transition-all text-center">
+                <div v-if="bulkParsing" class="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin"/>
+                <svg v-else class="w-10 h-10 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/>
+                </svg>
+                <p class="font-bold text-slate-600 text-sm">{{ bulkParsing ? 'กำลังวิเคราะห์...' : 'คลิกเพื่อเลือกไฟล์ CSV ระดับเขต' }}</p>
+                <p class="text-xs text-slate-400">รองรับ .csv (จาก DMC ระดับเขต — สรุปทุกโรงเรียนในไฟล์เดียว)</p>
+              </label>
+            </div>
+
+            <!-- Preview -->
+            <div v-else class="space-y-4">
+              <div class="flex items-center justify-between">
+                <p class="font-bold text-slate-700">ตรวจสอบก่อนบันทึก</p>
+                <button @click="bulkFile=null; bulkParsed=null" class="text-xs text-slate-400 hover:text-red-500">เลือกไฟล์ใหม่</button>
+              </div>
+
+              <div class="grid grid-cols-3 gap-2 text-center text-sm">
+                <div class="bg-primary/5 rounded-xl p-3">
+                  <p class="text-xl font-extrabold text-primary">{{ bulkMatched.length }}</p>
+                  <p class="text-xs text-slate-500">จับคู่โรงเรียนได้</p>
+                </div>
+                <div :class="['rounded-xl p-3', bulkUnmatched.length > 0 ? 'bg-red-50' : 'bg-slate-50']">
+                  <p :class="['text-xl font-extrabold', bulkUnmatched.length > 0 ? 'text-red-600' : 'text-slate-400']">{{ bulkUnmatched.length }}</p>
+                  <p class="text-xs text-slate-500">ไม่พบในระบบ</p>
+                </div>
+                <div class="bg-emerald-50 rounded-xl p-3">
+                  <p class="text-xl font-extrabold text-emerald-600">{{ bulkTotalStudents.toLocaleString() }}</p>
+                  <p class="text-xs text-slate-500">นักเรียนรวม</p>
+                </div>
+              </div>
+
+              <!-- ยอดตามศูนย์เครือข่าย -->
+              <div class="bg-slate-50 rounded-2xl p-4">
+                <p class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">ยอดแยกตามศูนย์เครือข่าย</p>
+                <BarChart :items="bulkClusterPreview.map(c => ({ label: c.label, value: c.value, bar: 'bg-primary' }))"/>
+              </div>
+
+              <!-- โรงเรียนไม่พบในระบบ -->
+              <div v-if="bulkUnmatched.length > 0" class="bg-red-50 border border-red-200 rounded-2xl p-4">
+                <p class="text-xs font-bold text-red-600 mb-2">⚠️ โรงเรียนในไฟล์ที่ไม่พบในระบบ (จะถูกข้าม)</p>
+                <div class="flex flex-wrap gap-1.5">
+                  <span v-for="r in bulkUnmatched" :key="r.dmc_code"
+                    class="text-xs bg-white border border-red-200 px-2.5 py-1 rounded-lg text-red-500">
+                    {{ r.dmc_code }} — {{ r.file_school_name }}
+                  </span>
+                </div>
+              </div>
+
+              <!-- ชนกับข้อมูลรายบุคคลเดิม -->
+              <div v-if="bulkConflicts.length > 0" class="bg-amber-50 border border-amber-200 rounded-2xl p-4 space-y-2">
+                <p class="text-xs font-bold text-amber-700">
+                  ⚠️ {{ bulkConflicts.length }} โรงเรียนเคยอัปโหลดไฟล์รายบุคคลไว้แล้ว (มี BMI/ครอบครัวครบกว่า)
+                  — เลือกยืนยันหากต้องการทับด้วยข้อมูลจากไฟล์เขต
+                </p>
+                <label v-for="r in bulkConflicts" :key="r.school.id"
+                  class="flex items-center gap-2 bg-white rounded-xl px-3 py-2 cursor-pointer text-sm">
+                  <input type="checkbox" :checked="bulkOverrideConflicts.has(r.school.id)"
+                    @change="toggleBulkOverride(r.school.id)" class="w-4 h-4 accent-amber-600 rounded"/>
+                  <span class="flex-1 text-slate-700">{{ r.school.name }}</span>
+                  <span class="text-xs text-slate-400">ทับด้วย {{ r.summary.total }} คน</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div class="px-6 py-4 border-t border-slate-100 flex gap-3 justify-end flex-shrink-0">
+            <button @click="closeBulkModal" class="px-4 py-2.5 text-sm font-bold text-slate-600 bg-slate-100 rounded-xl hover:bg-slate-200">ยกเลิก</button>
+            <button @click="saveBulkImport" :disabled="!bulkParsed || bulkSaving || bulkRowsToSave === 0"
+              class="flex items-center gap-2 px-6 py-2.5 text-sm font-bold bg-primary text-white rounded-xl hover:-translate-y-0.5 shadow-md transition-all disabled:opacity-50">
+              <svg v-if="bulkSaving" class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+              </svg>
+              {{ bulkSaving ? 'กำลังบันทึก...' : `นำเข้า ${bulkRowsToSave} โรงเรียน` }}
             </button>
           </div>
         </div>
