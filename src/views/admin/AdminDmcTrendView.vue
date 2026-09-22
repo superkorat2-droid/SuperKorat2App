@@ -2,7 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase } from '../../supabase'
-import { LEVEL_LABEL } from '../../composables/useDmcParser'
+import { gradeLevelGroup, GRADE_GROUP_LABEL } from '../../composables/useDmcParser'
 
 const router = useRouter()
 
@@ -43,10 +43,13 @@ const periodSummaries = computed(() => {
     if (filterCluster.value !== 'all') {
       rows = rows.filter(u => schoolOf(u.school_id)?.school_group === filterCluster.value)
     }
+    // นับจากรายชั้นจริง (by_grade) ไม่ใช่ประเภทโรงเรียน — กันยอดอนุบาลไปหลบใต้ "ประถมศึกษา"
     const byLevel = {}
     rows.forEach(u => {
-      const lv = u.summary?.level || 'unknown'
-      byLevel[lv] = (byLevel[lv] || 0) + (u.total || 0)
+      Object.entries(u.summary?.by_grade || {}).forEach(([g, d]) => {
+        const grp = gradeLevelGroup(g)
+        byLevel[grp] = (byLevel[grp] || 0) + (d.total || 0)
+      })
     })
     return {
       id: p.id,
@@ -61,8 +64,8 @@ const periodSummaries = computed(() => {
 const hasEnoughData = computed(() => periodSummaries.value.filter(p => p.schools > 0).length >= 2)
 const latestSummary  = computed(() => [...periodSummaries.value].reverse().find(p => p.schools > 0))
 
-const LEVEL_KEYS  = ['kindergarten', 'primary', 'extended', 'secondary']
-const LEVEL_COLORS = { kindergarten: '#f97316', primary: '#3b82f6', extended: '#8b5cf6', secondary: '#10b981' }
+const LEVEL_KEYS  = ['kindergarten', 'primary', 'lower_secondary', 'upper_secondary']
+const LEVEL_COLORS = { kindergarten: '#f97316', primary: '#3b82f6', lower_secondary: '#8b5cf6', upper_secondary: '#10b981' }
 
 const trendChartOpts = computed(() => ({
   chart: { type: 'line', height: 320, toolbar: { show: false } },
@@ -77,7 +80,7 @@ const trendChartOpts = computed(() => ({
 
 const trendChartSeries = computed(() =>
   LEVEL_KEYS.map(k => ({
-    name: LEVEL_LABEL[k],
+    name: GRADE_GROUP_LABEL[k],
     data: periodSummaries.value.map(p => p.byLevel[k] || 0),
   }))
 )
@@ -158,7 +161,7 @@ const totalTrendOpts = computed(() => ({
               <th class="px-4 py-3 font-bold">รอบ</th>
               <th class="px-4 py-3 font-bold text-right">โรงเรียน</th>
               <th class="px-4 py-3 font-bold text-right">นักเรียนรวม</th>
-              <th v-for="k in LEVEL_KEYS" :key="k" class="px-4 py-3 font-bold text-right">{{ LEVEL_LABEL[k] }}</th>
+              <th v-for="k in LEVEL_KEYS" :key="k" class="px-4 py-3 font-bold text-right">{{ GRADE_GROUP_LABEL[k] }}</th>
             </tr></thead>
             <tbody class="divide-y divide-slate-50">
               <tr v-for="p in periodSummaries" :key="p.id" class="hover:bg-slate-50 transition-colors">

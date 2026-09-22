@@ -2,7 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { supabase } from '../../supabase'
-import { parseDmcFile, LEVEL_LABEL } from '../../composables/useDmcParser'
+import { parseDmcFile, LEVEL_LABEL, gradeLevelGroup, GRADE_GROUP_LABEL } from '../../composables/useDmcParser'
 import { parseDmcDistrictFile } from '../../composables/useDmcDistrictParser'
 import BarChart from '../../components/awards/BarChart.vue'
 import Swal from 'sweetalert2'
@@ -33,10 +33,9 @@ const clusterOptions = computed(() => {
   return [...set].sort()
 })
 const LEVEL_OPTIONS = [
-  { value: 'kindergarten', label: LEVEL_LABEL.kindergarten },
-  { value: 'primary',      label: LEVEL_LABEL.primary },
-  { value: 'extended',     label: LEVEL_LABEL.extended },
-  { value: 'secondary',    label: LEVEL_LABEL.secondary },
+  { value: 'primary',   label: LEVEL_LABEL.primary },
+  { value: 'extended',  label: LEVEL_LABEL.extended },
+  { value: 'secondary', label: LEVEL_LABEL.secondary },
 ]
 
 function schoolOf(upload) { return schools.value.find(s => s.id === upload.school_id) }
@@ -322,15 +321,18 @@ const clusterAgg = computed(() => {
     .map(([label, value]) => ({ label, value }))
 })
 
+// นับจากรายชั้นจริง (by_grade) ไม่ใช่ประเภทโรงเรียน — กันยอดอนุบาลไปหลบใต้ "ประถมศึกษา"
 const levelAgg = computed(() => {
   const map = {}
   filteredUploads.value.forEach(u => {
-    const key = u.summary?.level || 'unknown'
-    map[key] = (map[key] || 0) + u.total
+    Object.entries(u.summary?.by_grade || {}).forEach(([g, d]) => {
+      const grp = gradeLevelGroup(g)
+      map[grp] = (map[grp] || 0) + (d.total || 0)
+    })
   })
-  return Object.keys(LEVEL_LABEL)
+  return Object.keys(GRADE_GROUP_LABEL)
     .filter(k => map[k])
-    .map(k => ({ label: LEVEL_LABEL[k], value: map[k] }))
+    .map(k => ({ label: GRADE_GROUP_LABEL[k], value: map[k] }))
 })
 
 const respondedIds  = computed(() => new Set(uploads.value.map(u => u.school_id)))

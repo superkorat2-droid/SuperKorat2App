@@ -35,10 +35,9 @@ const clusters = computed(() => {
   return [...set].sort()
 })
 const LEVEL_OPTIONS = [
-  { value: 'kindergarten', label: LEVEL_LABEL.kindergarten },
-  { value: 'primary',      label: LEVEL_LABEL.primary },
-  { value: 'extended',     label: LEVEL_LABEL.extended },
-  { value: 'secondary',    label: LEVEL_LABEL.secondary },
+  { value: 'primary',   label: LEVEL_LABEL.primary },
+  { value: 'extended',  label: LEVEL_LABEL.extended },
+  { value: 'secondary', label: LEVEL_LABEL.secondary },
 ]
 
 const filterDistrict  = ref('all')

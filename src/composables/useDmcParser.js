@@ -20,25 +20,40 @@ export function sortedGrades(map) {
   return result
 }
 
-// ── Level classification (4 กลุ่ม) ───────────────────────────────────────────
-// ใช้ร่วมกันทั้งไฟล์รายบุคคลและไฟล์สรุปทั้งเขต: ดูจากชุดระดับชั้นที่มีนักเรียนจริง
+// ── Level classification (ประเภทโรงเรียน — ใช้กรอง "รายชื่อโรงเรียน") ────────
+// โรงเรียนสังกัด สพฐ. เกือบทั้งหมดมีอนุบาลควบคู่ประถมอยู่แล้ว จึงไม่แยก "อนุบาลล้วน"
+// เป็นประเภทโรงเรียนต่างหาก (ให้ถือเป็นประถมศึกษาไปตามธรรมเนียม) — ถ้าอยากดูยอดอนุบาล
+// แยกจริงๆ ให้ใช้ gradeLevelGroup() ด้านล่าง ซึ่งนับจากรายระดับชั้นตรงๆ ไม่ใช่ประเภทโรงเรียน
 export function classifyLevel(gradeKeys) {
-  const hasK = gradeKeys.some(g => g.startsWith('อ.'))
   const hasP = gradeKeys.some(g => g.startsWith('ป.'))
   const hasM = gradeKeys.some(g => g.startsWith('ม.') || g.startsWith('ปวช'))
   if (hasP && hasM) return 'extended'      // ขยายโอกาส (ประถม + มัธยมต้น/ปลาย)
-  if (hasM) return 'secondary'             // มัธยมศึกษา / ปวช.
-  if (hasP) return 'primary'               // ประถมศึกษา
-  if (hasK) return 'kindergarten'          // อนุบาลอย่างเดียว
-  return 'unknown'
+  if (hasM) return 'secondary'             // มัธยมศึกษา / ปวช. ล้วน (พบยากในเขตประถม)
+  return 'primary'                         // ประถมศึกษา (รวมกรณีมีแต่อนุบาล)
 }
 
 export const LEVEL_LABEL = {
-  kindergarten: 'อนุบาล',
-  primary:      'ประถมศึกษา',
-  extended:     'ขยายโอกาส',
-  secondary:    'มัธยมศึกษา',
-  unknown:      'ไม่ระบุ',
+  primary:   'ประถมศึกษา',
+  extended:  'ขยายโอกาส',
+  secondary: 'มัธยมศึกษา',
+}
+
+// ── Grade group (ใช้สรุป "จำนวนนักเรียน" แยกตามช่วงชั้นจริง) ──────────────────
+// ต่างจาก classifyLevel ตรงที่นี่นับจากตัวเลขรายชั้นตรงๆ ไม่ใช่ประเภทโรงเรียน —
+// โรงเรียนขยายโอกาสที่มีทั้งอนุบาล/ประถม/ม.ต้น จะถูกแยกยอดไปคนละก้อนตามชั้นจริง
+// ไม่ใช่รวมเหมาเป็นก้อนเดียวตามประเภทโรงเรียน (ไม่งั้นยอดอนุบาลจะไปหลบอยู่ใต้ "ประถมศึกษา")
+export function gradeLevelGroup(gradeKey) {
+  if (gradeKey.startsWith('อ.')) return 'kindergarten'
+  if (gradeKey.startsWith('ป.')) return 'primary'
+  if (gradeKey === 'ม.1' || gradeKey === 'ม.2' || gradeKey === 'ม.3') return 'lower_secondary'
+  return 'upper_secondary' // ม.4-6, ปวช.1-3
+}
+
+export const GRADE_GROUP_LABEL = {
+  kindergarten:     'อนุบาล',
+  primary:          'ประถมศึกษา',
+  lower_secondary:  'มัธยมต้น',
+  upper_secondary:  'มัธยมปลาย/ปวช.',
 }
 
 // ── BMI classification ───────────────────────────────────────────────────────
