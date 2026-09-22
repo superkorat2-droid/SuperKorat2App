@@ -394,15 +394,24 @@ const parentJobsAgg = computed(() => {
 })
 
 // ── ยอดแยกตามศูนย์เครือข่าย / ระดับ (ใช้ BarChart.vue ที่มีอยู่แล้ว) ────────
+// เรียงได้ 3 แบบ: มากไปน้อย (ค่าเริ่มต้น) / น้อยไปมาก / ตามชื่อศูนย์
+const clusterSort = ref('value_desc')
+const CLUSTER_SORT_OPTIONS = [
+  { value: 'value_desc', label: 'มากไปน้อย' },
+  { value: 'value_asc',  label: 'น้อยไปมาก' },
+  { value: 'name',       label: 'ชื่อศูนย์' },
+]
 const clusterAgg = computed(() => {
   const map = {}
   filteredUploads.value.forEach(u => {
     const key = schoolOf(u)?.school_group || 'ไม่ระบุศูนย์'
     map[key] = (map[key] || 0) + scopedTotals(u).total
   })
-  return Object.entries(map)
-    .sort((a, b) => b[1] - a[1])
-    .map(([label, value]) => ({ label, value }))
+  const entries = Object.entries(map)
+  if (clusterSort.value === 'name')       entries.sort((a, b) => a[0].localeCompare(b[0], 'th'))
+  else if (clusterSort.value === 'value_asc') entries.sort((a, b) => a[1] - b[1])
+  else                                     entries.sort((a, b) => b[1] - a[1])
+  return entries.map(([label, value]) => ({ label, value, bar: 'bg-blue-500' }))
 })
 
 // นับจากรายชั้นจริง (by_grade) ไม่ใช่ประเภทโรงเรียน — กันยอดอนุบาลไปหลบใต้ "ประถมศึกษา"
@@ -655,8 +664,17 @@ async function exportCSV() {
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
           <!-- ศูนย์เครือข่าย -->
           <div class="glass-card p-5">
-            <h3 class="font-bold text-slate-700 mb-4">นักเรียนแยกตามศูนย์เครือข่าย</h3>
-            <BarChart :items="clusterAgg.map(c => ({ label: c.label, value: c.value, bar: 'bg-primary' }))"/>
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+              <h3 class="font-bold text-slate-700">นักเรียนแยกตามศูนย์เครือข่าย</h3>
+              <div class="flex gap-1 bg-slate-100 p-1 rounded-lg">
+                <button v-for="opt in CLUSTER_SORT_OPTIONS" :key="opt.value" @click="clusterSort = opt.value"
+                  :class="['px-2.5 py-1 text-xs font-bold rounded-md transition-colors',
+                    clusterSort === opt.value ? 'bg-white text-primary shadow-sm' : 'text-slate-500 hover:text-slate-700']">
+                  {{ opt.label }}
+                </button>
+              </div>
+            </div>
+            <BarChart :items="clusterAgg"/>
           </div>
           <!-- ระดับ -->
           <div class="glass-card p-5">

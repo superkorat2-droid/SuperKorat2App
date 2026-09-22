@@ -1167,7 +1167,7 @@ const stats = [
             </div>
             <div v-else-if="!dmcStats" class="text-center py-8 text-slate-400 text-sm">ยังไม่มีข้อมูลสถิตินักเรียนสาธารณะ</div>
             <template v-else>
-              <p class="text-slate-400 text-xs text-center mb-5">
+              <p class="text-slate-500 text-sm text-center mb-5">
                 {{ dmcStats.period?.title }} · ปีการศึกษา {{ dmcStats.period?.academic_year }} ภาคเรียน {{ dmcStats.period?.semester }}
               </p>
               <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
@@ -1180,13 +1180,13 @@ const stats = [
                   <p class="text-3xl font-extrabold text-indigo-600">{{ dmcStatsTotals.schools }}</p>
                   <p class="text-xs text-slate-500 mt-1">โรงเรียน</p>
                 </div>
-                <div class="rounded-2xl border shadow-sm p-5 text-center" style="border-color: var(--color-primary-ring); background: var(--color-primary-light);">
-                  <div class="w-12 h-12 mx-auto mb-3 rounded-2xl flex items-center justify-center" style="background: var(--color-primary-ring);">
-                    <svg class="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                <div class="rounded-2xl border border-cyan-100 bg-cyan-50 shadow-sm p-5 text-center">
+                  <div class="w-12 h-12 mx-auto mb-3 rounded-2xl bg-cyan-500/15 flex items-center justify-center">
+                    <svg class="w-6 h-6 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
                       <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/>
                     </svg>
                   </div>
-                  <p class="text-3xl font-extrabold text-primary">{{ dmcStatsTotals.total.toLocaleString() }}</p>
+                  <p class="text-3xl font-extrabold text-cyan-600">{{ dmcStatsTotals.total.toLocaleString() }}</p>
                   <p class="text-xs text-slate-500 mt-1">นักเรียนทั้งเขต</p>
                 </div>
                 <div class="rounded-2xl border border-blue-100 bg-blue-50 shadow-sm p-5 text-center">
@@ -1210,7 +1210,7 @@ const stats = [
               </div>
               <div class="text-center mt-6">
                 <router-link to="/student-stats"
-                  class="inline-flex items-center gap-2 px-6 py-3 text-sm font-bold text-white bg-primary rounded-2xl shadow-md hover:-translate-y-0.5 hover:shadow-lg transition-all">
+                  class="inline-flex items-center gap-2 px-6 py-3 text-sm font-bold text-white bg-blue-600 rounded-2xl shadow-md hover:-translate-y-0.5 hover:shadow-lg hover:bg-blue-700 transition-all">
                   ตรวจสอบและดูข้อมูลทั้งหมด
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M17.25 8.25L21 12m0 0l-3.75 3.75M21 12H3"/>

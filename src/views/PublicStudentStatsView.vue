@@ -170,13 +170,24 @@ function scopedByGrade(u) {
 }
 
 // ── ยอดแยกตามศูนย์เครือข่าย ──────────────────────────────────────────────
+// เรียงได้ 3 แบบ: มากไปน้อย (ค่าเริ่มต้น) / น้อยไปมาก / ตามชื่อศูนย์
+const clusterSort = ref('value_desc')
+const CLUSTER_SORT_OPTIONS = [
+  { value: 'value_desc', label: 'มากไปน้อย' },
+  { value: 'value_asc',  label: 'น้อยไปมาก' },
+  { value: 'name',       label: 'ชื่อศูนย์' },
+]
 const clusterAgg = computed(() => {
   const map = {}
   filteredUploads.value.forEach(u => {
     const key = u.school_group || 'ไม่ระบุศูนย์'
     map[key] = (map[key] || 0) + scopedTotals(u).total
   })
-  return Object.entries(map).sort((a,b) => b[1]-a[1]).map(([label, value]) => ({ label, value, bar: 'bg-primary' }))
+  const entries = Object.entries(map)
+  if (clusterSort.value === 'name')       entries.sort((a, b) => a[0].localeCompare(b[0], 'th'))
+  else if (clusterSort.value === 'value_asc') entries.sort((a, b) => a[1] - b[1])
+  else                                     entries.sort((a, b) => b[1] - a[1])
+  return entries.map(([label, value]) => ({ label, value, bar: 'bg-blue-500' }))
 })
 
 const totalStudents = computed(() => filteredUploads.value.reduce((s, u) => s + scopedTotals(u).total, 0))
@@ -265,7 +276,7 @@ const statCards = computed(() => {
   const cards = []
   if (vis.value.total || vis.value.gender) {
     cards.push({ key: 'total', label: 'นักเรียนทั้งหมด', value: totalStudents.value.toLocaleString(),
-      icon: USERS_ICON, bg: 'style', border: 'var(--color-primary-ring)', chipBg: 'var(--color-primary-light)', chipBg2: 'var(--color-primary-ring)', text: 'text-primary', iconText: 'text-primary' })
+      icon: USERS_ICON, bg: 'class', cls: 'border-cyan-100 bg-cyan-50', chipCls: 'bg-cyan-500/15', text: 'text-cyan-600', iconText: 'text-cyan-600' })
   }
   if (vis.value.gender) {
     cards.push({ key: 'male', label: 'ชาย', value: genderMale.value.toLocaleString(),
@@ -376,9 +387,9 @@ const trendSeries = computed(() => [{ name: 'นักเรียนรวม',
       <!-- ── บทนำ: จัดกลางจอ พร้อมตัวเลขหลักของทั้งเขต ── -->
       <div class="text-center space-y-4">
         <p class="text-sm text-slate-500">
-          ปีการศึกษา {{ period.academic_year }} ภาคเรียนที่ {{ period.semester }} · เผยแพร่ {{ formatDate(period.archived_at) }}
+          {{ period.title }} · ปีการศึกษา {{ period.academic_year }} ภาคเรียนที่ {{ period.semester }}
         </p>
-        <div class="grid grid-cols-2 gap-4 max-w-md mx-auto">
+        <div class="grid grid-cols-2 gap-4">
           <div class="rounded-2xl border border-indigo-100 bg-indigo-50 shadow-sm px-6 py-5 text-center">
             <div class="w-12 h-12 mx-auto mb-3 rounded-2xl bg-indigo-500/15 flex items-center justify-center">
               <svg class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
@@ -388,13 +399,13 @@ const trendSeries = computed(() => [{ name: 'นักเรียนรวม',
             <p class="text-3xl font-extrabold text-indigo-600">{{ data.total_schools }}</p>
             <p class="text-sm text-slate-500 mt-1">โรงเรียน</p>
           </div>
-          <div class="rounded-2xl border shadow-sm px-6 py-5 text-center" style="border-color: var(--color-primary-ring); background: var(--color-primary-light);">
-            <div class="w-12 h-12 mx-auto mb-3 rounded-2xl flex items-center justify-center" style="background: var(--color-primary-ring);">
-              <svg class="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+          <div class="rounded-2xl border border-cyan-100 bg-cyan-50 shadow-sm px-6 py-5 text-center">
+            <div class="w-12 h-12 mx-auto mb-3 rounded-2xl bg-cyan-500/15 flex items-center justify-center">
+              <svg class="w-6 h-6 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/>
               </svg>
             </div>
-            <p class="text-3xl font-extrabold text-primary">{{ allUploads.reduce((s,u)=>s+u.total,0).toLocaleString() }}</p>
+            <p class="text-3xl font-extrabold text-cyan-600">{{ allUploads.reduce((s,u)=>s+u.total,0).toLocaleString() }}</p>
             <p class="text-sm text-slate-500 mt-1">นักเรียนทั้งเขต</p>
           </div>
         </div>
@@ -491,7 +502,16 @@ const trendSeries = computed(() => [{ name: 'นักเรียนรวม',
 
       <!-- ศูนย์เครือข่าย -->
       <div v-if="clusterAgg.length > 0" class="glass-tile p-5">
-        <h3 class="font-bold text-slate-700 mb-4 text-center">นักเรียนแยกตามศูนย์เครือข่าย</h3>
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+          <h3 class="font-bold text-slate-700">นักเรียนแยกตามศูนย์เครือข่าย</h3>
+          <div class="flex gap-1 bg-slate-100 p-1 rounded-lg">
+            <button v-for="opt in CLUSTER_SORT_OPTIONS" :key="opt.value" @click="clusterSort = opt.value"
+              :class="['px-2.5 py-1 text-xs font-bold rounded-md transition-colors',
+                clusterSort === opt.value ? 'bg-white text-primary shadow-sm' : 'text-slate-500 hover:text-slate-700']">
+              {{ opt.label }}
+            </button>
+          </div>
+        </div>
         <BarChart :items="clusterAgg"/>
       </div>
 
