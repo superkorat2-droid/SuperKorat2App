@@ -2,7 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { supabase } from '../../supabase'
-import { parseDmcFile, LEVEL_LABEL, gradeLevelGroup, GRADE_GROUP_LABEL } from '../../composables/useDmcParser'
+import { parseDmcFile, LEVEL_LABEL, gradeLevelGroup, GRADE_GROUP_LABEL, sortedGrades } from '../../composables/useDmcParser'
 import { parseDmcDistrictFile } from '../../composables/useDmcDistrictParser'
 import BarChart from '../../components/awards/BarChart.vue'
 import Swal from 'sweetalert2'
@@ -236,7 +236,7 @@ async function load() {
   const [{ data: p }, { data: u }, { data: sc }] = await Promise.all([
     supabase.from('dmc_periods').select('*').eq('id', periodId.value).single(),
     supabase.from('dmc_school_uploads').select('*').eq('period_id', periodId.value),
-    supabase.from('schools').select('id, name, dmc_code, district, school_group').order('district').order('name'),
+    supabase.from('schools').select('id, name, dmc_code, district, school_group, is_active').order('district').order('name'),
   ])
   period.value  = p
   uploads.value = u || []
@@ -269,7 +269,8 @@ const gradeAgg = computed(() => {
       map[g].female += d.female || 0
     })
   })
-  return map
+  // ไม่ sort ตรงนี้ ลำดับจะเพี้ยนตามลำดับที่แต่ละโรงถูกวนเจอ (อ.1-3 อาจไปโผล่กลางๆ)
+  return sortedGrades(map)
 })
 
 const bmiAgg = computed(() => {
@@ -335,11 +336,14 @@ const levelAgg = computed(() => {
     .map(k => ({ label: GRADE_GROUP_LABEL[k], value: map[k] }))
 })
 
+// นับความคืบหน้าจากโรงเรียนที่ "เปิดใช้งาน" เท่านั้น — โรงเรียนที่ยุบ/รวมแล้วไม่ต้องรอให้ส่งอีก
+// แต่ข้อมูลเก่าของโรงที่ปิดแล้ว (ถ้ามีอัปโหลดค้างอยู่) ยังคงรวมอยู่ในยอด/กราฟตามปกติ (ดู filteredUploads)
+const activeSchools = computed(() => schools.value.filter(s => s.is_active !== false))
 const respondedIds  = computed(() => new Set(uploads.value.map(u => u.school_id)))
-const pendingSchools = computed(() => schools.value.filter(s => !respondedIds.value.has(s.id)))
-const doneSchools    = computed(() => schools.value.filter(s => respondedIds.value.has(s.id)))
+const pendingSchools = computed(() => activeSchools.value.filter(s => !respondedIds.value.has(s.id)))
+const doneSchools    = computed(() => activeSchools.value.filter(s => respondedIds.value.has(s.id)))
 const pct = computed(() =>
-  schools.value.length > 0 ? Math.round((uploads.value.length / schools.value.length) * 100) : 0
+  activeSchools.value.length > 0 ? Math.round((doneSchools.value.length / activeSchools.value.length) * 100) : 0
 )
 
 // ── Chart helpers ──────────────────────────────────────────────────────────
@@ -461,7 +465,7 @@ async function exportCSV() {
           <p class="text-xs text-slate-500 mt-1">นักเรียนทั้งหมด</p>
         </div>
         <div class="glass-card p-4 text-center">
-          <p class="text-3xl font-extrabold text-slate-700">{{ uploads.length }} / {{ schools.length }}</p>
+          <p class="text-3xl font-extrabold text-slate-700">{{ doneSchools.length }} / {{ activeSchools.length }}</p>
           <p class="text-xs text-slate-500 mt-1">โรงเรียนส่งแล้ว</p>
         </div>
         <div class="glass-card p-4 text-center">
@@ -481,7 +485,7 @@ async function exportCSV() {
       <div class="glass-card p-4">
         <div class="flex justify-between text-sm font-medium text-slate-600 mb-2">
           <span>ความคืบหน้า</span>
-          <span>{{ uploads.length }} / {{ schools.length }} โรงเรียน</span>
+          <span>{{ doneSchools.length }} / {{ activeSchools.length }} โรงเรียน</span>
         </div>
         <div class="h-3 bg-slate-100 rounded-full overflow-hidden">
           <div class="h-full bg-gradient-to-r from-primary to-blue-400 rounded-full transition-all duration-700"

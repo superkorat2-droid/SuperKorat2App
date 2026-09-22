@@ -20,6 +20,7 @@ const loading  = ref(true)
 const searchQ  = ref('')
 const filterDistrict = ref('all')
 const filterGroup    = ref('all')
+const showClosed     = ref(false) // ค่าเริ่มต้นซ่อนโรงเรียนที่ปิด/ยุบแล้ว ไม่ให้ปนกับที่เปิดใช้งานจริง
 
 onMounted(() => { fetchConfig(); fetchSchools() })
 
@@ -45,6 +46,7 @@ const groups    = computed(() => {
 
 const filtered = computed(() => {
   let list = schools.value
+  if (!showClosed.value) list = list.filter(s => s.is_active !== false)
   if (filterDistrict.value !== 'all') list = list.filter(s => s.district === filterDistrict.value)
   if (filterGroup.value    !== 'all') list = list.filter(s => s.school_group === filterGroup.value)
   if (searchQ.value.trim()) {
@@ -99,7 +101,9 @@ function exportCSV() {
   a.click()
 }
 
-const withWebsite = computed(() => schools.value.filter(s => s.website_url).length)
+const withWebsite  = computed(() => schools.value.filter(s => s.website_url).length)
+const activeCount  = computed(() => schools.value.filter(s => s.is_active !== false).length)
+const closedCount  = computed(() => schools.value.filter(s => s.is_active === false).length)
 
 // ─── Edit modal ───────────────────────────────────────────────────────────────
 const editSchool  = ref(null)
@@ -126,6 +130,7 @@ async function saveEdit() {
     lat:          fields.lat ? Number(fields.lat) : null,
     lng:          fields.lng ? Number(fields.lng) : null,
     school_code:  fields.school_code?.trim() || null,
+    is_active:    fields.is_active !== false,
   }
   const { error } = await supabase.from('schools').update(payload).eq('id', id)
   editSaving.value = false
@@ -157,7 +162,7 @@ function openMapsForGps(school) {
           </svg>
           ทำเนียบโรงเรียน
         </h1>
-        <p class="text-sm text-slate-500 mt-0.5">โรงเรียนทั้งหมด {{ schools.length }} แห่ง · มีเว็บไซต์ {{ withWebsite }} แห่ง</p>
+        <p class="text-sm text-slate-500 mt-0.5">เปิดใช้งาน {{ activeCount }} แห่ง · ปิด/ยุบแล้ว {{ closedCount }} แห่ง · มีเว็บไซต์ {{ withWebsite }} แห่ง</p>
       </div>
       <button @click="exportCSV"
         class="flex items-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-bold rounded-xl transition-colors shadow-md">
@@ -171,9 +176,9 @@ function openMapsForGps(school) {
     <!-- Stats bar -->
     <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
       <div v-for="(item, i) in [
-        { label: 'โรงเรียนทั้งหมด', value: schools.length, color: 'text-primary' },
+        { label: 'เปิดใช้งาน', value: activeCount, color: 'text-primary' },
+        { label: 'ปิด/ยุบแล้ว', value: closedCount, color: 'text-red-500' },
         { label: 'มีเว็บไซต์', value: withWebsite, color: 'text-emerald-600' },
-        { label: 'ไม่มีเว็บไซต์', value: schools.length - withWebsite, color: 'text-amber-600' },
         { label: 'ผลการค้นหา', value: filtered.length, color: 'text-slate-700' },
       ]" :key="i" class="glass-card p-4">
         <p class="text-2xl font-extrabold" :class="item.color">{{ item.value }}</p>
@@ -195,6 +200,10 @@ function openMapsForGps(school) {
         <option value="all">ทุกกลุ่ม</option>
         <option v-for="g in groups.slice(1)" :key="g" :value="g">{{ g }}</option>
       </select>
+      <label class="flex items-center gap-2 px-3 py-2 text-sm text-slate-600 cursor-pointer select-none">
+        <input type="checkbox" v-model="showClosed" class="w-4 h-4 accent-primary rounded"/>
+        แสดงโรงเรียนที่ปิด/ยุบแล้วด้วย
+      </label>
     </div>
 
     <!-- Table -->
@@ -216,9 +225,12 @@ function openMapsForGps(school) {
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-50">
-            <tr v-for="s in filtered" :key="s.id" class="hover:bg-slate-50 transition-colors">
+            <tr v-for="s in filtered" :key="s.id" :class="['hover:bg-slate-50 transition-colors', s.is_active === false && 'opacity-50']">
               <td class="px-4 py-3 font-mono text-xs text-slate-500 whitespace-nowrap">{{ s.dmc_code }}</td>
-              <td class="px-4 py-3 font-bold text-slate-800 text-xs">{{ s.name }}</td>
+              <td class="px-4 py-3 font-bold text-slate-800 text-xs">
+                {{ s.name }}
+                <span v-if="s.is_active === false" class="ml-1.5 inline-block px-1.5 py-0.5 text-[10px] font-bold bg-red-100 text-red-600 rounded-full align-middle">ปิด/ยุบแล้ว</span>
+              </td>
               <td class="px-4 py-3 text-xs text-slate-600 whitespace-nowrap">{{ s.district }}</td>
               <td class="px-4 py-3 text-xs text-slate-600 whitespace-nowrap">{{ s.school_group }}</td>
               <td class="px-4 py-3 text-xs text-slate-500">{{ s.email }}</td>
@@ -358,6 +370,21 @@ function openMapsForGps(school) {
                 </div>
               </div>
               <p class="text-[10px] text-slate-400">กดปุ่ม "ค้นหาใน Google Maps" → คลิกขวาที่ตำแหน่งโรงเรียน → คัดลอกพิกัด</p>
+            </div>
+
+            <!-- สถานะโรงเรียน -->
+            <div class="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-200">
+              <div>
+                <p class="text-sm font-bold text-slate-700">โรงเรียนเปิดใช้งานอยู่</p>
+                <p class="text-xs text-slate-400 mt-0.5">ปิดสวิตช์นี้เมื่อโรงเรียนถูกยุบ/รวม — ข้อมูลเก่ายังเก็บไว้ครบ แค่ไม่นับรวมในยอด/ความคืบหน้าของรอบใหม่ต่อไป</p>
+              </div>
+              <label class="relative inline-flex items-center cursor-pointer flex-shrink-0 ml-4">
+                <input type="checkbox" :checked="editSchool.is_active !== false"
+                  @change="editSchool.is_active = $event.target.checked" class="sr-only peer"/>
+                <div class="w-11 h-6 bg-slate-200 rounded-full peer peer-checked:bg-primary transition-colors
+                            after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white
+                            after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-5"/>
+              </label>
             </div>
           </div>
 

@@ -3,21 +3,35 @@ import { ref, computed, onMounted } from 'vue'
 import { supabase } from '../supabase'
 import { useAreaConfig } from '../composables/useAreaConfig'
 import { usePageHeader } from '../composables/usePageHeader'
-import { LEVEL_LABEL } from '../composables/useDmcParser'
+import { LEVEL_LABEL, sortedGrades } from '../composables/useDmcParser'
 import PageHero from '../components/PageHero.vue'
 import BarChart from '../components/awards/BarChart.vue'
 
 const { config } = useAreaConfig()
-const header = usePageHeader('studentStats', { icon: 'students', title: 'สารสนเทศนักเรียน', align: 'left' })
+const header = usePageHeader('studentStats', { icon: 'students', title: 'สารสนเทศนักเรียน', align: 'center' })
 const loading = ref(true)
 const data    = ref(null)
 const error   = ref(null)
+
+// ── สมาชิกที่ล็อกอินแล้ว — เห็นปุ่มส่งออกข้อมูลตามที่กรองไว้ ─────────────────
+const userSession = ref(null)
+
+// ── แนวโน้มข้ามภาคเรียน (ท้ายหน้า) — ข้อมูลนิ่ง ไม่ผูกกับตัวกรองด้านบน ──────
+const trend        = ref([])
+const loadingTrend = ref(true)
 
 onMounted(async () => {
   const { data: d, error: e } = await supabase.rpc('get_dmc_public_stats')
   if (e || d?.error) { error.value = 'ยังไม่มีข้อมูลสถิตินักเรียนสาธารณะ'; loading.value = false; return }
   data.value    = d
   loading.value = false
+
+  const { data: { session: s } } = await supabase.auth.getSession()
+  userSession.value = s
+
+  const { data: t } = await supabase.rpc('get_dmc_public_trend')
+  trend.value = t || []
+  loadingTrend.value = false
 })
 
 const period     = computed(() => data.value?.period)
@@ -107,7 +121,7 @@ const gradeAgg = computed(() => {
       map[g].total+=d.total||0; map[g].male+=d.male||0; map[g].female+=d.female||0
     })
   })
-  return map
+  return sortedGrades(map)
 })
 
 const guardianAgg = computed(() => {
@@ -159,6 +173,44 @@ function formatDate(d) {
   if (!d) return ''
   return new Date(d).toLocaleDateString('th-TH', { year:'numeric', month:'long', day:'numeric' })
 }
+
+// ── ส่งออกข้อมูลตามตัวกรองปัจจุบัน (เฉพาะสมาชิกที่ล็อกอิน) ───────────────────
+function exportFilteredCSV() {
+  const header = ['โรงเรียน', 'ศูนย์เครือข่าย', 'อำเภอ']
+  if (vis.value.total)    header.push('จำนวนทั้งหมด')
+  if (vis.value.gender)   header.push('ชาย', 'หญิง')
+  if (vis.value.disadvantaged) header.push('ยากจน%')
+  if (vis.value.bmi)      header.push('BMI ปกติ%')
+
+  const rows = schoolTableData.value.map(s => {
+    const u = filteredUploads.value.find(x => x.school_id === s.id)
+    const row = [s.name, u?.school_group || '', u?.district || '']
+    if (vis.value.total)    row.push(s.total)
+    if (vis.value.gender)   row.push(s.male, s.female)
+    if (vis.value.disadvantaged) row.push(s.disadvPct)
+    if (vis.value.bmi)      row.push(s.total > 0 ? ((s.bmiNormal/s.total)*100).toFixed(1) : '0')
+    return row
+  })
+  const csv = [header, ...rows].map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n')
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' })
+  const a = document.createElement('a')
+  a.href = URL.createObjectURL(blob)
+  a.download = `student_stats_${period.value?.academic_year}_${period.value?.semester}_${new Date().toISOString().slice(0,10)}.csv`
+  a.click()
+  URL.revokeObjectURL(a.href)
+}
+
+// ── กราฟแนวโน้มข้ามภาคเรียน (static) ─────────────────────────────────────────
+const trendLabels = computed(() => trend.value.map(t => t.title || `${t.academic_year}/${t.semester}`))
+const trendOpts = computed(() => ({
+  chart: { type: 'bar', height: 260, toolbar: { show: false } },
+  plotOptions: { bar: { borderRadius: 4, columnWidth: '50%' } },
+  colors: ['#2563eb'],
+  xaxis: { categories: trendLabels.value, labels: { style: { fontFamily: 'Sarabun', fontSize: '11px' } } },
+  dataLabels: { enabled: true, style: { fontSize: '11px' }, formatter: v => v.toLocaleString() },
+  tooltip: { y: { formatter: v => (v || 0).toLocaleString() + ' คน' } },
+}))
+const trendSeries = computed(() => [{ name: 'นักเรียนรวม', data: trend.value.map(t => t.total) }])
 </script>
 
 <template>
@@ -170,31 +222,28 @@ function formatDate(d) {
       :media-url="header.mediaUrl" :media-type="header.mediaType" :aspect-ratio="header.aspectRatio"
       :align="header.align" max-width="5xl"/>
 
-    <!-- ── Period info + stat badges (แยกจาก hero เสมอ ไม่ว่าจะใช้ไอคอนหรือรูป/วิดีโอ) ── -->
-    <div v-if="period || (data && !loading)" class="max-w-5xl mx-auto px-4 pt-6">
-      <p v-if="period" class="text-slate-400 text-xs mb-3">{{ period.title }} · เผยแพร่ {{ formatDate(period.archived_at) }}</p>
-      <div v-if="data && !loading" class="flex gap-3 flex-wrap">
-        <div class="glass-tile px-4 py-2.5 text-center">
-          <p class="text-2xl font-extrabold text-primary">{{ allUploads.length }}</p>
-          <p class="text-slate-500 text-xs">โรงเรียน</p>
-        </div>
-        <div class="glass-tile px-4 py-2.5 text-center">
-          <p class="text-2xl font-extrabold text-primary">{{ allUploads.reduce((s,u)=>s+u.total,0).toLocaleString() }}</p>
-          <p class="text-slate-500 text-xs">นักเรียนทั้งเขต</p>
-        </div>
-      </div>
-    </div>
-
     <div v-if="loading" class="flex justify-center py-24"><div class="w-10 h-10 border-4 border-primary/30 border-t-primary rounded-full animate-spin"/></div>
     <div v-else-if="error || !data" class="text-center py-24 text-slate-400">
       <p class="font-bold text-lg">{{ error || 'ยังไม่มีข้อมูลสถิติสาธารณะ' }}</p>
     </div>
 
-    <div v-else class="max-w-5xl mx-auto px-4 py-6 space-y-5">
-      <div class="text-xs text-slate-400 flex flex-wrap gap-3">
-        <span>📅 ปีการศึกษา {{ period.academic_year }} ภาคเรียน {{ period.semester }}</span>
-        <span>🏫 {{ data.total_schools }} โรงเรียน</span>
-        <span>🕐 เผยแพร่ {{ formatDate(period.archived_at) }}</span>
+    <div v-else class="max-w-5xl mx-auto px-4 py-8 space-y-8">
+
+      <!-- ── บทนำ: จัดกลางจอ พร้อมตัวเลขหลักของทั้งเขต ── -->
+      <div class="text-center space-y-4">
+        <p class="text-sm text-slate-500">
+          ปีการศึกษา {{ period.academic_year }} ภาคเรียนที่ {{ period.semester }} · เผยแพร่ {{ formatDate(period.archived_at) }}
+        </p>
+        <div class="flex justify-center gap-4 flex-wrap">
+          <div class="glass-tile px-6 py-4 text-center min-w-[140px]">
+            <p class="text-3xl font-extrabold text-primary">{{ data.total_schools }}</p>
+            <p class="text-sm text-slate-500 mt-1">โรงเรียน</p>
+          </div>
+          <div class="glass-tile px-6 py-4 text-center min-w-[140px]">
+            <p class="text-3xl font-extrabold text-primary">{{ allUploads.reduce((s,u)=>s+u.total,0).toLocaleString() }}</p>
+            <p class="text-sm text-slate-500 mt-1">นักเรียนทั้งเขต</p>
+          </div>
+        </div>
       </div>
 
       <!-- Filter -->
@@ -229,10 +278,18 @@ function formatDate(d) {
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
             ล้าง
           </button>
+          <!-- ส่งออกข้อมูลตามตัวกรอง — เห็นเฉพาะสมาชิกที่ล็อกอินแล้ว -->
+          <button v-if="userSession" @click="exportFilteredCSV"
+            class="flex items-center gap-1.5 px-3 py-2.5 text-sm font-bold bg-emerald-600 text-white rounded-xl hover:-translate-y-0.5 shadow-sm transition-all">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/>
+            </svg>
+            ส่งออกข้อมูล
+          </button>
         </div>
         <div v-if="isFiltered" class="mt-2 flex items-center gap-2">
           <div class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"/>
-          <p class="text-xs text-primary font-medium">กรองแล้ว: {{ filteredUploads.length }} โรงเรียน · {{ totalStudents.toLocaleString() }} นักเรียน</p>
+          <p class="text-sm text-primary font-medium">กรองแล้ว: {{ filteredUploads.length }} โรงเรียน · {{ totalStudents.toLocaleString() }} นักเรียน</p>
         </div>
       </div>
 
@@ -258,13 +315,13 @@ function formatDate(d) {
 
       <!-- ศูนย์เครือข่าย -->
       <div v-if="clusterAgg.length > 0" class="glass-tile p-5">
-        <h3 class="font-bold text-slate-700 mb-4">นักเรียนแยกตามศูนย์เครือข่าย</h3>
+        <h3 class="font-bold text-slate-700 mb-4 text-center">นักเรียนแยกตามศูนย์เครือข่าย</h3>
         <BarChart :items="clusterAgg"/>
       </div>
 
       <!-- Grade chart -->
       <div v-if="vis.by_grade && Object.keys(gradeAgg).length > 0" class="glass-tile p-5">
-        <h3 class="font-bold text-slate-700 mb-4">จำนวนนักเรียนแยกตามระดับชั้น</h3>
+        <h3 class="font-bold text-slate-700 mb-4 text-center">จำนวนนักเรียนแยกตามระดับชั้น</h3>
         <apexchart type="bar" :height="240" :options="gradeOpts"
           :series="[{ name:'ชาย', data:Object.values(gradeAgg).map(g=>g.male) },{ name:'หญิง', data:Object.values(gradeAgg).map(g=>g.female) }]"
           :key="`grade-${filteredUploads.length}`"/>
@@ -272,7 +329,7 @@ function formatDate(d) {
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
         <div v-if="vis.bmi && bmiAgg.total > 0" class="glass-tile p-5">
-          <h3 class="font-bold text-slate-700 mb-4">ภาวะโภชนาการ (BMI)</h3>
+          <h3 class="font-bold text-slate-700 mb-4 text-center">ภาวะโภชนาการ (BMI)</h3>
           <apexchart type="donut" :height="200" :options="bmiOpts" :series="[bmiAgg.underweight,bmiAgg.normal,bmiAgg.overweight,bmiAgg.obese]" :key="`bmi-${filteredUploads.length}`"/>
           <div class="mt-3 space-y-1.5">
             <div v-for="(item,i) in [{ label:'ต่ำกว่าเกณฑ์',val:bmiAgg.underweight,color:'text-orange-500' },{ label:'ปกติ',val:bmiAgg.normal,color:'text-emerald-500' },{ label:'น้ำหนักเกิน',val:bmiAgg.overweight,color:'text-amber-500' },{ label:'อ้วน',val:bmiAgg.obese,color:'text-red-500' }]" :key="i" class="flex items-center gap-2 text-xs">
@@ -283,7 +340,7 @@ function formatDate(d) {
           </div>
         </div>
         <div v-if="vis.guardian_relation && guardianAgg.length > 0" class="glass-tile p-5">
-          <h3 class="font-bold text-slate-700 mb-4">ผู้ปกครอง (ความสัมพันธ์)</h3>
+          <h3 class="font-bold text-slate-700 mb-4 text-center">ผู้ปกครอง (ความสัมพันธ์)</h3>
           <apexchart type="bar" :height="220" :options="guardianOpts" :series="[{ name:'จำนวน', data:guardianAgg.map(d=>d[1]) }]" :key="`guardian-${filteredUploads.length}`"/>
         </div>
       </div>
@@ -320,7 +377,15 @@ function formatDate(d) {
           </table>
         </div>
       </div>
-      <p class="text-center text-xs text-slate-300 pb-6">ข้อมูลจากระบบ DMC · {{ config?.area_name }}<span v-if="isFiltered"> · <button @click="resetFilter" class="text-primary hover:underline">ล้างตัวกรอง</button></span></p>
+
+      <!-- ── แนวโน้มข้ามภาคเรียน (ท้ายหน้า) — ข้อมูลนิ่ง ไม่ผูกกับตัวกรองด้านบน ── -->
+      <div v-if="!loadingTrend && trend.length >= 2" class="glass-tile p-5">
+        <h3 class="font-bold text-slate-700 text-center">แนวโน้มจำนวนนักเรียนย้อนหลัง</h3>
+        <p class="text-sm text-slate-400 text-center mb-4">ยอดรวมทั้งเขตในแต่ละภาคเรียนที่เผยแพร่ต่อสาธารณะ</p>
+        <apexchart type="bar" :height="260" :options="trendOpts" :series="trendSeries"/>
+      </div>
+
+      <p class="text-center text-sm text-slate-400 pb-6">ข้อมูลจากระบบ DMC · {{ config?.area_name }}<span v-if="isFiltered"> · <button @click="resetFilter" class="text-primary hover:underline">ล้างตัวกรอง</button></span></p>
     </div>
   </div>
 </template>

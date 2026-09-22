@@ -11,6 +11,9 @@ const schools  = ref([])
 const loading  = ref(true)
 const saving   = ref(false)
 
+// นับความคืบหน้าจากโรงเรียนที่เปิดใช้งานเท่านั้น — ที่ยุบ/รวมแล้วไม่ต้องรอส่งอีก
+const activeSchools = computed(() => schools.value.filter(s => s.is_active !== false))
+
 // ── Modal: create/edit period ─────────────────────────────────────────────
 const showModal  = ref(false)
 const editPeriod = ref(null)
@@ -51,7 +54,7 @@ async function load() {
   loading.value = true
   const [{ data: p }, { data: sc }] = await Promise.all([
     supabase.from('dmc_periods').select('*').order('created_at', { ascending: false }),
-    supabase.from('schools').select('id, name, district').order('district').order('name'),
+    supabase.from('schools').select('id, name, district, is_active').order('district').order('name'),
   ])
   periods.value = p || []
   schools.value = sc || []
@@ -161,7 +164,7 @@ async function archivePeriod(p) {
     title: 'เก็บถาวร?',
     html: `<div class="text-sm text-left">
       <p>รอบ: <b>${p.title}</b></p>
-      <p>โรงเรียนส่งแล้ว: <b>${uploadedCount}/${schools.value.length}</b></p>
+      <p>โรงเรียนส่งแล้ว: <b>${uploadedCount}/${activeSchools.value.length}</b></p>
       <p class="mt-2 text-amber-600">หลังเก็บถาวรแล้ว จะไม่สามารถแก้ไขข้อมูลได้อีก</p>
     </div>`,
     icon: 'question', showCancelButton: true,
@@ -247,12 +250,12 @@ const archivedPeriods = computed(() => periods.value.filter(p => p.is_archived))
               <!-- Progress -->
               <div class="mt-3">
                 <div class="flex items-center justify-between text-xs text-slate-500 mb-1">
-                  <span>โรงเรียนส่งแล้ว {{ uploadCounts[p.id] || 0 }} / {{ schools.length }} โรง</span>
-                  <span class="font-bold text-primary">{{ schools.length > 0 ? Math.round(((uploadCounts[p.id]||0)/schools.length)*100) : 0 }}%</span>
+                  <span>โรงเรียนส่งแล้ว {{ uploadCounts[p.id] || 0 }} / {{ activeSchools.length }} โรง</span>
+                  <span class="font-bold text-primary">{{ activeSchools.length > 0 ? Math.round(((uploadCounts[p.id]||0)/activeSchools.length)*100) : 0 }}%</span>
                 </div>
                 <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
                   <div class="h-full bg-gradient-to-r from-primary to-blue-400 rounded-full transition-all"
-                    :style="`width:${schools.length > 0 ? Math.round(((uploadCounts[p.id]||0)/schools.length)*100) : 0}%`"/>
+                    :style="`width:${activeSchools.length > 0 ? Math.round(((uploadCounts[p.id]||0)/activeSchools.length)*100) : 0}%`"/>
                 </div>
               </div>
             </div>
