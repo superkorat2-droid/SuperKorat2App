@@ -388,10 +388,6 @@ const trendSeries = computed(() => [{ name: 'นักเรียนรวม',
             <option value="all">ทุกโรงเรียน</option>
             <option v-for="u in schoolsInDistrict" :key="u.school_id" :value="u.school_id">{{ u.school_name }}</option>
           </select>
-          <button v-if="isFiltered" @click="resetFilter" class="flex items-center gap-1.5 text-sm text-slate-400 hover:text-red-500 transition-colors px-2 py-2">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-            ล้าง
-          </button>
           <!-- ส่งออกข้อมูลตามตัวกรอง — เห็นเฉพาะสมาชิกที่ล็อกอินแล้ว -->
           <button v-if="userSession" @click="exportFilteredCSV"
             class="flex items-center gap-1.5 px-3 py-2.5 text-sm font-bold bg-emerald-600 text-white rounded-xl hover:-translate-y-0.5 shadow-sm transition-all">
@@ -401,9 +397,13 @@ const trendSeries = computed(() => [{ name: 'นักเรียนรวม',
             ส่งออกข้อมูล
           </button>
         </div>
-        <div v-if="isFiltered" class="mt-2 flex items-center gap-2">
+        <div v-if="isFiltered" class="mt-2 flex items-center gap-2 flex-wrap">
           <div class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"/>
-          <p class="text-sm text-primary font-medium">กรองแล้ว: {{ filteredUploads.length }} โรงเรียน · {{ totalStudents.toLocaleString() }} นักเรียน</p>
+          <p class="text-sm text-primary font-medium flex-1">กรองแล้ว: {{ filteredUploads.length }} โรงเรียน · {{ totalStudents.toLocaleString() }} นักเรียน</p>
+          <button @click="resetFilter" class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-red-600 bg-red-50 border border-red-200 rounded-full hover:bg-red-100 transition-colors">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+            ล้างตัวกรองทั้งหมด
+          </button>
         </div>
 
         <!-- ปุ่มช่วงชั้น -->

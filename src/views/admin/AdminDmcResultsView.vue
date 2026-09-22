@@ -581,13 +581,18 @@ async function exportCSV() {
             <option value="all">ทุกระดับ</option>
             <option v-for="lv in LEVEL_OPTIONS" :key="lv.value" :value="lv.value">{{ lv.label }}</option>
           </select>
-          <span v-if="filterCluster !== 'all' || filterLevel !== 'all' || filterKeyStage !== null || filterExam !== null"
-            class="text-xs text-primary font-medium">
+        </div>
+        <div v-if="filterCluster !== 'all' || filterLevel !== 'all' || filterKeyStage !== null || filterExam !== null"
+          class="flex items-center gap-2 flex-wrap">
+          <div class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"/>
+          <span class="text-sm text-primary font-medium flex-1">
             กรองแล้ว {{ filteredUploads.length }} โรงเรียน · {{ totalStudents.toLocaleString() }} คน
           </span>
-          <button v-if="filterCluster !== 'all' || filterLevel !== 'all' || filterKeyStage !== null || filterExam !== null"
-            @click="filterCluster='all'; filterLevel='all'; filterKeyStage=null; filterExam=null"
-            class="text-xs text-slate-400 hover:text-red-500 ml-auto">ล้างตัวกรอง</button>
+          <button @click="filterCluster='all'; filterLevel='all'; filterKeyStage=null; filterExam=null"
+            class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-red-600 bg-red-50 border border-red-200 rounded-full hover:bg-red-100 transition-colors">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+            ล้างตัวกรองทั้งหมด
+          </button>
         </div>
 
         <!-- ปุ่มช่วงชั้น -->
