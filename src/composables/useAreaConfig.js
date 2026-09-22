@@ -178,6 +178,16 @@ export function useAreaConfig() {
       const { data, error } = await supabase.rpc('get_area_config')
       if (error) throw error
       config.value = { ...DEFAULTS, ...data }
+      // home_sections ที่บันทึกไว้ใน DB เป็น array เต็ม — spread ด้านบนทับ DEFAULT_HOME_SECTIONS
+      // ทั้งก้อน ทำให้เซกชันเริ่มต้นใหม่ที่เพิ่งเพิ่มในโค้ด (เช่น dmc_stats) ไม่โผล่ให้เห็นเลย
+      // จนกว่า admin จะไปกดบันทึกหน้า "Section หน้าแรก" ครั้งนึง — เติมเซกชันเริ่มต้นที่ยังไม่มี
+      // key ซ้ำกับของเดิมเข้าไปต่อท้าย ให้ขึ้นอัตโนมัติโดยไม่ต้องรอ admin บันทึกก่อน
+      const savedSections = Array.isArray(data?.home_sections) ? data.home_sections : []
+      const savedKeys     = new Set(savedSections.map(s => s.key))
+      const missingDefaults = DEFAULT_HOME_SECTIONS.filter(s => !savedKeys.has(s.key))
+      if (missingDefaults.length > 0) {
+        config.value.home_sections = [...savedSections, ...missingDefaults]
+      }
     } catch {
       config.value = { ...DEFAULTS }
     } finally {
