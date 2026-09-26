@@ -53,6 +53,9 @@ import SchoolMediaView           from '../views/school/SchoolMediaView.vue'
 import SchoolMediaEditorView     from '../views/school/SchoolMediaEditorView.vue'
 import AdminDmcResultsView        from '../views/admin/AdminDmcResultsView.vue'
 import AdminDmcTrendView          from '../views/admin/AdminDmcTrendView.vue'
+import AdminNtPeriodsView         from '../views/admin/AdminNtPeriodsView.vue'
+import AdminNtResultsView         from '../views/admin/AdminNtResultsView.vue'
+import AdminNtTrendView           from '../views/admin/AdminNtTrendView.vue'
 import PublicStudentStatsView     from '../views/PublicStudentStatsView.vue'
 import AdminSupervisionFormView from '../views/admin/AdminSupervisionFormView.vue'
 import AdminSupervisionResultsView from '../views/admin/AdminSupervisionResultsView.vue'
@@ -143,6 +146,9 @@ const routes = [
       { path: 'dmc',         name: 'adminDmc',         component: AdminDmcPeriodsView,  meta: { title: 'รอบ DMC', icon: '📊' } },
       { path: 'dmc/:id',     name: 'adminDmcResults',  component: AdminDmcResultsView,  meta: { title: 'สถิติ DMC' } },
       { path: 'dmc-trend',   name: 'adminDmcTrend',    component: AdminDmcTrendView,    meta: { title: 'แนวโน้ม DMC' } },
+      { path: 'nt-scores',      name: 'adminNtScores',        component: AdminNtPeriodsView, meta: { title: 'ผลคะแนน NT', icon: '📝' } },
+      { path: 'nt-scores/:id',  name: 'adminNtScoresResults', component: AdminNtResultsView, meta: { title: 'ข้อมูลผลคะแนน NT' } },
+      { path: 'nt-trend',       name: 'adminNtTrend',         component: AdminNtTrendView,   meta: { title: 'แนวโน้ม NT' } },
       { path: 'enrollment',  name: 'adminEnrollment',  component: AdminEnrollmentView,  meta: { title: 'สถิติย้อนหลัง', icon: '📊' } },
       { path: 'visit-stats', name: 'adminVisitStats',  component: AdminVisitStatsView,  meta: { title: 'สถิติการเข้าชม', icon: '👁️' } },
       { path: 'image-library', name: 'adminImageLibrary', component: AdminImageLibraryView, meta: { title: 'คลังภาพ', icon: '🖼️' } },
@@ -293,7 +299,7 @@ router.beforeEach(async (to, from, next) => {
   const { data: { session } } = await supabase.auth.getSession()
 
   if (to.meta.requiresAuth && !session) {
-    next({ name: 'login' })
+    next({ name: 'login', query: { next: to.fullPath } })
     return
   }
 

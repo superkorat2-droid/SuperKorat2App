@@ -101,6 +101,7 @@ const allGroups = [
       { to: '/dashboard/certificates', label: 'คลังเกียรติบัตร',    roles: ['super_admin','admin','supervisor','staff'] },
       { to: '/dashboard/media',       label: 'คลังสื่อการเรียนรู้', roles: ['super_admin','admin','supervisor','staff'] },
       { to: '/dashboard/dmc',        label: 'รอบ DMC นักเรียน', roles: ['super_admin','admin'] },
+      { to: '/dashboard/nt-scores',  label: 'ผลคะแนน NT/O-NET', roles: ['super_admin','admin','supervisor','staff'] },
       { to: '/dashboard/students',   label: 'ข้อมูลนักเรียน',   roles: ['super_admin','admin','supervisor'] },
       { to: '/dashboard/enrollment', label: 'สถิติย้อนหลัง',    roles: ['super_admin','admin','supervisor'] },
       { to: '/dashboard/visit-stats', label: 'สถิติการเข้าชม',  roles: ['super_admin','admin','supervisor'] },

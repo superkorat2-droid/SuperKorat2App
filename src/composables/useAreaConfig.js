@@ -45,6 +45,7 @@ export const DEFAULT_HOME_SECTIONS = [
   { key: 'nithet_calendar', label: 'ปฏิทินนิเทศ',    subtitle: 'Supervision Calendar', title: 'ปฏิทินนิเทศ',                   visible: false, bg: '#f8fafc', bg2: '#e0e7ff', bg_type: 'none', order: 4 },
   { key: 'services',        label: 'บริการออนไลน์',  subtitle: 'E-Service Center', title: 'บริการออนไลน์',                      visible: true,  bg: '#f8fafc', bg2: '#e2e8f0', bg_type: 'none', order: 5 },
   { key: 'dmc_stats',       label: 'สถิตินักเรียน',   subtitle: 'Student Statistics', title: 'สารสนเทศนักเรียนทั้งเขต',            visible: false, bg: '#f8fafc', bg2: '#e0e7ff', bg_type: 'none', order: 6 },
+  { key: 'nt_scores',       label: 'ผลคะแนน NT',      subtitle: 'NT Score Trends',  title: 'แนวโน้มผลคะแนน NT',                  visible: false, bg: '#f8fafc', bg2: '#e0e7ff', bg_type: 'none', order: 6 },
   { key: 'cta',             label: 'CTA Banner',      subtitle: '',                 title: 'ระบบกลุ่มนิเทศ ติดตามและประเมินผล', visible: true,  bg: '#ffffff', bg2: '#f1f5f9', bg_type: 'none', order: 7 },
 ]
 // image_gallery: เพิ่มได้เองผ่านปุ่ม "+ เพิ่มเซกชันภาพลิงก์" ใน AdminHomeSectionsView.vue — ไม่ fix ไว้ล่วงหน้า

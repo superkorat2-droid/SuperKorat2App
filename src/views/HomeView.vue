@@ -207,6 +207,49 @@ const dmcStatsTotals = computed(() => {
   }
 })
 
+// ── แนวโน้มผลคะแนน NT (home section) ────────────────────────────────
+// กราฟทีเซอร์เท่านั้น (เฉพาะรอบที่แอดมินเลือก "เผยแพร่ที่หน้าแรก") ตัวกรอง/รายละเอียดเต็ม
+// อยู่ที่ /dashboard/nt-trend ซึ่งต้อง login เป็นบุคลากรเขต (staff/supervisor/admin)
+const ntTrend        = ref([])
+const loadingNtTrend = ref(false)
+const needsNtScoresSection = computed(() =>
+  orderedSections.value.some(s => s.key === 'nt_scores' && s.visible)
+)
+async function fetchNtTrend() {
+  loadingNtTrend.value = true
+  const { data, error } = await supabase.rpc('get_nt_public_trend')
+  if (!error) ntTrend.value = data || []
+  loadingNtTrend.value = false
+}
+// เลือกกลุ่ม exam_type+grade_level ที่มีข้อมูลมากที่สุดมาโชว์เป็นทีเซอร์เดียว
+const ntChartSeries = computed(() => {
+  const groups = {}
+  ntTrend.value.forEach(r => {
+    const k = `${r.exam_type}__${r.grade_level}`
+    ;(groups[k] ||= []).push(r)
+  })
+  const best = Object.values(groups).sort((a, b) => b.length - a.length)[0] || []
+  return [...best].sort((a, b) => a.academic_year - b.academic_year)
+})
+const NT_CHART = { W: 640, H: 200, PL: 40, PR: 16, PT: 16, PB: 32 }
+function ntChartY(v) {
+  const h = NT_CHART.H - NT_CHART.PT - NT_CHART.PB
+  return NT_CHART.PT + h - (Math.max(0, Math.min(100, v)) / 100) * h
+}
+const ntChartPoints = computed(() => {
+  const n = ntChartSeries.value.length
+  const w = NT_CHART.W - NT_CHART.PL - NT_CHART.PR
+  const step = n > 1 ? w / (n - 1) : 0
+  return ntChartSeries.value.map((r, i) => ({
+    x: NT_CHART.PL + (n > 1 ? step * i : w / 2),
+    y: ntChartY(r.avg_overall_pct),
+    v: r.avg_overall_pct, year: r.academic_year,
+  }))
+})
+const ntChartPath = computed(() =>
+  ntChartPoints.value.length < 2 ? '' : ntChartPoints.value.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x},${p.y}`).join(' ')
+)
+
 // ── จดหมายข่าวโรงเรียน (home section) ─────────────────────────────
 // เซกชันชนิดนี้เพิ่มได้หลายอัน (key = school_newsletters_<timestamp>) และแต่ละอัน
 // ตั้งค่ากรองไม่เหมือนกัน จึงเก็บผลลัพธ์แยกตาม key ไม่ใช่ ref ตัวเดียวแบบเซกชันอื่น
@@ -428,6 +471,7 @@ onMounted(async () => {
   if (needsEduNewsSection.value) fetchEduNews()
   if (needsNithetCalendarSection.value) fetchNithetEvents()
   if (needsDmcStatsSection.value) fetchDmcStats()
+  if (needsNtScoresSection.value) fetchNtTrend()
   newsletterSections.value.forEach(fetchNewsletterFeed)
   librarySections.value.forEach(fetchLibraryFeed)
   videoSections.value.forEach(fetchVideoFeed)
@@ -1216,6 +1260,49 @@ const stats = [
                     <path stroke-linecap="round" stroke-linejoin="round" d="M17.25 8.25L21 12m0 0l-3.75 3.75M21 12H3"/>
                   </svg>
                 </router-link>
+              </div>
+            </template>
+          </div>
+        </section>
+
+        <!-- ══ NT SCORES (แนวโน้มผลคะแนน NT) ══ -->
+        <section v-else-if="sec.key === 'nt_scores'" :style="getBgStyle(sec)" :class="secBgClass(sec)" class="py-8 md:py-12">
+          <BgLayers :cfg="sec"/>
+          <div class="relative max-w-4xl mx-auto px-4">
+            <div class="text-center mb-8">
+              <span v-if="sec.subtitle" class="text-secondary font-bold uppercase text-xs tracking-[0.18em] mb-2 block">{{ sec.subtitle }}</span>
+              <h2 class="text-3xl md:text-4xl font-extrabold text-slate-900 accent-line-center">{{ sec.title || 'แนวโน้มผลคะแนน NT' }}</h2>
+            </div>
+
+            <div v-if="loadingNtTrend" class="flex justify-center py-12">
+              <div class="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin"/>
+            </div>
+            <div v-else-if="ntChartSeries.length === 0" class="text-center py-8 text-slate-400 text-sm">ยังไม่มีข้อมูลผลคะแนนที่เผยแพร่</div>
+            <template v-else>
+              <p class="text-slate-500 text-sm text-center mb-5">
+                {{ ntChartSeries[0].exam_type }} {{ ntChartSeries[0].grade_level }} · ค่าเฉลี่ยรวมร้อยละรายปี
+              </p>
+              <div class="rounded-2xl border border-indigo-100 bg-white/70 shadow-sm p-5">
+                <svg :viewBox="`0 0 ${NT_CHART.W} ${NT_CHART.H}`" class="w-full" style="max-height:220px">
+                  <line v-for="t in [0,25,50,75,100]" :key="t" :x1="NT_CHART.PL" :x2="NT_CHART.W - NT_CHART.PR" :y1="ntChartY(t)" :y2="ntChartY(t)" stroke="#e5e7eb" stroke-width="1"/>
+                  <text v-for="t in [0,25,50,75,100]" :key="'y'+t" :x="NT_CHART.PL - 8" :y="ntChartY(t) + 4" text-anchor="end" font-size="10" fill="#9ca3af">{{ t }}</text>
+                  <text v-for="p in ntChartPoints" :key="'x'+p.year" :x="p.x" :y="NT_CHART.H - NT_CHART.PB + 18" text-anchor="middle" font-size="11" fill="#6b7280">{{ p.year }}</text>
+                  <path v-if="ntChartPath" :d="ntChartPath" fill="none" stroke="#6366f1" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+                  <g v-for="p in ntChartPoints" :key="p.year">
+                    <circle :cx="p.x" :cy="p.y" r="4" fill="#6366f1" stroke="white" stroke-width="1.5"/>
+                    <text :x="p.x" :y="p.y - 10" text-anchor="middle" font-size="11" font-weight="700" fill="#4f46e5">{{ p.v.toFixed(1) }}%</text>
+                  </g>
+                </svg>
+              </div>
+              <div class="text-center mt-6">
+                <router-link :to="{ path: '/dashboard/nt-trend' }"
+                  class="inline-flex items-center gap-2 px-6 py-3 text-sm font-bold text-white bg-indigo-600 rounded-2xl shadow-md hover:-translate-y-0.5 hover:shadow-lg hover:bg-indigo-700 transition-all">
+                  ดูข้อมูล NT ทั้งหมด
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M17.25 8.25L21 12m0 0l-3.75 3.75M21 12H3"/>
+                  </svg>
+                </router-link>
+                <p class="text-xs text-slate-400 mt-2">ต้องเข้าสู่ระบบเป็นบุคลากรเขตจึงจะดูข้อมูลทั้งหมดได้</p>
               </div>
             </template>
           </div>
