@@ -1,0 +1,306 @@
+<script setup>
+import { ref, computed, onMounted } from 'vue'
+import { supabase } from '../supabase'
+import { useAreaConfig } from '../composables/useAreaConfig'
+import { usePageHeader } from '../composables/usePageHeader'
+import { QUALITY_LEVELS, QUALITY_COLOR } from '../composables/useNtParser'
+import PageHero from '../components/PageHero.vue'
+import BarChart from '../components/awards/BarChart.vue'
+
+const { config } = useAreaConfig()
+const header = usePageHeader('ntScores', { icon: 'students', title: 'ผลคะแนน NT', align: 'center' })
+
+const loading = ref(true)
+const periods = ref([]) // ทุกรอบที่ show_public=true จาก get_nt_public_trend() — [{id, exam_type, grade_level, academic_year, title, subjects, scores:[...]}]
+
+onMounted(async () => {
+  const { data, error } = await supabase.rpc('get_nt_public_trend')
+  periods.value = error ? [] : (data || [])
+  if (periods.value.length) {
+    const first = examGroups.value[0]
+    if (first) selectedGroup.value = first.key
+  }
+  loading.value = false
+})
+
+// ── เลือกประเภทสอบ+ชั้น (กรณีมีหลายอย่างในอนาคต) ──────────────────────────────
+const examGroups = computed(() => {
+  const map = {}
+  periods.value.forEach(p => {
+    const key = `${p.exam_type}__${p.grade_level}`
+    ;(map[key] ||= { key, exam_type: p.exam_type, grade_level: p.grade_level, periods: [] }).periods.push(p)
+  })
+  return Object.values(map).sort((a, b) => b.periods.length - a.periods.length)
+})
+const selectedGroup = ref('')
+const currentGroup = computed(() => examGroups.value.find(g => g.key === selectedGroup.value) || examGroups.value[0])
+const groupPeriods = computed(() => [...(currentGroup.value?.periods || [])].sort((a, b) => a.academic_year - b.academic_year))
+const currentPeriod = computed(() => groupPeriods.value[groupPeriods.value.length - 1] || null)
+
+const subjectKeys = computed(() => [...(currentPeriod.value?.subjects || []).map(s => s.key), 'overall'])
+const subjectLabels = computed(() => {
+  const m = {}
+  ;(currentPeriod.value?.subjects || []).forEach(s => { m[s.key] = s.label })
+  m.overall = 'รวม'
+  return m
+})
+
+const allScores = computed(() => currentPeriod.value?.scores || [])
+
+// ── ตัวกรอง (เหมือนหน้า /student-stats) ────────────────────────────────────────
+const filterDistrict = ref('all')
+const filterCluster  = ref('all')
+const filterSchool   = ref('all')
+const searchQ        = ref('')
+
+const districts = computed(() => [...new Set(allScores.value.map(s => s.district).filter(Boolean))].sort())
+const clusters = computed(() => {
+  const scoped = filterDistrict.value === 'all' ? allScores.value : allScores.value.filter(s => s.district === filterDistrict.value)
+  return [...new Set(scoped.map(s => s.school_group).filter(Boolean))].sort()
+})
+const schoolsInDistrict = computed(() => {
+  let list = allScores.value
+  if (filterDistrict.value !== 'all') list = list.filter(s => s.district === filterDistrict.value)
+  if (filterCluster.value  !== 'all') list = list.filter(s => s.school_group === filterCluster.value)
+  return list
+})
+
+function applyFilters(list) {
+  if (filterDistrict.value !== 'all') list = list.filter(s => s.district === filterDistrict.value)
+  if (filterCluster.value  !== 'all') list = list.filter(s => s.school_group === filterCluster.value)
+  if (filterSchool.value   !== 'all') list = list.filter(s => s.school_id === filterSchool.value)
+  if (searchQ.value.trim()) {
+    const q = searchQ.value.trim().toLowerCase()
+    list = list.filter(s => s.school_name?.toLowerCase().includes(q))
+  }
+  return list
+}
+const filteredScores = computed(() => applyFilters(allScores.value))
+
+const isFiltered = computed(() =>
+  filterDistrict.value !== 'all' || filterCluster.value !== 'all' || filterSchool.value !== 'all' || searchQ.value.trim()
+)
+function resetFilter() {
+  filterDistrict.value = 'all'; filterCluster.value = 'all'; filterSchool.value = 'all'; searchQ.value = ''
+}
+function onDistrictChange() { filterCluster.value = 'all'; filterSchool.value = 'all' }
+function onClusterChange()  { filterSchool.value = 'all' }
+function onGroupChange() { resetFilter() }
+
+// ── สรุปผล (การ์ด + กระจายระดับคุณภาพ) ─────────────────────────────────────────
+function avgOf(list, key) {
+  const vals = list.map(s => s.scores?.[key]?.pct).filter(v => typeof v === 'number')
+  if (!vals.length) return null
+  return vals.reduce((a, b) => a + b, 0) / vals.length
+}
+function levelDistribution(list, key) {
+  const counts = Object.fromEntries(QUALITY_LEVELS.map(l => [l, 0]))
+  list.forEach(s => { const lvl = s.scores?.[key]?.level; if (lvl && counts[lvl] !== undefined) counts[lvl]++ })
+  const total = list.length || 1
+  return QUALITY_LEVELS.map(l => ({ level: l, count: counts[l], pct: Math.round((counts[l] / total) * 100) }))
+}
+
+// ── ค่าเฉลี่ยแยกตามศูนย์เครือข่าย (รวม) ────────────────────────────────────────
+const clusterSort = ref('value_desc')
+const CLUSTER_SORT_OPTIONS = [
+  { value: 'value_desc', label: 'มากไปน้อย' },
+  { value: 'value_asc',  label: 'น้อยไปมาก' },
+  { value: 'name',       label: 'ชื่อศูนย์' },
+]
+const clusterAgg = computed(() => {
+  const map = {}
+  filteredScores.value.forEach(s => {
+    const key = s.school_group || 'ไม่ระบุศูนย์'
+    ;(map[key] ||= []).push(s)
+  })
+  let entries = Object.entries(map).map(([label, list]) => ({ label, value: Math.round((avgOf(list, 'overall') || 0) * 10) / 10, bar: 'bg-indigo-500' }))
+  if (clusterSort.value === 'name')       entries.sort((a, b) => a.label.localeCompare(b.label, 'th'))
+  else if (clusterSort.value === 'value_asc') entries.sort((a, b) => a.value - b.value)
+  else                                     entries.sort((a, b) => b.value - a.value)
+  return entries
+})
+
+const schoolTableData = computed(() =>
+  [...filteredScores.value].sort((a, b) => (b.scores?.overall?.pct || 0) - (a.scores?.overall?.pct || 0))
+)
+
+// ── กราฟแนวโน้มข้ามปี — แอกทีฟตามตัวกรองด้านบน ─────────────────────────────────
+const C = { W: 720, H: 260, PL: 44, PR: 20, PT: 20, PB: 40 }
+const SUBJECT_COLOR = { math: '#3b82f6', thai: '#f97316', overall: '#8b5cf6' }
+const trendPoints = computed(() => groupPeriods.value.map(p => ({ period: p, list: applyFilters(p.scores || []) })))
+function yAt(v) { const h = C.H - C.PT - C.PB; return C.PT + h - (Math.max(0, Math.min(100, v)) / 100) * h }
+function xAt(i) { const n = trendPoints.value.length; const w = C.W - C.PL - C.PR; const step = n > 1 ? w / (n - 1) : 0; return C.PL + (n > 1 ? step * i : w / 2) }
+const chartLines = computed(() =>
+  subjectKeys.value.map(key => ({
+    key, label: subjectLabels.value[key], color: SUBJECT_COLOR[key] || '#64748b',
+    points: trendPoints.value.map((tp, i) => {
+      const v = avgOf(tp.list, key)
+      return { x: xAt(i), y: v === null ? null : yAt(v), v, year: tp.period.academic_year }
+    }),
+  }))
+)
+function linePath(points) {
+  const valid = points.filter(p => p.y !== null)
+  if (valid.length < 2) return ''
+  return valid.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x},${p.y}`).join(' ')
+}
+const yTicks = [0, 25, 50, 75, 100]
+const hoveredPoint = ref(null)
+</script>
+
+<template>
+  <div class="font-sarabun min-h-screen">
+    <PageHero v-if="!header.hidden"
+      :title="header.title" :subtitle="header.subtitle || config?.area_name"
+      :mode="header.mode" :icon="header.icon"
+      :media-url="header.mediaUrl" :media-type="header.mediaType" :aspect-ratio="header.aspectRatio"
+      :align="header.align" max-width="5xl"/>
+
+    <div v-if="loading" class="flex justify-center py-24"><div class="w-10 h-10 border-4 border-primary/30 border-t-primary rounded-full animate-spin"/></div>
+    <div v-else-if="!currentPeriod" class="text-center py-24 text-slate-400">
+      <p class="font-bold text-lg">ยังไม่มีข้อมูลผลคะแนนที่เผยแพร่ต่อสาธารณะ</p>
+    </div>
+
+    <div v-else class="max-w-5xl mx-auto px-4 py-8 space-y-8">
+      <div class="text-center space-y-3">
+        <select v-if="examGroups.length > 1" v-model="selectedGroup" @change="onGroupChange"
+          class="px-3 py-2 text-sm border border-white/80 bg-white/70 backdrop-blur rounded-xl">
+          <option v-for="g in examGroups" :key="g.key" :value="g.key">{{ g.exam_type }} {{ g.grade_level }}</option>
+        </select>
+        <p class="text-sm text-slate-500">
+          {{ currentPeriod.title }} · ปีการศึกษา {{ currentPeriod.academic_year }}
+        </p>
+      </div>
+
+      <!-- Filter -->
+      <div class="glass-tile p-4">
+        <div class="flex flex-wrap items-center gap-3">
+          <div class="relative flex-1 min-w-[200px]">
+            <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/></svg>
+            <input v-model="searchQ" type="text" placeholder="ค้นหาชื่อโรงเรียน..."
+              class="w-full pl-9 pr-4 py-2.5 border border-white/80 bg-white/70 backdrop-blur rounded-xl text-sm focus:outline-none focus:border-primary"/>
+          </div>
+          <select v-model="filterDistrict" @change="onDistrictChange"
+            class="px-3 py-2.5 border border-white/80 bg-white/70 backdrop-blur rounded-xl text-sm focus:outline-none focus:border-primary">
+            <option value="all">ทุกอำเภอ</option>
+            <option v-for="d in districts" :key="d" :value="d">อ.{{ d }}</option>
+          </select>
+          <select v-model="filterCluster" @change="onClusterChange"
+            class="px-3 py-2.5 border border-white/80 bg-white/70 backdrop-blur rounded-xl text-sm focus:outline-none focus:border-primary">
+            <option value="all">ทุกศูนย์เครือข่าย</option>
+            <option v-for="c in clusters" :key="c" :value="c">{{ c }}</option>
+          </select>
+          <select v-model="filterSchool"
+            class="px-3 py-2.5 border border-white/80 bg-white/70 backdrop-blur rounded-xl text-sm focus:outline-none focus:border-primary min-w-[180px]">
+            <option value="all">ทุกโรงเรียน</option>
+            <option v-for="s in schoolsInDistrict" :key="s.school_id" :value="s.school_id">{{ s.school_name }}</option>
+          </select>
+        </div>
+        <div v-if="isFiltered" class="mt-2 flex items-center gap-2 flex-wrap">
+          <div class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"/>
+          <p class="text-sm text-primary font-medium flex-1">กรองแล้ว: {{ filteredScores.length }} โรงเรียน</p>
+          <button @click="resetFilter" class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-red-600 bg-red-50 border border-red-200 rounded-full hover:bg-red-100 transition-colors">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+            ล้างตัวกรองทั้งหมด
+          </button>
+        </div>
+      </div>
+
+      <!-- Stat cards -->
+      <div class="grid gap-4" :class="subjectKeys.length === 3 ? 'md:grid-cols-3' : 'md:grid-cols-2'">
+        <div v-for="key in subjectKeys" :key="key" class="rounded-2xl border border-indigo-100 bg-white/70 shadow-sm p-5">
+          <p class="text-xs font-bold text-slate-500 uppercase tracking-wider text-center">{{ subjectLabels[key] }}</p>
+          <p class="text-3xl font-extrabold text-indigo-600 text-center mt-1">{{ avgOf(filteredScores, key) !== null ? avgOf(filteredScores, key).toFixed(2) : '—' }}<span class="text-sm text-slate-400 font-medium"> %</span></p>
+          <div class="mt-3 space-y-1.5">
+            <div v-for="d in levelDistribution(filteredScores, key)" :key="d.level" class="flex items-center gap-2 text-xs">
+              <span class="w-16 flex-shrink-0 text-slate-500">{{ d.level }}</span>
+              <div class="flex-1 h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                <div class="h-full rounded-full" :style="`width:${d.pct}%; background:${QUALITY_COLOR[d.level]}`"/>
+              </div>
+              <span class="w-14 flex-shrink-0 text-right font-bold text-slate-600">{{ d.count }} ({{ d.pct }}%)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ศูนย์เครือข่าย -->
+      <div v-if="clusterAgg.length > 0" class="glass-tile p-5">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+          <h3 class="font-bold text-slate-700">ค่าเฉลี่ยรวมแยกตามศูนย์เครือข่าย</h3>
+          <div class="flex gap-1 bg-slate-100 p-1 rounded-lg">
+            <button v-for="opt in CLUSTER_SORT_OPTIONS" :key="opt.value" @click="clusterSort = opt.value"
+              :class="['px-2.5 py-1 text-xs font-bold rounded-md transition-colors',
+                clusterSort === opt.value ? 'bg-white text-primary shadow-sm' : 'text-slate-500 hover:text-slate-700']">
+              {{ opt.label }}
+            </button>
+          </div>
+        </div>
+        <BarChart :items="clusterAgg"/>
+      </div>
+
+      <!-- School table -->
+      <div class="glass-tile overflow-hidden">
+        <div class="px-5 py-4 border-b border-slate-50 text-center">
+          <h3 class="font-bold text-slate-700">ข้อมูลรายโรงเรียน ({{ filteredScores.length }} โรงเรียน)</h3>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-xs">
+            <thead><tr class="bg-slate-50 text-slate-500 text-left">
+              <th class="px-4 py-3 font-bold">#</th>
+              <th class="px-4 py-3 font-bold">โรงเรียน</th>
+              <th class="px-4 py-3 font-bold">ศูนย์เครือข่าย</th>
+              <th v-for="key in subjectKeys" :key="key" class="px-4 py-3 font-bold text-right">{{ subjectLabels[key] }}</th>
+            </tr></thead>
+            <tbody class="divide-y divide-slate-50">
+              <tr v-for="(s, i) in schoolTableData" :key="s.school_id" class="hover:bg-slate-50 transition-colors cursor-pointer" @click="filterSchool = s.school_id; filterDistrict = 'all'">
+                <td class="px-4 py-3 text-slate-400">{{ i + 1 }}</td>
+                <td class="px-4 py-3 font-medium text-slate-700">{{ s.school_name }}</td>
+                <td class="px-4 py-3 text-slate-500">{{ s.school_group }}</td>
+                <td v-for="key in subjectKeys" :key="key" class="px-4 py-3 text-right">
+                  <span class="font-bold text-slate-700">{{ s.scores?.[key]?.pct ?? '—' }}</span>
+                  <span v-if="s.scores?.[key]?.level" class="ml-1.5 text-[10px] font-bold px-1.5 py-0.5 rounded-full"
+                    :style="`background:${QUALITY_COLOR[s.scores[key].level]}22; color:${QUALITY_COLOR[s.scores[key].level]}`">
+                    {{ s.scores[key].level }}
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- แนวโน้มข้ามปี -->
+      <div v-if="groupPeriods.length >= 2" class="glass-tile p-5">
+        <h3 class="font-bold text-slate-700 text-center">แนวโน้มผลคะแนนข้ามปี</h3>
+        <p class="text-sm text-slate-400 text-center mb-4">{{ isFiltered ? 'ตามตัวกรองที่เลือกไว้ด้านบน' : 'ค่าเฉลี่ยรวมทั้งเขต' }}</p>
+        <div class="flex flex-wrap justify-center gap-4 mb-3">
+          <div v-for="l in chartLines" :key="l.key" class="flex items-center gap-1.5 text-xs">
+            <span class="w-3 h-3 rounded-full" :style="`background:${l.color}`"/>{{ l.label }}
+          </div>
+        </div>
+        <svg :viewBox="`0 0 ${C.W} ${C.H}`" class="w-full" style="max-height:300px">
+          <line v-for="t in yTicks" :key="t" :x1="C.PL" :x2="C.W - C.PR" :y1="yAt(t)" :y2="yAt(t)" stroke="#e5e7eb" stroke-width="1"/>
+          <text v-for="t in yTicks" :key="'y'+t" :x="C.PL - 8" :y="yAt(t) + 4" text-anchor="end" font-size="11" fill="#9ca3af">{{ t }}</text>
+          <text v-for="(tp, i) in trendPoints" :key="'x'+tp.period.id" :x="xAt(i)" :y="C.H - C.PB + 20" text-anchor="middle" font-size="11" fill="#6b7280">{{ tp.period.academic_year }}</text>
+          <g v-for="l in chartLines" :key="l.key">
+            <path :d="linePath(l.points)" fill="none" :stroke="l.color" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+            <circle v-for="(pt, i) in l.points.filter(p => p.y !== null)" :key="i" :cx="pt.x" :cy="pt.y" r="4"
+              :fill="l.color" stroke="white" stroke-width="1.5" class="cursor-pointer"
+              @mouseenter="hoveredPoint = { ...pt, label: l.label, color: l.color }" @mouseleave="hoveredPoint = null"/>
+          </g>
+          <g v-if="hoveredPoint">
+            <rect :x="hoveredPoint.x - 55" :y="hoveredPoint.y - 42" width="110" height="34" rx="6" fill="#1e1b4b" opacity="0.92"/>
+            <text :x="hoveredPoint.x" :y="hoveredPoint.y - 27" text-anchor="middle" font-size="10" fill="white">{{ hoveredPoint.label }} · {{ hoveredPoint.year }}</text>
+            <text :x="hoveredPoint.x" :y="hoveredPoint.y - 13" text-anchor="middle" font-size="13" fill="#a5b4fc" font-weight="700">{{ hoveredPoint.v?.toFixed(2) }}%</text>
+          </g>
+        </svg>
+      </div>
+
+      <p class="text-center text-sm text-slate-400 pb-6">ข้อมูลจากรายงาน NT/O-NET สทศ. · {{ config?.area_name }}<span v-if="isFiltered"> · <button @click="resetFilter" class="text-primary hover:underline">ล้างตัวกรอง</button></span></p>
+    </div>
+  </div>
+</template>
+
+<style scoped>
+.font-sarabun { font-family: 'Sarabun', sans-serif; }
+</style>

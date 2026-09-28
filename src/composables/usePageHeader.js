@@ -15,6 +15,7 @@ export const SYSTEM_ROUTE_HEADER_KEYS = {
   '/works':            'works',
   '/awards':           'awards',
   '/student-stats':    'studentStats',
+  '/nt-scores':        'ntScores',
   '/news':             'news',
   '/education-news':   'educationNews',
   '/download':         'download',

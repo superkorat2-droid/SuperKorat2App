@@ -208,8 +208,9 @@ const dmcStatsTotals = computed(() => {
 })
 
 // ── แนวโน้มผลคะแนน NT (home section) ────────────────────────────────
-// กราฟทีเซอร์เท่านั้น (เฉพาะรอบที่แอดมินเลือก "เผยแพร่ที่หน้าแรก") ตัวกรอง/รายละเอียดเต็ม
-// อยู่ที่ /dashboard/nt-trend ซึ่งต้อง login เป็นบุคลากรเขต (staff/supervisor/admin)
+// กราฟทีเซอร์ + ลิงก์ไปหน้าสาธารณะเต็ม /nt-scores (เปิดเผยแล้ว 28 ก.ย. 69 — ผู้รับผิดชอบ NT อนุมัติ)
+// ใช้ RPC เดียวกับหน้านั้น (get_nt_public_trend คืนราย-โรงเรียนของทุกรอบที่ show_public=true)
+// ทีเซอร์นี้คำนวณค่าเฉลี่ยรวมเองจากราย-โรงเรียน ไม่กรองอะไร รายละเอียด/ตัวกรองเต็มอยู่ที่หน้านั้น
 const ntTrend        = ref([])
 const loadingNtTrend = ref(false)
 const needsNtScoresSection = computed(() =>
@@ -220,6 +221,11 @@ async function fetchNtTrend() {
   const { data, error } = await supabase.rpc('get_nt_public_trend')
   if (!error) ntTrend.value = data || []
   loadingNtTrend.value = false
+}
+function avgOverallPct(period) {
+  const vals = (period.scores || []).map(s => s.scores?.overall?.pct).filter(v => typeof v === 'number')
+  if (!vals.length) return null
+  return vals.reduce((a, b) => a + b, 0) / vals.length
 }
 // เลือกกลุ่ม exam_type+grade_level ที่มีข้อมูลมากที่สุดมาโชว์เป็นทีเซอร์เดียว
 const ntChartSeries = computed(() => {
@@ -240,11 +246,10 @@ const ntChartPoints = computed(() => {
   const n = ntChartSeries.value.length
   const w = NT_CHART.W - NT_CHART.PL - NT_CHART.PR
   const step = n > 1 ? w / (n - 1) : 0
-  return ntChartSeries.value.map((r, i) => ({
-    x: NT_CHART.PL + (n > 1 ? step * i : w / 2),
-    y: ntChartY(r.avg_overall_pct),
-    v: r.avg_overall_pct, year: r.academic_year,
-  }))
+  return ntChartSeries.value.map((r, i) => {
+    const v = avgOverallPct(r)
+    return { x: NT_CHART.PL + (n > 1 ? step * i : w / 2), y: ntChartY(v || 0), v, year: r.academic_year }
+  }).filter(p => p.v !== null)
 })
 const ntChartPath = computed(() =>
   ntChartPoints.value.length < 2 ? '' : ntChartPoints.value.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x},${p.y}`).join(' ')
@@ -1295,14 +1300,13 @@ const stats = [
                 </svg>
               </div>
               <div class="text-center mt-6">
-                <router-link :to="{ path: '/dashboard/nt-trend' }"
+                <router-link to="/nt-scores"
                   class="inline-flex items-center gap-2 px-6 py-3 text-sm font-bold text-white bg-indigo-600 rounded-2xl shadow-md hover:-translate-y-0.5 hover:shadow-lg hover:bg-indigo-700 transition-all">
                   ดูข้อมูล NT ทั้งหมด
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M17.25 8.25L21 12m0 0l-3.75 3.75M21 12H3"/>
                   </svg>
                 </router-link>
-                <p class="text-xs text-slate-400 mt-2">ต้องเข้าสู่ระบบเป็นบุคลากรเขตจึงจะดูข้อมูลทั้งหมดได้</p>
               </div>
             </template>
           </div>

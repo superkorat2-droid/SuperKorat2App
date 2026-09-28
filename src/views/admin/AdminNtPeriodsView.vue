@@ -148,7 +148,7 @@ const examTypeLabel = (v) => EXAM_TYPES.find(e => e.value === v)?.value || v
               <span class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-700">{{ examTypeLabel(p.exam_type) }}</span>
               <span class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600">{{ p.grade_level }}</span>
               <span v-if="p.is_archived" class="text-xs bg-indigo-100 text-indigo-700 font-bold px-2 py-0.5 rounded-full">📦 เก็บถาวร</span>
-              <span v-if="p.show_public" class="text-xs bg-emerald-100 text-emerald-700 font-bold px-2 py-0.5 rounded-full">🌐 เผยแพร่หน้าแรกแล้ว</span>
+              <span v-if="p.show_public" class="text-xs bg-emerald-100 text-emerald-700 font-bold px-2 py-0.5 rounded-full">🌐 เผยแพร่สาธารณะแล้ว</span>
             </div>
             <h3 class="font-extrabold text-slate-800 text-lg">{{ p.title }}</h3>
             <p class="text-xs text-slate-400 mt-0.5">ปีการศึกษา {{ p.academic_year }} · นำเข้าแล้ว {{ scoreCounts[p.id] || 0 }} โรงเรียน</p>
@@ -162,7 +162,7 @@ const examTypeLabel = (v) => EXAM_TYPES.find(e => e.value === v)?.value || v
             <button @click="togglePublic(p)"
               :class="['px-3 py-1.5 text-xs font-bold rounded-xl transition-colors',
                 p.show_public ? 'bg-slate-100 text-slate-600 hover:bg-slate-200' : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100']">
-              {{ p.show_public ? 'ยกเลิกเผยแพร่' : 'เผยแพร่ที่หน้าแรก' }}
+              {{ p.show_public ? 'ยกเลิกเผยแพร่' : 'เผยแพร่ต่อสาธารณะ' }}
             </button>
             <button @click="toggleArchive(p)"
               :class="['px-3 py-1.5 text-xs font-bold rounded-xl transition-colors',

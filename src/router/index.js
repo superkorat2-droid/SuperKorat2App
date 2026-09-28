@@ -57,6 +57,7 @@ import AdminNtPeriodsView         from '../views/admin/AdminNtPeriodsView.vue'
 import AdminNtResultsView         from '../views/admin/AdminNtResultsView.vue'
 import AdminNtTrendView           from '../views/admin/AdminNtTrendView.vue'
 import PublicStudentStatsView     from '../views/PublicStudentStatsView.vue'
+import PublicNtScoresView         from '../views/PublicNtScoresView.vue'
 import AdminSupervisionFormView from '../views/admin/AdminSupervisionFormView.vue'
 import AdminSupervisionResultsView from '../views/admin/AdminSupervisionResultsView.vue'
 import AdminNitetCalendarView from '../views/admin/AdminNitetCalendarView.vue'
@@ -248,6 +249,7 @@ const routes = [
   // ── โค้ดฝังสำหรับเว็บภายนอก (ไม่มี navbar/footer — ดู isSchoolRoute ใน App.vue) ──
   { path: '/embed/personnel', name: 'embedPersonnel', component: () => import('../views/EmbedPersonnelView.vue') },
   { path: '/student-stats', name: 'studentStats', component: PublicStudentStatsView, meta: { title: 'สถิตินักเรียน' } },
+  { path: '/nt-scores',     name: 'ntScores',     component: PublicNtScoresView,     meta: { title: 'ผลคะแนน NT' } },
 
   // ── Dynamic CMS pages ────────────────────────────────────────────────
   // /page/org แทนที่ด้วยผังโครงสร้างที่ดึงข้อมูลจริง (ต้องมาก่อน /page/:slug ทั่วไป)
