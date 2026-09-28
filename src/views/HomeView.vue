@@ -234,6 +234,8 @@ function ntChartY(v) {
   const h = NT_CHART.H - NT_CHART.PT - NT_CHART.PB
   return NT_CHART.PT + h - (Math.max(0, Math.min(100, v)) / 100) * h
 }
+// ลำดับที่ต้องการเสมอ ไม่ว่าประเภทไหนจะมีรอบเผยแพร่มาก่อน/มากกว่ากัน
+const EXAM_TYPE_ORDER = ['RT', 'NT', 'ONET']
 const ntGroups = computed(() => {
   const groups = {}
   ntTrend.value.forEach(r => {
@@ -251,7 +253,9 @@ const ntGroups = computed(() => {
     }).filter(p => p.v !== null)
     const path = points.length < 2 ? '' : points.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x},${p.y}`).join(' ')
     return { ...g, points, path }
-  }).filter(g => g.points.length > 0)
+  })
+    .filter(g => g.points.length > 0)
+    .sort((a, b) => EXAM_TYPE_ORDER.indexOf(a.exam_type) - EXAM_TYPE_ORDER.indexOf(b.exam_type))
 })
 
 // ── จดหมายข่าวโรงเรียน (home section) ─────────────────────────────
