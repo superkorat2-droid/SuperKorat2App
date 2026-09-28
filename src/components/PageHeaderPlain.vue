@@ -14,9 +14,10 @@ const props = defineProps({
   align:       { type: String, default: 'left' },    // 'left' | 'center'
 })
 
-const showMedia = computed(() => props.mode === 'media' && !!props.mediaUrl)
-const showIcon  = computed(() => !showMedia.value && !!props.icon)
-const isVideo   = computed(() => props.mediaType === 'video')
+const showMedia   = computed(() => props.mode === 'media' && !!props.mediaUrl)
+const showMediaBg = computed(() => props.mode === 'media-bg' && !!props.mediaUrl)
+const showIcon    = computed(() => !showMedia.value && !showMediaBg.value && !!props.icon)
+const isVideo     = computed(() => props.mediaType === 'video')
 
 const RATIO_CSS = { '21:9': '21 / 9', '16:9': '16 / 9', '3:1': '3 / 1', '4:1': '4 / 1' }
 const mediaAspectRatio = computed(() => RATIO_CSS[props.aspectRatio] || '21 / 9')
@@ -27,6 +28,16 @@ const mediaAspectRatio = computed(() => RATIO_CSS[props.aspectRatio] || '21 / 9'
   <div v-if="showMedia" class="relative overflow-hidden w-full rounded-2xl" :style="{ aspectRatio: mediaAspectRatio }">
     <video v-if="isVideo" :src="mediaUrl" class="absolute inset-0 w-full h-full object-cover" autoplay muted loop playsinline/>
     <img v-else :src="mediaUrl" class="absolute inset-0 w-full h-full object-cover" alt=""/>
+  </div>
+
+  <!-- โหมดรูปพื้นหลัง+ข้อความ: ภาพเป็นพื้นหลัง ทับด้วย gradient เข้ม + ชื่อ/คำอธิบายสีขาว -->
+  <div v-else-if="showMediaBg" class="relative overflow-hidden w-full rounded-2xl flex flex-col justify-center px-6"
+    :style="{ aspectRatio: mediaAspectRatio }" :class="align === 'center' ? 'items-center text-center' : 'items-start text-left'">
+    <video v-if="isVideo" :src="mediaUrl" class="absolute inset-0 w-full h-full object-cover" autoplay muted loop playsinline/>
+    <img v-else :src="mediaUrl" class="absolute inset-0 w-full h-full object-cover" alt=""/>
+    <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/35 to-black/10"></div>
+    <h1 v-if="title" class="relative text-3xl font-extrabold text-white drop-shadow-md">{{ title }}</h1>
+    <p v-if="subtitle" class="relative text-white/85 mt-2 text-sm drop-shadow-md">{{ subtitle }}</p>
   </div>
 
   <!-- โหมดไอคอน (ค่าเริ่มต้น) -->

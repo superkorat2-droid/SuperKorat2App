@@ -242,7 +242,12 @@ async function clearMedia(row) {
         <button @click="row.mode = 'media'"
           :class="['flex-1 py-2 text-sm font-bold rounded-xl border-2 transition-all',
             row.mode === 'media' ? 'border-primary bg-primary/5 text-primary' : 'border-slate-200 text-slate-500']">
-          ใช้รูป/วิดีโอ/GIF
+          ใช้รูป/วิดีโอ/GIF (เต็ม ไม่มีข้อความ)
+        </button>
+        <button @click="row.mode = 'media-bg'"
+          :class="['flex-1 py-2 text-sm font-bold rounded-xl border-2 transition-all',
+            row.mode === 'media-bg' ? 'border-primary bg-primary/5 text-primary' : 'border-slate-200 text-slate-500']">
+          ใช้รูปพื้นหลัง + ข้อความ
         </button>
       </div>
 
@@ -271,6 +276,9 @@ async function clearMedia(row) {
 
       <!-- Media mode -->
       <div v-else class="space-y-3">
+        <p v-if="row.mode === 'media-bg'" class="text-xs text-slate-400">
+          ชื่อหัวข้อ/คำอธิบายด้านล่างจะถูกวางทับภาพนี้อัตโนมัติ (มีเงาไล่สีช่วยให้อ่านง่าย)
+        </p>
         <!-- Aspect ratio picker -->
         <div>
           <label class="block text-xs font-bold text-slate-600 mb-1.5">สัดส่วนกรอบ</label>

@@ -16,10 +16,11 @@ const props = defineProps({
   maxWidth:    { type: String, default: '3xl' },     // tailwind max-w-* suffix, e.g. '3xl' | '6xl'
 })
 
-// media ต้องมี URL จริงถึงจะใช้ — ถ้า mode='media' แต่ยังไม่มีไฟล์ ให้ fallback ไปโหมด icon แทน (ไม่โชว์รูปพัง)
-const showMedia = computed(() => props.mode === 'media' && !!props.mediaUrl)
-const showIcon  = computed(() => !showMedia.value && !!props.icon)
-const isVideo   = computed(() => props.mediaType === 'video')
+// media ต้องมี URL จริงถึงจะใช้ — ถ้า mode='media'/'media-bg' แต่ยังไม่มีไฟล์ ให้ fallback ไปโหมด icon แทน (ไม่โชว์รูปพัง)
+const showMedia   = computed(() => props.mode === 'media' && !!props.mediaUrl)
+const showMediaBg = computed(() => props.mode === 'media-bg' && !!props.mediaUrl)
+const showIcon    = computed(() => !showMedia.value && !showMediaBg.value && !!props.icon)
+const isVideo     = computed(() => props.mediaType === 'video')
 
 // ต้องเป็น literal class ครบคำในไฟล์นี้ ไม่งั้น Tailwind JIT จะไม่สร้าง class ให้ (ต่อ string ไม่ได้)
 const MAX_W_CLASS = { '3xl': 'max-w-3xl', '5xl': 'max-w-5xl', '6xl': 'max-w-6xl', '7xl': 'max-w-7xl' }
@@ -36,6 +37,19 @@ const mediaAspectRatio = computed(() => RATIO_CSS[props.aspectRatio] || '21 / 9'
     <video v-if="isVideo" :src="mediaUrl" class="absolute inset-0 w-full h-full object-cover"
       autoplay muted loop playsinline/>
     <img v-else :src="mediaUrl" class="absolute inset-0 w-full h-full object-cover" alt=""/>
+  </div>
+
+  <!-- โหมดรูปพื้นหลัง+ข้อความ: ภาพเป็นพื้นหลัง ทับด้วย gradient เข้ม + ชื่อ/คำอธิบายเหมือนโหมดไอคอน -->
+  <div v-else-if="showMediaBg" class="relative overflow-hidden w-full" :style="{ aspectRatio: mediaAspectRatio }">
+    <video v-if="isVideo" :src="mediaUrl" class="absolute inset-0 w-full h-full object-cover"
+      autoplay muted loop playsinline/>
+    <img v-else :src="mediaUrl" class="absolute inset-0 w-full h-full object-cover" alt=""/>
+    <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/35 to-black/10"></div>
+    <div :class="[containerMaxW, 'relative h-full mx-auto px-4 flex flex-col justify-center',
+        align === 'left' ? 'items-start text-left' : 'items-center text-center']">
+      <h1 v-if="title" class="font-extrabold text-white leading-tight drop-shadow-md text-2xl md:text-3xl">{{ title }}</h1>
+      <p v-if="subtitle" class="text-white/85 text-sm mt-2 max-w-xl drop-shadow-md">{{ subtitle }}</p>
+    </div>
   </div>
 
   <!-- โหมดไอคอน (ค่าเริ่มต้น): gradient + ไอคอน + ชื่อ -->
