@@ -16,24 +16,33 @@ const periods = ref([]) // ทุกรอบที่ show_public=true จา�
 onMounted(async () => {
   const { data, error } = await supabase.rpc('get_nt_public_trend')
   periods.value = error ? [] : (data || [])
-  if (periods.value.length) {
-    const first = examGroups.value[0]
-    if (first) selectedGroup.value = first.key
-  }
+  // เลือกแท็บแรกที่มีข้อมูลจริงตามลำดับ RT→NT→O-NET ไว้ก่อน ถ้าไม่มีเลยค่อย fallback ไปแท็บแรกสุด
+  const withData = examGroups.value.find(g => g.periods.length > 0)
+  selectedGroup.value = (withData || examGroups.value[0])?.key || ''
   loading.value = false
 })
 
-// ── เลือกประเภทสอบ+ชั้น (กรณีมีหลายอย่างในอนาคต) ──────────────────────────────
+// ── แท็บประเภทสอบ+ชั้น — โชว์ครบทุกประเภทเสมอตามลำดับ RT→NT→O-NET แม้ยังไม่มีข้อมูล
+// (เช่น O-NET ที่ยังไม่เปิดใช้) เพื่อให้เห็นว่ามีฟีเจอร์นี้รออยู่ ไม่ใช่ซ่อนไปเฉยๆ
+const EXAM_TYPE_ORDER = ['RT', 'NT', 'ONET']
+const EXAM_TYPE_LABEL = { RT: 'RT', NT: 'NT', ONET: 'O-NET' }
 const examGroups = computed(() => {
   const map = {}
   periods.value.forEach(p => {
     const key = `${p.exam_type}__${p.grade_level}`
     ;(map[key] ||= { key, exam_type: p.exam_type, grade_level: p.grade_level, periods: [] }).periods.push(p)
   })
-  return Object.values(map).sort((a, b) => b.periods.length - a.periods.length)
+  const groups = Object.values(map)
+  EXAM_TYPE_ORDER.forEach(et => {
+    if (!groups.some(g => g.exam_type === et)) {
+      groups.push({ key: `${et}__none`, exam_type: et, grade_level: '', periods: [] })
+    }
+  })
+  return groups.sort((a, b) => EXAM_TYPE_ORDER.indexOf(a.exam_type) - EXAM_TYPE_ORDER.indexOf(b.exam_type))
 })
 const selectedGroup = ref('')
 const currentGroup = computed(() => examGroups.value.find(g => g.key === selectedGroup.value) || examGroups.value[0])
+function selectGroup(key) { selectedGroup.value = key; resetFilter() }
 const groupPeriods = computed(() => [...(currentGroup.value?.periods || [])].sort((a, b) => a.academic_year - b.academic_year))
 const currentPeriod = computed(() => groupPeriods.value[groupPeriods.value.length - 1] || null)
 
@@ -85,7 +94,6 @@ function resetFilter() {
 }
 function onDistrictChange() { filterCluster.value = 'all'; filterSchool.value = 'all' }
 function onClusterChange()  { filterSchool.value = 'all' }
-function onGroupChange() { resetFilter() }
 
 // ── สรุปผล (การ์ด + กระจายระดับคุณภาพ) ─────────────────────────────────────────
 function avgOf(list, key) {
@@ -157,20 +165,31 @@ const hoveredPoint = ref(null)
       :align="header.align" max-width="5xl"/>
 
     <div v-if="loading" class="flex justify-center py-24"><div class="w-10 h-10 border-4 border-primary/30 border-t-primary rounded-full animate-spin"/></div>
-    <div v-else-if="!currentPeriod" class="text-center py-24 text-slate-400">
-      <p class="font-bold text-lg">ยังไม่มีข้อมูลผลคะแนนที่เผยแพร่ต่อสาธารณะ</p>
-    </div>
 
     <div v-else class="max-w-5xl mx-auto px-4 py-8 space-y-8">
-      <div class="text-center space-y-3">
-        <select v-if="examGroups.length > 1" v-model="selectedGroup" @change="onGroupChange"
-          class="px-3 py-2 text-sm border border-white/80 bg-white/70 backdrop-blur rounded-xl">
-          <option v-for="g in examGroups" :key="g.key" :value="g.key">{{ g.exam_type }} {{ g.grade_level }}</option>
-        </select>
-        <p class="text-sm text-slate-500">
-          {{ currentPeriod.title }} · ปีการศึกษา {{ currentPeriod.academic_year }}
-        </p>
+      <!-- แท็บประเภทสอบ+ชั้น — การ์ดเต็มความกว้าง 3 คอลัมน์ (มือถือคอลัมน์เดียว) -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <button v-for="g in examGroups" :key="g.key" @click="selectGroup(g.key)"
+          :class="['rounded-2xl border-2 px-5 py-4 text-center transition-all',
+            selectedGroup === g.key
+              ? 'border-indigo-600 bg-indigo-50 shadow-md'
+              : 'border-slate-200 bg-white/70 hover:border-indigo-300']">
+          <p :class="['text-lg font-extrabold', selectedGroup === g.key ? 'text-indigo-700' : 'text-slate-700']">
+            {{ EXAM_TYPE_LABEL[g.exam_type] }}<span v-if="g.grade_level"> {{ g.grade_level }}</span>
+          </p>
+          <p :class="['text-xs mt-1 font-bold', g.periods.length ? 'text-slate-400 font-medium' : 'text-amber-500']">
+            {{ g.periods.length ? `${g.periods.length} ปีการศึกษา` : 'ยังไม่มีข้อมูล' }}
+          </p>
+        </button>
       </div>
+
+      <div v-if="!currentPeriod" class="text-center py-16 text-slate-400">
+        <p class="font-bold text-lg">ยังไม่มีข้อมูล {{ EXAM_TYPE_LABEL[currentGroup?.exam_type] }} ที่เผยแพร่ต่อสาธารณะ</p>
+      </div>
+      <template v-else>
+      <p class="text-sm text-slate-500 text-center">
+        {{ currentPeriod.title }} · ปีการศึกษา {{ currentPeriod.academic_year }}
+      </p>
 
       <!-- Filter -->
       <div class="glass-tile p-4">
@@ -297,6 +316,7 @@ const hoveredPoint = ref(null)
       </div>
 
       <p class="text-center text-sm text-slate-400 pb-6">ข้อมูลจากรายงาน NT/O-NET สทศ. · {{ config?.area_name }}<span v-if="isFiltered"> · <button @click="resetFilter" class="text-primary hover:underline">ล้างตัวกรอง</button></span></p>
+      </template>
     </div>
   </div>
 </template>
