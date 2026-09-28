@@ -43,6 +43,11 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        // ลบแคชรุ่นเก่าทิ้งทันทีที่ SW ใหม่ activate — ป้องกันแท็บที่เปิดค้างไว้ข้ามหลาย deploy
+        // อ้างอิงไฟล์ JS ที่ถูกลบไปแล้วจนโหลดไม่ขึ้น (MIME type error)
+        cleanupOutdatedCaches: true,
+        clientsClaim: true,
+        skipWaiting: true,
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/yrdtqwqyqtrefjtutzzf\.supabase\.co\/.*/i,
