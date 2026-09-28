@@ -27,6 +27,7 @@ const KNOWN_ROUTES = [
   { key: 'nithet-visits',  label: 'บันทึกการนิเทศ' },
   { key: 'media',          label: 'คลังสื่อการเรียนรู้' },
   { key: 'studentStats',   label: 'ข้อมูลนักเรียน' },
+  { key: 'ntScores',       label: 'ผลคะแนน NT' },
   { key: 'news',           label: 'ข่าวสาร' },
   { key: 'educationNews',  label: 'ข่าวการศึกษา' },
   { key: 'nithet',         label: 'กลุ่มนิเทศ ติดตามและประเมินผล' },
