@@ -45,6 +45,7 @@ const ASPECT_RATIOS = [
   { value: '16:9', label: '16:9 มาตรฐาน',    ratio: 16/9 },
   { value: '3:1',  label: '3:1 เว็บราชการ',   ratio: 3/1 },
   { value: '4:1',  label: '4:1 บางมาก',       ratio: 4/1 },
+  { value: '5:1',  label: '5:1 บางที่สุด',     ratio: 5/1 },
 ]
 function ratioNumber(value) { return ASPECT_RATIOS.find(r => r.value === value)?.ratio || 21/9 }
 

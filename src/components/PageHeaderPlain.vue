@@ -19,7 +19,7 @@ const showMediaBg = computed(() => props.mode === 'media-bg' && !!props.mediaUrl
 const showIcon    = computed(() => !showMedia.value && !showMediaBg.value && !!props.icon)
 const isVideo     = computed(() => props.mediaType === 'video')
 
-const RATIO_CSS = { '21:9': '21 / 9', '16:9': '16 / 9', '3:1': '3 / 1', '4:1': '4 / 1' }
+const RATIO_CSS = { '21:9': '21 / 9', '16:9': '16 / 9', '3:1': '3 / 1', '4:1': '4 / 1', '5:1': '5 / 1' }
 const mediaAspectRatio = computed(() => RATIO_CSS[props.aspectRatio] || '21 / 9')
 </script>
 

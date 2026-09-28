@@ -27,7 +27,7 @@ const MAX_W_CLASS = { '3xl': 'max-w-3xl', '5xl': 'max-w-5xl', '6xl': 'max-w-6xl'
 const containerMaxW = computed(() => MAX_W_CLASS[props.maxWidth] || 'max-w-3xl')
 
 // สัดส่วนกรอบรูป/วิดีโอ — ค่า CSS aspect-ratio จริง (ไม่ใช่ Tailwind class จึงต่อ string ได้ปกติ)
-const RATIO_CSS = { '21:9': '21 / 9', '16:9': '16 / 9', '3:1': '3 / 1', '4:1': '4 / 1' }
+const RATIO_CSS = { '21:9': '21 / 9', '16:9': '16 / 9', '3:1': '3 / 1', '4:1': '4 / 1', '5:1': '5 / 1' }
 const mediaAspectRatio = computed(() => RATIO_CSS[props.aspectRatio] || '21 / 9')
 </script>
 
