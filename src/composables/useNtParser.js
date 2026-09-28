@@ -1,24 +1,23 @@
 /**
- * useNtParser — parse the official NT "Local 03" score report (.xlsx) from สทศ./สพฐ.
- * 1 แถว/โรงเรียน: รหัสโรงเรียน(10หลัก)/ชื่อ/อำเภอ/ขนาดโรงเรียน + คะแนน+ร้อยละของแต่ละด้าน
- * + ระดับคุณภาพ (ดีมาก/ดี/พอใช้/ปรับปรุง) — เป็นไฟล์ .xlsx ปกติ (UTF-8 ภายใน) ไม่ใช่ cp874
+ * useNtParser — parse the official "Local 03" score reports (.xlsx) from สทศ./สพฐ.
+ * ใช้ได้ทั้ง NT (คณิต/ไทย) และ RT (การอ่านออกเสียง/การอ่านรู้เรื่อง) — โครงตารางเหมือนกัน
+ * ทุกอย่าง (1 แถว/โรงเรียน: รหัส/ชื่อ/อำเภอ/ขนาดโรงเรียน + คะแนน+ร้อยละ 2 ด้าน+รวม +
+ * ระดับคุณภาพ 2 ด้าน+รวม) ต่างกันแค่ชื่อวิชา — เป็นไฟล์ .xlsx ปกติ (UTF-8 ภายใน) ไม่ใช่ cp874
  * เหมือนไฟล์ DMC ระดับเขต จึงอ่านด้วย SheetJS ตรงๆ ได้เลย
+ *
+ * สำคัญ: ตำแหน่งคอลัมน์ "ลำดับ" ไม่ได้อยู่คอลัมน์เดียวกันเสมอ — ไฟล์ NT มีคอลัมน์ A ว่าง
+ * (ลำดับอยู่ index 1) แต่ไฟล์ RT ไม่มีคอลัมน์ว่างนำหน้า (ลำดับอยู่ index 0) จึงต้องหา
+ * ตำแหน่งคอลัมน์ "ลำดับ" ก่อนแล้วคำนวณคอลัมน์อื่นๆ แบบ offset สัมพัทธ์ ห้าม hardcode ตายตัว
  */
 import { read, utils } from 'xlsx'
-
-// ตำแหน่งคอลัมน์ (0-indexed) ของฟอร์แมต Local03 ที่ สพฐ. ใช้คงที่ทุกปี:
-// ลำดับ, รหัสโรงเรียน, ชื่อโรงเรียน, อำเภอ/เขต, ขนาดโรงเรียน,
-// [คณิต คะแนน][คณิต ร้อยละ][ไทย คะแนน][ไทย ร้อยละ][รวม คะแนน][รวม ร้อยละ],
-// [ระดับ คณิต][ระดับ ไทย][ระดับ รวม]
-const COL = {
-  NO: 1, CODE: 2, NAME: 3, DISTRICT: 4, SIZE: 5,
-  MATH_SCORE: 6, MATH_PCT: 7, THAI_SCORE: 8, THAI_PCT: 9, OVERALL_SCORE: 10, OVERALL_PCT: 11,
-  MATH_LEVEL: 12, THAI_LEVEL: 13, OVERALL_LEVEL: 14,
-}
 
 export const NT_SUBJECTS = [
   { key: 'math', label: 'ด้านคณิตศาสตร์' },
   { key: 'thai', label: 'ด้านภาษาไทย' },
+]
+export const RT_SUBJECTS = [
+  { key: 'aloud',         label: 'การอ่านออกเสียง' },
+  { key: 'comprehension', label: 'การอ่านรู้เรื่อง' },
 ]
 
 function toNum(v) {
@@ -26,14 +25,17 @@ function toNum(v) {
   return isNaN(n) ? null : n
 }
 
-function findHeaderRow(rows) {
+// หาแถว+คอลัมน์ที่ "ลำดับ" ตามด้วย "รหัสโรงเรียน" ทันที คืน { row, base } (base = index ของ "ลำดับ")
+function findHeader(rows) {
   for (let i = 0; i < rows.length; i++) {
     const r = rows[i]
-    if (String(r[1] ?? '').trim() === 'ลำดับ' && String(r[2] ?? '').trim() === 'รหัสโรงเรียน') {
-      return i
+    for (let j = 0; j < r.length; j++) {
+      if (String(r[j] ?? '').trim() === 'ลำดับ' && String(r[j + 1] ?? '').trim() === 'รหัสโรงเรียน') {
+        return { row: i, base: j }
+      }
     }
   }
-  return -1
+  return null
 }
 
 function parseMeta(rows) {
@@ -50,7 +52,11 @@ function parseMeta(rows) {
   return meta
 }
 
-export function parseNtLocal03File(file) {
+// Local03/R-Local03 มีโครงคอลัมน์เดียวกันเสมอ นับ offset จาก "ลำดับ" (base):
+// base+0 ลำดับ, +1 รหัสโรงเรียน, +2 ชื่อโรงเรียน, +3 อำเภอ/เขต, +4 ขนาดโรงเรียน,
+// +5 วิชา1 คะแนน, +6 วิชา1 ร้อยละ, +7 วิชา2 คะแนน, +8 วิชา2 ร้อยละ, +9 รวม คะแนน, +10 รวม ร้อยละ,
+// +11 ระดับ วิชา1, +12 ระดับ วิชา2, +13 ระดับ รวม
+function parseLocal03Generic(file, subjects, fileLabel) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
     reader.onload = (e) => {
@@ -59,14 +65,21 @@ export function parseNtLocal03File(file) {
         const ws = wb.Sheets[wb.SheetNames[0]]
         const rows = utils.sheet_to_json(ws, { header: 1, defval: '' })
 
-        const headerRowIdx = findHeaderRow(rows)
-        if (headerRowIdx === -1) {
-          reject(new Error('ไม่พบหัวตาราง — ตรวจสอบว่าเป็นไฟล์รายงาน Local03 ของ NT ที่ถูกต้อง'))
+        const header = findHeader(rows)
+        if (!header) {
+          reject(new Error(`ไม่พบหัวตาราง — ตรวจสอบว่าเป็นไฟล์รายงาน Local03 ของ ${fileLabel} ที่ถูกต้อง`))
           return
+        }
+        const b = header.base
+        const COL = {
+          CODE: b + 1, NAME: b + 2, DISTRICT: b + 3, SIZE: b + 4,
+          S1_SCORE: b + 5, S1_PCT: b + 6, S2_SCORE: b + 7, S2_PCT: b + 8,
+          OVERALL_SCORE: b + 9, OVERALL_PCT: b + 10,
+          S1_LEVEL: b + 11, S2_LEVEL: b + 12, OVERALL_LEVEL: b + 13,
         }
 
         const meta = parseMeta(rows)
-        const dataRows = rows.slice(headerRowIdx + 3) // หัวตาราง 3 ชั้น (ชื่อกลุ่ม/ชื่อวิชา/คะแนน-ร้อยละ)
+        const dataRows = rows.slice(header.row + 3) // หัวตาราง 3 ชั้น (ชื่อกลุ่ม/ชื่อวิชา/คะแนน-ร้อยละ)
 
         const schoolRows = []
         let skippedRows = 0
@@ -76,10 +89,10 @@ export function parseNtLocal03File(file) {
           if (!code) break // หมดข้อมูลโรงเรียน (แถวถัดไปเป็นหมายเหตุ/ว่าง)
           if (!/^\d+$/.test(code)) { skippedRows++; continue }
 
-          const mathScore = toNum(r[COL.MATH_SCORE])
-          const thaiScore = toNum(r[COL.THAI_SCORE])
+          const s1Score = toNum(r[COL.S1_SCORE])
+          const s2Score = toNum(r[COL.S2_SCORE])
           const overallScore = toNum(r[COL.OVERALL_SCORE])
-          if (mathScore === null && thaiScore === null) { skippedRows++; continue }
+          if (s1Score === null && s2Score === null) { skippedRows++; continue }
 
           schoolRows.push({
             school_code: code,
@@ -87,19 +100,19 @@ export function parseNtLocal03File(file) {
             district: String(r[COL.DISTRICT] ?? '').trim(),
             school_size: String(r[COL.SIZE] ?? '').trim(),
             scores: {
-              math:    { score: mathScore,    pct: toNum(r[COL.MATH_PCT]),    level: String(r[COL.MATH_LEVEL] ?? '').trim() },
-              thai:    { score: thaiScore,    pct: toNum(r[COL.THAI_PCT]),    level: String(r[COL.THAI_LEVEL] ?? '').trim() },
+              [subjects[0].key]: { score: s1Score, pct: toNum(r[COL.S1_PCT]), level: String(r[COL.S1_LEVEL] ?? '').trim() },
+              [subjects[1].key]: { score: s2Score, pct: toNum(r[COL.S2_PCT]), level: String(r[COL.S2_LEVEL] ?? '').trim() },
               overall: { score: overallScore, pct: toNum(r[COL.OVERALL_PCT]), level: String(r[COL.OVERALL_LEVEL] ?? '').trim() },
             },
           })
         }
 
         if (schoolRows.length === 0) {
-          reject(new Error('ไม่พบข้อมูลโรงเรียนในไฟล์ — ตรวจสอบว่าเป็นไฟล์รายงาน Local03 ของ NT ที่ถูกต้อง'))
+          reject(new Error(`ไม่พบข้อมูลโรงเรียนในไฟล์ — ตรวจสอบว่าเป็นไฟล์รายงาน Local03 ของ ${fileLabel} ที่ถูกต้อง`))
           return
         }
 
-        resolve({ meta, subjects: NT_SUBJECTS, rows: schoolRows, skippedRows })
+        resolve({ meta, subjects, rows: schoolRows, skippedRows })
       } catch (err) {
         reject(new Error('อ่านไฟล์ไม่ได้: ' + err.message))
       }
@@ -107,6 +120,13 @@ export function parseNtLocal03File(file) {
     reader.onerror = () => reject(new Error('อ่านไฟล์ไม่ได้'))
     reader.readAsArrayBuffer(file)
   })
+}
+
+export function parseNtLocal03File(file) {
+  return parseLocal03Generic(file, NT_SUBJECTS, 'NT')
+}
+export function parseRtLocal03File(file) {
+  return parseLocal03Generic(file, RT_SUBJECTS, 'RT')
 }
 
 export const QUALITY_LEVELS = ['ดีมาก', 'ดี', 'พอใช้', 'ปรับปรุง']

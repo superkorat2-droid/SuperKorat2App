@@ -3,7 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase } from '../../supabase'
 import Swal from 'sweetalert2'
-import { NT_SUBJECTS } from '../../composables/useNtParser'
+import { NT_SUBJECTS, RT_SUBJECTS } from '../../composables/useNtParser'
 
 const router = useRouter()
 
@@ -13,9 +13,9 @@ const loading = ref(true)
 const saving  = ref(false)
 
 const EXAM_TYPES = [
-  { value: 'NT',   label: 'NT — วัดผลสัมฤทธิ์ (ป.3)', grades: ['ป.3'], enabled: true },
-  { value: 'ONET', label: 'O-NET (เร็วๆ นี้)',          grades: ['ป.6', 'ม.3', 'ม.6'], enabled: false },
-  { value: 'RT',   label: 'RT — ความสามารถด้านการอ่าน (ป.1) (เร็วๆ นี้)', grades: ['ป.1'], enabled: false },
+  { value: 'NT',   label: 'NT — วัดผลสัมฤทธิ์ (ป.3)', grades: ['ป.3'], enabled: true, subjects: NT_SUBJECTS },
+  { value: 'RT',   label: 'RT — ความสามารถด้านการอ่าน (ป.1)', grades: ['ป.1'], enabled: true, subjects: RT_SUBJECTS },
+  { value: 'ONET', label: 'O-NET (เร็วๆ นี้)',          grades: ['ป.6', 'ม.3', 'ม.6'], enabled: false, subjects: [] },
 ]
 
 const currentThaiYear = new Date().getFullYear() + 543
@@ -65,7 +65,7 @@ async function savePeriod() {
     grade_level: form.value.grade_level,
     academic_year: parseInt(form.value.academic_year, 10),
     title,
-    subjects: NT_SUBJECTS,
+    subjects: examTypeMeta.value.subjects,
   })
   saving.value = false
   if (error) {

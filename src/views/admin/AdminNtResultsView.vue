@@ -3,7 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { supabase } from '../../supabase'
 import Swal from 'sweetalert2'
-import { parseNtLocal03File, QUALITY_LEVELS, QUALITY_COLOR } from '../../composables/useNtParser'
+import { parseNtLocal03File, parseRtLocal03File, QUALITY_LEVELS, QUALITY_COLOR } from '../../composables/useNtParser'
 
 const route  = useRoute()
 const router = useRouter()
@@ -57,13 +57,15 @@ const preview    = ref(null)     // { meta, subjects, matched:[], unmatched:[] }
 const showPreview = ref(false)
 
 function triggerUpload() { fileInput.value?.click() }
+const localFileLabel = computed(() => period.value?.exam_type === 'RT' ? 'R-Local03' : 'Local03')
 
 async function handleFile(e) {
   const file = e.target.files?.[0]
   e.target.value = ''
   if (!file) return
   try {
-    const result = await parseNtLocal03File(file)
+    const parseFn = period.value?.exam_type === 'RT' ? parseRtLocal03File : parseNtLocal03File
+    const result = await parseFn(file)
     const matched = []
     const unmatched = []
     result.rows.forEach(r => {
@@ -201,7 +203,7 @@ onMounted(loadBenchmarks)
           <input ref="fileInput" type="file" accept=".xlsx,.xls" class="hidden" @change="handleFile"/>
           <button @click="triggerUpload"
             class="px-5 py-2.5 text-sm font-bold bg-primary text-white rounded-2xl shadow-md hover:-translate-y-0.5 transition-all">
-            อัปโหลดไฟล์ Local03
+            อัปโหลดไฟล์ {{ localFileLabel }}
           </button>
         </div>
       </div>
@@ -271,7 +273,7 @@ onMounted(loadBenchmarks)
 
       <div v-else class="text-center py-12 glass-card text-slate-400">
         <p class="font-medium">ยังไม่มีข้อมูลคะแนนในรอบนี้</p>
-        <p class="text-sm mt-1">กด "อัปโหลดไฟล์ Local03" เพื่อนำเข้า</p>
+        <p class="text-sm mt-1">กด "อัปโหลดไฟล์ {{ localFileLabel }}" เพื่อนำเข้า</p>
       </div>
 
       <!-- Benchmarks -->
