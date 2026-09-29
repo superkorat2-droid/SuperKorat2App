@@ -62,7 +62,7 @@ const emptyForm = () => ({
   summary: '', strengths: '', issues: '', suggestions: '',
   co_supervisor_ids: [],
   receiver_name: '', receiver_position: '', receiver_count: null,
-  photos: [], links: [],
+  photos: [], links: [], logbook_photos: [],
   followup_required: false, followup_due: null, followup_note: '',
   is_public: false,
   // สำเนาจากแผนการนิเทศ (nithet_events) ที่เลือก — อ่านอย่างเดียวในฟอร์มนี้ (migration 0077)
@@ -127,6 +127,7 @@ onMounted(async () => {
     form.value = { ...emptyForm(), ...data,
       school_id: data.school_id || '',
       photos: data.photos || [], links: data.links || [], topics: data.topics || [],
+      logbook_photos: data.logbook_photos || [],
       co_supervisor_ids: data.co_supervisor_ids || [] }
   }
 
@@ -229,6 +230,7 @@ async function save(finalize) {
     receiver_count: form.value.receiver_count ? Number(form.value.receiver_count) : null,
     photos: form.value.photos,
     links: form.value.links.filter(l => l.url?.trim()),
+    logbook_photos: form.value.logbook_photos,
     followup_required: form.value.followup_required,
     followup_due: form.value.followup_due || null,
     followup_note: form.value.followup_note.trim(),
@@ -252,7 +254,7 @@ async function save(finalize) {
 
   saved = true
   clearDraft()
-  await gc.commit(form.value.photos.map(p => p.url))
+  await gc.commit([...form.value.photos, ...form.value.logbook_photos].map(p => p.url))
 
   // มาจากปฏิทินและกรอกครบแล้ว — เสนอปิดงานในแผนให้ด้วย
   if (finalize && form.value.event_id) {
@@ -299,9 +301,9 @@ async function save(finalize) {
     <div v-else class="grid grid-cols-1 lg:grid-cols-3 gap-5">
       <div class="lg:col-span-2 space-y-5">
 
-        <!-- 1. สถานที่ เมื่อไหร่ -->
+        <!-- 1. สถานที่ -->
         <div class="glass-card p-5 space-y-3">
-          <p class="font-bold text-sm text-slate-700">1. สถานที่ เมื่อไหร่</p>
+          <p class="font-bold text-sm text-slate-700">1. สถานที่</p>
 
           <PlacePicker
             :school-id="form.school_id" :place-name="form.place_name"
@@ -405,11 +407,21 @@ async function save(finalize) {
             placeholder="แนวทางที่แนะนำให้ดำเนินการ" hint="ไม่แสดงบนหน้าเว็บสาธารณะ"/>
         </div>
 
-        <!-- 5. หลักฐาน -->
+        <!-- 4. หลักฐาน -->
         <div class="glass-card p-5 space-y-4">
           <p class="font-bold text-sm text-slate-700">4. ภาพและลิงก์ประกอบ</p>
           <VisitPhotoUploader :model-value="form.photos" :category="photoCategory" :gc="gc"/>
           <LinkListEditor :model-value="form.links"/>
+        </div>
+
+        <!-- 5. สมุดบันทึกการนิเทศ -->
+        <div class="glass-card p-5 space-y-3">
+          <p class="font-bold text-sm text-slate-700">5. สมุดบันทึกการนิเทศ</p>
+          <p class="text-xs text-slate-400">
+            แนบภาพหน้าสมุดบันทึกเป็นหลักฐานประกอบ (ไม่บังคับ) — แนบได้ภาพเดียว แนบใหม่จะแทนที่ภาพเดิม
+          </p>
+          <VisitPhotoUploader :model-value="form.logbook_photos" :category="`${photoCategory}-logbook`"
+            :aspect-ratio="21/29.7" :max="1" :gc="gc"/>
         </div>
       </div>
 

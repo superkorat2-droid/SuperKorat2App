@@ -414,6 +414,19 @@ const TH = 'border:1px solid #cbd5e1; padding:6px 8px; background:#f1f5f9; text-
             </div>
           </div>
 
+          <!-- สมุดบันทึกการนิเทศ: หลักฐานภายใน ไม่โชว์หน้าเว็บสาธารณะ -->
+          <div v-if="(single.logbook_photos || []).length" style="margin-top:14px;">
+            <div style="font-weight:800; font-size:14px; margin-bottom:6px;">สมุดบันทึกการนิเทศ</div>
+            <div v-for="(row, ri) in photoRows(single.logbook_photos)" :key="ri"
+              style="display:flex; gap:6px; margin-bottom:6px; page-break-inside:avoid;">
+              <div v-for="(p, pi) in row.items" :key="pi" :style="photoBoxStyle(row)">
+                <img :src="p.url" :alt="p.caption || ''"
+                  style="width:100%; height:100%; object-fit:contain; border:1px solid #e2e8f0; border-radius:4px; background:#fff;"/>
+                <div v-if="p.caption" style="font-size:11px; color:#475569; text-align:center; margin-top:2px;">{{ p.caption }}</div>
+              </div>
+            </div>
+          </div>
+
           <div style="font-size:11px; color:#64748b; margin-top:10px;">พิมพ์เมื่อ {{ printedAt }}</div>
         </template>
       </template>

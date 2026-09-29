@@ -11,6 +11,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { supabase } from '../../supabase'
 import Swal from 'sweetalert2'
+import PhotoLightbox from '../../components/nithet/PhotoLightbox.vue'
 import {
   VISIT_TYPES, typeColor, visitTypeLabel, statusMeta, followupMeta,
   placeOf, coverOf, photoCount, fmtDate, isOverdue, currentAcademicYear,
@@ -104,6 +105,10 @@ const schoolsVisited = computed(() =>
   new Set(filtered.value.map(r => r.school_id).filter(Boolean)).size)
 
 function canEdit(r) { return isAdmin.value || r.created_by === myId.value }
+
+const lightboxPhotos = ref([])
+const lightboxIndex  = ref(-1)
+function viewLogbook(r) { lightboxPhotos.value = r.logbook_photos; lightboxIndex.value = 0 }
 
 async function del(r) {
   const res = await Swal.fire({
@@ -235,6 +240,10 @@ async function closeFollowup(r) {
               class="px-3 py-1.5 rounded-xl bg-slate-100 text-slate-600 text-xs font-bold hover:bg-slate-200">
               พิมพ์
             </RouterLink>
+            <button v-if="r.logbook_photos?.length" @click="viewLogbook(r)" type="button"
+              class="px-3 py-1.5 rounded-xl bg-slate-100 text-slate-600 text-xs font-bold hover:bg-slate-200">
+              ดูสมุดนิเทศ
+            </button>
             <button v-if="tab === 'follow' && canEdit(r)" @click="closeFollowup(r)" type="button"
               class="px-3 py-1.5 rounded-xl bg-emerald-600 text-white text-xs font-bold">ปิดการติดตาม</button>
             <button v-if="canEdit(r)" @click="del(r)" type="button"
@@ -243,5 +252,8 @@ async function closeFollowup(r) {
         </div>
       </div>
     </div>
+
+    <PhotoLightbox :photos="lightboxPhotos" :index="lightboxIndex"
+      @close="lightboxIndex = -1" @update:index="lightboxIndex = $event"/>
   </div>
 </template>

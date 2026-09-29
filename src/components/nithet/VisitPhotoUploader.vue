@@ -20,9 +20,11 @@ import { supabase } from '../../supabase'
 
 const props = defineProps({
   // [{ url, caption, w, h }] — แก้ array นี้ตรง ๆ แบบเดียวกับ ImageLinkGalleryEditor
-  modelValue: { type: Array, required: true },
-  category:   { type: String, default: 'nithet' },
-  gc:         { type: Object, default: null },   // useUploadGc() จากหน้าแม่
+  modelValue:  { type: Array, required: true },
+  category:    { type: String, default: 'nithet' },
+  gc:          { type: Object, default: null },   // useUploadGc() จากหน้าแม่
+  aspectRatio: { type: Number, default: Number.NaN },  // NaN = ครอบอิสระ (ดีฟอลต์เดิม)
+  max:         { type: Number, default: Infinity },    // จำกัดจำนวนรูปสูงสุด — max=1 ใช้กับฟิลด์แบบแนบได้ใบเดียว
 })
 
 const { uploadImage } = useExternalUpload()
@@ -38,7 +40,7 @@ const localSrc   = ref({})
 
 const cropTarget  = ref(null)
 const showCropper = computed(() => !!cropTarget.value)
-const freeRatio   = Number.NaN
+const single      = computed(() => props.max === 1)
 
 function isFresh(p) { return !!localSrc.value[p.url] }
 
@@ -70,6 +72,10 @@ async function onPick(e) {
   const files = [...(e.target.files || [])]
   e.target.value = ''
   if (!files.length) return
+
+  // เกินโควตา (เช่น max=1) — ลบของเดิมออกก่อนเสมอ ไม่ใช่เพิ่มต่อท้าย
+  const overflow = photos.length + files.length - props.max
+  for (let i = 0; i < overflow; i++) removeAt(0)
 
   busy.value = true
   progress.value = { done: 0, total: files.length }
@@ -173,11 +179,11 @@ onBeforeUnmount(() => {
       <label class="px-4 py-2.5 rounded-xl text-sm font-bold border-2 border-dashed border-slate-300 text-slate-600
                     hover:border-primary hover:text-primary transition-all cursor-pointer">
         🖼️ เลือกรูปที่มีอยู่
-        <input type="file" accept="image/*" multiple class="hidden" :disabled="busy" @change="onPick"/>
+        <input type="file" accept="image/*" :multiple="!single" class="hidden" :disabled="busy" @change="onPick"/>
       </label>
       <span v-if="busy" class="text-xs text-slate-500">กำลังอัป {{ progress.done }}/{{ progress.total }}...</span>
       <span v-else-if="photos.length" class="text-xs text-slate-500">
-        {{ photos.length }} รูป · ใบแรกใช้เป็นภาพปก
+        {{ single ? `${photos.length} รูป` : `${photos.length} รูป · ใบแรกใช้เป็นภาพปก` }}
       </span>
       <span v-if="lastShrink" class="text-xs text-emerald-600">ย่อแล้ว {{ lastShrink }}</span>
     </div>
@@ -198,7 +204,7 @@ onBeforeUnmount(() => {
         <div class="relative aspect-[4/3] bg-slate-100">
           <img :src="localSrc[p.url] || p.url" :alt="p.caption || `รูปที่ ${i + 1}`"
             class="w-full h-full object-cover" loading="lazy"/>
-          <span v-if="i === 0"
+          <span v-if="i === 0 && !single"
             class="absolute top-1.5 left-1.5 text-[10px] font-bold text-white bg-primary px-2 py-0.5 rounded-full">ปก</span>
         </div>
 
@@ -206,10 +212,12 @@ onBeforeUnmount(() => {
           <input v-model="p.caption" type="text" placeholder="คำบรรยาย (ไม่ใส่ก็ได้)"
             class="w-full px-2 py-1.5 rounded-lg border border-slate-200 text-xs bg-white focus:outline-none focus:border-primary"/>
           <div class="flex items-center gap-1">
-            <button type="button" @click="move(i, -1)" :disabled="i === 0" title="เลื่อนซ้าย"
-              class="w-7 h-7 rounded-lg text-slate-500 hover:bg-slate-100 disabled:opacity-30">←</button>
-            <button type="button" @click="move(i, 1)" :disabled="i === photos.length - 1" title="เลื่อนขวา"
-              class="w-7 h-7 rounded-lg text-slate-500 hover:bg-slate-100 disabled:opacity-30">→</button>
+            <template v-if="!single">
+              <button type="button" @click="move(i, -1)" :disabled="i === 0" title="เลื่อนซ้าย"
+                class="w-7 h-7 rounded-lg text-slate-500 hover:bg-slate-100 disabled:opacity-30">←</button>
+              <button type="button" @click="move(i, 1)" :disabled="i === photos.length - 1" title="เลื่อนขวา"
+                class="w-7 h-7 rounded-lg text-slate-500 hover:bg-slate-100 disabled:opacity-30">→</button>
+            </template>
             <button v-if="isFresh(p)" type="button" @click="openCrop(i)" :disabled="busy"
               class="ml-auto px-2 py-1 rounded-lg text-[11px] font-bold text-primary hover:bg-slate-100">ครอบ</button>
             <button type="button" @click="removeAt(i)"
@@ -223,8 +231,8 @@ onBeforeUnmount(() => {
     <ImageCropperModal
       :show="showCropper"
       :src="cropTarget?.src || ''"
-      :aspect-ratio="freeRatio"
-      title="ครอบรูป (ลากปรับได้อิสระ)"
+      :aspect-ratio="aspectRatio"
+      :title="Number.isNaN(aspectRatio) ? 'ครอบรูป (ลากปรับได้อิสระ)' : 'ครอบรูป (เลือกสัดส่วนอื่นได้ถ้าต้องการ)'"
       :output-max-width="1600"
       :output-max-height="1600"
       output-type="image/jpeg"
