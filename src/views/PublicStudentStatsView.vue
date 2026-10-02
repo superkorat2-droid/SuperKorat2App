@@ -307,8 +307,45 @@ const schoolTableData = computed(() =>
       disadv: u.summary?.disadvantaged?.count||0, disadvPct: u.summary?.disadvantaged?.pct||'0',
       bmiNormal: u.summary?.bmi?.normal||0,
     }
-  }).sort((a,b)=>b.total-a.total)
+  })
 )
+
+// ── เรียง + กรองช่วงจำนวน เฉพาะตารางรายโรงเรียน (ไม่กระทบการ์ด/กราฟด้านบน) ──
+const tableSortKey = ref('total')   // total | male | female
+const tableSortDir = ref('desc')    // desc = มากไปน้อย (ค่าเริ่มต้น)
+const tableMin = ref('')            // นักเรียนรวม "ตั้งแต่" — ว่าง = ไม่จำกัด
+const tableMax = ref('')            // นักเรียนรวม "ถึง"
+
+function setTableSort(key) {
+  if (tableSortKey.value === key) {
+    tableSortDir.value = tableSortDir.value === 'desc' ? 'asc' : 'desc'
+  } else {
+    tableSortKey.value = key
+    tableSortDir.value = 'desc'
+  }
+}
+function sortArrow(key) {
+  if (tableSortKey.value !== key) return '↕'
+  return tableSortDir.value === 'desc' ? '↓' : '↑'
+}
+// ช่อง number ที่ลบจนว่างได้ค่า '' — ต้องแยกจาก 0 ที่เป็นค่าตั้งใจกรอง
+function toLimit(v) {
+  if (v === '' || v === null || v === undefined) return null
+  const n = Number(v)
+  return Number.isFinite(n) ? n : null
+}
+const tableRangeActive = computed(() => toLimit(tableMin.value) !== null || toLimit(tableMax.value) !== null)
+function clearTableRange() { tableMin.value = ''; tableMax.value = '' }
+
+const schoolTableRows = computed(() => {
+  const min = toLimit(tableMin.value)
+  const max = toLimit(tableMax.value)
+  const key = tableSortKey.value
+  const dir = tableSortDir.value === 'desc' ? -1 : 1
+  return schoolTableData.value
+    .filter(s => (min === null || s.total >= min) && (max === null || s.total <= max))
+    .sort((a, b) => (a[key] - b[key]) * dir || String(a.name).localeCompare(String(b.name), 'th'))
+})
 
 function formatDate(d) {
   if (!d) return ''
@@ -323,7 +360,8 @@ function exportFilteredCSV() {
   if (vis.value.disadvantaged) header.push('ยากจน%')
   if (vis.value.bmi)      header.push('BMI ปกติ%')
 
-  const rows = schoolTableData.value.map(s => {
+  // ส่งออกทุกโรงตามตัวกรองด้านบน เรียงมากไปน้อยเหมือนเดิม (ไม่ขึ้นกับการเรียง/ช่วงจำนวนของตาราง)
+  const rows = [...schoolTableData.value].sort((a, b) => b.total - a.total).map(s => {
     const u = filteredUploads.value.find(x => x.school_id === s.id)
     const row = [s.name, u?.school_group || '', u?.district || '']
     if (vis.value.total)    row.push(s.total)
@@ -544,21 +582,54 @@ const trendSeries = computed(() => [{ name: 'นักเรียนรวม',
       <!-- School table -->
       <div class="glass-tile overflow-hidden">
         <div class="px-5 py-4 border-b border-slate-50 text-center">
-          <h3 class="font-bold text-slate-700">ข้อมูลรายโรงเรียน ({{ filteredUploads.length }} โรงเรียน)</h3>
+          <h3 class="font-bold text-slate-700">
+            ข้อมูลรายโรงเรียน
+            <template v-if="tableRangeActive">(แสดง {{ schoolTableRows.length }} จาก {{ filteredUploads.length }} โรงเรียน)</template>
+            <template v-else>({{ filteredUploads.length }} โรงเรียน)</template>
+          </h3>
+          <!-- กรองช่วงจำนวนนักเรียนรวม — เว้นว่างช่องใดช่องหนึ่งได้ -->
+          <div v-if="vis.total" class="mt-3 flex flex-wrap items-center justify-center gap-2 text-sm text-slate-600">
+            <span class="font-medium">นักเรียนรวม</span>
+            <span class="inline-flex items-center gap-2 whitespace-nowrap">
+              ตั้งแต่
+              <input v-model="tableMin" type="number" min="0" inputmode="numeric" placeholder="ไม่จำกัด"
+                class="w-24 px-2 py-1.5 rounded-lg border border-slate-200 bg-white text-right focus:outline-none focus:border-primary"/>
+            </span>
+            <span class="inline-flex items-center gap-2 whitespace-nowrap">
+              ถึง
+              <input v-model="tableMax" type="number" min="0" inputmode="numeric" placeholder="ไม่จำกัด"
+                class="w-24 px-2 py-1.5 rounded-lg border border-slate-200 bg-white text-right focus:outline-none focus:border-primary"/>
+              คน
+            </span>
+            <button v-if="tableRangeActive" type="button" @click="clearTableRange"
+              class="px-2.5 py-1.5 rounded-lg text-xs font-bold text-red-500 hover:bg-red-50">ล้าง</button>
+          </div>
         </div>
         <div class="overflow-x-auto">
           <table class="w-full text-xs">
             <thead><tr class="bg-slate-50 text-slate-500 text-left">
               <th class="px-4 py-3 font-bold">#</th>
               <th class="px-4 py-3 font-bold">โรงเรียน</th>
-              <th v-if="vis.total" class="px-4 py-3 font-bold text-right">รวม</th>
-              <th v-if="vis.gender" class="px-4 py-3 font-bold text-right">ชาย</th>
-              <th v-if="vis.gender" class="px-4 py-3 font-bold text-right">หญิง</th>
+              <th v-if="vis.total" class="px-4 py-3 font-bold text-right">
+                <button type="button" @click="setTableSort('total')" title="คลิกเพื่อสลับมากไปน้อย / น้อยไปมาก"
+                  :class="['inline-flex items-center gap-1 hover:text-primary', tableSortKey === 'total' && 'text-primary']">รวม <span>{{ sortArrow('total') }}</span></button>
+              </th>
+              <th v-if="vis.gender" class="px-4 py-3 font-bold text-right">
+                <button type="button" @click="setTableSort('male')" title="คลิกเพื่อสลับมากไปน้อย / น้อยไปมาก"
+                  :class="['inline-flex items-center gap-1 hover:text-primary', tableSortKey === 'male' && 'text-primary']">ชาย <span>{{ sortArrow('male') }}</span></button>
+              </th>
+              <th v-if="vis.gender" class="px-4 py-3 font-bold text-right">
+                <button type="button" @click="setTableSort('female')" title="คลิกเพื่อสลับมากไปน้อย / น้อยไปมาก"
+                  :class="['inline-flex items-center gap-1 hover:text-primary', tableSortKey === 'female' && 'text-primary']">หญิง <span>{{ sortArrow('female') }}</span></button>
+              </th>
               <th v-if="vis.disadvantaged" class="px-4 py-3 font-bold text-right">ยากจน%</th>
               <th v-if="vis.bmi" class="px-4 py-3 font-bold text-right">BMI ปกติ%</th>
             </tr></thead>
             <tbody class="divide-y divide-slate-50">
-              <tr v-for="(s,i) in schoolTableData" :key="s.id" class="hover:bg-slate-50 transition-colors cursor-pointer" @click="filterSchool=s.id;filterDistrict='all'">
+              <tr v-if="!schoolTableRows.length">
+                <td colspan="7" class="px-4 py-8 text-center text-slate-400">ไม่มีโรงเรียนที่มีนักเรียนในช่วงนี้</td>
+              </tr>
+              <tr v-for="(s,i) in schoolTableRows" :key="s.id" class="hover:bg-slate-50 transition-colors cursor-pointer" @click="filterSchool=s.id;filterDistrict='all'">
                 <td class="px-4 py-3 text-slate-400">{{ i+1 }}</td>
                 <td class="px-4 py-3 font-medium text-slate-700">
                   <div class="flex items-center gap-2">{{ s.name }}<svg v-if="filterSchool===s.id" class="w-3.5 h-3.5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div>
