@@ -52,7 +52,7 @@ async function load() {
   rows.value = vs || []
   schools.value = sc || []
 
-  const ids = [...new Set(rows.value.map(r => r.created_by).filter(Boolean))]
+  const ids = [...new Set(rows.value.flatMap(r => [r.created_by, ...(r.co_supervisor_ids || [])]).filter(Boolean))]
   if (ids.length) {
     const { data: pp } = await supabase.from('profiles')
       .select('id, title, first_name, last_name, full_name').in('id', ids)
@@ -162,8 +162,12 @@ const byType = computed(() => {
     .filter(x => x.value > 0)
 })
 
+// นับให้ทั้งผู้บันทึกและผู้ร่วม (คนละ 1 ครั้งต่อใบ) — ไปนิเทศด้วยกันถือเป็นผลงานของทุกคน
 const bySupervisor = computed(() => {
-  const m = countBy(items.value, r => r.created_by)
+  const m = new Map()
+  for (const r of items.value) {
+    for (const id of new Set([r.created_by, ...(r.co_supervisor_ids || [])].filter(Boolean))) m.set(id, (m.get(id) || 0) + 1)
+  }
   return [...m.entries()].map(([k, v]) => ({ label: people.value[k] || '—', value: v }))
     .sort((a, b) => b.value - a.value).slice(0, 10)
 })

@@ -83,7 +83,8 @@ const filtered = computed(() => {
   if (tab.value === 'draft')  list = list.filter(r => r.status === 'draft')
   if (tab.value === 'follow') list = list.filter(r => r.followup_status === 'open')
   if (filterType.value !== 'all') list = list.filter(r => r.visit_type === filterType.value)
-  if (filterMine.value) list = list.filter(r => r.created_by === myId.value)
+  // "ของฉัน" รวมใบที่ฉันเป็นผู้ร่วมด้วย — ไปด้วยกันแต่อีกคนเป็นผู้กดบันทึก
+  if (filterMine.value) list = list.filter(r => r.created_by === myId.value || (r.co_supervisor_ids || []).includes(myId.value))
   if (filterFrom.value) list = list.filter(r => r.visit_date >= filterFrom.value)
   if (filterTo.value)   list = list.filter(r => r.visit_date <= filterTo.value)
   const q = searchQ.value.trim().toLowerCase()
@@ -185,7 +186,7 @@ async function closeFollowup(r) {
       <input v-model="filterTo" type="date" title="ถึงวันที่"
         class="px-3 py-2 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:border-primary"/>
       <label class="flex items-center gap-1.5 text-sm text-slate-600 cursor-pointer select-none">
-        <input type="checkbox" v-model="filterMine" class="rounded border-slate-300"/> ของฉันเท่านั้น
+        <input type="checkbox" v-model="filterMine" class="rounded border-slate-300"/> ของฉันเท่านั้น (รวมที่ร่วมไปด้วย)
       </label>
     </div>
 

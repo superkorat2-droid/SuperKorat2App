@@ -43,6 +43,10 @@ export function visitTypeLabel(visit) {
 const RESULT_LABELS = {
   school_visit: {
     section: 'ผลการนิเทศ',
+    topic: 'เรื่องที่นิเทศ',     topicPlaceholder: 'เช่น นิเทศการจัดการเรียนรู้เชิงรุก',
+    actor: 'ผู้นิเทศ',           co: 'ผู้ร่วมนิเทศ',
+    receiver: 'ผู้รับการนิเทศ',   date: 'วันที่นิเทศ',
+    photos: 'ภาพประกอบการนิเทศ', reportTitle: 'บันทึกผลการนิเทศ ติดตาม และประเมินผล',
     summary:     { label: 'สภาพที่พบ',      placeholder: 'บรรยายสิ่งที่พบจากการนิเทศ' },
     strengths:   { label: 'จุดเด่น',         placeholder: 'สิ่งที่โรงเรียนทำได้ดี' },
     issues:      { label: 'จุดที่ควรพัฒนา',  placeholder: 'สิ่งที่ควรปรับปรุง' },
@@ -50,6 +54,10 @@ const RESULT_LABELS = {
   },
   meeting: {
     section: 'ผลการประชุม',
+    topic: 'เรื่องที่ประชุม',      topicPlaceholder: 'เช่น ประชุมชี้แจงแนวทางการประเมิน',
+    actor: 'ผู้เข้าประชุม',        co: 'ผู้เข้าประชุมร่วม',
+    receiver: 'ผู้จัด/ผู้เข้าร่วมประชุม', date: 'วันที่ประชุม',
+    photos: 'ภาพประกอบการประชุม', reportTitle: 'บันทึกการเข้าร่วมประชุม',
     summary:     { label: 'สาระสำคัญ',                placeholder: 'เรื่องที่ประชุม / ประเด็นหลักที่พูดคุย' },
     strengths:   { label: 'มติ/ข้อสั่งการ',           placeholder: 'มติที่ประชุม หรือข้อสั่งการที่ได้รับ' },
     issues:      { label: 'สิ่งที่ต้องดำเนินการต่อ',   placeholder: 'งานที่ต้องทำต่อ / ผู้รับผิดชอบ / กำหนดเวลา' },
@@ -57,6 +65,10 @@ const RESULT_LABELS = {
   },
   training: {
     section: 'ผลการอบรม',
+    topic: 'เรื่องที่อบรม',        topicPlaceholder: 'เช่น อบรมการออกแบบการเรียนรู้ Active Learning',
+    actor: 'ผู้บันทึก',           co: 'ผู้ร่วมอบรม/วิทยากรร่วม',
+    receiver: 'ผู้เข้ารับการอบรม', date: 'วันที่อบรม',
+    photos: 'ภาพประกอบการอบรม',  reportTitle: 'บันทึกการอบรม/สัมมนา',
     summary:     { label: 'เนื้อหา/กิจกรรม',          placeholder: 'หัวข้อ เนื้อหา และกิจกรรมของการอบรม' },
     strengths:   { label: 'ผลที่ได้รับ',               placeholder: 'ความรู้/ทักษะ/ผลผลิตที่ได้' },
     issues:      { label: 'ปัญหา/อุปสรรค',            placeholder: 'ปัญหาหรืออุปสรรคที่พบ' },
@@ -64,6 +76,10 @@ const RESULT_LABELS = {
   },
   other: {
     section: 'ผลการดำเนินงาน',
+    topic: 'เรื่อง/กิจกรรม',       topicPlaceholder: 'เช่น ร่วมกิจกรรมวันวิชาการของโรงเรียน',
+    actor: 'ผู้ปฏิบัติงาน',        co: 'ผู้ร่วมปฏิบัติงาน',
+    receiver: 'ผู้เกี่ยวข้อง',       date: 'วันที่ปฏิบัติงาน',
+    photos: 'ภาพประกอบ',         reportTitle: 'บันทึกการปฏิบัติงาน',
     summary:     { label: 'รายละเอียด',      placeholder: 'บรรยายสิ่งที่ดำเนินการ' },
     strengths:   { label: 'ผลที่ได้รับ',      placeholder: 'ผลที่เกิดขึ้น' },
     issues:      { label: 'ปัญหา/อุปสรรค',   placeholder: 'ปัญหาหรืออุปสรรคที่พบ' },
@@ -78,6 +94,17 @@ const RESULT_LABEL_GROUP = {
 export function resultLabels(visitType) {
   return RESULT_LABELS[RESULT_LABEL_GROUP[visitType] || 'school_visit']
 }
+
+/**
+ * ประเภทเอกสารอ้างอิงของแผน (ref_kind, migration 91) — ใช้คู่กับ order_number/order_date/order_link
+ * ค่าเริ่มต้น 'order' ข้อมูลเดิมจึงยังเป็น "คำสั่ง" เหมือนเดิมทุกแถว
+ */
+export const REF_KINDS = [
+  { value: 'order',  label: 'คำสั่ง',        numberLabel: 'เลขที่คำสั่ง',       dateLabel: 'ลงวันที่คำสั่ง', linkLabel: 'ลิงก์คำสั่ง',  ref: 'ตามคำสั่งเลขที่',      placeholder: 'เช่น 123/2569' },
+  { value: 'letter', label: 'หนังสือราชการ', numberLabel: 'เลขที่หนังสือ',      dateLabel: 'ลงวันที่หนังสือ', linkLabel: 'ลิงก์หนังสือ', ref: 'ตามหนังสือที่',        placeholder: 'เช่น ศธ 04xxx/ว123' },
+  { value: 'memo',   label: 'บันทึกข้อความ', numberLabel: 'เลขที่บันทึกข้อความ', dateLabel: 'ลงวันที่',       linkLabel: 'ลิงก์บันทึกข้อความ', ref: 'ตามบันทึกข้อความที่', placeholder: 'เช่น กนต 45/2569' },
+]
+export function refKindMeta(v) { return REF_KINDS.find(k => k.value === v) || REF_KINDS[0] }
 
 /**
  * ประเภทนัดในปฏิทิน (nithet_events.type) → ประเภทบันทึก (nithet_visits.visit_type)

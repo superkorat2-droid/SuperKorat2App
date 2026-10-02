@@ -9,7 +9,7 @@ import { useHolidays } from '../../composables/useHolidays'
 import { toDateKey } from '../../composables/useCalendarGrid'
 import { useAreaConfig } from '../../composables/useAreaConfig'
 import { TYPE_LABEL, TYPE_COLOR, STATUS_LABEL, STATUS_COLOR, displayName, formatEventDateRange, formatResponsible } from '../../composables/useNithetEventMeta'
-import { VISIT_WRITER_ROLES, statusMeta, placeOf } from '../../composables/useNithetVisits'
+import { VISIT_WRITER_ROLES, statusMeta, placeOf, REF_KINDS, refKindMeta } from '../../composables/useNithetVisits'
 import TopicChips from '../../components/nithet/TopicChips.vue'
 import LinkListEditor from '../../components/nithet/LinkListEditor.vue'
 
@@ -135,7 +135,7 @@ function emptyForm() {
     start_date: today, end_date: today, start_time: '', end_time: '',
     school_ids: [], location: '', responsible_ids: [], responsible_group: '',
     status: 'scheduled', show_public: true,
-    order_number: '', order_date: null, order_link: '', doc_links: [], topics: [],
+    order_number: '', order_date: null, order_link: '', doc_links: [], topics: [], ref_kind: 'order',
   }
 }
 const form = ref(emptyForm())
@@ -197,6 +197,7 @@ function openEdit(event) {
     order_number: event.order_number || '', order_date: event.order_date || null,
     order_link: event.order_link || '', doc_links: [...(event.doc_links || [])],
     topics: [...(event.topics || [])],
+    ref_kind: event.ref_kind || 'order',
     created_by: event.created_by,
   }
   showModal.value = true
@@ -244,6 +245,7 @@ async function save() {
     order_link: form.value.order_link.trim(),
     doc_links: form.value.doc_links.filter(l => l.url?.trim()),
     topics: form.value.topics,
+    ref_kind: form.value.ref_kind || 'order',
   }
   let error
   if (form.value.id) {
@@ -420,7 +422,7 @@ onMounted(async () => {
                 🔒 ไม่แสดงสาธารณะ
               </span>
               <span v-if="event.order_number" class="text-xs bg-indigo-100 text-indigo-700 font-bold px-2.5 py-0.5 rounded-full">
-                📋 คำสั่งเลขที่ {{ event.order_number }}
+                📋 {{ refKindMeta(event.ref_kind).numberLabel }} {{ event.order_number }}
               </span>
             </div>
             <h2 class="font-bold text-slate-800 text-lg leading-snug">{{ event.title }}</h2>
@@ -643,23 +645,34 @@ onMounted(async () => {
               <template v-if="canEditPlanFields || form.order_number">
                 <div class="border-t border-slate-100 pt-1">
                   <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                    ข้อมูลคำสั่ง <span v-if="!canEditPlanFields" class="normal-case font-normal">(กรอกได้เฉพาะเจ้าของนัดหรือหัวหน้างานนิเทศ)</span>
+                    เอกสารอ้างอิง (คำสั่ง/หนังสือ) <span v-if="!canEditPlanFields" class="normal-case font-normal">(กรอกได้เฉพาะเจ้าของนัดหรือหัวหน้างานนิเทศ)</span>
                   </p>
                 </div>
 
                 <template v-if="canEditPlanFields">
+                  <!-- งานบางเรื่องไม่มีคำสั่ง มีแค่หนังสือ — ถ้อยคำทุกที่ (ป้าย/ฟอร์มบันทึก/รายงาน A4) เปลี่ยนตามนี้ -->
+                  <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">ประเภทเอกสาร</label>
+                    <div class="flex flex-wrap gap-1.5">
+                      <button v-for="k in REF_KINDS" :key="k.value" type="button" @click="form.ref_kind = k.value"
+                        :class="['px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors',
+                          form.ref_kind === k.value ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-slate-600 border-slate-200 hover:border-indigo-300']">
+                        {{ k.label }}
+                      </button>
+                    </div>
+                  </div>
                   <div class="grid grid-cols-2 gap-3">
                     <div>
-                      <label class="block text-xs font-bold text-slate-600 mb-1">เลขที่คำสั่ง</label>
-                      <input v-model="form.order_number" type="text" placeholder="เช่น ศธ 04xxx/2569" class="input-field w-full"/>
+                      <label class="block text-xs font-bold text-slate-600 mb-1">{{ refKindMeta(form.ref_kind).numberLabel }}</label>
+                      <input v-model="form.order_number" type="text" :placeholder="refKindMeta(form.ref_kind).placeholder" class="input-field w-full"/>
                     </div>
                     <div>
-                      <label class="block text-xs font-bold text-slate-600 mb-1">ลงวันที่คำสั่ง</label>
+                      <label class="block text-xs font-bold text-slate-600 mb-1">{{ refKindMeta(form.ref_kind).dateLabel }}</label>
                       <input v-model="form.order_date" type="date" class="input-field w-full"/>
                     </div>
                   </div>
                   <div>
-                    <label class="block text-xs font-bold text-slate-600 mb-1">ลิงก์คำสั่ง</label>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">{{ refKindMeta(form.ref_kind).linkLabel }}</label>
                     <input v-model="form.order_link" type="url" placeholder="https://drive.google.com/..." class="input-field w-full"/>
                   </div>
                   <LinkListEditor v-model="form.doc_links"/>
@@ -668,9 +681,9 @@ onMounted(async () => {
 
                 <!-- คนไม่มีสิทธิ์: เห็นเฉพาะตอนมีคำสั่งอยู่แล้ว แสดงแบบอ่านอย่างเดียว -->
                 <div v-else class="glass-card p-3 space-y-1.5 text-sm">
-                  <p><span class="text-slate-400">เลขที่คำสั่ง:</span> <span class="font-bold text-slate-700">{{ form.order_number }}</span></p>
+                  <p><span class="text-slate-400">{{ refKindMeta(form.ref_kind).numberLabel }}:</span> <span class="font-bold text-slate-700">{{ form.order_number }}</span></p>
                   <p v-if="form.order_date"><span class="text-slate-400">ลงวันที่:</span> {{ form.order_date }}</p>
-                  <p v-if="form.order_link"><a :href="form.order_link" target="_blank" class="text-primary font-bold hover:underline">ดูคำสั่ง ↗</a></p>
+                  <p v-if="form.order_link"><a :href="form.order_link" target="_blank" class="text-primary font-bold hover:underline">ดู{{ refKindMeta(form.ref_kind).label }} ↗</a></p>
                   <p v-if="form.topics.length" class="text-slate-500">ประเด็น: {{ form.topics.join(' · ') }}</p>
                 </div>
               </template>

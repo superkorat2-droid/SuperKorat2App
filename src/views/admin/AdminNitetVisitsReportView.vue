@@ -21,7 +21,7 @@ import { supabase } from '../../supabase'
 import { useAreaConfig } from '../../composables/useAreaConfig'
 import {
   VISIT_TYPES, typeLabel, visitTypeLabel, placeOf, isPortrait, fmtDateLong, linkKind, LINK_ICON,
-  resultLabels,
+  resultLabels, refKindMeta,
 } from '../../composables/useNithetVisits'
 
 const route = useRoute()
@@ -131,7 +131,9 @@ const schoolList = computed(() => {
 })
 const owners = computed(() => {
   const seen = new Map()
-  for (const r of decorated.value) if (r.created_by) seen.set(r.created_by, people.value[r.created_by]?.name || '—')
+  for (const r of decorated.value) {
+    for (const id of [r.created_by, ...(r.co_supervisor_ids || [])]) if (id) seen.set(id, people.value[id]?.name || '—')
+  }
   return [...seen].sort((a, b) => String(a[1]).localeCompare(String(b[1]), 'th'))
 })
 
@@ -143,7 +145,7 @@ const filtered = computed(() => decorated.value.filter(r =>
   (fSchool.value   === 'all' || r.school_id === fSchool.value) &&
   (fDistrict.value === 'all' || r.district === fDistrict.value) &&
   (fCenter.value   === 'all' || r.school_group === fCenter.value) &&
-  (fOwner.value    === 'all' || r.created_by === fOwner.value) &&
+  (fOwner.value    === 'all' || r.created_by === fOwner.value || (r.co_supervisor_ids || []).includes(fOwner.value)) &&
   (fType.value     === 'all' || r.visit_type === fType.value)
 ))
 
@@ -313,7 +315,9 @@ const TH = 'border:1px solid #cbd5e1; padding:6px 8px; background:#f1f5f9; text-
       <div style="text-align:center; margin-bottom:16px;">
         <img v-if="config?.logo_url" :src="config.logo_url" style="width:60px; height:60px; object-fit:contain; margin:0 auto 8px;"/>
         <div style="font-size:20px; font-weight:800;">
-          {{ mode === 'single' ? 'บันทึกผลการนิเทศ ติดตาม และประเมินผล' : 'รายงานผลการนิเทศ ติดตาม และประเมินผล' }}
+          {{ mode === 'single'
+            ? (single ? resultLabels(single.visit_type).reportTitle : 'บันทึกผลการนิเทศ ติดตาม และประเมินผล')
+            : 'รายงานผลการนิเทศ ติดตาม และประเมินผล' }}
         </div>
         <div style="font-size:15px; font-weight:700;">{{ config?.area_name || '' }}</div>
         <div style="font-size:13px; color:#475569;">{{ config?.area_type }} {{ config?.province }} {{ config?.area_number }}</div>
@@ -331,7 +335,7 @@ const TH = 'border:1px solid #cbd5e1; padding:6px 8px; background:#f1f5f9; text-
             <div style="display:flex; align-items:baseline; justify-content:space-between; gap:12px; flex-wrap:wrap;">
               <div style="font-size:16px; font-weight:800;">{{ single.title || '(ยังไม่ได้ใส่เรื่อง)' }}</div>
               <div v-if="single.order_number" style="font-size:12px; color:#475569; white-space:nowrap;">
-                ตามคำสั่งเลขที่ {{ single.order_number }}<template v-if="single.order_date"> ลงวันที่ {{ fmtDateLong(single.order_date) }}</template>
+                {{ refKindMeta(single.ref_kind).ref }} {{ single.order_number }}<template v-if="single.order_date"> ลงวันที่ {{ fmtDateLong(single.order_date) }}</template>
               </div>
             </div>
             <div v-if="(single.topics || []).length" style="font-size:12px; color:#475569; margin-top:2px;">
@@ -350,7 +354,7 @@ const TH = 'border:1px solid #cbd5e1; padding:6px 8px; background:#f1f5f9; text-
                 </td>
               </tr>
               <tr>
-                <th :style="TH">วันที่นิเทศ</th>
+                <th :style="TH">{{ resultLabels(single.visit_type).date }}</th>
                 <td :style="TD">
                   {{ fmtDateLong(single.visit_date) }}
                   <span style="color:#475569;"> · {{ visitTypeLabel(single) }}</span>
@@ -360,15 +364,15 @@ const TH = 'border:1px solid #cbd5e1; padding:6px 8px; background:#f1f5f9; text-
                 </td>
               </tr>
               <tr>
-                <th :style="TH">ผู้นิเทศ</th>
+                <th :style="TH">{{ resultLabels(single.visit_type).actor }}</th>
                 <td :style="TD">
                   {{ ownerName(single.created_by) || '—' }}
-                  <span v-if="coNames(single).length"> · ผู้ร่วมนิเทศ: {{ coNames(single).join(', ') }}</span>
+                  <span v-if="coNames(single).length"> · {{ resultLabels(single.visit_type).co }}: {{ coNames(single).join(', ') }}</span>
                   <span v-if="single.work_group" style="color:#475569;"> · {{ groupLabel(single.work_group) }}</span>
                 </td>
               </tr>
               <tr v-if="single.receiver_name || single.receiver_position || single.receiver_count">
-                <th :style="TH">ผู้รับการนิเทศ</th>
+                <th :style="TH">{{ resultLabels(single.visit_type).receiver }}</th>
                 <td :style="TD">
                   {{ single.receiver_name || '—' }}
                   <span v-if="single.receiver_position"> · {{ single.receiver_position }}</span>
@@ -405,7 +409,7 @@ const TH = 'border:1px solid #cbd5e1; padding:6px 8px; background:#f1f5f9; text-
 
           <!-- ภาพประกอบ: ห้ามครอบ ต้องเห็นเต็มใบ -->
           <div v-if="(single.photos || []).length" style="margin-top:14px;">
-            <div style="font-weight:800; font-size:14px; margin-bottom:6px;">ภาพประกอบการนิเทศ</div>
+            <div style="font-weight:800; font-size:14px; margin-bottom:6px;">{{ resultLabels(single.visit_type).photos }}</div>
             <div v-for="(row, ri) in photoRows(single.photos)" :key="ri"
               style="display:flex; gap:6px; margin-bottom:6px; page-break-inside:avoid;">
               <div v-for="(p, pi) in row.items" :key="pi" :style="photoBoxStyle(row)">

@@ -27,7 +27,7 @@ import VisitPhotoUploader from '../../components/nithet/VisitPhotoUploader.vue'
 import LinkListEditor from '../../components/nithet/LinkListEditor.vue'
 import {
   VISIT_TYPES, VISIT_WRITER_ROLES, currentAcademicYear, currentTerm,
-  resultLabels, visitTypeFromEvent, typeMeta,
+  resultLabels, visitTypeFromEvent, typeMeta, refKindMeta,
 } from '../../composables/useNithetVisits'
 
 const route  = useRoute()
@@ -48,8 +48,7 @@ const officialPlans = ref([])   // nithet_events ที่มีเลขที�
 const myEvents = ref([])        // นัดในปฏิทินของฉัน (สร้างเอง/ถูกใส่ชื่อร่วม) ช่วงใกล้ ๆ นี้
 const eventVisitCount = ref({}) // event_id → จำนวนบันทึกที่ผูกไว้แล้ว (เท่าที่ RLS ให้เห็น)
 const planGroupFilter = ref('')
-const myRole = ref('')
-const linkedEvent = ref(null)   // นัดที่เลือกอยู่ — ใช้ตัดสินว่าจะถาม "ตั้งเสร็จสิ้น" ได้ไหม
+const linkedEvent = ref(null)   // นัดที่เลือกอยู่ — ใช้แสดงกล่อง "เชื่อมกับนัด"
 let saved = false
 
 const emptyForm = () => ({
@@ -73,7 +72,7 @@ const emptyForm = () => ({
   followup_required: false, followup_due: null, followup_note: '',
   is_public: false,
   // สำเนาจากแผนการนิเทศ (nithet_events) ที่เลือก — อ่านอย่างเดียวในฟอร์มนี้ (migration 0077)
-  order_number: '', order_date: null, order_link: '', doc_links: [],
+  order_number: '', order_date: null, order_link: '', doc_links: [], ref_kind: 'order',
 })
 const form = ref(emptyForm())
 
@@ -95,7 +94,6 @@ onMounted(async () => {
   if (user) {
     const { data: p } = await supabase.from('profiles')
       .select('role, department').eq('id', user.id).single()
-    myRole.value = p?.role || ''
     canWrite.value = VISIT_WRITER_ROLES.includes(p?.role)
     // profiles.department เก็บเป็น label ต้องแปลงเป็น key ให้ตรงกับ nithet_events
     if (isNew.value) form.value.work_group = keyFromLabel(p?.department) || ''
@@ -151,7 +149,7 @@ onMounted(async () => {
   }
 
   // ร่างที่กู้คืน / บันทึกเดิมที่เปิดแก้ อาจผูกนัดไว้แล้ว — โหลดนัดนั้นมาด้วย
-  // (ใช้แสดงกล่อง "เชื่อมกับนัด" และตัดสินว่าจะถามตั้งนัดเป็นเสร็จสิ้นได้ไหม)
+  // (ใช้แสดงกล่อง "เชื่อมกับนัด")
   if (form.value.event_id && linkedEvent.value?.id !== form.value.event_id) {
     const { data: ev } = await supabase.from('nithet_events')
       .select(EVENT_COLS).eq('id', form.value.event_id).maybeSingle()
@@ -179,7 +177,7 @@ function personName(p) {
   return p.full_name || '-'
 }
 
-const EVENT_COLS = 'id, title, description, type, status, start_date, end_date, location, school_ids, created_by, responsible_ids, responsible_group, order_number, order_date, order_link, doc_links, topics'
+const EVENT_COLS = 'id, title, description, type, status, start_date, end_date, location, school_ids, created_by, responsible_ids, responsible_group, order_number, order_date, order_link, doc_links, topics, ref_kind'
 
 function shiftDate(days) {
   const d = new Date()
@@ -230,6 +228,7 @@ async function applyPlan(ev, { schoolId = '' } = {}) {
   eventTopics.value = [ev.title, ...(ev.topics || [])].filter(Boolean)
   // สำเนาข้อมูลคำสั่ง — อ่านอย่างเดียวในฟอร์มนี้ แก้ได้แค่จากปฏิทินโดยหัวหน้างานเท่านั้น
   form.value.order_number = ev.order_number || ''
+  form.value.ref_kind = ev.ref_kind || 'order'
   form.value.order_date = ev.order_date || null
   form.value.order_link = ev.order_link || ''
   form.value.doc_links = [...(ev.doc_links || [])]
@@ -266,15 +265,12 @@ async function pickPlan(id) {
   if (ev) await applyPlan(ev)
 }
 
-// ตั้งนัดเป็น "เสร็จสิ้น" ได้เฉพาะเจ้าของนัด/แอดมิน (RLS update) — ผู้รับผิดชอบร่วมไม่ต้องถาม
-const canMarkEventDone = computed(() =>
-  !!linkedEvent.value && (['super_admin', 'admin'].includes(myRole.value) || linkedEvent.value.created_by === myId.value))
-
 const rl = computed(() => resultLabels(form.value.visit_type))
 
 function clearPlan() {
   linkedEvent.value = null
   form.value.event_id = null
+  form.value.ref_kind = 'order'
   form.value.order_number = ''
   form.value.order_date = null
   form.value.order_link = ''
@@ -289,7 +285,7 @@ async function save(finalize) {
     Swal.fire({ icon: 'warning', title: 'ยังไม่ได้ใส่วันที่' }); return
   }
   if (finalize && !form.value.title.trim()) {
-    Swal.fire({ icon: 'warning', title: 'บันทึกสมบูรณ์ต้องใส่เรื่องที่นิเทศ' }); return
+    Swal.fire({ icon: 'warning', title: `บันทึกสมบูรณ์ต้องใส่${rl.value.topic}` }); return
   }
 
   saving.value = true
@@ -305,6 +301,7 @@ async function save(finalize) {
     topics: form.value.topics,
     // สำเนาจากแผนที่เลือก (ถ้ามี) — ฟอร์มนี้ไม่มีช่องแก้ไขฟิลด์เหล่านี้เอง
     order_number: form.value.order_number,
+    ref_kind: form.value.ref_kind || 'order',
     order_date: form.value.order_date || null,
     order_link: form.value.order_link,
     doc_links: form.value.doc_links,
@@ -347,24 +344,15 @@ async function save(finalize) {
   clearDraft()
   await gc.commit([...form.value.photos, ...form.value.logbook_photos].map(p => p.url))
 
-  // มาจากปฏิทินและกรอกครบแล้ว — เสนอปิดงานในแผนให้ด้วย (เฉพาะเจ้าของนัด/แอดมินที่แก้นัดได้จริง)
-  if (finalize && form.value.event_id && canMarkEventDone.value && linkedEvent.value?.status !== 'done') {
-    const ask = await Swal.fire({
-      icon: 'question', title: 'บันทึกแล้ว',
-      text: 'ตั้งกิจกรรมในปฏิทินเป็น "เสร็จสิ้น" ด้วยไหม',
-      showCancelButton: true, confirmButtonText: 'ตั้งให้เลย', cancelButtonText: 'ไม่ต้อง',
-    })
-    if (ask.isConfirmed) {
-      await supabase.from('nithet_events').update({ status: 'done' }).eq('id', form.value.event_id)
-    }
-  } else {
-    Swal.fire({
-      icon: 'success',
-      title: finalize ? 'บันทึกสมบูรณ์แล้ว' : 'บันทึกร่างแล้ว',
-      text: finalize ? '' : 'กลับมาเติมเนื้อหาให้ครบภายหลังได้',
-      timer: 1400, showConfirmButton: false,
-    })
-  }
+  // นัดในปฏิทินเปลี่ยนเป็น "เสร็จสิ้น" เองที่ฐานข้อมูลเมื่อบันทึกครบ (trigger migration 91) ไม่ต้องถาม
+  Swal.fire({
+    icon: 'success',
+    title: finalize ? 'บันทึกสมบูรณ์แล้ว' : 'บันทึกร่างแล้ว',
+    text: finalize
+      ? (form.value.event_id ? 'นัดในปฏิทินจะเปลี่ยนเป็น "เสร็จสิ้น" ให้เองเมื่อบันทึกครบทุกโรงในนัด' : '')
+      : 'กลับมาเติมเนื้อหาให้ครบภายหลังได้',
+    timer: form.value.event_id && finalize ? 2200 : 1400, showConfirmButton: false,
+  })
   router.push('/dashboard/nithet-visits')
 }
 </script>
@@ -435,7 +423,7 @@ async function save(finalize) {
           </div>
 
           <div>
-            <label class="text-[11px] font-bold text-slate-500">ผู้ร่วมนิเทศ (ไม่รวมตัวคุณเอง)</label>
+            <label class="text-[11px] font-bold text-slate-500">{{ rl.co }} (ไม่รวมตัวคุณเอง)</label>
             <div class="border border-slate-200 rounded-xl max-h-40 overflow-y-auto divide-y divide-slate-100 bg-white">
               <label v-for="p in people.filter(x => x.id !== myId)" :key="p.id"
                 class="flex items-center gap-2 px-3 py-2 text-sm cursor-pointer hover:bg-slate-50">
@@ -449,7 +437,7 @@ async function save(finalize) {
 
         <!-- 2. เรื่องที่นิเทศ -->
         <div class="glass-card p-5 space-y-3">
-          <p class="font-bold text-sm text-slate-700">2. เรื่องที่นิเทศ</p>
+          <p class="font-bold text-sm text-slate-700">2. {{ rl.topic }}</p>
 
           <!-- เลือกจากปฏิทิน — ไม่บังคับ · ปฏิทินของฉัน (ทุกประเภท) + แผนทางการที่มีเลขที่คำสั่ง
                มาจากปฏิทินอยู่แล้วก็เลือกซ้ำ/เปลี่ยนจากตรงนี้ได้เหมือนกัน -->
@@ -465,7 +453,7 @@ async function save(finalize) {
                 <optgroup v-if="myEvents.length" label="ปฏิทินของฉัน">
                   <option v-for="e in myEvents" :key="e.id" :value="e.id">{{ eventOptionLabel(e) }}</option>
                 </optgroup>
-                <optgroup v-if="filteredPlans.length" label="แผนทางการ (มีเลขที่คำสั่ง)">
+                <optgroup v-if="filteredPlans.length" label="แผนทางการ (มีคำสั่ง/หนังสืออ้างอิง)">
                   <option v-for="p in filteredPlans" :key="p.id" :value="p.id">
                     {{ p.order_number }} · {{ p.title }}{{ eventVisitCount[p.id] ? ` · บันทึกแล้ว ${eventVisitCount[p.id]}` : '' }}
                   </option>
@@ -484,11 +472,11 @@ async function save(finalize) {
           <!-- อ้างอิงจากแผนที่เลือก — อ่านอย่างเดียว แก้ได้แค่จากปฏิทินโดยหัวหน้างานเท่านั้น -->
           <div v-if="form.order_number" class="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs space-y-1">
             <div class="flex items-center justify-between gap-2">
-              <span class="font-bold text-slate-600">📋 อ้างอิงคำสั่งเลขที่ {{ form.order_number }}</span>
+              <span class="font-bold text-slate-600">📋 อ้างอิง{{ refKindMeta(form.ref_kind).label }}เลขที่ {{ form.order_number }}</span>
               <button type="button" @click="clearPlan" class="text-slate-400 hover:text-red-500 font-bold">เลิกใช้แผนนี้</button>
             </div>
             <p v-if="form.order_date" class="text-slate-500">ลงวันที่ {{ form.order_date }}</p>
-            <a v-if="form.order_link" :href="form.order_link" target="_blank" class="text-primary font-bold hover:underline block">ดูคำสั่ง ↗</a>
+            <a v-if="form.order_link" :href="form.order_link" target="_blank" class="text-primary font-bold hover:underline block">ดู{{ refKindMeta(form.ref_kind).label }} ↗</a>
             <a v-for="(d, i) in form.doc_links" :key="i" :href="d.url" target="_blank" class="text-primary font-bold hover:underline block">
               {{ d.label || 'เอกสารประกอบ' }} ↗
             </a>
@@ -496,7 +484,7 @@ async function save(finalize) {
 
           <div>
             <label class="text-[11px] font-bold text-slate-500">เรื่อง/หัวข้อ</label>
-            <input v-model="form.title" type="text" placeholder="เช่น นิเทศการจัดการเรียนรู้เชิงรุก" :class="inputCls"/>
+            <input v-model="form.title" type="text" :placeholder="rl.topicPlaceholder" :class="inputCls"/>
           </div>
           <TopicChips v-model="form.topics" :suggested="eventTopics"/>
         </div>
@@ -534,7 +522,7 @@ async function save(finalize) {
       <!-- คอลัมน์ขวา -->
       <div class="space-y-5">
         <div class="glass-card p-5 space-y-3">
-          <p class="font-bold text-sm text-slate-700">ผู้รับการนิเทศ</p>
+          <p class="font-bold text-sm text-slate-700">{{ rl.receiver }}</p>
           <div>
             <label class="text-[11px] font-bold text-slate-500">ชื่อ</label>
             <input v-model="form.receiver_name" type="text" placeholder="เช่น นายสมชาย ใจดี" :class="inputCls"/>
@@ -544,7 +532,7 @@ async function save(finalize) {
             <input v-model="form.receiver_position" type="text" placeholder="เช่น ผู้อำนวยการโรงเรียน" :class="inputCls"/>
           </div>
           <div>
-            <label class="text-[11px] font-bold text-slate-500">จำนวนผู้รับการนิเทศ (คน)</label>
+            <label class="text-[11px] font-bold text-slate-500">จำนวน{{ rl.receiver }} (คน)</label>
             <input v-model="form.receiver_count" inputmode="numeric" placeholder="เช่น 25" :class="inputCls"/>
           </div>
         </div>
