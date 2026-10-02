@@ -34,6 +34,7 @@ import AdminServicesView      from '../views/admin/AdminServicesView.vue'
 import AdminSupervisionView       from '../views/admin/AdminSupervisionView.vue'
 import AdminDmcPeriodsView        from '../views/admin/AdminDmcPeriodsView.vue'
 import AdminPrincipalsView       from '../views/admin/AdminPrincipalsView.vue'
+import AdminPhonebookView        from '../views/admin/AdminPhonebookView.vue'
 import PublicPrincipalsView      from '../views/PublicPrincipalsView.vue'
 import PublicNewslettersView     from '../views/PublicNewslettersView.vue'
 import AdminNewslettersView      from '../views/admin/AdminNewslettersView.vue'
@@ -135,6 +136,8 @@ const routes = [
       { path: 'schools',     name: 'adminSchools',     component: AdminSchoolsView,     meta: { title: 'ทำเนียบโรงเรียน', icon: '🏫' } },
       { path: 'students',    name: 'adminStudents',    component: AdminStudentsView,    meta: { title: 'ข้อมูลนักเรียน', icon: '👨‍🎓' } },
       { path: 'principals',    name: 'adminPrincipals',  component: AdminPrincipalsView,  meta: { title: 'ผู้บริหารโรงเรียน' } },
+      // ไม่อยู่ใน ADMIN_ONLY_PATHS — ศน./เจ้าหน้าที่ ต้องเข้าได้ (RLS ของ school_principals คุมสิทธิ์อ่านเบอร์)
+      { path: 'phonebook',     name: 'adminPhonebook',   component: AdminPhonebookView,   meta: { title: 'สมุดโทรศัพท์ผู้บริหาร' } },
       { path: 'newsletters',   name: 'adminNewsletters',    component: AdminNewslettersView,    meta: { title: 'จดหมายข่าว' } },
       // ไม่อยู่ใน ADMIN_ONLY_PATHS — ศน./เจ้าหน้าที่ ต้องเข้าได้ (RLS คุมว่าแก้ของใครได้)
       { path: 'library',       name: 'adminLibrary',        component: AdminLibraryView,        meta: { title: 'คลังหนังสือและคู่มือ' } },

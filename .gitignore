@@ -47,3 +47,6 @@ php-api/uploads/*
 
 # Local-only project notes (ไม่ push ตามที่ user ขอ)
 PROJECT_HANDOFF.md
+
+# เบอร์โทรส่วนตัวของผู้บริหาร — ห้าม commit
+tel.xlsx

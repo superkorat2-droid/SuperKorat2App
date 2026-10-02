@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { telHref } from '../composables/useMapLink'
 import { supabase } from '../supabase'
 import { useAreaConfig } from '../composables/useAreaConfig'
 import { usePageHeader } from '../composables/usePageHeader'
@@ -26,9 +27,7 @@ async function openModal(s) {
   modalTab.value    = 'info'
   modalPrincipals.value = []
   loadingPrincipals.value = true
-  const { data } = await supabase
-    .from('school_principals').select('*')
-    .eq('school_id', s.id).order('sort_order')
+  const { data } = await supabase.rpc('public_school_principals', { p_school_id: s.id })
   modalPrincipals.value = data || []
   loadingPrincipals.value = false
 }
@@ -351,7 +350,7 @@ function resetFilters() {
                     <p class="font-bold text-slate-800">{{ p.name }}</p>
                     <span class="text-xs bg-primary/10 text-primary font-bold px-2 py-0.5 rounded-full">{{ p.position }}</span>
                     <div class="flex flex-wrap gap-x-3 mt-1.5 text-xs text-slate-500">
-                      <a v-if="p.phone && p.visibility?.phone" :href="`tel:${p.phone}`"
+                      <a v-if="p.phone && p.visibility?.phone" :href="`tel:${telHref(p.phone)}`"
                         class="flex items-center gap-1 hover:text-primary transition-colors">
                         📞 {{ p.phone }}
                       </a>

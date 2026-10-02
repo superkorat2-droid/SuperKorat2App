@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { telHref } from '../composables/useMapLink'
 import { supabase } from '../supabase'
 import { useAreaConfig } from '../composables/useAreaConfig'
 import { usePageHeader } from '../composables/usePageHeader'
@@ -17,10 +18,8 @@ const filterPosition  = ref('all')
 
 onMounted(async () => {
   await fetchConfig()
-  const { data } = await supabase
-    .from('school_principals')
-    .select('*, schools(id, name, district, school_group)')
-    .order('sort_order')
+  // เรียกผ่าน RPC — เบอร์/อีเมล/ไลน์จะมาเฉพาะที่ผู้บริหารเปิดให้สาธารณะ
+  const { data } = await supabase.rpc('public_school_principals')
   principals.value = data || []
   loading.value = false
 })
@@ -201,7 +200,7 @@ function initials(name) {
             <p class="text-[11px] text-slate-400 truncate mt-0.5">{{ p.schools?.name }}</p>
             <!-- Contact (visible only) -->
             <div class="flex gap-2 mt-1">
-              <a v-if="p.phone && p.visibility?.phone" :href="`tel:${p.phone}`"
+              <a v-if="p.phone && p.visibility?.phone" :href="`tel:${telHref(p.phone)}`"
                 class="text-[11px] text-slate-500 hover:text-primary transition-colors" title="โทรศัพท์">
                 📞
               </a>
