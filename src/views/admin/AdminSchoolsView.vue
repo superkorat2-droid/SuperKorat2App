@@ -118,18 +118,20 @@ async function saveEdit() {
   if (!editSchool.value) return
   editSaving.value = true
   const { id, ...fields } = editSchool.value
+  // คอลัมน์ text ส่วนใหญ่ของ schools เป็น NOT NULL DEFAULT '' — ช่องว่างต้องส่ง '' ไม่ใช่ null
+  // (เดิมส่ง null → โรงที่ไม่มีเว็บไซต์บันทึกไม่ได้เลย) มีแค่ phone ที่ null ได้
   const payload = {
     name:         fields.name?.trim(),
-    subdistrict:  fields.subdistrict?.trim() || null,
-    district:     fields.district?.trim() || null,
-    school_group: fields.school_group?.trim() || null,
-    email:        fields.email?.trim() || null,
+    subdistrict:  fields.subdistrict?.trim() || '',
+    district:     fields.district?.trim() || '',
+    school_group: fields.school_group?.trim() || '',
+    email:        fields.email?.trim() || fields.email,
     phone:        fields.phone?.trim() || null,
-    website_url:  fields.website_url?.trim() || null,
+    website_url:  fields.website_url?.trim() || '',
     distance_km:  fields.distance_km ? Number(fields.distance_km) : null,
     lat:          fields.lat ? Number(fields.lat) : null,
     lng:          fields.lng ? Number(fields.lng) : null,
-    school_code:  fields.school_code?.trim() || null,
+    school_code:  fields.school_code?.trim() || '',
     is_active:    fields.is_active !== false,
   }
   const { error } = await supabase.from('schools').update(payload).eq('id', id)
