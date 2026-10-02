@@ -9,7 +9,7 @@ import { useHolidays } from '../../composables/useHolidays'
 import { toDateKey } from '../../composables/useCalendarGrid'
 import { useAreaConfig } from '../../composables/useAreaConfig'
 import { TYPE_LABEL, TYPE_COLOR, STATUS_LABEL, STATUS_COLOR, displayName, formatEventDateRange, formatResponsible } from '../../composables/useNithetEventMeta'
-import { VISIT_WRITER_ROLES } from '../../composables/useNithetVisits'
+import { VISIT_WRITER_ROLES, statusMeta, placeOf } from '../../composables/useNithetVisits'
 import TopicChips from '../../components/nithet/TopicChips.vue'
 import LinkListEditor from '../../components/nithet/LinkListEditor.vue'
 
@@ -19,6 +19,7 @@ const personnelGroups = computed(() => areaConfig.value?.personnel_groups || [])
 function groupLabel(key) { return personnelGroups.value.find(g => g.key === key)?.label || key }
 
 const events        = ref([])
+const visitsByEvent = ref({})   // event_id → บันทึกนิเทศที่ผูกกับนัดนี้ (เท่าที่ RLS ให้เห็น)
 const schools       = ref([])
 const responsibleOptions = ref([])
 const loading       = ref(true)
@@ -39,6 +40,9 @@ const isAdmin = computed(() => ['super_admin','admin'].includes(currentProfile.v
 // สิทธิ์กำหนด "แผนการนิเทศ" (เลขที่คำสั่ง/ลิงก์คำสั่ง/ประเด็นย่อย) — แยกจากสิทธิ์แก้ไขกิจกรรมทั่วไป
 // บังคับจริงที่ trigger nithet_events_order_guard (migration 0076) ฝั่งนี้แค่ซ่อน/แสดง UI ให้เหมาะ
 const canManagePlan = computed(() => isAdmin.value || !!currentProfile.value?.can_manage_nithet_plan)
+// ศน. เจ้าของนัดกรอกข้อมูลคำสั่งในนัดของตัวเองได้ด้วย (migration 0090) — นัดใหม่ก็คือนัดของฉัน
+const canEditPlanFields = computed(() =>
+  canManagePlan.value || !form.value.id || form.value.created_by === currentUserId.value)
 
 const TYPES = ['school_visit', 'meeting', 'training', 'other']
 
@@ -146,10 +150,32 @@ async function load() {
     .from('nithet_events')
     .select('*')
     .order('start_date', { ascending: true })
-  if (!isAdmin.value || myEventsOnly.value) query = query.eq('created_by', currentUserId.value)
+  // ไม่ใช่แอดมิน: นัดที่ฉันสร้าง + นัดที่ฉันถูกใส่ชื่อเป็นผู้รับผิดชอบร่วม (แก้ไม่ได้ แต่บันทึกผลได้)
+  if (!isAdmin.value || myEventsOnly.value) {
+    query = query.or(`created_by.eq.${currentUserId.value},responsible_ids.cs.{${currentUserId.value}}`)
+  }
   const { data, error } = await query
   if (!error) events.value = data || []
+  await loadVisits()
   loading.value = false
+}
+
+// บันทึกนิเทศที่ผูกกับนัดที่แสดงอยู่ — โหลดครั้งเดียวต่อรอบ ใช้ทำลิงก์ "บันทึกแล้ว N"
+async function loadVisits() {
+  const ids = events.value.map(e => e.id)
+  if (!ids.length) { visitsByEvent.value = {}; return }
+  const { data } = await supabase.from('nithet_visits')
+    .select('id, event_id, title, visit_date, status, ack_status, place_name, schools(name)')
+    .in('event_id', ids)
+    .order('visit_date')
+  const m = {}
+  for (const v of data || []) (m[v.event_id] ||= []).push(v)
+  visitsByEvent.value = m
+}
+
+function visitBadge(v) {
+  if (v.status === 'final' && v.ack_status === 'acknowledged') return { label: 'รับทราบแล้ว', bg: 'bg-sky-100', text: 'text-sky-700' }
+  return statusMeta(v.status)
 }
 
 function openAdd(dateKey) {
@@ -171,6 +197,7 @@ function openEdit(event) {
     order_number: event.order_number || '', order_date: event.order_date || null,
     order_link: event.order_link || '', doc_links: [...(event.doc_links || [])],
     topics: [...(event.topics || [])],
+    created_by: event.created_by,
   }
   showModal.value = true
 }
@@ -182,6 +209,7 @@ function openDuplicate(event) {
   openEdit(event)
   duplicating.value = true
   form.value.id = null
+  form.value.created_by = currentUserId.value   // สำเนาเป็นนัดของฉัน
   form.value.school_ids = []
   form.value.status = 'scheduled'   // ของเดิมอาจ done แล้ว รายการใหม่ต้องเริ่มใหม่
 }
@@ -251,9 +279,17 @@ async function deleteEvent(event) {
   else load()
 }
 
-function onSelectEvent(ev) {
+async function onSelectEvent(ev) {
   const full = events.value.find(e => e.id === ev.id)
-  if (full) openEdit(full)
+  if (!full) return
+  if (canEdit(full)) { openEdit(full); return }
+  // นัดของคนอื่นที่ฉันเป็นผู้รับผิดชอบร่วม — แก้ไม่ได้ แต่ไปบันทึกผลได้
+  if (!canRecordVisit.value) return
+  const { isConfirmed } = await Swal.fire({
+    title: full.title, text: formatEventDateRange(full),
+    showCancelButton: true, confirmButtonText: 'บันทึกผลการนิเทศ', cancelButtonText: 'ปิด',
+  })
+  if (isConfirmed) recordVisit(full)
 }
 
 onMounted(async () => {
@@ -397,9 +433,24 @@ onMounted(async () => {
                 ผู้รับผิดชอบ: {{ formatResponsible(responsibleNamesFor(event), event.responsible_group ? groupLabel(event.responsible_group) : '') }}
               </span>
             </div>
+
+            <!-- บันทึกนิเทศที่ผูกกับนัดนี้แล้ว — กดเปิดหน้าแก้ไขได้เลย -->
+            <div v-if="visitsByEvent[event.id]?.length" class="mt-3 p-2.5 rounded-xl bg-emerald-50/60 border border-emerald-100">
+              <p class="text-[11px] font-bold text-emerald-700 mb-1">📄 บันทึกแล้ว {{ visitsByEvent[event.id].length }} ใบ</p>
+              <div class="flex flex-col gap-1">
+                <RouterLink v-for="v in visitsByEvent[event.id]" :key="v.id"
+                  :to="`/dashboard/nithet-visits/${v.id}/edit`"
+                  class="flex items-center gap-2 text-xs text-slate-600 hover:text-primary">
+                  <span :class="['shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full', visitBadge(v).bg, visitBadge(v).text]">{{ visitBadge(v).label }}</span>
+                  <span class="truncate">{{ placeOf({ school_name: v.schools?.name, place_name: v.place_name }) }} · {{ v.visit_date }}</span>
+                  <span class="shrink-0 font-bold">เปิด ↗</span>
+                </RouterLink>
+              </div>
+            </div>
           </div>
 
           <div v-if="canRecordVisit || canEdit(event)" class="flex flex-wrap gap-2 flex-shrink-0">
+            <span v-if="!canEdit(event)" class="self-center text-[11px] font-bold text-slate-400">👥 ผู้รับผิดชอบร่วม</span>
             <button v-if="canRecordVisit" @click="recordVisit(event)"
               title="ไปกรอกผลการนิเทศของกิจกรรมนี้ โดยเติมวันที่/เรื่อง/ผู้ร่วมนิเทศให้อัตโนมัติ"
               class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-primary text-white rounded-xl shadow-sm hover:-translate-y-0.5 transition-all">
@@ -588,15 +639,15 @@ onMounted(async () => {
                 </div>
               </div>
 
-              <!-- ══ ข้อมูลคำสั่ง — เฉพาะหัวหน้างานนิเทศ ══ -->
-              <template v-if="canManagePlan || form.order_number">
+              <!-- ══ ข้อมูลคำสั่ง — หัวหน้างานนิเทศ หรือ ศน. เจ้าของนัดนี้ ══ -->
+              <template v-if="canEditPlanFields || form.order_number">
                 <div class="border-t border-slate-100 pt-1">
                   <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                    ข้อมูลคำสั่ง <span v-if="!canManagePlan" class="normal-case font-normal">(กรอกได้เฉพาะหัวหน้างานนิเทศ)</span>
+                    ข้อมูลคำสั่ง <span v-if="!canEditPlanFields" class="normal-case font-normal">(กรอกได้เฉพาะเจ้าของนัดหรือหัวหน้างานนิเทศ)</span>
                   </p>
                 </div>
 
-                <template v-if="canManagePlan">
+                <template v-if="canEditPlanFields">
                   <div class="grid grid-cols-2 gap-3">
                     <div>
                       <label class="block text-xs font-bold text-slate-600 mb-1">เลขที่คำสั่ง</label>

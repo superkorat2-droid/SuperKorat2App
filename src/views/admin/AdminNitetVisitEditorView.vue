@@ -9,6 +9,8 @@
  *   • ปุ่มบันทึกลอยติดขอบล่าง
  *
  * เปิดจากปฏิทินได้ด้วย ?event=<id>&school=<id> แล้วเติมข้อมูลจากแผนให้อัตโนมัติ
+ * หรือเลือกนัดจากในฟอร์มเอง: "ปฏิทินของฉัน" (นัดที่สร้างเอง/ถูกใส่ชื่อร่วม) + "แผนทางการ" (มีเลขที่คำสั่ง)
+ * ทุกทางเข้าเรียก applyPlan() ตัวเดียวกัน — ข้อมูลที่เติมเป็นสำเนา แก้ปฏิทินทีหลังบันทึกไม่เปลี่ยนตาม
  */
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -25,6 +27,7 @@ import VisitPhotoUploader from '../../components/nithet/VisitPhotoUploader.vue'
 import LinkListEditor from '../../components/nithet/LinkListEditor.vue'
 import {
   VISIT_TYPES, VISIT_WRITER_ROLES, currentAcademicYear, currentTerm,
+  resultLabels, visitTypeFromEvent, typeMeta,
 } from '../../composables/useNithetVisits'
 
 const route  = useRoute()
@@ -42,7 +45,11 @@ const myId    = ref('')
 const people  = ref([])
 const eventTopics  = ref([])
 const officialPlans = ref([])   // nithet_events ที่มีเลขที่คำสั่ง — ให้เลือกใช้ตอนบันทึกผล
+const myEvents = ref([])        // นัดในปฏิทินของฉัน (สร้างเอง/ถูกใส่ชื่อร่วม) ช่วงใกล้ ๆ นี้
+const eventVisitCount = ref({}) // event_id → จำนวนบันทึกที่ผูกไว้แล้ว (เท่าที่ RLS ให้เห็น)
 const planGroupFilter = ref('')
+const myRole = ref('')
+const linkedEvent = ref(null)   // นัดที่เลือกอยู่ — ใช้ตัดสินว่าจะถาม "ตั้งเสร็จสิ้น" ได้ไหม
 let saved = false
 
 const emptyForm = () => ({
@@ -88,6 +95,7 @@ onMounted(async () => {
   if (user) {
     const { data: p } = await supabase.from('profiles')
       .select('role, department').eq('id', user.id).single()
+    myRole.value = p?.role || ''
     canWrite.value = VISIT_WRITER_ROLES.includes(p?.role)
     // profiles.department เก็บเป็น label ต้องแปลงเป็น key ให้ตรงกับ nithet_events
     if (isNew.value) form.value.work_group = keyFromLabel(p?.department) || ''
@@ -102,17 +110,28 @@ onMounted(async () => {
     // แผนการนิเทศที่มีเลขที่คำสั่งอยู่แล้ว (หัวหน้างานกำหนดไว้) — ให้เลือกจากในฟอร์มได้เลย
     // ไม่ต้องเริ่มจากปฏิทินเสมอไป (RLS: show_public=true อ่านได้ทุกคนอยู่แล้ว ไม่ใช่แค่เจ้าของ)
     const { data: plans } = await supabase.from('nithet_events')
-      .select('id, title, type, start_date, responsible_ids, responsible_group, order_number, order_date, order_link, doc_links, topics')
-      .neq('order_number', '').order('start_date', { ascending: false })
+      .select(EVENT_COLS)
+      .neq('order_number', '').neq('status', 'cancelled').order('start_date', { ascending: false })
     officialPlans.value = plans || []
 
-    // มาจากปฏิทิน — เติมข้อมูลจากแผนให้เลย
+    // ปฏิทินของฉัน — ย้อนหลัง 60 วัน ถึงล่วงหน้า 7 วัน (บันทึกผลมักทำหลังวันงานไม่นาน)
+    if (myId.value) {
+      const { data: mine } = await supabase.from('nithet_events')
+        .select(EVENT_COLS)
+        .or(`created_by.eq.${myId.value},responsible_ids.cs.{${myId.value}}`)
+        .neq('status', 'cancelled')
+        .gte('end_date', shiftDate(-60)).lte('start_date', shiftDate(7))
+        .order('start_date', { ascending: false })
+      myEvents.value = mine || []
+    }
+    await loadVisitCounts([...myEvents.value, ...officialPlans.value].map(e => e.id))
+
+    // มาจากปฏิทิน — เติมข้อมูลจากแผนให้เลย (ระบุโรงมาแล้วใน ?school= ไม่ต้องถามซ้ำ)
     const eventId = route.query.event
     if (eventId) {
       const { data: ev } = await supabase.from('nithet_events')
-        .select('id, title, description, type, start_date, responsible_ids, responsible_group, order_number, order_date, order_link, doc_links, topics')
-        .eq('id', eventId).single()
-      if (ev) applyPlan(ev)
+        .select(EVENT_COLS).eq('id', eventId).single()
+      if (ev) await applyPlan(ev, { schoolId: route.query.school || '' })
     }
     if (route.query.school) form.value.school_id = route.query.school
     restoreDraft()
@@ -129,6 +148,14 @@ onMounted(async () => {
       photos: data.photos || [], links: data.links || [], topics: data.topics || [],
       logbook_photos: data.logbook_photos || [],
       co_supervisor_ids: data.co_supervisor_ids || [] }
+  }
+
+  // ร่างที่กู้คืน / บันทึกเดิมที่เปิดแก้ อาจผูกนัดไว้แล้ว — โหลดนัดนั้นมาด้วย
+  // (ใช้แสดงกล่อง "เชื่อมกับนัด" และตัดสินว่าจะถามตั้งนัดเป็นเสร็จสิ้นได้ไหม)
+  if (form.value.event_id && linkedEvent.value?.id !== form.value.event_id) {
+    const { data: ev } = await supabase.from('nithet_events')
+      .select(EVENT_COLS).eq('id', form.value.event_id).maybeSingle()
+    linkedEvent.value = ev || null
   }
 
   loading.value = false
@@ -152,14 +179,51 @@ function personName(p) {
   return p.full_name || '-'
 }
 
+const EVENT_COLS = 'id, title, description, type, status, start_date, end_date, location, school_ids, created_by, responsible_ids, responsible_group, order_number, order_date, order_link, doc_links, topics'
+
+function shiftDate(days) {
+  const d = new Date()
+  d.setDate(d.getDate() + days)
+  return d.toISOString().slice(0, 10)
+}
+
+async function loadVisitCounts(ids) {
+  const unique = [...new Set(ids)].filter(Boolean)
+  if (!unique.length) return
+  const { data } = await supabase.from('nithet_visits').select('event_id').in('event_id', unique)
+  const m = {}
+  for (const r of data || []) m[r.event_id] = (m[r.event_id] || 0) + 1
+  eventVisitCount.value = m
+}
+
+// สถานที่จากนัด: โรงเดียว → เลือกให้เลย · หลายโรง → ถาม · ไม่มีโรงแต่มี location → "สถานที่อื่น"
+async function applyPlace(ev, presetSchoolId) {
+  const ids = ev.school_ids || []
+  if (presetSchoolId) { form.value.school_id = presetSchoolId; form.value.place_name = ''; return }
+  if (ids.length === 1) { form.value.school_id = ids[0]; form.value.place_name = ''; return }
+  if (ids.length > 1) {
+    const { data: ss } = await supabase.from('schools').select('id, name').in('id', ids).order('name')
+    const inputOptions = Object.fromEntries((ss || []).map(s => [s.id, s.name]))
+    const { isConfirmed, value } = await Swal.fire({
+      title: 'บันทึกผลของโรงเรียนไหน',
+      text: 'นัดนี้มีหลายโรง กรอกทีละโรงเรียน กลับมาเลือกนัดเดิมเพื่อบันทึกโรงถัดไปได้',
+      input: 'radio', inputOptions, inputValue: (ss || [])[0]?.id,
+      showCancelButton: true, confirmButtonText: 'เลือก', cancelButtonText: 'ไว้เลือกเอง',
+    })
+    if (isConfirmed && value) { form.value.school_id = value; form.value.place_name = '' }
+    return
+  }
+  if (ev.location?.trim()) { form.value.school_id = ''; form.value.place_name = ev.location.trim() }
+}
+
 // เติมข้อมูลจากแผนการนิเทศ (nithet_events) ที่เลือก — ใช้ทั้งตอนมาจาก ?event= ของปฏิทิน
-// และตอนเลือกเองจาก dropdown ในฟอร์มนี้ เพื่อไม่ให้ logic สองทางเพี้ยนจากกัน
-function applyPlan(ev) {
+// ตอนเลือกจาก dropdown และตอนกดชิปนัดใน PlacePicker เพื่อไม่ให้ logic หลายทางเพี้ยนจากกัน
+async function applyPlan(ev, { schoolId = '' } = {}) {
+  linkedEvent.value = ev
   form.value.event_id = ev.id
   form.value.title = ev.title || ''
   form.value.visit_date = ev.start_date || form.value.visit_date
-  form.value.visit_type = ev.type === 'school_visit' ? 'school_visit'
-    : ev.type === 'training' ? 'speaker' : (ev.type || 'other')
+  form.value.visit_type = visitTypeFromEvent(ev.type)
   form.value.co_supervisor_ids = (ev.responsible_ids || []).filter(id => id !== myId.value)
   if (ev.responsible_group) form.value.work_group = ev.responsible_group
   // ชื่อกิจกรรม + ประเด็นย่อยที่หัวหน้ากำหนดไว้ เสนอเป็นชิปประเด็นให้กดเพิ่มได้ทันที (ไม่บังคับใส่)
@@ -169,20 +233,47 @@ function applyPlan(ev) {
   form.value.order_date = ev.order_date || null
   form.value.order_link = ev.order_link || ''
   form.value.doc_links = [...(ev.doc_links || [])]
+  await applyPlace(ev, schoolId)
 }
 
-const filteredPlans = computed(() =>
-  planGroupFilter.value
-    ? officialPlans.value.filter(p => p.responsible_group === planGroupFilter.value)
-    : officialPlans.value
-)
+// แผนทางการที่อยู่ในปฏิทินของฉันอยู่แล้วไม่ต้องโชว์ซ้ำอีกกลุ่ม
+const filteredPlans = computed(() => {
+  const mine = new Set(myEvents.value.map(e => e.id))
+  return officialPlans.value
+    .filter(p => !mine.has(p.id))
+    .filter(p => !planGroupFilter.value || p.responsible_group === planGroupFilter.value)
+})
 
-function pickPlan(id) {
-  const ev = officialPlans.value.find(p => p.id === id)
-  if (ev) applyPlan(ev)
+// ชิปลัดใน PlacePicker โหมด "สถานที่อื่น": นัดประชุม/อบรม/อื่นๆ ของฉัน ใกล้วันที่ในฟอร์มก่อน
+const placeShortcutEvents = computed(() => {
+  const base = new Date(form.value.visit_date || Date.now()).getTime()
+  return myEvents.value
+    .filter(e => e.type !== 'school_visit')
+    .map(e => ({ ...e, _dist: Math.abs(new Date(e.start_date).getTime() - base) }))
+    .sort((a, b) => a._dist - b._dist)
+    .slice(0, 6)
+})
+
+function eventOptionLabel(e) {
+  const d = new Date(e.start_date).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' })
+  const n = eventVisitCount.value[e.id]
+  return `${d} · ${typeMeta(visitTypeFromEvent(e.type)).icon} ${e.title}${n ? ` · บันทึกแล้ว ${n}` : ''}`
 }
+
+async function pickPlan(id) {
+  if (!id) { clearPlan(); return }
+  const ev = myEvents.value.find(p => p.id === id) || officialPlans.value.find(p => p.id === id)
+  if (ev) await applyPlan(ev)
+}
+
+// ตั้งนัดเป็น "เสร็จสิ้น" ได้เฉพาะเจ้าของนัด/แอดมิน (RLS update) — ผู้รับผิดชอบร่วมไม่ต้องถาม
+const canMarkEventDone = computed(() =>
+  !!linkedEvent.value && (['super_admin', 'admin'].includes(myRole.value) || linkedEvent.value.created_by === myId.value))
+
+const rl = computed(() => resultLabels(form.value.visit_type))
 
 function clearPlan() {
+  linkedEvent.value = null
   form.value.event_id = null
   form.value.order_number = ''
   form.value.order_date = null
@@ -256,8 +347,8 @@ async function save(finalize) {
   clearDraft()
   await gc.commit([...form.value.photos, ...form.value.logbook_photos].map(p => p.url))
 
-  // มาจากปฏิทินและกรอกครบแล้ว — เสนอปิดงานในแผนให้ด้วย
-  if (finalize && form.value.event_id) {
+  // มาจากปฏิทินและกรอกครบแล้ว — เสนอปิดงานในแผนให้ด้วย (เฉพาะเจ้าของนัด/แอดมินที่แก้นัดได้จริง)
+  if (finalize && form.value.event_id && canMarkEventDone.value && linkedEvent.value?.status !== 'done') {
     const ask = await Swal.fire({
       icon: 'question', title: 'บันทึกแล้ว',
       text: 'ตั้งกิจกรรมในปฏิทินเป็น "เสร็จสิ้น" ด้วยไหม',
@@ -307,7 +398,9 @@ async function save(finalize) {
 
           <PlacePicker
             :school-id="form.school_id" :place-name="form.place_name"
-            @update:schoolId="form.school_id = $event" @update:placeName="form.place_name = $event"/>
+            :events="isNew ? placeShortcutEvents : []" :picked-event-id="form.event_id || ''"
+            @update:schoolId="form.school_id = $event" @update:placeName="form.place_name = $event"
+            @pick-event="pickPlan"/>
 
           <div class="grid grid-cols-2 gap-3">
             <div>
@@ -358,22 +451,34 @@ async function save(finalize) {
         <div class="glass-card p-5 space-y-3">
           <p class="font-bold text-sm text-slate-700">2. เรื่องที่นิเทศ</p>
 
-          <!-- เลือกจากแผนการนิเทศที่หัวหน้างานกำหนดไว้ล่วงหน้า (มีเลขที่คำสั่ง) — ไม่บังคับ
+          <!-- เลือกจากปฏิทิน — ไม่บังคับ · ปฏิทินของฉัน (ทุกประเภท) + แผนทางการที่มีเลขที่คำสั่ง
                มาจากปฏิทินอยู่แล้วก็เลือกซ้ำ/เปลี่ยนจากตรงนี้ได้เหมือนกัน -->
-          <div v-if="isNew && officialPlans.length" class="p-3 rounded-xl bg-indigo-50/60 border border-indigo-100 space-y-2">
-            <label class="text-[11px] font-bold text-indigo-700">เลือกจากแผนการนิเทศ (ถ้ามี)</label>
-            <div class="grid grid-cols-2 gap-2">
-              <select v-model="planGroupFilter" :class="inputCls">
-                <option value="">ทุกกลุ่มงาน</option>
+          <div v-if="isNew && (myEvents.length || officialPlans.length)" class="p-3 rounded-xl bg-indigo-50/60 border border-indigo-100 space-y-2">
+            <label class="text-[11px] font-bold text-indigo-700">เลือกจากปฏิทิน / แผนการนิเทศ (ถ้ามี) — เติมวันที่ หัวข้อ ประเภท สถานที่ให้</label>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              <select v-model="planGroupFilter" :class="inputCls" title="กรองเฉพาะแผนทางการตามกลุ่มงาน">
+                <option value="">แผนทางการ: ทุกกลุ่มงาน</option>
                 <option v-for="g in groupOptions" :key="g.key" :value="g.key">{{ g.label }}</option>
               </select>
-              <select :value="form.event_id" @change="pickPlan($event.target.value)" :class="inputCls">
-                <option value="">-- ไม่ใช้แผน --</option>
-                <option v-for="p in filteredPlans" :key="p.id" :value="p.id">
-                  {{ p.order_number }} · {{ p.title }}
-                </option>
+              <select :value="form.event_id || ''" @change="pickPlan($event.target.value)" :class="[inputCls, 'sm:col-span-2']">
+                <option value="">-- ไม่ใช้นัด/แผน --</option>
+                <optgroup v-if="myEvents.length" label="ปฏิทินของฉัน">
+                  <option v-for="e in myEvents" :key="e.id" :value="e.id">{{ eventOptionLabel(e) }}</option>
+                </optgroup>
+                <optgroup v-if="filteredPlans.length" label="แผนทางการ (มีเลขที่คำสั่ง)">
+                  <option v-for="p in filteredPlans" :key="p.id" :value="p.id">
+                    {{ p.order_number }} · {{ p.title }}{{ eventVisitCount[p.id] ? ` · บันทึกแล้ว ${eventVisitCount[p.id]}` : '' }}
+                  </option>
+                </optgroup>
               </select>
             </div>
+          </div>
+
+          <!-- เชื่อมกับนัดที่ไม่มีเลขคำสั่ง — บอกให้รู้ว่าผูกอยู่ และเลิกผูกได้ -->
+          <div v-if="form.event_id && !form.order_number && linkedEvent"
+            class="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs flex items-center justify-between gap-2">
+            <span class="font-bold text-slate-600">🗓 เชื่อมกับนัดในปฏิทิน: {{ linkedEvent.title }}</span>
+            <button type="button" @click="clearPlan" class="text-slate-400 hover:text-red-500 font-bold shrink-0">เลิกเชื่อม</button>
           </div>
 
           <!-- อ้างอิงจากแผนที่เลือก — อ่านอย่างเดียว แก้ได้แค่จากปฏิทินโดยหัวหน้างานเท่านั้น -->
@@ -398,13 +503,14 @@ async function save(finalize) {
 
         <!-- 3. ผลการนิเทศ -->
         <div class="glass-card p-5 space-y-4">
-          <p class="font-bold text-sm text-slate-700">3. ผลการนิเทศ</p>
-          <VoiceTextarea v-model="form.summary" label="สภาพที่พบ" placeholder="บรรยายสิ่งที่พบจากการนิเทศ"/>
-          <VoiceTextarea v-model="form.strengths" label="จุดเด่น" placeholder="สิ่งที่โรงเรียนทำได้ดี"/>
-          <VoiceTextarea v-model="form.issues" label="จุดที่ควรพัฒนา"
-            placeholder="ประเด็นที่ควรปรับปรุง" hint="ไม่แสดงบนหน้าเว็บสาธารณะ"/>
-          <VoiceTextarea v-model="form.suggestions" label="ข้อเสนอแนะ"
-            placeholder="แนวทางที่แนะนำให้ดำเนินการ" hint="ไม่แสดงบนหน้าเว็บสาธารณะ"/>
+          <!-- หัวข้อเปลี่ยนตามประเภท (resultLabels) — ข้อมูลยังลง 4 คอลัมน์เดิม -->
+          <p class="font-bold text-sm text-slate-700">3. {{ rl.section }}</p>
+          <VoiceTextarea v-model="form.summary" :label="rl.summary.label" :placeholder="rl.summary.placeholder"/>
+          <VoiceTextarea v-model="form.strengths" :label="rl.strengths.label" :placeholder="rl.strengths.placeholder"/>
+          <VoiceTextarea v-model="form.issues" :label="rl.issues.label"
+            :placeholder="rl.issues.placeholder" hint="ไม่แสดงบนหน้าเว็บสาธารณะ"/>
+          <VoiceTextarea v-model="form.suggestions" :label="rl.suggestions.label"
+            :placeholder="rl.suggestions.placeholder" hint="ไม่แสดงบนหน้าเว็บสาธารณะ"/>
         </div>
 
         <!-- 4. หลักฐาน -->
@@ -468,7 +574,7 @@ async function save(finalize) {
             <span>
               เผยแพร่บนหน้าเว็บสาธารณะ
               <span class="block text-[11px] text-slate-400">
-                แสดงเฉพาะ สภาพที่พบ · จุดเด่น · รูป — จุดที่ควรพัฒนาและข้อเสนอแนะไม่ถูกเผยแพร่
+                แสดงเฉพาะ {{ rl.summary.label }} · {{ rl.strengths.label }} · รูป — {{ rl.issues.label }}และ{{ rl.suggestions.label }}ไม่ถูกเผยแพร่
               </span>
             </span>
           </label>

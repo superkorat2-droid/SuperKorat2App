@@ -14,7 +14,7 @@ import { useRoute, RouterLink } from 'vue-router'
 import { supabase } from '../supabase'
 import { useAreaConfig } from '../composables/useAreaConfig'
 import PhotoLightbox from '../components/nithet/PhotoLightbox.vue'
-import { typeMeta, visitTypeLabel, placeOf, fmtDateLong, linkKind, LINK_ICON } from '../composables/useNithetVisits'
+import { typeMeta, visitTypeLabel, placeOf, fmtDateLong, linkKind, LINK_ICON, resultLabels } from '../composables/useNithetVisits'
 
 const route = useRoute()
 const { config, fetchConfig } = useAreaConfig()
@@ -37,10 +37,14 @@ onMounted(async () => {
 const photos = computed(() => (item.value?.photos || []).filter(p => p?.url))
 const meta   = computed(() => typeMeta(item.value?.visit_type))
 
-const sections = computed(() => [
-  ['สภาพที่พบ', item.value?.summary],
-  ['จุดเด่น', item.value?.strengths],
-].filter(s => (s[1] || '').trim()))
+// หัวข้อตามประเภท (นิเทศ/ประชุม/อบรม/อื่นๆ) — ชุดเดียวกับฟอร์มบันทึกและรายงาน A4
+const sections = computed(() => {
+  const rl = resultLabels(item.value?.visit_type)
+  return [
+    [rl.summary.label, item.value?.summary],
+    [rl.strengths.label, item.value?.strengths],
+  ].filter(s => (s[1] || '').trim())
+})
 
 async function copyLink() {
   try {

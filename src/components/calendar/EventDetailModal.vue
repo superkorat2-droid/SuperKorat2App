@@ -52,6 +52,19 @@ const responsibleText = computed(() => {
               <p v-if="event.location">📍 {{ event.location }}</p>
               <p v-if="event.responsible_group || event.responsible_names?.length">👤 {{ responsibleText }}</p>
             </div>
+
+            <!-- ผลการนิเทศที่บันทึกไว้แล้ว — RPC ส่งมาเฉพาะใบที่เผยแพร่+สมบูรณ์ (migration 0090) -->
+            <div v-if="event.visits?.length" class="border-t border-slate-900/[0.06] pt-3">
+              <p class="text-xs font-bold text-emerald-700 mb-2">📄 ผลการนิเทศ ({{ event.visits.length }})</p>
+              <div class="flex flex-col gap-1.5">
+                <RouterLink v-for="v in event.visits" :key="v.id" :to="`/nithet-visits/${v.id}`"
+                  @click="$emit('close')"
+                  class="flex items-center gap-2 px-3 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-sm text-slate-700 transition-colors">
+                  <span class="flex-1 min-w-0 truncate">{{ v.school_name || v.place_name || v.title }}</span>
+                  <span class="shrink-0 text-xs font-bold text-emerald-700">อ่าน ↗</span>
+                </RouterLink>
+              </div>
+            </div>
           </div>
         </div>
       </div>

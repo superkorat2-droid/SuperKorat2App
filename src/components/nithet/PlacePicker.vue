@@ -11,8 +11,11 @@ import { supabase } from '../../supabase'
 const props = defineProps({
   schoolId:  { type: String, default: '' },
   placeName: { type: String, default: '' },
+  // นัดในปฏิทินของฉัน (ประชุม/อบรม/อื่นๆ) ไว้โชว์เป็นชิปลัดในโหมด "สถานที่อื่น"
+  events:        { type: Array,  default: () => [] },
+  pickedEventId: { type: String, default: '' },
 })
-const emit = defineEmits(['update:schoolId', 'update:placeName'])
+const emit = defineEmits(['update:schoolId', 'update:placeName', 'pick-event'])
 
 const schools = ref([])
 const q = ref('')
@@ -56,6 +59,18 @@ watch(mode, (m) => {
   if (m === 'place') emit('update:schoolId', '')
   else emit('update:placeName', '')
 })
+
+// ฟอร์มเติมสถานที่ให้จากนัดในปฏิทิน (หรือกู้ร่าง) — สลับโหมดตามค่าที่เข้ามา
+// เปลี่ยนเฉพาะตอนมีค่าฝั่งใดฝั่งหนึ่ง ทั้งคู่ว่าง (กด "เปลี่ยน") ให้คงโหมดเดิมไว้
+watch(() => [props.schoolId, props.placeName], ([sid, pn]) => {
+  if (sid) mode.value = 'school'
+  else if (pn) mode.value = 'place'
+})
+
+function eventChipLabel(e) {
+  const d = new Date(e.start_date).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' })
+  return `${d} · ${e.title}`
+}
 </script>
 
 <template>
@@ -97,11 +112,27 @@ watch(mode, (m) => {
     </div>
 
     <!-- โหมดสถานที่อื่น -->
-    <input v-else
-      :value="placeName"
-      @input="emit('update:placeName', $event.target.value)"
-      type="text" placeholder="เช่น ห้องประชุม สพป.นม.2 / โรงแรม..."
-      class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:border-primary"/>
+    <template v-else>
+      <input
+        :value="placeName"
+        @input="emit('update:placeName', $event.target.value)"
+        type="text" placeholder="เช่น ห้องประชุม สพป.นม.2 / โรงแรม..."
+        class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:border-primary"/>
+
+      <!-- ทางลัด: ดึงวันที่/หัวข้อ/ประเภท/สถานที่ จากนัดในปฏิทินของฉัน -->
+      <div v-if="events.length" class="space-y-1">
+        <p class="text-[11px] font-bold text-indigo-700">🗓 ดึงจากปฏิทินของฉัน</p>
+        <div class="flex flex-wrap gap-1.5">
+          <button v-for="e in events" :key="e.id" type="button" @click="emit('pick-event', e.id)"
+            :class="['max-w-full truncate px-2.5 py-1 rounded-lg text-xs font-bold border transition-colors',
+              pickedEventId === e.id
+                ? 'bg-indigo-600 text-white border-indigo-600'
+                : 'bg-indigo-50 text-indigo-700 border-indigo-100 hover:bg-indigo-100']">
+            {{ eventChipLabel(e) }}
+          </button>
+        </div>
+      </div>
+    </template>
 
     <p class="text-[11px] text-slate-400">
       ไม่ได้ไปโรงเรียน เช่น เป็นวิทยากรหรือประชุมนอกเขต ให้กด "สถานที่อื่น" แล้วพิมพ์ชื่อเอง

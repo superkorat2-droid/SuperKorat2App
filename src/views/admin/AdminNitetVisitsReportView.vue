@@ -21,6 +21,7 @@ import { supabase } from '../../supabase'
 import { useAreaConfig } from '../../composables/useAreaConfig'
 import {
   VISIT_TYPES, typeLabel, visitTypeLabel, placeOf, isPortrait, fmtDateLong, linkKind, LINK_ICON,
+  resultLabels,
 } from '../../composables/useNithetVisits'
 
 const route = useRoute()
@@ -377,11 +378,12 @@ const TH = 'border:1px solid #cbd5e1; padding:6px 8px; background:#f1f5f9; text-
             </tbody>
           </table>
 
+          <!-- หัวข้อตามประเภท (นิเทศ/ประชุม/อบรม/อื่นๆ) — ต้องตรงกับฟอร์มบันทึก -->
           <div v-for="s in [
-                ['สภาพที่พบ', single.summary],
-                ['จุดเด่น', single.strengths],
-                ['จุดที่ควรพัฒนา', single.issues],
-                ['ข้อเสนอแนะ', single.suggestions],
+                [resultLabels(single.visit_type).summary.label, single.summary],
+                [resultLabels(single.visit_type).strengths.label, single.strengths],
+                [resultLabels(single.visit_type).issues.label, single.issues],
+                [resultLabels(single.visit_type).suggestions.label, single.suggestions],
               ]" :key="s[0]" style="margin-top:12px; page-break-inside:avoid;">
             <div style="font-weight:800; font-size:14px; margin-bottom:3px;">{{ s[0] }}</div>
             <div style="font-size:13px; line-height:1.65; white-space:pre-line; border:1px solid #e2e8f0; border-radius:4px; padding:8px 10px; min-height:1.4cm;">{{ s[1] || '—' }}</div>

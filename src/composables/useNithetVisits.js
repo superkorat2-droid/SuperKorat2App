@@ -4,6 +4,7 @@ export const VISIT_TYPES = [
   { value: 'school_visit', label: 'นิเทศโรงเรียน', icon: '🏫', color: 'bg-blue-100 text-blue-700' },
   { value: 'follow_up',    label: 'ติดตามผล',      icon: '🔁', color: 'bg-violet-100 text-violet-700' },
   { value: 'meeting',      label: 'ประชุม',         icon: '👥', color: 'bg-amber-100 text-amber-700' },
+  { value: 'training',     label: 'อบรม/สัมมนา',    icon: '🎓', color: 'bg-cyan-100 text-cyan-700' },
   { value: 'speaker',      label: 'เป็นวิทยากร',    icon: '🎤', color: 'bg-emerald-100 text-emerald-700' },
   { value: 'other',        label: 'อื่นๆ',          icon: '📌', color: 'bg-slate-100 text-slate-600' },
 ]
@@ -34,6 +35,58 @@ export function visitTypeLabel(visit) {
   if (visit?.visit_type === 'other' && visit?.visit_type_other?.trim()) return visit.visit_type_other.trim()
   return typeLabel(visit?.visit_type)
 }
+/**
+ * หัวข้อส่วน "ผล" ของบันทึก เปลี่ยนตามประเภทกิจกรรม — ใช้ 4 คอลัมน์เดิม (summary/strengths/issues/suggestions)
+ * ไม่ได้เปลี่ยนสคีมา บันทึกเก่าประเภทนิเทศโรงเรียน/ติดตามผลได้หัวข้อเดิมทุกตัว
+ * ใช้ที่เดียวกันทั้งฟอร์ม รายงาน A4 และหน้าสาธารณะ ห้ามเขียนหัวข้อซ้ำเองในแต่ละหน้า
+ */
+const RESULT_LABELS = {
+  school_visit: {
+    section: 'ผลการนิเทศ',
+    summary:     { label: 'สภาพที่พบ',      placeholder: 'บรรยายสิ่งที่พบจากการนิเทศ' },
+    strengths:   { label: 'จุดเด่น',         placeholder: 'สิ่งที่โรงเรียนทำได้ดี' },
+    issues:      { label: 'จุดที่ควรพัฒนา',  placeholder: 'สิ่งที่ควรปรับปรุง' },
+    suggestions: { label: 'ข้อเสนอแนะ',     placeholder: 'ข้อเสนอแนะต่อโรงเรียน' },
+  },
+  meeting: {
+    section: 'ผลการประชุม',
+    summary:     { label: 'สาระสำคัญ',                placeholder: 'เรื่องที่ประชุม / ประเด็นหลักที่พูดคุย' },
+    strengths:   { label: 'มติ/ข้อสั่งการ',           placeholder: 'มติที่ประชุม หรือข้อสั่งการที่ได้รับ' },
+    issues:      { label: 'สิ่งที่ต้องดำเนินการต่อ',   placeholder: 'งานที่ต้องทำต่อ / ผู้รับผิดชอบ / กำหนดเวลา' },
+    suggestions: { label: 'ข้อเสนอแนะ',              placeholder: 'ข้อเสนอแนะเพิ่มเติม' },
+  },
+  training: {
+    section: 'ผลการอบรม',
+    summary:     { label: 'เนื้อหา/กิจกรรม',          placeholder: 'หัวข้อ เนื้อหา และกิจกรรมของการอบรม' },
+    strengths:   { label: 'ผลที่ได้รับ',               placeholder: 'ความรู้/ทักษะ/ผลผลิตที่ได้' },
+    issues:      { label: 'ปัญหา/อุปสรรค',            placeholder: 'ปัญหาหรืออุปสรรคที่พบ' },
+    suggestions: { label: 'การนำไปใช้/ข้อเสนอแนะ',    placeholder: 'แนวทางนำไปใช้ในงาน / ข้อเสนอแนะ' },
+  },
+  other: {
+    section: 'ผลการดำเนินงาน',
+    summary:     { label: 'รายละเอียด',      placeholder: 'บรรยายสิ่งที่ดำเนินการ' },
+    strengths:   { label: 'ผลที่ได้รับ',      placeholder: 'ผลที่เกิดขึ้น' },
+    issues:      { label: 'ปัญหา/อุปสรรค',   placeholder: 'ปัญหาหรืออุปสรรคที่พบ' },
+    suggestions: { label: 'ข้อเสนอแนะ',      placeholder: 'ข้อเสนอแนะ' },
+  },
+}
+const RESULT_LABEL_GROUP = {
+  school_visit: 'school_visit', follow_up: 'school_visit',
+  meeting: 'meeting', training: 'training', speaker: 'training', other: 'other',
+}
+/** ตัวอย่าง: resultLabels('meeting').summary.label → 'สาระสำคัญ' */
+export function resultLabels(visitType) {
+  return RESULT_LABELS[RESULT_LABEL_GROUP[visitType] || 'school_visit']
+}
+
+/**
+ * ประเภทนัดในปฏิทิน (nithet_events.type) → ประเภทบันทึก (nithet_visits.visit_type)
+ * ปฏิทินมี school_visit/meeting/training/other ซึ่งตรงกับบันทึกทุกตัวแล้วตั้งแต่ migration 90
+ */
+export function visitTypeFromEvent(eventType) {
+  return ['school_visit', 'meeting', 'training', 'other'].includes(eventType) ? eventType : 'other'
+}
+
 export function statusMeta(v) { return VISIT_STATUS[v] || VISIT_STATUS.draft }
 export function followupMeta(v) { return FOLLOWUP_STATUS[v] || FOLLOWUP_STATUS.none }
 
