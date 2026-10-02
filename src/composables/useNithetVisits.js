@@ -75,12 +75,12 @@ const RESULT_LABELS = {
     suggestions: { label: 'การนำไปใช้/ข้อเสนอแนะ',    placeholder: 'แนวทางนำไปใช้ในงาน / ข้อเสนอแนะ' },
   },
   other: {
-    section: 'ผลการดำเนินงาน',
+    section: 'รายละเอียดกิจกรรม',   // ศน. ขอ (2 ต.ค. 69) — แทน "ผลการดำเนินงาน"
     topic: 'เรื่อง/กิจกรรม',       topicPlaceholder: 'เช่น ร่วมกิจกรรมวันวิชาการของโรงเรียน',
     actor: 'ผู้ปฏิบัติงาน',        co: 'ผู้ร่วมปฏิบัติงาน',
     receiver: 'ผู้เกี่ยวข้อง',       date: 'วันที่ปฏิบัติงาน',
     photos: 'ภาพประกอบ',         reportTitle: 'บันทึกการปฏิบัติงาน',
-    summary:     { label: 'รายละเอียด',      placeholder: 'บรรยายสิ่งที่ดำเนินการ' },
+    summary:     { label: 'สิ่งที่ดำเนินการ', placeholder: 'บรรยายสิ่งที่ดำเนินการ' },
     strengths:   { label: 'ผลที่ได้รับ',      placeholder: 'ผลที่เกิดขึ้น' },
     issues:      { label: 'ปัญหา/อุปสรรค',   placeholder: 'ปัญหาหรืออุปสรรคที่พบ' },
     suggestions: { label: 'ข้อเสนอแนะ',      placeholder: 'ข้อเสนอแนะ' },
