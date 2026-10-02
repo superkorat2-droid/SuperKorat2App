@@ -62,6 +62,7 @@ const schoolGroups = computed(() => [...new Set(schools.value.map(s => s.school_
 const filteredSchools = computed(() => {
   const q = schoolFilterSearch.value.trim().toLowerCase()
   return schools.value.filter(s =>
+    (s.is_active !== false || (form.value.school_ids || []).includes(s.id)) &&
     (schoolFilterDistrict.value === 'all' || s.district === schoolFilterDistrict.value) &&
     (schoolFilterGroup.value    === 'all' || s.school_group === schoolFilterGroup.value) &&
     (!q || s.name.toLowerCase().includes(q))
@@ -264,7 +265,7 @@ onMounted(async () => {
     const { data: p } = await supabase.from('profiles').select('role, can_manage_nithet_plan').eq('id', user.id).single()
     currentProfile.value = p
   }
-  const { data: sc } = await supabase.from('schools').select('id, name, district, school_group').order('district').order('name')
+  const { data: sc } = await supabase.from('schools').select('id, name, district, school_group, is_active').order('district').order('name')
   schools.value = sc || []
   const { data: pp } = await supabase.from('profiles')
     .select('id, title, first_name, last_name, full_name, role')

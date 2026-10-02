@@ -110,7 +110,7 @@ async function loadForm() {
   })
 
   const { data: sc } = await supabase
-    .from('schools').select('id, name, district').order('district').order('name')
+    .from('schools').select('id, name, district').eq('is_active', true).order('district').order('name')
   schools.value = sc || []
 
   if (form.value.show_responsible && form.value.responsible_ids?.length) {

@@ -32,7 +32,7 @@ async function load() {
       .select('*, supervision_answers(*)')
       .eq('form_id', formId.value)
       .eq('is_complete', true),
-    supabase.from('schools').select('id, name, district, school_group').order('district').order('name'),
+    supabase.from('schools').select('id, name, district, school_group, is_active').order('district').order('name'),
   ])
 
   form.value      = formData
@@ -66,11 +66,16 @@ onUnmounted(() => {
 })
 
 // ─── Stats ────────────────────────────────────────────────────────────────────
-const totalSchools = computed(() => {
-  if (!form.value) return 0
-  if (form.value.target === 'all') return allSchools.value.length
-  return form.value.target_schools?.length || 0
+// โรงที่ปิด/ยุบแล้วไม่นับเป็นเป้าหมาย ยกเว้นตอบไว้ก่อนปิด (ไม่ให้ร้อยละเกิน 100)
+const targetSchools = computed(() => {
+  if (!form.value) return []
+  const list = form.value.target === 'all'
+    ? allSchools.value
+    : allSchools.value.filter(s => form.value.target_schools?.includes(s.id))
+  return list.filter(s => s.is_active !== false || respondedIds.value.has(s.id))
 })
+
+const totalSchools = computed(() => targetSchools.value.length)
 
 const responseCount = computed(() => responses.value.length)
 const pct           = computed(() =>
@@ -79,12 +84,7 @@ const pct           = computed(() =>
 
 const respondedIds = computed(() => new Set(responses.value.map(r => r.school_id)))
 
-const pendingSchools = computed(() => {
-  const targets = form.value?.target === 'all'
-    ? allSchools.value
-    : allSchools.value.filter(s => form.value?.target_schools?.includes(s.id))
-  return targets.filter(s => !respondedIds.value.has(s.id))
-})
+const pendingSchools = computed(() => targetSchools.value.filter(s => !respondedIds.value.has(s.id)))
 
 // ─── Per-question aggregation ─────────────────────────────────────────────────
 function getAnswerObjects(q) {

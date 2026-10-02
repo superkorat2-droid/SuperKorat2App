@@ -47,7 +47,7 @@ function groupLabel(key) { return personnelGroups.value.find(g => g.key === key)
 async function load() {
   const [{ data: vs }, { data: sc }] = await Promise.all([
     supabase.from('nithet_visits').select('*').order('visit_date', { ascending: false }),
-    supabase.from('schools').select('id, name, district, school_group').order('name'),
+    supabase.from('schools').select('id, name, district, school_group, is_active').order('name'),
   ])
   rows.value = vs || []
   schools.value = sc || []
@@ -100,10 +100,13 @@ const stats = computed(() => {
 // ── ความครอบคลุม ───────────────────────────────────────────
 const visitedIds = computed(() => new Set(items.value.filter(r => r.school_id).map(r => r.school_id)))
 
+// ฐานความครอบคลุม = โรงที่ยังเปิดอยู่ + โรงที่ปิดแล้วแต่ถูกนิเทศในปีที่เลือก
+const coverSchools = computed(() => schools.value.filter(s => s.is_active !== false || visitedIds.value.has(s.id)))
+
 const coverage = computed(() => {
   const key = coverBy.value
   const m = new Map()
-  for (const s of schools.value) {
+  for (const s of coverSchools.value) {
     const g = s[key] || 'ไม่ระบุ'
     if (!m.has(g)) m.set(g, [])
     m.get(g).push(s)
@@ -123,8 +126,8 @@ const coverage = computed(() => {
 
 const coverTotal = computed(() => ({
   done: visitedIds.value.size,
-  total: schools.value.length,
-  pct: schools.value.length ? Math.round(visitedIds.value.size / schools.value.length * 100) : 0,
+  total: coverSchools.value.length,
+  pct: coverSchools.value.length ? Math.round(visitedIds.value.size / coverSchools.value.length * 100) : 0,
 }))
 
 // ── แนวโน้มรายเดือน (เรียงตามปีการศึกษา พ.ค. → เม.ย.) ──────

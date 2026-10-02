@@ -23,17 +23,20 @@ const mode = ref(props.placeName && !props.schoolId ? 'place' : 'school')
 onMounted(async () => {
   const { data } = await supabase
     .from('schools')
-    .select('id, name, district, school_group')
+    .select('id, name, district, school_group, is_active')
     .order('name')
   schools.value = data || []
 })
 
+// โหลดทุกโรงไว้ เพื่อให้บันทึกเก่าที่ผูกกับโรงที่ปิด/ยุบแล้วยังแสดงชื่อได้
+// แต่ตอนค้นหาเลือกใหม่ให้เห็นเฉพาะโรงที่ยังเปิดอยู่
 const selected = computed(() => schools.value.find(s => s.id === props.schoolId) || null)
+const activeSchools = computed(() => schools.value.filter(s => s.is_active !== false))
 
 const matches = computed(() => {
   const s = q.value.trim().toLowerCase()
-  if (!s) return schools.value.slice(0, 12)
-  return schools.value.filter(x => x.name.toLowerCase().includes(s)).slice(0, 20)
+  if (!s) return activeSchools.value.slice(0, 12)
+  return activeSchools.value.filter(x => x.name.toLowerCase().includes(s)).slice(0, 20)
 })
 
 function pick(s) {

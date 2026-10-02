@@ -136,7 +136,7 @@ async function loadForm() {
 
   // individual mode: โหลด school list สำหรับ dropdown
   if (formData.respondent_type === 'individual') {
-    const { data: sc } = await supabase.from('schools').select('id, name, district').order('district').order('name')
+    const { data: sc } = await supabase.from('schools').select('id, name, district').eq('is_active', true).order('district').order('name')
     schools.value = sc || []
   }
 

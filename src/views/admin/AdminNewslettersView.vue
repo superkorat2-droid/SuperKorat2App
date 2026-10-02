@@ -31,6 +31,8 @@ const emptyForm = () => ({
   is_published: false,
 })
 const form = ref(emptyForm())
+// ตัวเลือกโรงเรียน: เฉพาะโรงที่เปิดอยู่ + โรงที่รายการนี้ผูกไว้เดิม (กันชื่อหายตอนแก้ของเก่า)
+const pickableSchools = computed(() => schools.value.filter(s => s.is_active !== false || s.id === form.value.school_id))
 
 // ── Extract Drive file ID ──────────────────────────────────────────────────────
 
@@ -54,7 +56,7 @@ async function load() {
   const [{ data: n }, { data: sc }] = await Promise.all([
     supabase.from('newsletters').select('*, schools(name, district)')
       .order('year', { ascending: false }).order('month', { ascending: false }),
-    supabase.from('schools').select('id, name, district').order('district').order('name'),
+    supabase.from('schools').select('id, name, district, is_active').order('district').order('name'),
   ])
   items.value   = n || []
   schools.value = sc || []
@@ -293,8 +295,8 @@ function catLabel(c)  { return CATEGORIES.find(x=>x.value===c)?.label || c }
                 <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">โรงเรียน</label>
                 <select v-model="form.school_id" class="w-full px-3 py-2.5 border border-white/80 bg-white/70 backdrop-blur rounded-xl text-sm focus:outline-none focus:border-primary">
                   <option value="">สพป. (ทั้งเขต)</option>
-                  <optgroup v-for="d in [...new Set(schools.map(s=>s.district))].sort()" :key="d" :label="`อ.${d}`">
-                    <option v-for="s in schools.filter(x=>x.district===d)" :key="s.id" :value="s.id">{{ s.name }}</option>
+                  <optgroup v-for="d in [...new Set(pickableSchools.map(s=>s.district))].sort()" :key="d" :label="`อ.${d}`">
+                    <option v-for="s in pickableSchools.filter(x=>x.district===d)" :key="s.id" :value="s.id">{{ s.name }}</option>
                   </optgroup>
                 </select>
               </div>

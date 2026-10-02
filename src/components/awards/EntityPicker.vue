@@ -57,6 +57,7 @@ async function search() {
   if (props.kind === 'school') {
     const { data } = await supabase.from('schools')
       .select('id, name, school_group, district')
+      .eq('is_active', true)
       .ilike('name', `%${q}%`).order('name').limit(8)
     results.value = (data || []).map(s => ({
       id: s.id, kind: 'school', label: s.name,

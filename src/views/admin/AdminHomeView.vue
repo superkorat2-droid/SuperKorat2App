@@ -89,7 +89,7 @@ onMounted(async () => {
   ] = await Promise.all([
     supabase.from('profiles').select('*', { count: 'exact', head: true }),
     supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('is_approved', false).eq('role', 'teacher'),
-    supabase.from('schools').select('*', { count: 'exact', head: true }),
+    supabase.from('schools').select('*', { count: 'exact', head: true }).eq('is_active', true),
     supabase.from('news').select('*', { count: 'exact', head: true }),
     supabase.from('works').select('*', { count: 'exact', head: true }),
     supabase.from('documents').select('*', { count: 'exact', head: true }),

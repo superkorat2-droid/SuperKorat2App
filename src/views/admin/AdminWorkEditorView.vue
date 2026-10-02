@@ -73,6 +73,8 @@ const form = ref({
   subject_group: '', grade_levels: [], academic_year: '', tags: '',
   file_url: '', cover_url: '', school_id: '', school_name: '',
 })
+// ตัวเลือกโรงเรียน: เฉพาะโรงที่เปิดอยู่ + โรงที่รายการนี้ผูกไว้เดิม (กันชื่อหายตอนแก้ของเก่า)
+const pickableSchools = computed(() => schools.value.filter(s => s.is_active !== false || s.id === form.value.school_id))
 
 const autoApprove = computed(() => AUTO_APPROVE_ROLES.includes(myRole.value))
 
@@ -84,7 +86,7 @@ onMounted(async () => {
     form.value.owner_type = ownerTypeFromRole(p?.role)
     if (p?.school_id) form.value.school_id = p.school_id
   }
-  const { data: sc } = await supabase.from('schools').select('id, name, district').order('district').order('name')
+  const { data: sc } = await supabase.from('schools').select('id, name, district, is_active').order('district').order('name')
   schools.value = sc || []
 
   if (!isNew.value) {
@@ -270,8 +272,8 @@ async function save() {
               <label class="text-[11px] font-bold text-slate-500">โรงเรียน (ถ้ามี)</label>
               <select v-model="form.school_id" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:border-primary">
                 <option value="">— ระดับเขต —</option>
-                <optgroup v-for="d in [...new Set(schools.map(s => s.district))].sort()" :key="d" :label="`อ.${d}`">
-                  <option v-for="s in schools.filter(x => x.district === d)" :key="s.id" :value="s.id">{{ s.name }}</option>
+                <optgroup v-for="d in [...new Set(pickableSchools.map(s => s.district))].sort()" :key="d" :label="`อ.${d}`">
+                  <option v-for="s in pickableSchools.filter(x => x.district === d)" :key="s.id" :value="s.id">{{ s.name }}</option>
                 </optgroup>
               </select>
             </div>

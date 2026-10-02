@@ -39,7 +39,7 @@ async function load() {
     supabase.from('school_principals')
       .select('*, schools(name, district, school_group)')
       .order('school_id').order('sort_order'),
-    supabase.from('schools').select('id, name, district, school_group').order('district').order('name'),
+    supabase.from('schools').select('id, name, district, school_group, is_active').order('district').order('name'),
   ])
   principals.value = p || []
   schools.value    = sc || []
@@ -73,12 +73,19 @@ const filtered = computed(() => {
 })
 
 const schoolsWithData = computed(() => new Set(principals.value.map(p => p.school_id)).size)
+// โรงที่ปิด/ยุบแล้วไม่ต้องนับว่า "ยังไม่มีข้อมูล"
+const activeWithoutData = computed(() => {
+  const has = new Set(principals.value.map(p => p.school_id))
+  return schools.value.filter(s => s.is_active !== false && !has.has(s.id)).length
+})
+// ตัวเลือกในฟอร์ม: เฉพาะโรงที่เปิดอยู่ + โรงที่รายการนี้ผูกไว้เดิม
+const pickableSchools = computed(() => schools.value.filter(s => s.is_active !== false || s.id === form.value.school_id))
 
 // ─── Stats ────────────────────────────────────────────────────────────────────
 const stats = computed(() => ({
   total:       filtered.value.length,
   withData:    new Set(filtered.value.map(p => p.school_id)).size,
-  withoutData: schools.value.length - schoolsWithData.value,
+  withoutData: activeWithoutData.value,
 }))
 
 // ─── CRUD ─────────────────────────────────────────────────────────────────────
@@ -351,8 +358,8 @@ function initials(name) {
               <select v-model="form.school_id"
                 class="w-full px-3 py-2.5 border border-white/80 bg-white/70 backdrop-blur rounded-xl text-sm focus:outline-none focus:border-primary">
                 <option value="">-- เลือกโรงเรียน --</option>
-                <optgroup v-for="d in districts" :key="d" :label="`อ.${d}`">
-                  <option v-for="s in schools.filter(sc=>sc.district===d)" :key="s.id" :value="s.id">{{ s.name }}</option>
+                <optgroup v-for="d in [...new Set(pickableSchools.map(s => s.district))].sort()" :key="d" :label="`อ.${d}`">
+                  <option v-for="s in pickableSchools.filter(sc=>sc.district===d)" :key="s.id" :value="s.id">{{ s.name }}</option>
                 </optgroup>
               </select>
             </div>
