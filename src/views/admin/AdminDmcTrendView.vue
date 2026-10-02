@@ -18,7 +18,7 @@ async function load() {
   const [{ data: p }, { data: u }, { data: sc }] = await Promise.all([
     supabase.from('dmc_periods').select('*').order('academic_year').order('semester'),
     supabase.from('dmc_school_uploads').select('period_id, school_id, total, summary'),
-    supabase.from('schools').select('id, school_group'),
+    supabase.from('schools').select('id, school_group, is_active'),
   ])
   periods.value = p || []
   uploads.value = u || []
@@ -39,7 +39,10 @@ function periodLabel(p) { return `${p.title || `${p.academic_year}/${p.semester}
 // ── รวมยอดต่อรอบ (period) — กรองตามศูนย์เครือข่ายถ้าเลือกไว้ ──────────────
 const periodSummaries = computed(() => {
   return periods.value.map(p => {
-    let rows = uploads.value.filter(u => u.period_id === p.id)
+    // โรงที่ปิด/ยุบแล้วยังมีแถวยอด 0 ติดมากับไฟล์ DMC เขต — ไม่นับ เว้นแต่รอบนั้นมีนักเรียนจริง
+    // (กติกาเดียวกับ get_dmc_public_stats ใน migration 89)
+    let rows = uploads.value.filter(u => u.period_id === p.id &&
+      (schoolOf(u.school_id)?.is_active !== false || (u.total || 0) > 0))
     if (filterCluster.value !== 'all') {
       rows = rows.filter(u => schoolOf(u.school_id)?.school_group === filterCluster.value)
     }
