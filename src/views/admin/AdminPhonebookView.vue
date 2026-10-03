@@ -12,7 +12,15 @@ const filterGroup    = ref('all')
 const onlyPhone      = ref(false)
 const copiedId = ref(null)
 
+// แก้เบอร์ได้เฉพาะแอดมิน (ฟังก์ชัน set_principal_phone ใน DB ตรวจซ้ำอีกชั้น) — ศน./เจ้าหน้าที่ ดูและโทรได้อย่างเดียว
+const isAdmin = ref(false)
+
 onMounted(async () => {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (user) {
+    const { data: me } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+    isAdmin.value = ['super_admin', 'admin'].includes(me?.role)
+  }
   const { data } = await supabase
     .from('school_principals')
     .select('id, name, position, phone, visibility, schools!inner(name, district, school_group, is_active)')
@@ -89,7 +97,7 @@ async function copyPhone(r) {
   <div class="space-y-4">
     <div>
       <h1 class="text-xl font-black text-slate-800">สมุดโทรศัพท์ผู้บริหาร</h1>
-      <p class="text-xs text-slate-500 mt-0.5">เฉพาะเจ้าหน้าที่ที่เข้าสู่ระบบ — เบอร์จะไม่แสดงบนหน้าเว็บสาธารณะ ยกเว้นผู้บริหารเลือกเปิดเอง</p>
+      <p class="text-xs text-slate-500 mt-0.5">เฉพาะเจ้าหน้าที่ที่เข้าสู่ระบบ (แก้เบอร์ได้เฉพาะแอดมิน) — เบอร์จะไม่แสดงบนหน้าเว็บสาธารณะ ยกเว้นผู้บริหารเลือกเปิดเอง</p>
     </div>
 
     <div class="glass-card p-3 flex flex-wrap items-center gap-2">
@@ -143,9 +151,9 @@ async function copyPhone(r) {
               class="flex-1 px-2 py-1 rounded-xl bg-slate-100 text-slate-600 text-[11px] font-bold">
               {{ copiedId === r.id ? 'คัดลอกแล้ว' : 'คัดลอก' }}
             </button>
-            <button type="button" @click="startEdit(r)" data-testid="edit-phone"
+            <button v-if="isAdmin" type="button" @click="startEdit(r)" data-testid="edit-phone"
               class="flex-1 px-2 py-1 rounded-xl bg-slate-100 text-slate-600 text-[11px] font-bold">{{ r.phone ? 'แก้' : '+ เพิ่มเบอร์' }}</button>
-            <button v-if="r.phone" type="button" @click="removePhone(r)"
+            <button v-if="isAdmin && r.phone" type="button" @click="removePhone(r)"
               class="px-2 py-1 rounded-xl bg-red-50 text-red-600 text-[11px] font-bold">ลบ</button>
           </div>
         </div>
