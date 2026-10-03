@@ -61,6 +61,8 @@ const SYSTEM_ROUTES = [
   { route: '/school-documents', label: 'หนังสือถึงโรงเรียน' },
   { route: '/url-short',        label: 'ย่อลิงก์' },
   { route: '/qrcode',           label: 'สร้าง QR Code' },
+  // ต้องล็อกอินเป็น ศน./เจ้าหน้าที่/แอดมิน — คนทั่วไปกดแล้วจะถูกพาไปหน้าเข้าสู่ระบบ
+  { route: '/dashboard/phonebook', label: 'สมุดโทรศัพท์ผู้บริหาร (ศน./เจ้าหน้าที่ ต้องล็อกอิน)' },
   { route: '/contact',          label: 'ติดต่อสอบถาม' },
 ]
 
