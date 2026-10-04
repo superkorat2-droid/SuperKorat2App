@@ -50,6 +50,7 @@ const SYSTEM_ROUTES = [
   { route: '/education-news',   label: 'ข่าวการศึกษา' },
   { route: '/newsletters',      label: 'จดหมายข่าว / เอกสารเผยแพร่' },
   { route: '/library',          label: 'คลังหนังสือและคู่มือ' },
+  { route: '/certificates',      label: 'คลังเกียรติบัตร' },
   { route: '/videos',           label: 'วีดิทัศน์การศึกษา' },
   { route: '/nithet-visits',    label: 'บันทึกการนิเทศ' },
   { route: '/media',            label: 'คลังสื่อการเรียนรู้' },
@@ -63,6 +64,22 @@ const SYSTEM_ROUTES = [
   { route: '/qrcode',           label: 'สร้าง QR Code' },
   // ต้องล็อกอินเป็น ศน./เจ้าหน้าที่/แอดมิน — คนทั่วไปกดแล้วจะถูกพาไปหน้าเข้าสู่ระบบ
   { route: '/dashboard/phonebook', label: 'สมุดโทรศัพท์ผู้บริหาร (ศน./เจ้าหน้าที่ ต้องล็อกอิน)' },
+  // ระบบหลังบ้านที่ ศน./เจ้าหน้าที่ใช้ — ต้องล็อกอิน คนทั่วไปกดแล้วถูกพาไปหน้าเข้าสู่ระบบ
+  // (ไม่ใส่หน้าตั้งค่าระบบที่เป็นของแอดมินล้วน เช่น จัดการผู้ใช้ ตั้งค่าเขต)
+  { route: '/dashboard',                label: 'แดชบอร์ดหลังบ้าน (ต้องล็อกอิน)' },
+  { route: '/dashboard/nithet-visits',  label: 'บันทึกการนิเทศ — ศน. กรอก (ต้องล็อกอิน)' },
+  { route: '/dashboard/nithet-calendar', label: 'ปฏิทินนิเทศ (ต้องล็อกอิน)' },
+  { route: '/dashboard/nithet-dashboard', label: 'แดชบอร์ดการนิเทศ (ต้องล็อกอิน)' },
+  { route: '/dashboard/nithet-report',  label: 'รายงานผลการนิเทศ (ต้องล็อกอิน)' },
+  { route: '/dashboard/supervision',    label: 'แบบนิเทศติดตาม (ต้องล็อกอิน)' },
+  { route: '/dashboard/document-tasks', label: 'ระบบธุรการ (ต้องล็อกอิน)' },
+  { route: '/dashboard/awards',         label: 'จัดการผลงานและรางวัล (ต้องล็อกอิน)' },
+  { route: '/dashboard/works',          label: 'จัดการผลงานและนวัตกรรม (ต้องล็อกอิน)' },
+  { route: '/dashboard/library',        label: 'จัดการคลังหนังสือ/คู่มือ (ต้องล็อกอิน)' },
+  { route: '/dashboard/certificates',   label: 'จัดการคลังเกียรติบัตร (ต้องล็อกอิน)' },
+  { route: '/dashboard/newsletters',    label: 'จัดการจดหมายข่าว (ต้องล็อกอิน)' },
+  // พอร์ทัลโรงเรียน
+  { route: '/school/login',             label: 'เข้าสู่ระบบโรงเรียน' },
   { route: '/contact',          label: 'ติดต่อสอบถาม' },
 ]
 
@@ -536,7 +553,7 @@ function goHeaderSettings(p) {
                   class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-primary font-mono"/>
                 <!-- Autocomplete dropdown (system only) -->
                 <div v-if="showRouteList && form.page_type === 'system'"
-                  class="absolute z-50 top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden">
+                  class="absolute z-50 top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-72 overflow-y-auto">
                   <button v-for="r in filteredRoutes" :key="r.route"
                     type="button"
                     @mousedown.prevent="form.system_route = r.route; showRouteList = false"

@@ -31,6 +31,15 @@ const SYSTEM_ROUTES = [
   { route:'/contact',   label:'ติดต่อเรา' },
   // ต้องล็อกอินเป็น ศน./เจ้าหน้าที่/แอดมิน — คนทั่วไปกดแล้วถูกพาไปหน้าเข้าสู่ระบบ
   { route:'/dashboard/phonebook', label:'สมุดโทรศัพท์ผู้บริหาร' },
+  { route:'/certificates', label:'คลังเกียรติบัตร' },
+  { route:'/library',      label:'คลังหนังสือ/คู่มือ' },
+  { route:'/nithet-visits', label:'บันทึกการนิเทศ (สาธารณะ)' },
+  { route:'/school/login', label:'เข้าสู่ระบบโรงเรียน' },
+  // หลังบ้าน — ต้องล็อกอิน
+  { route:'/dashboard/nithet-visits',   label:'บันทึกการนิเทศ (ศน.)' },
+  { route:'/dashboard/nithet-calendar', label:'ปฏิทินนิเทศ' },
+  { route:'/dashboard/supervision',     label:'แบบนิเทศติดตาม' },
+  { route:'/dashboard/document-tasks',  label:'ระบบธุรการ' },
 ]
 
 onMounted(async () => {
