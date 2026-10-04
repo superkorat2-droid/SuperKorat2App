@@ -29,6 +29,8 @@ const SYSTEM_ROUTES = [
   { route:'/url-short', label:'ย่อลิงก์' },
   { route:'/qrcode',    label:'QR Code' },
   { route:'/contact',   label:'ติดต่อเรา' },
+  // ต้องล็อกอินเป็น ศน./เจ้าหน้าที่/แอดมิน — คนทั่วไปกดแล้วถูกพาไปหน้าเข้าสู่ระบบ
+  { route:'/dashboard/phonebook', label:'สมุดโทรศัพท์ผู้บริหาร' },
 ]
 
 onMounted(async () => {
