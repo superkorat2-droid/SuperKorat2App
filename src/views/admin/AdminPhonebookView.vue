@@ -195,8 +195,9 @@ async function copyPhone(r) {
     <div v-if="loading" class="text-center py-16 text-slate-400 text-sm">กำลังโหลด...</div>
     <div v-else-if="!filtered.length" class="glass-card text-center py-16 text-slate-400 text-sm">ไม่พบรายการ</div>
 
-    <div v-else class="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
-      <div v-for="r in filtered" :key="r.id" class="glass-card p-3 flex items-center gap-3" data-testid="phonebook-row">
+    <!-- minmax(0,1fr) จำเป็น: ไม่งั้นคอลัมน์ขยายตามชื่อโรงเรียนที่ truncate (nowrap) จนล้นจอมือถือ ปุ่มโทรโดนตัด -->
+    <div v-else class="grid gap-2 grid-cols-[minmax(0,1fr)] sm:grid-cols-2 xl:grid-cols-3">
+      <div v-for="r in filtered" :key="r.id" class="glass-card p-3 flex items-center gap-3 min-w-0" data-testid="phonebook-row">
         <div class="min-w-0 flex-1">
           <div class="font-bold text-slate-800 text-sm truncate">{{ r.name }}</div>
           <div class="text-xs text-slate-500 truncate">{{ r.position }} · {{ r.school.name }}</div>
@@ -219,7 +220,7 @@ async function copyPhone(r) {
           <!-- ลิงก์ tel: ตรง ๆ (ตัวเลขล้วน) ใช้ได้ทั้ง Android และ iOS — ห้ามใช้ window.open/JS ยิงแทน -->
           <a v-if="r.phone" :href="`tel:${telHref(r.phone)}`"
             class="px-4 py-2 rounded-xl bg-emerald-600 text-white text-sm font-bold text-center active:bg-emerald-700">📞 โทร</a>
-          <div class="flex gap-1">
+          <div class="flex gap-1 whitespace-nowrap">
             <button v-if="r.phone" type="button" @click="copyPhone(r)"
               class="flex-1 px-2 py-1 rounded-xl bg-slate-100 text-slate-600 text-[11px] font-bold">
               {{ copiedId === r.id ? 'คัดลอกแล้ว' : 'คัดลอก' }}
