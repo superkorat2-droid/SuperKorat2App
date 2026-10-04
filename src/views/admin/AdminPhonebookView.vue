@@ -145,7 +145,9 @@ async function copyPhone(r) {
     </div>
 
     <div class="glass-card p-3 flex flex-wrap items-center gap-2">
-      <input v-model="searchQ" type="search" placeholder="ค้นหาชื่อผู้บริหาร / โรงเรียน / เบอร์"
+      <!-- ไม่ใช้ v-model: Vue รอจบ IME composition ก่อนอัปเดต คีย์บอร์ดไทยบนมือถือเลยไม่กรองระหว่างพิมพ์ -->
+      <input :value="searchQ" @input="searchQ = $event.target.value" type="search" enterkeyhint="search" autocomplete="off"
+        placeholder="ค้นหาชื่อผู้บริหาร / โรงเรียน / เบอร์"
         class="flex-1 min-w-[200px] px-3 py-2 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:border-primary"/>
       <select v-model="filterDistrict" @change="onDistrictChange"
         class="px-3 py-2 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:border-primary">
