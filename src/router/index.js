@@ -252,7 +252,8 @@ const routes = [
   // ── โค้ดฝังสำหรับเว็บภายนอก (ไม่มี navbar/footer — ดู isSchoolRoute ใน App.vue) ──
   { path: '/embed/personnel', name: 'embedPersonnel', component: () => import('../views/EmbedPersonnelView.vue') },
   { path: '/student-stats', name: 'studentStats', component: PublicStudentStatsView, meta: { title: 'สถิตินักเรียน' } },
-  { path: '/nt-scores',     name: 'ntScores',     component: PublicNtScoresView,     meta: { title: 'ผลคะแนน NT' } },
+  // ผลคะแนน RT/NT/O-NET เห็นได้เฉพาะ ศน./เจ้าหน้าที่ที่ล็อกอิน (ผู้รับผิดชอบไม่ยินยอมให้เปิดสาธารณะ) — migration 0096 ล็อกฝั่งฐานข้อมูลอีกชั้น
+  { path: '/nt-scores',     name: 'ntScores',     component: PublicNtScoresView,     meta: { title: 'ผลคะแนน NT', requiresAuth: true } },
 
   // ── Dynamic CMS pages ────────────────────────────────────────────────
   // /page/org แทนที่ด้วยผังโครงสร้างที่ดึงข้อมูลจริง (ต้องมาก่อน /page/:slug ทั่วไป)

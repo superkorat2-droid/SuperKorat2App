@@ -11,9 +11,16 @@ const { config } = useAreaConfig()
 const header = usePageHeader('ntScores', { icon: 'students', title: 'ผลคะแนน NT', align: 'center' })
 
 const loading = ref(true)
+const notStaff = ref(false)   // ล็อกอินแล้วแต่ไม่ใช่ ศน./เจ้าหน้าที่ (เช่น บัญชีโรงเรียน) — ฐานข้อมูลก็ไม่ส่งข้อมูลให้
 const periods = ref([]) // ทุกรอบที่ show_public=true จาก get_nt_public_trend() — [{id, exam_type, grade_level, academic_year, title, subjects, scores:[...]}]
 
 onMounted(async () => {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (user) {
+    const { data: me } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+    notStaff.value = !['super_admin', 'admin', 'supervisor', 'staff'].includes(me?.role)
+  }
+  if (notStaff.value) { loading.value = false; return }
   const { data, error } = await supabase.rpc('get_nt_public_trend')
   periods.value = error ? [] : (data || [])
   // เลือกแท็บแรกที่มีข้อมูลจริงตามลำดับ RT→NT→O-NET ไว้ก่อน ถ้าไม่มีเลยค่อย fallback ไปแท็บแรกสุด
@@ -165,6 +172,12 @@ const hoveredPoint = ref(null)
       :align="header.align" max-width="5xl"/>
 
     <div v-if="loading" class="flex justify-center py-24"><div class="w-10 h-10 border-4 border-primary/30 border-t-primary rounded-full animate-spin"/></div>
+
+    <div v-else-if="notStaff" class="max-w-xl mx-auto px-4 py-20 text-center">
+      <span class="block text-5xl mb-4">🔒</span>
+      <p class="font-extrabold text-slate-700 text-lg">ผลคะแนนนี้ดูได้เฉพาะศึกษานิเทศก์และเจ้าหน้าที่</p>
+      <p class="text-sm text-slate-400 mt-2">บัญชีนี้ไม่มีสิทธิ์เข้าถึงข้อมูลผลคะแนน RT / NT / O-NET</p>
+    </div>
 
     <div v-else class="max-w-5xl mx-auto px-4 py-8 space-y-8">
       <!-- แท็บประเภทสอบ+ชั้น — การ์ดเต็มความกว้าง 3 คอลัมน์ (มือถือคอลัมน์เดียว) -->

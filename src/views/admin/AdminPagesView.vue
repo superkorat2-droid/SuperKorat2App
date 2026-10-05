@@ -43,7 +43,7 @@ const SYSTEM_ROUTES = [
   { route: '/principals',       label: 'ทำเนียบผู้บริหารสถานศึกษา' },
   { route: '/schoolweb',        label: 'เว็บไซต์โรงเรียนในสังกัด' },
   { route: '/student-stats',    label: 'สารสนเทศนักเรียน' },
-  { route: '/nt-scores',        label: 'ผลคะแนน NT' },
+  { route: '/nt-scores',        label: 'ผลคะแนน RT/NT/O-NET (ศน./เจ้าหน้าที่ ต้องล็อกอิน)' },
   { route: '/school',           label: 'Portal โรงเรียน' },
   // ข่าวสารและการเผยแพร่
   { route: '/news',             label: 'ข่าวสาร' },

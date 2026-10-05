@@ -211,6 +211,8 @@ const dmcStatsTotals = computed(() => {
 // กราฟทีเซอร์ + ลิงก์ไปหน้าสาธารณะเต็ม /nt-scores (เปิดเผยแล้ว 28 ก.ย. 69 — ผู้รับผิดชอบ NT อนุมัติ)
 // ใช้ RPC เดียวกับหน้านั้น (get_nt_public_trend คืนราย-โรงเรียนของทุกรอบที่ show_public=true)
 // ทีเซอร์นี้คำนวณค่าเฉลี่ยรวมเองจากราย-โรงเรียน ไม่กรองอะไร รายละเอียด/ตัวกรองเต็มอยู่ที่หน้านั้น
+// กราฟคะแนน RT/NT/O-NET ให้เห็นเฉพาะ ศน./เจ้าหน้าที่ที่ล็อกอิน (ผู้รับผิดชอบไม่ยินยอมให้เปิดสาธารณะ)
+const isStaffUser    = ref(false)
 const ntTrend        = ref([])
 const loadingNtTrend = ref(false)
 const needsNtScoresSection = computed(() =>
@@ -473,13 +475,17 @@ onMounted(async () => {
   await fetchConfig()
   const { data: { session: s } } = await supabase.auth.getSession()
   userSession.value = s
+  if (s) {
+    const { data: me } = await supabase.from('profiles').select('role').eq('id', s.user.id).single()
+    isStaffUser.value = ['super_admin', 'admin', 'supervisor', 'staff'].includes(me?.role)
+  }
   await Promise.all([fetchBanners(), fetchLatestNews()])
   scheduleNextSlide()
   if (needsSupervisionSection.value) fetchSupervisionForms()
   if (needsEduNewsSection.value) fetchEduNews()
   if (needsNithetCalendarSection.value) fetchNithetEvents()
   if (needsDmcStatsSection.value) fetchDmcStats()
-  if (needsNtScoresSection.value) fetchNtTrend()
+  if (needsNtScoresSection.value && isStaffUser.value) fetchNtTrend()
   newsletterSections.value.forEach(fetchNewsletterFeed)
   librarySections.value.forEach(fetchLibraryFeed)
   videoSections.value.forEach(fetchVideoFeed)
@@ -1274,7 +1280,7 @@ const stats = [
         </section>
 
         <!-- ══ NT SCORES (แนวโน้มผลคะแนน NT/RT/O-NET — 1 การ์ดต่อประเภทสอบ+ชั้น) ══ -->
-        <section v-else-if="sec.key === 'nt_scores'" :style="getBgStyle(sec)" :class="secBgClass(sec)" class="py-8 md:py-12">
+        <section v-else-if="sec.key === 'nt_scores' && isStaffUser" :style="getBgStyle(sec)" :class="secBgClass(sec)" class="py-8 md:py-12">
           <BgLayers :cfg="sec"/>
           <div class="relative max-w-5xl mx-auto px-4">
             <div class="text-center mb-8">
