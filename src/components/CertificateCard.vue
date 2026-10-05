@@ -26,7 +26,7 @@ function onOpen() {
 
 <template>
   <a :href="item.link_url" target="_blank" rel="noopener" @click="onOpen"
-    class="glass-card glass-card-hover overflow-hidden text-left group block min-w-0">
+    class="glass-card glass-card-hover overflow-hidden text-left group flex flex-col w-full min-w-0">
     <div class="relative aspect-[4/3] bg-slate-900 overflow-hidden">
       <img v-if="!failed && certCoverSrc(item)" :src="certCoverSrc(item)" :alt="item.title"
         :class="['w-full h-full object-cover group-hover:scale-105 transition-transform duration-300',
@@ -41,15 +41,16 @@ function onOpen() {
       </span>
     </div>
 
-    <div class="p-4 space-y-2">
+    <!-- flex-1 + mt-auto ที่แถบล่าง: ผู้รับผิดชอบ/วันที่/ยอดดูชิดล่างเสมอ ไม่ลอยตามความยาวของเนื้อหาด้านบน -->
+    <div class="p-4 gap-2 flex-1 flex flex-col">
       <span v-if="groupLabel && item.group_key"
-        class="inline-block text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-primary/10 text-primary">
+        class="self-start inline-block text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-primary/10 text-primary">
         {{ groupLabel(item.group_key) }}
       </span>
       <h3 class="text-base font-bold text-slate-700 leading-snug line-clamp-2 group-hover:text-primary transition-colors">
         {{ item.title }}
       </h3>
-      <div class="flex items-center gap-2 text-xs text-slate-400">
+      <div class="flex items-center gap-2 text-xs text-slate-400 mt-auto pt-1">
         <span class="truncate">{{ item.responsible_names || '' }}</span>
         <span v-if="item.cert_date" class="flex-shrink-0">{{ fmtDate(item.cert_date) }}</span>
         <span class="ml-auto flex-shrink-0">👁 {{ item.open_count || 0 }}</span>

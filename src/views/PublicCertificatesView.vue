@@ -119,8 +119,9 @@ function resetFilter() { searchQ.value = ''; filterGroup.value = 'all' }
         <!-- flex + justify-center: แถวที่ไม่เต็ม (เช่น มีแค่ 1-3 ใบ หรือแถวสุดท้าย) จัดกึ่งกลาง ไม่ชิดซ้าย
              ความกว้างคำนวณให้เท่ากริด 1/2/4 คอลัมน์ (gap-5 = 1.25rem) การ์ดจึงขนาดเท่ากันทุกใบ -->
         <div ref="gridRef" class="flex flex-wrap justify-center gap-5 scroll-mt-28">
+          <!-- flex: ให้การ์ดยืดเต็มความสูงแถว (ใบที่ไม่มีป้ายกลุ่มงานจะได้ไม่เตี้ยกว่าเพื่อน) -->
           <div v-for="c in paginated" :key="c.id"
-            class="w-full sm:w-[calc(50%-0.625rem)] lg:w-[calc(25%-0.9375rem)]">
+            class="flex w-full sm:w-[calc(50%-0.625rem)] lg:w-[calc(25%-0.9375rem)]">
             <CertificateCard :item="c" :group-label="groupLabel"/>
           </div>
         </div>
