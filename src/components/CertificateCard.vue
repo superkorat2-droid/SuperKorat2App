@@ -26,24 +26,30 @@ function onOpen() {
 
 <template>
   <a :href="item.link_url" target="_blank" rel="noopener" @click="onOpen"
-    class="glass-card glass-card-hover overflow-hidden text-left group block">
+    class="glass-card glass-card-hover overflow-hidden text-left group block min-w-0">
     <div class="relative aspect-[4/3] bg-slate-900 overflow-hidden">
       <img v-if="!failed && certCoverSrc(item)" :src="certCoverSrc(item)" :alt="item.title"
         :class="['w-full h-full object-cover group-hover:scale-105 transition-transform duration-300',
                  item.cover_source === 'drive' ? 'object-top' : 'object-center']"
         loading="lazy" @error="failed = true"/>
       <div v-else class="w-full h-full flex items-center justify-center text-white/40 text-3xl">📜</div>
+
+      <span v-if="item.is_pinned"
+        class="absolute top-2.5 left-2.5 inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-400 text-amber-950 text-[11px] font-extrabold shadow-md">
+        <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M16 12V4h1a1 1 0 000-2H7a1 1 0 000 2h1v8l-2 2v2h5v5l1 1 1-1v-5h5v-2l-2-2z"/></svg>
+        ปักหมุด
+      </span>
     </div>
 
-    <div class="p-3 space-y-1.5">
+    <div class="p-4 space-y-2">
       <span v-if="groupLabel && item.group_key"
-        class="inline-block text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary/10 text-primary">
+        class="inline-block text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-primary/10 text-primary">
         {{ groupLabel(item.group_key) }}
       </span>
-      <h3 class="text-sm font-bold text-slate-700 leading-snug line-clamp-2 group-hover:text-primary transition-colors">
+      <h3 class="text-base font-bold text-slate-700 leading-snug line-clamp-2 group-hover:text-primary transition-colors">
         {{ item.title }}
       </h3>
-      <div class="flex items-center gap-2 text-[11px] text-slate-400">
+      <div class="flex items-center gap-2 text-xs text-slate-400">
         <span class="truncate">{{ item.responsible_names || '' }}</span>
         <span v-if="item.cert_date" class="flex-shrink-0">{{ fmtDate(item.cert_date) }}</span>
         <span class="ml-auto flex-shrink-0">👁 {{ item.open_count || 0 }}</span>

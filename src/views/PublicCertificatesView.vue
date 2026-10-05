@@ -6,7 +6,7 @@
  * คลิกการ์ดเปิดลิงก์เกียรติบัตรจริงในแท็บใหม่ทันที ไม่มีหน้ารายละเอียด
  * เพราะเนื้อหาจริงอยู่ปลายทาง (Google Apps Script / Drive) อยู่แล้ว
  */
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, watch, nextTick, onMounted } from 'vue'
 import { supabase } from '../supabase'
 import { useAreaConfig } from '../composables/useAreaConfig'
 import { usePageHeader } from '../composables/usePageHeader'
@@ -25,6 +25,11 @@ const loading = ref(true)
 
 const searchQ     = ref('')
 const filterGroup = ref('all')
+
+// แบ่งหน้าแบบเดียวกับหน้าข่าวสาร: 12 ใบ/หน้า (4 คอลัมน์ x 3 แถว)
+const page      = ref(1)
+const PAGE_SIZE = 12
+const gridRef   = ref(null)
 
 onMounted(async () => {
   await fetchConfig()
@@ -52,8 +57,22 @@ const filtered = computed(() => {
       (i.title || '').toLowerCase().includes(q) ||
       (i.responsible_names || '').toLowerCase().includes(q))
   }
-  return list
+  // ปักหมุดขึ้นก่อน — sort ของ JS เสถียร ลำดับวันที่เดิมในแต่ละกลุ่มจึงไม่เปลี่ยน
+  return [...list].sort((a, b) => (b.is_pinned ? 1 : 0) - (a.is_pinned ? 1 : 0))
 })
+
+watch([searchQ, filterGroup], () => { page.value = 1 })
+
+const totalPages = computed(() => Math.max(1, Math.ceil(filtered.value.length / PAGE_SIZE)))
+const paginated  = computed(() => filtered.value.slice((page.value - 1) * PAGE_SIZE, page.value * PAGE_SIZE))
+
+// กดเลขหน้าแล้วเลื่อนมาที่แถวการ์ด ไม่ต้องไถผ่าน Hero ทุกครั้ง (เปลี่ยนจากการค้นหา/กรองไม่เลื่อน)
+async function goPage(n) {
+  if (n < 1 || n > totalPages.value || n === page.value) return
+  page.value = n
+  await nextTick()
+  gridRef.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
 
 const isFiltered = computed(() => searchQ.value.trim() || filterGroup.value !== 'all')
 
@@ -96,11 +115,28 @@ function resetFilter() { searchQ.value = ''; filterGroup.value = 'all' }
         <span class="block text-4xl mb-3 opacity-40">📜</span>
         <span class="block font-bold">ยังไม่มีเกียรติบัตร</span>
       </div>
-      <div v-else class="flex flex-wrap gap-4">
-        <div v-for="c in filtered" :key="c.id" class="w-[calc(50%-0.5rem)] sm:w-[calc(33.333%-0.75rem)] md:w-[calc(25%-0.75rem)] lg:w-[calc(16.666%-0.85rem)]">
-          <CertificateCard :item="c" :group-label="groupLabel"/>
+      <template v-else>
+        <div ref="gridRef" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 scroll-mt-28">
+          <CertificateCard v-for="c in paginated" :key="c.id" :item="c" :group-label="groupLabel"/>
         </div>
-      </div>
+
+        <!-- เลขหน้า (รูปแบบเดียวกับหน้าข่าวสาร) -->
+        <div v-if="totalPages > 1" class="flex items-center justify-center gap-2 pt-4">
+          <button @click="goPage(page - 1)" :disabled="page === 1" type="button" aria-label="หน้าก่อนหน้า"
+            class="w-9 h-9 flex items-center justify-center rounded-xl border border-white/80 bg-white/60 backdrop-blur text-slate-500 hover:bg-primary hover:text-white hover:border-primary transition-all disabled:opacity-30">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+          </button>
+          <button v-for="n in totalPages" :key="n" @click="goPage(n)" type="button"
+            :class="['w-9 h-9 rounded-xl text-sm font-bold border transition-all',
+              page === n ? 'bg-primary text-white border-primary shadow-md' : 'border-white/80 bg-white/60 backdrop-blur text-slate-600 hover:border-primary/40']">
+            {{ n }}
+          </button>
+          <button @click="goPage(page + 1)" :disabled="page === totalPages" type="button" aria-label="หน้าถัดไป"
+            class="w-9 h-9 flex items-center justify-center rounded-xl border border-white/80 bg-white/60 backdrop-blur text-slate-500 hover:bg-primary hover:text-white hover:border-primary transition-all disabled:opacity-30">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+          </button>
+        </div>
+      </template>
 
       <span class="block text-center text-xs text-slate-300 pb-6">{{ config?.area_name }}</span>
     </div>

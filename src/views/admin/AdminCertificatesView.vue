@@ -40,7 +40,7 @@ const emptyForm = () => ({
   id: null, title: '', group_key: '', responsible_ids: [],
   cert_date: '', link_url: '',
   cover_source: 'upload', cover_url: '', cover_drive_id: '',
-  is_published: true,
+  is_published: true, is_pinned: false,
 })
 const form = ref(emptyForm())
 const driveCoverInput = ref('')   // ช่องพิมพ์ลิงก์แชร์ปก — เก็บ id ล้วนไว้ที่ form.cover_drive_id
@@ -61,6 +61,7 @@ async function load() {
   }
   const { data } = await supabase
     .from('certificates').select('*')
+    .order('is_pinned', { ascending: false })
     .order('cert_date', { ascending: false, nullsFirst: false })
     .order('created_at', { ascending: false })
   items.value = data || []
@@ -174,6 +175,7 @@ async function save() {
     cover_url: form.value.cover_source === 'upload' ? (form.value.cover_url || null) : null,
     cover_drive_id: form.value.cover_source === 'drive' ? (form.value.cover_drive_id || null) : null,
     is_published: form.value.is_published,
+    is_pinned: !!form.value.is_pinned,
   }
 
   let error
@@ -204,6 +206,13 @@ async function del(it) {
   if (it.cover_url) gc.trackReplaced(it.cover_url)
   await load()
   await gc.commit(items.value.map(i => i.cover_url).filter(Boolean))
+}
+
+async function togglePin(it) {
+  if (!canEdit(it)) return
+  const { error } = await supabase.from('certificates').update({ is_pinned: !it.is_pinned }).eq('id', it.id)
+  if (error) { Swal.fire({ icon: 'error', title: 'ปักหมุดไม่สำเร็จ', text: error.message }); return }
+  await load()
 }
 
 async function togglePublish(it) {
@@ -279,6 +288,12 @@ async function togglePublish(it) {
                 :class="['text-[10px] font-bold px-2 py-1 rounded-full transition-colors disabled:cursor-not-allowed',
                   it.is_published ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500']">
                 {{ it.is_published ? 'เผยแพร่' : 'ฉบับร่าง' }}
+              </button>
+              <button @click="togglePin(it)" type="button" :disabled="!canEdit(it)"
+                :title="it.is_pinned ? 'ยกเลิกปักหมุด' : 'ปักหมุดให้แสดงก่อน'"
+                :class="['ml-1.5 text-[10px] font-bold px-2 py-1 rounded-full transition-colors disabled:cursor-not-allowed',
+                  it.is_pinned ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-400 hover:text-amber-600']">
+                {{ it.is_pinned ? '📌 ปักหมุด' : 'ปักหมุด' }}
               </button>
             </td>
             <td class="px-4 py-2.5 text-right whitespace-nowrap">
@@ -393,6 +408,10 @@ async function togglePublish(it) {
               <label class="flex items-center gap-2 text-sm text-slate-600 cursor-pointer select-none">
                 <input type="checkbox" v-model="form.is_published" class="w-4 h-4 rounded accent-[var(--color-primary)]"/>
                 เผยแพร่บนหน้าเว็บสาธารณะ
+              </label>
+              <label class="flex items-center gap-2 text-sm text-slate-600 cursor-pointer select-none">
+                <input type="checkbox" v-model="form.is_pinned" class="w-4 h-4 rounded accent-amber-500"/>
+                ปักหมุด — แสดงก่อนเกียรติบัตรอื่นในหน้าสาธารณะ
               </label>
             </div>
 
