@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, onMounted, nextTick } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { supabase } from '../supabase'
 import { useAreaConfig } from '../composables/useAreaConfig'
 import { usePageHeader } from '../composables/usePageHeader'
@@ -28,8 +29,43 @@ const loadingTrend = ref(true)
 // โดยผู้ใช้ไม่ต้องกดตัวกรองก่อน (ดู :key ของ apexchart รายชั้นด้านล่าง)
 const chartRenderTick = ref(0)
 
+const route  = useRoute()
+const router = useRouter()
+const roundLoading = ref(false)   // กำลังสลับรอบ — หน้าเดิมค้างไว้จาง ๆ ไม่ล้างทิ้งทั้งหน้า (สกรอลล์ไม่เด้งกลับขึ้นบน)
+
+// ไม่ส่งรหัสรอบ = รอบล่าสุด (เปิดครั้งแรกเสมอ) · รหัสที่ไม่ถูกต้อง/ไม่ได้เผยแพร่ ฐานข้อมูลถอยกลับไปรอบล่าสุดเอง
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+async function fetchStats(periodId) {
+  // ?round= ที่ไม่ใช่รูปแบบรหัสเลย (พิมพ์มั่ว/ลิงก์เสีย) → เมินแล้วเปิดรอบล่าสุด ไม่ส่งให้ฐานข้อมูลจนเกิด error ทั้งหน้า
+  const args = periodId && UUID_RE.test(periodId) ? { p_period_id: periodId } : {}
+  return supabase.rpc('get_dmc_public_stats', args)
+}
+
+// สลับรอบแล้วโรงที่เลือกไว้อาจไม่มีในรอบใหม่ → ถอยเป็น "ทั้งหมด" เฉพาะตัวกรองที่หมดความหมาย ตัวอื่นคงไว้
+function sanitizeFilters() {
+  const ups = allUploads.value
+  if (filterSchool.value !== 'all' && !ups.some(u => u.school_id === filterSchool.value)) filterSchool.value = 'all'
+  if (filterCluster.value !== 'all' && !ups.some(u => u.school_group === filterCluster.value)) filterCluster.value = 'all'
+  if (filterDistrict.value !== 'all' && !ups.some(u => u.district === filterDistrict.value)) filterDistrict.value = 'all'
+}
+
+async function changeRound(periodId) {
+  if (!periodId || periodId === period.value?.id || roundLoading.value) return
+  roundLoading.value = true
+  const { data: d, error: e } = await fetchStats(periodId)
+  roundLoading.value = false
+  if (e || d?.error) return            // โหลดไม่สำเร็จ → คงรอบเดิมไว้ ไม่ทำให้หน้าว่าง
+  data.value = d
+  sanitizeFilters()
+  // ลิงก์ตามรอบ: รอบล่าสุดไม่ต้องมี ?round (ลิงก์เดิมที่แชร์ไว้ยังใช้ได้และเปิดรอบล่าสุดเสมอ)
+  const latest = d.periods?.[0]?.id
+  router.replace({ query: d.period.id === latest ? {} : { round: d.period.id } })
+  await nextTick()
+  chartRenderTick.value++
+}
+
 onMounted(async () => {
-  const { data: d, error: e } = await supabase.rpc('get_dmc_public_stats')
+  const { data: d, error: e } = await fetchStats(typeof route.query.round === 'string' ? route.query.round : null)
   if (e || d?.error) { error.value = 'ยังไม่มีข้อมูลสถิตินักเรียนสาธารณะ'; loading.value = false; return }
   data.value    = d
   loading.value = false
@@ -47,6 +83,7 @@ onMounted(async () => {
 const period     = computed(() => data.value?.period)
 const vis        = computed(() => data.value?.visibility || {})
 const allUploads = computed(() => data.value?.uploads || [])
+const rounds     = computed(() => data.value?.periods || [])
 
 const districts = computed(() => {
   const set = new Set()
@@ -420,10 +457,22 @@ const trendSeries = computed(() => [{ name: 'นักเรียนรวม',
       <p class="font-bold text-lg">{{ error || 'ยังไม่มีข้อมูลสถิติสาธารณะ' }}</p>
     </div>
 
-    <div v-else class="max-w-5xl mx-auto px-4 py-8 space-y-8">
+    <div v-else class="max-w-5xl mx-auto px-4 py-8 space-y-8 transition-opacity"
+      :class="roundLoading ? 'opacity-50 pointer-events-none' : ''">
 
       <!-- ── บทนำ: จัดกลางจอ พร้อมตัวเลขหลักของทั้งเขต ── -->
       <div class="text-center space-y-4">
+        <div v-if="rounds.length > 1" class="flex flex-wrap items-center justify-center gap-2">
+          <label for="roundSelect" class="text-sm font-bold text-slate-600">เลือกรอบข้อมูล</label>
+          <select id="roundSelect" :value="period.id" :disabled="roundLoading"
+            @change="changeRound($event.target.value)"
+            class="px-3.5 py-2 rounded-xl border border-slate-200 text-sm font-bold text-slate-700 bg-white focus:outline-none focus:border-primary max-w-full">
+            <option v-for="(r, i) in rounds" :key="r.id" :value="r.id">
+              ปีการศึกษา {{ r.academic_year }} ภาคเรียนที่ {{ r.semester }} · {{ r.title }}{{ i === 0 ? ' (ล่าสุด)' : '' }}
+            </option>
+          </select>
+          <span v-if="roundLoading" class="w-4 h-4 border-2 border-primary/30 border-t-primary rounded-full animate-spin"/>
+        </div>
         <p class="text-sm text-slate-500">
           {{ period.title }} · ปีการศึกษา {{ period.academic_year }} ภาคเรียนที่ {{ period.semester }}
         </p>
