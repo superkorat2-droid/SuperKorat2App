@@ -231,7 +231,18 @@ function avgOverallPct(period) {
 }
 // แสดงทีเซอร์แยกทุกกลุ่ม exam_type+grade_level ที่มีข้อมูล (ไม่ใช่แค่กลุ่มที่มีรอบเยอะสุด —
 // เดิมเลือกโชว์แค่กลุ่มเดียวทำให้ RT/O-NET ไม่โผล่เลยถ้า NT มีรอบเผยแพร่มากกว่า)
-const NT_CHART = { W: 640, H: 200, PL: 40, PR: 16, PT: 16, PB: 32 }
+// ผืนวาด 440x240 ≈ ความกว้างการ์ดจริง (เดิม 640x200 ถูกย่อ ~70% ตัวเลข 10-11 หน่วยเหลือ ~7px อ่านไม่ออกตอนฉายจอ)
+// ความกว้างผืนวาดตามความกว้างการ์ดจริง เพื่อให้ตัวหนังสือถูกย่อน้อยที่สุด (scale ≈ 0.9-1):
+//   มือถือ (การ์ดเต็มจอ) 320 · 3 การ์ดต่อแถว (การ์ดแคบ) 290 · 1-2 การ์ดบนจอใหญ่ 440
+const ntViewportW  = ref(typeof window !== 'undefined' ? window.innerWidth : 1280)
+const ntGroupCount = computed(() => new Set(ntTrend.value.map(r => `${r.exam_type}__${r.grade_level}`)).size)
+function onNtResize() { ntViewportW.value = window.innerWidth }
+const NT_CHART = {
+  get W() { return ntViewportW.value < 640 ? 320 : (ntGroupCount.value >= 3 && ntViewportW.value >= 1024 ? 290 : 440) },
+  H: 240, PL: 40, PR: 30, PT: 30, PB: 36,
+}
+const EXAM_COLOR = { RT: '#6366f1', NT: '#0d9488', ONET: '#d97706' }
+const EXAM_LABEL = { RT: 'RT', NT: 'NT', ONET: 'O-NET' }
 function ntChartY(v) {
   const h = NT_CHART.H - NT_CHART.PT - NT_CHART.PB
   return NT_CHART.PT + h - (Math.max(0, Math.min(100, v)) / 100) * h
@@ -247,14 +258,23 @@ const ntGroups = computed(() => {
   return Object.values(groups).map(g => {
     const periods = [...g.periods].sort((a, b) => a.academic_year - b.academic_year)
     const n = periods.length
-    const w = NT_CHART.W - NT_CHART.PL - NT_CHART.PR
+    const inset = 26   // เว้นจุดแรก/สุดท้ายออกจากขอบ: ตัวเลขบนจุดจะไม่ชนเลขแกน Y และไม่ล้นขอบขวา
+    const w = NT_CHART.W - NT_CHART.PL - NT_CHART.PR - inset * 2
     const step = n > 1 ? w / (n - 1) : 0
     const points = periods.map((r, i) => {
       const v = avgOverallPct(r)
-      return { x: NT_CHART.PL + (n > 1 ? step * i : w / 2), y: ntChartY(v || 0), v, year: r.academic_year }
+      return { x: NT_CHART.PL + inset + (n > 1 ? step * i : w / 2), y: ntChartY(v || 0), v, year: r.academic_year }
     }).filter(p => p.v !== null)
     const path = points.length < 2 ? '' : points.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x},${p.y}`).join(' ')
-    return { ...g, points, path }
+    // พื้นไล่สีใต้เส้น: ปิดเส้นลงมาที่แกน 0 ทั้งสองข้าง
+    const base = ntChartY(0)
+    const area = points.length < 2 ? '' : `${path} L${points[points.length - 1].x},${base} L${points[0].x},${base} Z`
+    const latest = points[points.length - 1] || null
+    const prev = points.length >= 2 ? points[points.length - 2] : null
+    // ส่วนต่างปัดทศนิยม 1 ตำแหน่งก่อนตัดสินทิศ — กันขึ้น "▲ +0.0"
+    const diff = latest && prev ? Math.round((latest.v - prev.v) * 10) / 10 : null
+    const delta = diff === null ? null : { diff, dir: diff > 0 ? 'up' : diff < 0 ? 'down' : 'flat', fromYear: prev.year }
+    return { ...g, points, path, area, latest, delta, color: EXAM_COLOR[g.exam_type] || '#6366f1' }
   })
     .filter(g => g.points.length > 0)
     .sort((a, b) => EXAM_TYPE_ORDER.indexOf(a.exam_type) - EXAM_TYPE_ORDER.indexOf(b.exam_type))
@@ -472,6 +492,7 @@ function formatDeadline(d) {
 }
 
 onMounted(async () => {
+  window.addEventListener('resize', onNtResize)
   await fetchConfig()
   const { data: { session: s } } = await supabase.auth.getSession()
   userSession.value = s
@@ -501,6 +522,7 @@ onMounted(async () => {
   })
 })
 onUnmounted(() => {
+  window.removeEventListener('resize', onNtResize)
   clearTimeout(slideTimer)
   clearTimeout(swipeResetTimer)
 })
@@ -1293,17 +1315,46 @@ const stats = [
             </div>
             <div v-else-if="ntGroups.length === 0" class="text-center py-8 text-slate-400 text-sm">ยังไม่มีข้อมูลผลคะแนนที่เผยแพร่</div>
             <template v-else>
-              <div class="grid gap-5" :class="ntGroups.length > 1 ? 'md:grid-cols-2' : ''">
-                <div v-for="g in ntGroups" :key="g.key" class="rounded-2xl border border-indigo-100 bg-white/70 shadow-sm p-5">
-                  <p class="text-slate-500 text-sm text-center mb-3 font-bold">{{ g.exam_type }} {{ g.grade_level }} · ค่าเฉลี่ยรวมร้อยละรายปี</p>
-                  <svg :viewBox="`0 0 ${NT_CHART.W} ${NT_CHART.H}`" class="w-full" style="max-height:220px">
-                    <line v-for="t in [0,25,50,75,100]" :key="t" :x1="NT_CHART.PL" :x2="NT_CHART.W - NT_CHART.PR" :y1="ntChartY(t)" :y2="ntChartY(t)" stroke="#e5e7eb" stroke-width="1"/>
-                    <text v-for="t in [0,25,50,75,100]" :key="'y'+t" :x="NT_CHART.PL - 8" :y="ntChartY(t) + 4" text-anchor="end" font-size="10" fill="#9ca3af">{{ t }}</text>
-                    <text v-for="p in g.points" :key="'x'+p.year" :x="p.x" :y="NT_CHART.H - NT_CHART.PB + 18" text-anchor="middle" font-size="11" fill="#6b7280">{{ p.year }}</text>
-                    <path v-if="g.path" :d="g.path" fill="none" stroke="#6366f1" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
-                    <g v-for="p in g.points" :key="p.year">
-                      <circle :cx="p.x" :cy="p.y" r="4" fill="#6366f1" stroke="white" stroke-width="1.5"/>
-                      <text :x="p.x" :y="p.y - 10" text-anchor="middle" font-size="11" font-weight="700" fill="#4f46e5">{{ p.v.toFixed(1) }}%</text>
+              <div class="grid gap-5" :class="ntGroups.length >= 3 ? 'md:grid-cols-2 lg:grid-cols-3' : ntGroups.length === 2 ? 'md:grid-cols-2' : 'max-w-xl mx-auto w-full'">
+                <div v-for="g in ntGroups" :key="g.key" class="rounded-2xl border border-indigo-100 bg-white/80 shadow-sm p-5 md:p-6">
+                  <!-- ตัวเลขใหญ่ = สิ่งที่ผู้ชมอ่านก่อนกราฟ (HTML ล้วน ไม่ถูกย่อตามขนาด SVG) -->
+                  <div class="flex items-start justify-between gap-3">
+                    <div class="min-w-0">
+                      <span class="inline-block px-3 py-1 rounded-full text-white text-sm font-extrabold" :style="{ background: g.color }">
+                        {{ `${EXAM_LABEL[g.exam_type] || g.exam_type}${g.grade_level ? ' ' + g.grade_level : ''}` }}
+                      </span>
+                      <p class="text-slate-500 text-sm mt-2 font-semibold leading-snug">ค่าเฉลี่ยรวมร้อยละ<br/>ปีการศึกษา {{ g.latest.year }}</p>
+                    </div>
+                    <div class="text-right flex-shrink-0">
+                      <p class="font-black leading-none tabular-nums" :style="{ color: g.color }">
+                        <span class="text-5xl">{{ g.latest.v.toFixed(1) }}</span><span class="text-2xl">%</span>
+                      </p>
+                      <p v-if="g.delta" class="text-sm font-bold mt-2"
+                        :class="g.delta.dir === 'up' ? 'text-emerald-600' : g.delta.dir === 'down' ? 'text-rose-600' : 'text-slate-400'">
+                        {{ g.delta.dir === 'up' ? '▲' : g.delta.dir === 'down' ? '▼' : '●' }}
+                        {{ g.delta.diff > 0 ? '+' : '' }}{{ g.delta.diff.toFixed(1) }} จากปี {{ g.delta.fromYear }}
+                      </p>
+                    </div>
+                  </div>
+
+                  <svg :viewBox="`0 0 ${NT_CHART.W} ${NT_CHART.H}`" class="w-full mt-4" role="img"
+                    :aria-label="`${EXAM_LABEL[g.exam_type] || g.exam_type} ${g.grade_level} ค่าเฉลี่ยรวมร้อยละรายปี`">
+                    <defs>
+                      <linearGradient :id="`ntArea_${g.key}`" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" :stop-color="g.color" stop-opacity="0.28"/>
+                        <stop offset="100%" :stop-color="g.color" stop-opacity="0.02"/>
+                      </linearGradient>
+                    </defs>
+                    <line v-for="t in [0,25,50,75,100]" :key="t" :x1="NT_CHART.PL" :x2="NT_CHART.W - NT_CHART.PR" :y1="ntChartY(t)" :y2="ntChartY(t)" stroke="#e2e8f0" stroke-width="1" :stroke-dasharray="t === 0 ? '' : '3 4'"/>
+                    <text v-for="t in [0,25,50,75,100]" :key="'y'+t" :x="NT_CHART.PL - 8" :y="ntChartY(t) + 5" text-anchor="end" font-size="13" fill="#94a3b8">{{ t }}</text>
+                    <text v-for="p in g.points" :key="'x'+p.year" :x="p.x" :y="NT_CHART.H - NT_CHART.PB + 22" text-anchor="middle" font-size="14" font-weight="600" fill="#64748b">{{ p.year }}</text>
+                    <path v-if="g.area" :d="g.area" :fill="`url(#ntArea_${g.key})`"/>
+                    <path v-if="g.path" :d="g.path" fill="none" :stroke="g.color" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round"/>
+                    <g v-for="(p, i) in g.points" :key="p.year">
+                      <circle :cx="p.x" :cy="p.y" :r="i === g.points.length - 1 ? 7 : 5.5" :fill="g.color" stroke="white" stroke-width="2.5"/>
+                      <!-- ขอบขาวรอบตัวเลข กันเส้นกราฟตัดทับจนอ่านยาก -->
+                      <text :x="p.x" :y="p.y - 13" text-anchor="middle" font-size="16" font-weight="800" :fill="g.color"
+                        stroke="white" stroke-width="4" paint-order="stroke" stroke-linejoin="round">{{ p.v.toFixed(1) }}%</text>
                     </g>
                   </svg>
                 </div>
