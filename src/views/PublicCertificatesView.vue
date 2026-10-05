@@ -116,8 +116,13 @@ function resetFilter() { searchQ.value = ''; filterGroup.value = 'all' }
         <span class="block font-bold">ยังไม่มีเกียรติบัตร</span>
       </div>
       <template v-else>
-        <div ref="gridRef" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 scroll-mt-28">
-          <CertificateCard v-for="c in paginated" :key="c.id" :item="c" :group-label="groupLabel"/>
+        <!-- flex + justify-center: แถวที่ไม่เต็ม (เช่น มีแค่ 1-3 ใบ หรือแถวสุดท้าย) จัดกึ่งกลาง ไม่ชิดซ้าย
+             ความกว้างคำนวณให้เท่ากริด 1/2/4 คอลัมน์ (gap-5 = 1.25rem) การ์ดจึงขนาดเท่ากันทุกใบ -->
+        <div ref="gridRef" class="flex flex-wrap justify-center gap-5 scroll-mt-28">
+          <div v-for="c in paginated" :key="c.id"
+            class="w-full sm:w-[calc(50%-0.625rem)] lg:w-[calc(25%-0.9375rem)]">
+            <CertificateCard :item="c" :group-label="groupLabel"/>
+          </div>
         </div>
 
         <!-- เลขหน้า (รูปแบบเดียวกับหน้าข่าวสาร) -->
