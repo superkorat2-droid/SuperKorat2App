@@ -135,9 +135,34 @@ const clusterAgg = computed(() => {
   return entries
 })
 
-const schoolTableData = computed(() =>
-  [...filteredScores.value].sort((a, b) => (b.scores?.overall?.pct || 0) - (a.scores?.overall?.pct || 0))
-)
+// ── ตารางรายโรงเรียน: เรียงได้แบบเดียวกับตารางศูนย์เครือข่าย + เลือกได้ว่าเรียงตามคะแนนวิชาไหน ──
+const schoolSort = ref('value_desc')
+const SCHOOL_SORT_OPTIONS = [
+  { value: 'value_desc', label: 'มากไปน้อย' },
+  { value: 'value_asc',  label: 'น้อยไปมาก' },
+  { value: 'name',       label: 'ชื่อโรงเรียน' },
+  { value: 'cluster',    label: 'ศูนย์เครือข่าย' },
+]
+const schoolSortKeyRaw = ref('overall')
+// เปลี่ยนแท็บ/รอบแล้ววิชาที่เลือกไว้อาจไม่มีในรอบใหม่ → กลับไปใช้ "รวม"
+const schoolSortKey = computed(() => subjectKeys.value.includes(schoolSortKeyRaw.value) ? schoolSortKeyRaw.value : 'overall')
+const byThai = (a, b) => String(a || '').localeCompare(String(b || ''), 'th')
+const schoolTableData = computed(() => {
+  const key = schoolSortKey.value
+  const val = s => (typeof s.scores?.[key]?.pct === 'number' ? s.scores[key].pct : null)
+  const list = [...filteredScores.value]
+  if (schoolSort.value === 'name')    return list.sort((a, b) => byThai(a.school_name, b.school_name))
+  if (schoolSort.value === 'cluster') return list.sort((a, b) => byThai(a.school_group, b.school_group) || byThai(a.school_name, b.school_name))
+  const dir = schoolSort.value === 'value_asc' ? 1 : -1
+  // โรงที่ไม่มีคะแนนวิชานั้นไปท้ายเสมอ ไม่ว่าเรียงขึ้นหรือลง
+  return list.sort((a, b) => {
+    const va = val(a), vb = val(b)
+    if (va === null && vb === null) return byThai(a.school_name, b.school_name)
+    if (va === null) return 1
+    if (vb === null) return -1
+    return (va - vb) * dir || byThai(a.school_name, b.school_name)
+  })
+})
 
 // ── กราฟแนวโน้มข้ามปี — แอกทีฟตามตัวกรองด้านบน ─────────────────────────────────
 const C = { W: 720, H: 260, PL: 44, PR: 20, PT: 20, PB: 40 }
@@ -272,8 +297,23 @@ const hoveredPoint = ref(null)
 
       <!-- School table -->
       <div class="glass-tile overflow-hidden">
-        <div class="px-5 py-4 border-b border-slate-50 text-center">
+        <div class="px-5 py-4 border-b border-slate-50 flex flex-wrap items-center justify-between gap-2">
           <h3 class="font-bold text-slate-700">ข้อมูลรายโรงเรียน ({{ filteredScores.length }} โรงเรียน)</h3>
+          <div class="flex flex-wrap items-center gap-2">
+            <!-- เลือกวิชาที่ใช้เรียง (เฉพาะโหมดเรียงตามคะแนน) -->
+            <select v-if="schoolSort === 'value_desc' || schoolSort === 'value_asc'" v-model="schoolSortKeyRaw"
+              aria-label="เรียงตามคะแนนวิชา"
+              class="px-2.5 py-1.5 text-xs font-bold rounded-lg border border-slate-200 bg-white text-slate-600 focus:outline-none focus:border-primary">
+              <option v-for="key in subjectKeys" :key="key" :value="key">เรียงตาม: {{ subjectLabels[key] }}</option>
+            </select>
+            <div class="flex gap-1 bg-slate-100 p-1 rounded-lg">
+              <button v-for="opt in SCHOOL_SORT_OPTIONS" :key="opt.value" @click="schoolSort = opt.value" type="button"
+                :class="['px-2.5 py-1 text-xs font-bold rounded-md transition-colors',
+                  schoolSort === opt.value ? 'bg-white text-primary shadow-sm' : 'text-slate-500 hover:text-slate-700']">
+                {{ opt.label }}
+              </button>
+            </div>
+          </div>
         </div>
         <div class="overflow-x-auto">
           <table class="w-full text-xs">
