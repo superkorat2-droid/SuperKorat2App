@@ -2,6 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase } from '../../supabase'
+import { hasNoEligible } from '../../composables/useNtParser'
 
 const router = useRouter()
 
@@ -104,7 +105,7 @@ function filteredScoresFor(periodId) {
 
 function avgFor(periodId, key) {
   const list = filteredScoresFor(periodId)
-  const vals = list.map(r => r.scores?.[key]?.pct).filter(v => typeof v === 'number')
+  const vals = list.filter(r => !hasNoEligible(r.scores)).map(r => r.scores?.[key]?.pct).filter(v => typeof v === 'number')
   if (!vals.length) return null
   return vals.reduce((a, b) => a + b, 0) / vals.length
 }

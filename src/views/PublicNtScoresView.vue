@@ -3,7 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { supabase } from '../supabase'
 import { useAreaConfig } from '../composables/useAreaConfig'
 import { usePageHeader } from '../composables/usePageHeader'
-import { QUALITY_LEVELS, QUALITY_COLOR } from '../composables/useNtParser'
+import { QUALITY_LEVELS, QUALITY_COLOR, hasNoEligible, NO_ELIGIBLE_TEXT } from '../composables/useNtParser'
 import PageHero from '../components/PageHero.vue'
 import BarChart from '../components/awards/BarChart.vue'
 
@@ -104,14 +104,15 @@ function onClusterChange()  { filterSchool.value = 'all' }
 
 // ── สรุปผล (การ์ด + กระจายระดับคุณภาพ) ─────────────────────────────────────────
 function avgOf(list, key) {
-  const vals = list.map(s => s.scores?.[key]?.pct).filter(v => typeof v === 'number')
+  const vals = list.filter(s => !hasNoEligible(s.scores)).map(s => s.scores?.[key]?.pct).filter(v => typeof v === 'number')
   if (!vals.length) return null
   return vals.reduce((a, b) => a + b, 0) / vals.length
 }
 function levelDistribution(list, key) {
   const counts = Object.fromEntries(QUALITY_LEVELS.map(l => [l, 0]))
-  list.forEach(s => { const lvl = s.scores?.[key]?.level; if (lvl && counts[lvl] !== undefined) counts[lvl]++ })
-  const total = list.length || 1
+  const eligible = list.filter(s => !hasNoEligible(s.scores))
+  eligible.forEach(s => { const lvl = s.scores?.[key]?.level; if (lvl && counts[lvl] !== undefined) counts[lvl]++ })
+  const total = eligible.length || 1
   return QUALITY_LEVELS.map(l => ({ level: l, count: counts[l], pct: Math.round((counts[l] / total) * 100) }))
 }
 
@@ -128,7 +129,11 @@ const clusterAgg = computed(() => {
     const key = s.school_group || 'ไม่ระบุศูนย์'
     ;(map[key] ||= []).push(s)
   })
-  let entries = Object.entries(map).map(([label, list]) => ({ label, value: Math.round((avgOf(list, 'overall') || 0) * 10) / 10, bar: 'bg-indigo-500' }))
+  // ศูนย์ที่ไม่มีโรงใดมีคะแนนเลย (ทุกโรงไม่มี นร. ในเกณฑ์) ไม่ใส่ในกราฟ แทนที่จะโชว์เป็น 0
+  let entries = Object.entries(map)
+    .map(([label, list]) => ({ label, avg: avgOf(list, 'overall') }))
+    .filter(e => e.avg !== null)
+    .map(e => ({ label: e.label, value: Math.round(e.avg * 10) / 10, bar: 'bg-indigo-500' }))
   if (clusterSort.value === 'name')       entries.sort((a, b) => a.label.localeCompare(b.label, 'th'))
   else if (clusterSort.value === 'value_asc') entries.sort((a, b) => a.value - b.value)
   else                                     entries.sort((a, b) => b.value - a.value)
@@ -136,6 +141,7 @@ const clusterAgg = computed(() => {
 })
 
 // ── ตารางรายโรงเรียน: เรียงได้แบบเดียวกับตารางศูนย์เครือข่าย + เลือกได้ว่าเรียงตามคะแนนวิชาไหน ──
+const noEligibleCount = computed(() => filteredScores.value.filter(s => hasNoEligible(s.scores)).length)
 const schoolSort = ref('value_desc')
 const SCHOOL_SORT_OPTIONS = [
   { value: 'value_desc', label: 'มากไปน้อย' },
@@ -149,7 +155,7 @@ const schoolSortKey = computed(() => subjectKeys.value.includes(schoolSortKeyRaw
 const byThai = (a, b) => String(a || '').localeCompare(String(b || ''), 'th')
 const schoolTableData = computed(() => {
   const key = schoolSortKey.value
-  const val = s => (typeof s.scores?.[key]?.pct === 'number' ? s.scores[key].pct : null)
+  const val = s => (!hasNoEligible(s.scores) && typeof s.scores?.[key]?.pct === 'number' ? s.scores[key].pct : null)
   const list = [...filteredScores.value]
   if (schoolSort.value === 'name')    return list.sort((a, b) => byThai(a.school_name, b.school_name))
   if (schoolSort.value === 'cluster') return list.sort((a, b) => byThai(a.school_group, b.school_group) || byThai(a.school_name, b.school_name))
@@ -298,7 +304,12 @@ const hoveredPoint = ref(null)
       <!-- School table -->
       <div class="glass-tile overflow-hidden">
         <div class="px-5 py-4 border-b border-slate-50 flex flex-wrap items-center justify-between gap-2">
-          <h3 class="font-bold text-slate-700">ข้อมูลรายโรงเรียน ({{ filteredScores.length }} โรงเรียน)</h3>
+          <div>
+            <h3 class="font-bold text-slate-700">ข้อมูลรายโรงเรียน ({{ filteredScores.length }} โรงเรียน)</h3>
+            <p v-if="noEligibleCount" class="text-[11px] text-amber-600 mt-0.5">
+              มี {{ noEligibleCount }} โรงที่{{ NO_ELIGIBLE_TEXT }} — ไม่นับในค่าเฉลี่ยและการจัดอันดับ
+            </p>
+          </div>
           <div class="flex flex-wrap items-center gap-2">
             <!-- เลือกวิชาที่ใช้เรียง (เฉพาะโหมดเรียงตามคะแนน) -->
             <select v-if="schoolSort === 'value_desc' || schoolSort === 'value_asc'" v-model="schoolSortKeyRaw"
@@ -328,13 +339,18 @@ const hoveredPoint = ref(null)
                 <td class="px-4 py-3 text-slate-400">{{ i + 1 }}</td>
                 <td class="px-4 py-3 font-medium text-slate-700">{{ s.school_name }}</td>
                 <td class="px-4 py-3 text-slate-500">{{ s.school_group }}</td>
-                <td v-for="key in subjectKeys" :key="key" class="px-4 py-3 text-right">
-                  <span class="font-bold text-slate-700">{{ s.scores?.[key]?.pct ?? '—' }}</span>
-                  <span v-if="s.scores?.[key]?.level" class="ml-1.5 text-[10px] font-bold px-1.5 py-0.5 rounded-full"
-                    :style="`background:${QUALITY_COLOR[s.scores[key].level]}22; color:${QUALITY_COLOR[s.scores[key].level]}`">
-                    {{ s.scores[key].level }}
-                  </span>
+                <td v-if="hasNoEligible(s.scores)" :colspan="subjectKeys.length" class="px-4 py-3 text-right text-amber-600 text-[11px] font-bold">
+                  — {{ NO_ELIGIBLE_TEXT }}
                 </td>
+                <template v-else>
+                  <td v-for="key in subjectKeys" :key="key" class="px-4 py-3 text-right">
+                    <span class="font-bold text-slate-700">{{ s.scores?.[key]?.pct ?? '—' }}</span>
+                    <span v-if="s.scores?.[key]?.level" class="ml-1.5 text-[10px] font-bold px-1.5 py-0.5 rounded-full"
+                      :style="`background:${QUALITY_COLOR[s.scores[key].level]}22; color:${QUALITY_COLOR[s.scores[key].level]}`">
+                      {{ s.scores[key].level }}
+                    </span>
+                  </td>
+                </template>
               </tr>
             </tbody>
           </table>

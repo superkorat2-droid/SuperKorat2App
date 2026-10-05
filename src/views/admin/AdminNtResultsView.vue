@@ -3,7 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { supabase } from '../../supabase'
 import Swal from 'sweetalert2'
-import { parseNtLocal03File, parseRtLocal03File, QUALITY_LEVELS, QUALITY_COLOR } from '../../composables/useNtParser'
+import { parseNtLocal03File, parseRtLocal03File, QUALITY_LEVELS, QUALITY_COLOR, hasNoEligible, NO_ELIGIBLE_TEXT } from '../../composables/useNtParser'
 
 const route  = useRoute()
 const router = useRouter()
@@ -142,18 +142,19 @@ const subjectLabels = computed(() => {
 })
 
 function avgOf(key) {
-  const vals = filteredScores.value.map(r => r.scores?.[key]?.pct).filter(v => typeof v === 'number')
+  const vals = filteredScores.value.filter(r => !hasNoEligible(r.scores)).map(r => r.scores?.[key]?.pct).filter(v => typeof v === 'number')
   if (!vals.length) return null
   return vals.reduce((a, b) => a + b, 0) / vals.length
 }
 
 function levelDistribution(key) {
   const counts = Object.fromEntries(QUALITY_LEVELS.map(l => [l, 0]))
-  filteredScores.value.forEach(r => {
+  const eligible = filteredScores.value.filter(r => !hasNoEligible(r.scores))
+  eligible.forEach(r => {
     const lvl = r.scores?.[key]?.level
     if (lvl && counts[lvl] !== undefined) counts[lvl]++
   })
-  const total = filteredScores.value.length || 1
+  const total = eligible.length || 1
   return QUALITY_LEVELS.map(l => ({ level: l, count: counts[l], pct: Math.round((counts[l] / total) * 100) }))
 }
 
@@ -259,13 +260,18 @@ onMounted(loadBenchmarks)
               <td class="px-4 py-2.5 font-medium text-slate-700">{{ r.school.name }}</td>
               <td class="px-4 py-2.5 text-slate-500">{{ r.school.district }}</td>
               <td class="px-4 py-2.5 text-slate-500">{{ r.school.school_group }}</td>
-              <td v-for="key in subjectKeys" :key="key" class="px-4 py-2.5 text-right">
-                <span class="font-bold text-slate-700">{{ r.scores?.[key]?.pct ?? '—' }}</span>
-                <span v-if="r.scores?.[key]?.level" class="ml-1.5 text-[10px] font-bold px-1.5 py-0.5 rounded-full"
-                  :style="`background:${QUALITY_COLOR[r.scores[key].level]}22; color:${QUALITY_COLOR[r.scores[key].level]}`">
-                  {{ r.scores[key].level }}
-                </span>
+              <td v-if="hasNoEligible(r.scores)" :colspan="subjectKeys.length" class="px-4 py-2.5 text-right text-amber-600 text-[11px] font-bold">
+                — {{ NO_ELIGIBLE_TEXT }}
               </td>
+              <template v-else>
+                <td v-for="key in subjectKeys" :key="key" class="px-4 py-2.5 text-right">
+                  <span class="font-bold text-slate-700">{{ r.scores?.[key]?.pct ?? '—' }}</span>
+                  <span v-if="r.scores?.[key]?.level" class="ml-1.5 text-[10px] font-bold px-1.5 py-0.5 rounded-full"
+                    :style="`background:${QUALITY_COLOR[r.scores[key].level]}22; color:${QUALITY_COLOR[r.scores[key].level]}`">
+                    {{ r.scores[key].level }}
+                  </span>
+                </td>
+              </template>
             </tr>
           </tbody>
         </table>

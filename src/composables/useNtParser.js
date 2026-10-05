@@ -129,6 +129,14 @@ export function parseRtLocal03File(file) {
   return parseLocal03Generic(file, RT_SUBJECTS, 'RT')
 }
 
+// โรงที่ไฟล์ สพฐ. ระบุว่า "ไม่มี นร. อยู่ในเกณฑ์คำนวน" — คะแนนในไฟล์เป็น 0 แต่เป็นแค่ค่าแทนที่ ไม่ใช่ผลสอบจริง
+// รายงานทางการนับเป็นโรงที่ไม่ได้เข้าสอบ (เช่น RT 2568: รายการ 171 โรง แต่หัวรายงานระบุ "เข้าสอบ 169 แห่ง")
+// จึงต้องไม่นำไปเฉลี่ย/จัดอันดับ/นับสัดส่วนระดับคุณภาพ — ข้อมูลในฐานข้อมูลยังเก็บตามไฟล์ต้นฉบับ แก้ที่ฝั่งคำนวณ
+export const NO_ELIGIBLE_TEXT = 'ไม่มี นร. อยู่ในเกณฑ์คำนวณ'
+export function hasNoEligible(scores) {
+  return Object.values(scores || {}).some(v => typeof v?.level === 'string' && v.level.startsWith('ไม่มี'))
+}
+
 export const QUALITY_LEVELS = ['ดีมาก', 'ดี', 'พอใช้', 'ปรับปรุง']
 export const QUALITY_COLOR = {
   'ดีมาก':   '#059669',

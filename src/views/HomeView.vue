@@ -23,6 +23,7 @@ import { useGroupOptions } from '../composables/useLibraryOptions'
 import EventDetailModal from '../components/calendar/EventDetailModal.vue'
 import { useHolidays } from '../composables/useHolidays'
 import { getBgStyle as getBgStyleRaw, bgTextClass } from '../composables/useBgStyle'
+import { hasNoEligible } from '../composables/useNtParser'
 
 const router = useRouter()
 
@@ -225,7 +226,8 @@ async function fetchNtTrend() {
   loadingNtTrend.value = false
 }
 function avgOverallPct(period) {
-  const vals = (period.scores || []).map(s => s.scores?.overall?.pct).filter(v => typeof v === 'number')
+  // ไม่นับโรงที่ "ไม่มี นร. อยู่ในเกณฑ์คำนวน" (คะแนน 0 ในไฟล์เป็นค่าแทนที่) — ดู hasNoEligible
+  const vals = (period.scores || []).filter(s => !hasNoEligible(s.scores)).map(s => s.scores?.overall?.pct).filter(v => typeof v === 'number')
   if (!vals.length) return null
   return vals.reduce((a, b) => a + b, 0) / vals.length
 }
