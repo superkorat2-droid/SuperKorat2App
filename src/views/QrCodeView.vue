@@ -1,7 +1,8 @@
 <script setup>
-import { ref, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import QRCode from 'qrcode'
+import { supabase } from '../supabase'
 import { useAreaConfig } from '../composables/useAreaConfig'
 import { usePageHeader } from '../composables/usePageHeader'
 import PageHeaderPlain from '../components/PageHeaderPlain.vue'
@@ -36,13 +37,147 @@ const presets = [
   { label: 'Google Form', value: 'https://forms.gle/example', icon: '📋' },
 ]
 
+// โลโก้กลาง QR — อยู่ในหน่วยความจำของหน้านี้เท่านั้น ไม่อัปโหลด/ไม่เก็บ
+const LOGO_MAX_EDGE = 256
+const logoBitmap  = ref(null)   // ภาพโลโก้ที่ย่อแล้ว (canvas, คงความโปร่งใส)
+const logoName    = ref('')
+const logoScale   = ref(20)     // % ของด้าน QR (10–25)
+const logoBg      = ref(true)   // พื้นรองหลังโลโก้
+const logoError   = ref('')
+const effectiveLevel = computed(() => (logoBitmap.value ? 'H' : errorLevel.value))
+
+async function onLogoPick(e) {
+  const file = e.target.files?.[0]
+  e.target.value = ''
+  if (!file) return
+  logoError.value = ''
+  try {
+    const bmp = await createImageBitmap(file, { imageOrientation: 'from-image' })
+    const k = Math.min(1, LOGO_MAX_EDGE / Math.max(bmp.width, bmp.height))
+    const c = document.createElement('canvas')
+    c.width = Math.max(1, Math.round(bmp.width * k))
+    c.height = Math.max(1, Math.round(bmp.height * k))
+    c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height)
+    bmp.close?.()
+    logoBitmap.value = c
+    logoName.value = file.name
+  } catch {
+    logoError.value = 'อ่านไฟล์ภาพนี้ไม่ได้ (ไฟล์ HEIC ไม่รองรับ ให้ใช้ PNG/JPG/WebP)'
+  }
+}
+
+function clearLogo() { logoBitmap.value = null; logoName.value = ''; logoError.value = '' }
+
+// ── คลังโลโก้ที่บันทึกไว้ (เฉพาะผู้ล็อกอิน) ──────────────────────────
+const me          = ref(null)   // { role, school_id }
+const savedLogos  = ref([])
+const saveScope   = ref('school')
+const saveName    = ref('')
+const saveMsg     = ref('')
+const savingLogo  = ref(false)
+const isAdmin     = computed(() => ['super_admin', 'admin'].includes(me.value?.role))
+const canSaveSchool = computed(() => !!me.value?.school_id)
+const canSave     = computed(() => canSaveSchool.value || isAdmin.value)
+
+async function loadLibrary() {
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session) { me.value = null; savedLogos.value = []; return }
+  const { data: prof } = await supabase.from('profiles').select('role, school_id').eq('id', session.user.id).maybeSingle()
+  me.value = prof || null
+  if (!me.value) return
+  saveScope.value = me.value.school_id ? 'school' : 'area'
+  const { data } = await supabase.from('qr_logos')
+    .select('id, scope, school_id, name, image_data, is_default, schools(name)')
+    .order('scope').order('created_at', { ascending: false })
+  savedLogos.value = data || []
+}
+
+function scopeLabel(l) {
+  return l.scope === 'area' ? 'เขต' : (l.schools?.name || 'โรงเรียน')
+}
+
+function useSavedLogo(l) {
+  return new Promise((resolve) => {
+    const img = new Image()
+    img.onload = () => {
+      const c = document.createElement('canvas')
+      c.width = img.naturalWidth; c.height = img.naturalHeight
+      c.getContext('2d').drawImage(img, 0, 0)
+      logoBitmap.value = c
+      logoName.value = l.name
+      logoError.value = ''
+      resolve()
+    }
+    img.onerror = () => { logoError.value = 'โหลดโลโก้ที่บันทึกไว้ไม่ได้'; resolve() }
+    img.src = l.image_data
+  })
+}
+
+async function saveCurrentLogo() {
+  if (!logoBitmap.value || !saveName.value.trim()) return
+  savingLogo.value = true
+  saveMsg.value = ''
+  const scope = saveScope.value
+  const { error } = await supabase.from('qr_logos').insert({
+    scope,
+    school_id: scope === 'school' ? me.value.school_id : null,
+    name: saveName.value.trim(),
+    image_data: logoBitmap.value.toDataURL('image/png'),
+  })
+  savingLogo.value = false
+  if (error) { saveMsg.value = 'บันทึกไม่สำเร็จ: ' + error.message; return }
+  saveName.value = ''
+  saveMsg.value = 'บันทึกโลโก้แล้ว'
+  await loadLibrary()
+}
+
+async function setDefault(l) {
+  // ล้างตัวเดิมของ scope เดียวกันก่อน (unique index ให้มีได้อันเดียว)
+  let q = supabase.from('qr_logos').update({ is_default: false }).eq('scope', l.scope).eq('is_default', true)
+  q = l.scope === 'school' ? q.eq('school_id', l.school_id) : q
+  await q
+  if (!l.is_default) await supabase.from('qr_logos').update({ is_default: true }).eq('id', l.id)
+  await loadLibrary()
+}
+
+async function removeSaved(l) {
+  if (!confirm(`ลบโลโก้ "${l.name}" ออกจากคลัง?`)) return
+  await supabase.from('qr_logos').delete().eq('id', l.id)
+  await loadLibrary()
+}
+
+function canManage(l) {
+  return isAdmin.value || (l.scope === 'school' && l.school_id === me.value?.school_id)
+}
+
 async function buildDataUrl() {
-  return QRCode.toDataURL(inputText.value, {
+  const opts = {
     width: size.value,
     margin: 2,
-    errorCorrectionLevel: errorLevel.value,
+    errorCorrectionLevel: effectiveLevel.value,
     color: { dark: fgColor.value, light: bgColor.value },
-  })
+  }
+  if (!logoBitmap.value) return QRCode.toDataURL(inputText.value, opts)
+
+  const canvas = document.createElement('canvas')
+  await QRCode.toCanvas(canvas, inputText.value, opts)
+  const ctx = canvas.getContext('2d')
+  const W = canvas.width
+  const box = W * Math.min(25, Math.max(10, logoScale.value)) / 100
+  const lw = logoBitmap.value.width, lh = logoBitmap.value.height
+  const k = box / Math.max(lw, lh)
+  const w = lw * k, h = lh * k
+  const x = (W - w) / 2, y = (W - h) / 2
+  if (logoBg.value) {
+    const pad = W * 0.015
+    const r = Math.min(W * 0.03, 16)
+    ctx.fillStyle = bgColor.value
+    ctx.beginPath()
+    ctx.roundRect(x - pad, y - pad, w + pad * 2, h + pad * 2, r)
+    ctx.fill()
+  }
+  ctx.drawImage(logoBitmap.value, x, y, w, h)
+  return canvas.toDataURL('image/png')
 }
 
 async function generate() {
@@ -60,11 +195,16 @@ function downloadQR() {
   a.click()
 }
 
-watch([fgColor, bgColor, size, errorLevel], async () => {
+watch([fgColor, bgColor, size, errorLevel, logoBitmap, logoScale, logoBg],async () => {
   if (generated.value) qrSrc.value = await buildDataUrl()
 })
 
-onMounted(() => {
+onMounted(async () => {
+  await loadLibrary()
+  // โลโก้เริ่มต้น: ของโรงเรียนตัวเองก่อน ไม่มีค่อยใช้ของเขต
+  const def = savedLogos.value.find(l => l.is_default && l.scope === 'school' && l.school_id === me.value?.school_id)
+    || savedLogos.value.find(l => l.is_default && l.scope === 'area')
+  if (def) await useSavedLogo(def)
   if (route.query.text) {
     inputText.value = String(route.query.text)
     generate()
@@ -138,9 +278,74 @@ onMounted(() => {
             <!-- Error correction -->
             <div>
               <label class="block text-xs font-bold text-slate-600 mb-1.5">ระดับแก้ไขข้อผิดพลาด</label>
-              <select v-model="errorLevel" class="w-full px-3 py-2 border border-white/80 bg-white/70 backdrop-blur rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-200">
+              <select v-model="errorLevel" :disabled="!!logoBitmap" class="w-full px-3 py-2 border border-white/80 bg-white/70 backdrop-blur rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-200 disabled:opacity-60">
                 <option v-for="e in errorLevels" :key="e.value" :value="e.value">{{ e.label }}</option>
               </select>
+              <p v-if="logoBitmap" class="text-[11px] text-emerald-600 mt-1">ใส่โลโก้อยู่ — ระบบใช้ระดับ H ให้อัตโนมัติเพื่อให้สแกนติด</p>
+            </div>
+
+            <!-- Logo -->
+            <div>
+              <label class="block text-xs font-bold text-slate-600 mb-1.5">โลโก้กลาง QR (ไม่บังคับ)</label>
+              <div class="flex items-center gap-2">
+                <label class="cursor-pointer px-3 py-2 bg-slate-50 hover:bg-emerald-50 border border-slate-200 hover:border-emerald-300 rounded-xl text-xs font-bold text-slate-700 transition-all">
+                  📷 เลือกรูปโลโก้
+                  <input type="file" accept="image/*" class="hidden" @change="onLogoPick"/>
+                </label>
+                <button v-if="logoBitmap" type="button" @click="clearLogo"
+                  class="text-xs font-bold text-red-500 hover:text-red-600 px-2 py-2">ลบโลโก้</button>
+                <span v-if="logoBitmap" class="text-[11px] text-slate-400 truncate">{{ logoName }}</span>
+              </div>
+              <p v-if="logoError" class="text-[11px] text-red-500 mt-1">{{ logoError }}</p>
+              <template v-if="logoBitmap">
+                <label class="block text-xs font-bold text-slate-600 mt-3 mb-1">ขนาดโลโก้: <span class="text-emerald-600">{{ logoScale }}%</span></label>
+                <input v-model.number="logoScale" type="range" min="10" max="25" step="1" class="w-full accent-emerald-600"/>
+                <label class="flex items-center gap-2 mt-2 text-xs text-slate-600 cursor-pointer">
+                  <input v-model="logoBg" type="checkbox" class="accent-emerald-600"/> มีพื้นรองหลังโลโก้
+                </label>
+              </template>
+              <p class="text-[11px] text-slate-400 mt-1">
+                {{ me ? 'ย่อภาพอัตโนมัติ · จะเก็บไว้ก็ต่อเมื่อกด "บันทึกเข้าคลัง" เท่านั้น' : 'ย่อภาพอัตโนมัติ · ไม่อัปโหลดและไม่เก็บไฟล์ไว้ที่ใด (ล็อกอินเพื่อบันทึกโลโก้โรงเรียน/เขตไว้ใช้ซ้ำ)' }}
+              </p>
+
+              <!-- คลังโลโก้ (ผู้ล็อกอิน) -->
+              <div v-if="me" class="mt-3 border border-slate-200 rounded-xl p-3 bg-slate-50/60 space-y-3">
+                <p class="text-xs font-bold text-slate-600">🗂️ คลังโลโก้ของโรงเรียน/เขต</p>
+                <p v-if="!savedLogos.length" class="text-[11px] text-slate-400">ยังไม่มีโลโก้ที่บันทึกไว้</p>
+                <ul v-else class="space-y-1.5">
+                  <li v-for="l in savedLogos" :key="l.id" class="flex items-center gap-2">
+                    <button type="button" @click="useSavedLogo(l)" class="flex items-center gap-2 flex-1 min-w-0 text-left hover:bg-emerald-50 rounded-lg p-1 transition-all">
+                      <img :src="l.image_data" class="w-9 h-9 object-contain bg-white rounded border border-slate-200 shrink-0" alt=""/>
+                      <span class="min-w-0">
+                        <span class="block text-xs font-bold text-slate-700 truncate">{{ l.name }}</span>
+                        <span class="block text-[10px] text-slate-400 truncate">{{ scopeLabel(l) }}<template v-if="l.is_default"> · ⭐ ค่าเริ่มต้น</template></span>
+                      </span>
+                    </button>
+                    <template v-if="canManage(l)">
+                      <button type="button" @click="setDefault(l)" :title="l.is_default ? 'ยกเลิกค่าเริ่มต้น' : 'ตั้งเป็นค่าเริ่มต้น'" class="text-sm px-1">{{ l.is_default ? '⭐' : '☆' }}</button>
+                      <button type="button" @click="removeSaved(l)" title="ลบ" class="text-xs text-red-500 hover:text-red-600 px-1">ลบ</button>
+                    </template>
+                  </li>
+                </ul>
+
+                <div v-if="logoBitmap && canSave" class="pt-2 border-t border-slate-200 space-y-2">
+                  <p class="text-[11px] font-bold text-slate-500">บันทึกโลโก้ที่ใช้อยู่เข้าคลัง</p>
+                  <input v-model="saveName" type="text" maxlength="100" placeholder="ชื่อโลโก้ เช่น ตราโรงเรียน"
+                    class="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-emerald-200"/>
+                  <div class="flex gap-2">
+                    <select v-model="saveScope" class="flex-1 px-2 py-2 border border-slate-200 bg-white rounded-xl text-xs">
+                      <option v-if="canSaveSchool" value="school">ของโรงเรียนฉัน</option>
+                      <option v-if="isAdmin" value="area">ของเขต (ทุกคนที่ล็อกอินใช้ได้)</option>
+                    </select>
+                    <button type="button" @click="saveCurrentLogo" :disabled="!saveName.trim() || savingLogo"
+                      class="px-3 py-2 rounded-xl text-xs font-bold bg-emerald-600 text-white disabled:bg-slate-200 disabled:text-slate-400">
+                      {{ savingLogo ? 'กำลังบันทึก…' : 'บันทึกเข้าคลัง' }}
+                    </button>
+                  </div>
+                  <p v-if="saveMsg" class="text-[11px] text-emerald-600">{{ saveMsg }}</p>
+                </div>
+                <p v-else-if="logoBitmap && !canSave" class="text-[11px] text-slate-400">บัญชีนี้ยังไม่ผูกกับโรงเรียน จึงบันทึกเข้าคลังไม่ได้</p>
+              </div>
             </div>
 
             <button @click="generate" :disabled="!inputText.trim()"
@@ -193,6 +398,7 @@ onMounted(() => {
               <li>• ใช้ Error Level H สำหรับ QR Code ที่อาจเปรอะหรือพิมพ์บนวัสดุ</li>
               <li>• ขนาด 300px ขึ้นไปสแกนได้ง่ายกว่าขนาดเล็ก</li>
               <li>• สีหลักควรเข้มกว่าสีพื้นหลังเสมอ</li>
+              <li>• โลโก้ไม่ควรใหญ่เกิน 25% และควรทดลองสแกนด้วยมือถือก่อนพิมพ์จริง</li>
             </ul>
           </div>
         </div>
