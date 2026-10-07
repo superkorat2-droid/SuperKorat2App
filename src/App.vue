@@ -276,7 +276,8 @@ const handleLogout = async () => {
     <div class="fixed top-0 inset-x-0 z-50 h-[3px] bg-primary"></div>
 
     <!-- ── Navbar ─────────────────────────────────────────────────── -->
-    <nav class="fixed top-[3px] inset-x-0 z-40 glass-nav">
+    <!-- pt-[env(safe-area-inset-top)]: PWA iOS ใช้ black-translucent เว็บวาดใต้ status bar (ไวไฟ/แบต) ต้องเผื่อที่ไม่งั้นปุ่มแฮมเบอร์เกอร์ถูกบัง (Android/เดสก์ท็อปค่าเป็น 0) -->
+    <nav class="fixed top-[3px] inset-x-0 z-40 glass-nav pt-[env(safe-area-inset-top)]">
       <div class="w-full px-4 sm:px-6 lg:px-8">
         <div class="flex items-center justify-between h-[58px] sm:h-[68px] lg:h-20">
 
@@ -570,7 +571,7 @@ const handleLogout = async () => {
         leave-active-class="transition duration-150"
         leave-from-class="opacity-100"
         leave-to-class="opacity-0">
-        <div v-if="mobileOpen" class="lg:hidden glass-panel border-x-0 border-b-0 max-h-[80vh] overflow-y-auto">
+        <div v-if="mobileOpen" class="lg:hidden glass-panel border-x-0 border-b-0 overflow-y-auto overscroll-contain pb-[env(safe-area-inset-bottom)] max-h-[calc(100dvh-61px-env(safe-area-inset-top))] sm:max-h-[calc(100dvh-71px-env(safe-area-inset-top))]">
           <div class="px-3 py-3 space-y-px">
             <template v-for="item in navItems" :key="item.key">
               <RouterLink v-if="item.to && !item.children" :to="item.to"
@@ -639,7 +640,7 @@ const handleLogout = async () => {
     </nav>
 
     <!-- Spacer: 3px accent + nav height (must match nav's h-*) -->
-    <div class="h-[61px] sm:h-[71px] lg:h-[83px] flex-shrink-0"></div>
+    <div class="h-[61px] sm:h-[71px] lg:h-[83px] flex-shrink-0 mt-[env(safe-area-inset-top)]"></div>
     </template><!-- end v-if="!isSchoolRoute" -->
 
     <!-- Main content -->

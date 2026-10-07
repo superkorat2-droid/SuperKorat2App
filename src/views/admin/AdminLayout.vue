@@ -335,7 +335,7 @@ function iconKey(to) {
     <div :class="['flex-1 flex flex-col transition-all duration-300', sidebarOpen ? 'lg:ml-64' : 'lg:ml-16']">
 
       <!-- Top bar -->
-      <header class="sticky top-0 z-20 h-16 glass-nav flex items-center justify-between px-4 gap-4">
+      <header class="sticky top-0 z-20 h-[calc(4rem+env(safe-area-inset-top))] pt-[env(safe-area-inset-top)] glass-nav flex items-center justify-between px-4 gap-4">
         <div class="flex items-center gap-3">
           <!-- Mobile hamburger -->
           <button @click="mobileOpen = !mobileOpen"

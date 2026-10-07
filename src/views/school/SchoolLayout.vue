@@ -156,7 +156,7 @@ async function logout() {
     <div class="flex-1 flex flex-col lg:ml-64 min-w-0">
 
       <!-- Topbar -->
-      <header class="sticky top-0 z-10 bg-white border-b border-slate-100 shadow-sm px-4 h-14 flex items-center gap-3">
+      <header class="sticky top-0 z-10 bg-white border-b border-slate-100 shadow-sm px-4 h-[calc(3.5rem+env(safe-area-inset-top))] pt-[env(safe-area-inset-top)] flex items-center gap-3">
         <button @click="sidebarOpen = !sidebarOpen"
           class="lg:hidden w-9 h-9 rounded-xl flex items-center justify-center border border-slate-200 text-slate-500 hover:bg-slate-50">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
