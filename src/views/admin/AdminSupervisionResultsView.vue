@@ -3,6 +3,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { supabase } from '../../supabase'
 import { utils as xlsxUtils, writeFile as xlsxWriteFile } from 'xlsx'
+import SupervisionAnswerEditModal from '../../components/supervision/SupervisionAnswerEditModal.vue'
 
 const router = useRouter()
 const route  = useRoute()
@@ -15,6 +16,19 @@ const questions = ref([])
 const responses = ref([])
 const allSchools = ref([])
 let realtimeChannel = null
+
+// ─── แก้คำตอบ (เฉพาะแอดมิน / ผู้สร้างแบบ / ผู้รับผิดชอบรายบุคคล — RLS ตรวจซ้ำอีกชั้น) ─────
+const canEditAnswers = ref(false)
+const editingResponse = ref(null)
+const editorNames = ref({})   // profile id → ชื่อ สำหรับป้าย "แก้ไขโดย"
+function respondentLabel(r) {
+  if (form.value?.respondent_type === 'individual') return r.respondent_info?.name || 'ไม่ระบุตัวตน'
+  return allSchools.value.find(s => s.id === r.school_id)?.name || r.school_name || '—'
+}
+async function onAnswersSaved() {
+  editingResponse.value = null
+  await load()
+}
 
 // ─── Load data ────────────────────────────────────────────────────────────────
 async function load() {
@@ -40,6 +54,14 @@ async function load() {
   responses.value = rsp || []
   allSchools.value = sc || []
 
+  const editorIds = [...new Set(responses.value.map(r => r.edited_by).filter(Boolean))]
+  if (editorIds.length) {
+    const { data: eds } = await supabase.from('profiles')
+      .select('id, title, first_name, last_name, full_name').in('id', editorIds)
+    editorNames.value = Object.fromEntries((eds || []).map(p => [p.id,
+      (p.first_name || p.last_name) ? `${p.title || ''}${p.first_name || ''} ${p.last_name || ''}`.trim() : (p.full_name || '')]))
+  }
+
   loading.value = false
 }
 
@@ -59,6 +81,8 @@ function subscribeRealtime() {
 onMounted(async () => {
   await load()
   subscribeRealtime()
+  const { data } = await supabase.rpc('can_manage_supervision_form', { p_form_id: formId.value })
+  canEditAnswers.value = data === true
 })
 
 onUnmounted(() => {
@@ -664,6 +688,7 @@ function formatDate(d) {
                 </th>
                 <th v-if="form?.respondent_type === 'individual'" class="pb-2 font-medium pr-4">ข้อมูลเพิ่มเติม</th>
                 <th class="pb-2 font-medium">วันที่ส่ง</th>
+                <th v-if="canEditAnswers" class="pb-2 font-medium text-right">คำตอบ</th>
               </tr>
             </thead>
             <tbody>
@@ -686,7 +711,19 @@ function formatDate(d) {
                     <span v-if="r.respondent_info?.age_range" class="bg-amber-50 text-amber-600 px-1.5 py-0.5 rounded text-[10px]">{{ r.respondent_info.age_range }}</span>
                   </div>
                 </td>
-                <td class="py-2 text-slate-500">{{ formatDate(r.submitted_at) }}</td>
+                <td class="py-2 text-slate-500">
+                  {{ formatDate(r.submitted_at) }}
+                  <span v-if="r.edited_at" class="block text-[10px] text-amber-600"
+                    :title="`แก้ไขล่าสุด ${formatDate(r.edited_at)}`">
+                    ✎ แก้ไขโดยผู้ดูแล{{ editorNames[r.edited_by] ? ` (${editorNames[r.edited_by]})` : '' }}
+                  </span>
+                </td>
+                <td v-if="canEditAnswers" class="py-2 text-right">
+                  <button @click="editingResponse = r" type="button"
+                    class="px-2.5 py-1 text-[11px] font-bold bg-primary/10 text-primary rounded-lg hover:bg-primary/20 whitespace-nowrap">
+                    ดู / แก้คำตอบ
+                  </button>
+                </td>
               </tr>
             </tbody>
           </table>
@@ -694,6 +731,9 @@ function formatDate(d) {
       </div>
     </template>
 
+    <SupervisionAnswerEditModal :response="editingResponse" :questions="questions"
+      :title="editingResponse ? respondentLabel(editingResponse) : ''"
+      @close="editingResponse = null" @saved="onAnswersSaved"/>
   </div>
 </template>
 

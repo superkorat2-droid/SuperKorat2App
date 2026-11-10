@@ -7,6 +7,7 @@ import { useExternalUpload, externalUploadEnabled, deleteUploadedFile } from '..
 import { useAreaConfig } from '../../composables/useAreaConfig'
 import QRCode from 'qrcode'
 import Swal from 'sweetalert2'
+import SupervisionFillView from '../SupervisionFillView.vue'
 
 const { config: areaConfig, fetchConfig } = useAreaConfig()
 const personnelGroups = computed(() => areaConfig.value?.personnel_groups || [])
@@ -68,6 +69,7 @@ function normalizeRespondentFields(saved) {
 // ─── Form meta ───────────────────────────────────────────────────────────────
 const meta = ref({
   title:             '',
+  title_align:       'center',
   description:       '',
   status:            'draft',
   target:            'all',
@@ -103,6 +105,8 @@ const saving    = ref(false)
 const loading   = ref(false)
 const formId    = ref(null)
 const publicToken = ref(null)
+// id คำถามที่โหลดมาจากฐานข้อมูล — ใช้หาว่าข้อไหนถูกลบตอนบันทึก
+const loadedQuestionIds = ref([])
 
 // ─── Schools (สำหรับเลือกเป้าหมาย "เฉพาะโรงเรียน") ──────────────────────────
 const schools = ref([])
@@ -138,9 +142,13 @@ const QUESTION_TYPES = [
   { value: 'number',       label: 'ตัวเลข',           icon: 'chart-bar' },
 ]
 
+// key ของ v-for ต้องไม่ซ้ำ — Date.now() อย่างเดียวชนกันได้ถ้ากดทำสำเนารัวๆ ในมิลลิวินาทีเดียว
+let keySeq = 0
+function nextKey() { return `new-${Date.now()}-${keySeq++}` }
+
 function newQuestion() {
   return {
-    _key:              Date.now(),
+    _key:              nextKey(),
     question_text:     '',
     description:       '',
     type:              'choice',
@@ -156,7 +164,7 @@ function newQuestion() {
 
 function newSection() {
   return {
-    _key:              Date.now(),
+    _key:              nextKey(),
     question_text:     `หัวข้อส่วนที่ ${questions.value.filter(q => q.type === 'section').length + 1}`,
     description:       '',
     type:              'section',
@@ -175,6 +183,23 @@ function addSection() {
 
 function addQuestion() {
   questions.value.push(newQuestion())
+}
+
+// ทำสำเนาคำถาม (ประเภท ตัวเลือก คะแนน หลักฐาน ภาพประกอบ) แล้ววางต่อท้ายข้อต้นฉบับ
+function duplicateQuestion(i) {
+  const { id, form_id, created_at, ...rest } = questions.value[i]
+  const copy = { ...JSON.parse(JSON.stringify(rest)), _key: nextKey() }
+  questions.value.splice(i + 1, 0, copy)
+  reorder()
+}
+
+const lastQuestionIndex = computed(() => questions.value.findLastIndex(q => q.type !== 'section'))
+function duplicateLastQuestion() {
+  const src = lastQuestionIndex.value
+  if (src < 0) return
+  const { id, form_id, created_at, ...rest } = questions.value[src]
+  questions.value.push({ ...JSON.parse(JSON.stringify(rest)), _key: nextKey() })
+  reorder()
 }
 
 function removeQuestion(i) {
@@ -274,8 +299,28 @@ async function onQuestionFileSelected(e) {
   }
 }
 async function clearQuestionImage(q) {
-  if (q.image_url) await deleteUploadedFile(q.image_url)
+  // ข้อที่ทำสำเนามาใช้ไฟล์ภาพเดียวกัน — ลบไฟล์จริงเฉพาะเมื่อไม่มีข้ออื่นใช้อยู่ ไม่งั้นภาพข้อต้นฉบับหาย
+  const shared = questions.value.some(x => x !== q && x.image_url === q.image_url)
+  if (q.image_url && !shared) await deleteUploadedFile(q.image_url)
   q.image_url = ''
+}
+
+// ─── แท็บดูตัวอย่าง ───────────────────────────────────────────────────────────
+// ใช้หน้ากรอกสาธารณะตัวจริงในโหมด preview → ตัวอย่างตรงกับของจริงเสมอ ไม่ต้องบันทึกก่อน
+// สร้าง snapshot ตอนเปิดแท็บ (SupervisionFillView โหลดข้อมูลครั้งเดียวตอน mount)
+const activeTab   = ref('edit')
+const previewData = ref(null)
+function openPreview() {
+  const clone = JSON.parse(JSON.stringify({ meta: meta.value, questions: questions.value }))
+  previewData.value = {
+    form: { ...clone.meta, id: formId.value, public_token: publicToken.value },
+    questions: clone.questions.map(q => ({
+      ...q,
+      id: q.id || q._key,  // ข้อที่ยังไม่บันทึกยังไม่มี id — หน้ากรอกใช้ id เป็น key ของคำตอบ
+      question_text: q.question_text.trim() || '(ไม่มีชื่อคำถาม)',
+    })),
+  }
+  activeTab.value = 'preview'
 }
 
 // ─── Load existing form ──────────────────────────────────────────────────────
@@ -298,6 +343,7 @@ async function load() {
   publicToken.value = form.public_token
   meta.value = {
     title:             form.title,
+    title_align:       form.title_align || 'center',
     description:       form.description || '',
     status:            form.status,
     target:            form.target,
@@ -329,6 +375,7 @@ async function load() {
     image_url:         q.image_url || '',
     options:           (q.options || []).map(o => ({ score: '', is_other: false, ...o })),
   }))
+  loadedQuestionIds.value = (qs || []).map(q => q.id)
   loading.value = false
 }
 
@@ -339,10 +386,30 @@ async function save() {
     return
   }
 
+  // ข้อที่ถูกลบออก + มีคนตอบไปแล้ว → คำตอบของข้อนั้นจะหายไปด้วย (FK CASCADE) ต้องถามก่อน
+  const keptIds    = new Set(questions.value.filter(q => q.id).map(q => q.id))
+  const removedIds = loadedQuestionIds.value.filter(qid => !keptIds.has(qid))
+  if (removedIds.length) {
+    const { count } = await supabase.from('supervision_answers')
+      .select('id', { count: 'exact', head: true })
+      .in('question_id', removedIds)
+    if (count) {
+      const ok = await Swal.fire({
+        icon: 'warning',
+        title: `ลบคำถาม ${removedIds.length} ข้อ`,
+        text: `ข้อที่ลบมีคำตอบอยู่แล้ว ${count} คำตอบ — คำตอบของข้อเหล่านี้จะถูกลบไปด้วย (ข้ออื่นไม่กระทบ)`,
+        showCancelButton: true, confirmButtonText: 'ลบและบันทึก', cancelButtonText: 'ยกเลิก',
+        confirmButtonColor: '#dc2626',
+      })
+      if (!ok.isConfirmed) return
+    }
+  }
+
   saving.value = true
 
   const payload = {
     title:             meta.value.title.trim(),
+    title_align:       meta.value.title_align,
     description:       meta.value.description.trim() || null,
     status:            meta.value.status,
     target:            meta.value.target,
@@ -389,11 +456,20 @@ async function save() {
     }
   }
 
-  // Save questions: delete all then re-insert
-  await supabase.from('supervision_questions').delete().eq('form_id', id)
+  // Save questions: ห้ามลบทั้งหมดแล้วใส่ใหม่ — supervision_answers ผูก question_id แบบ ON DELETE CASCADE
+  // ลบใหม่ = คำตอบที่ส่งมาแล้วหายหมด จึงอัปเดตข้อเดิม (id เดิม) / เพิ่มข้อใหม่ / ลบเฉพาะข้อที่ผู้ใช้เอาออก
+  if (removedIds.length) {
+    const { error } = await supabase.from('supervision_questions').delete().in('id', removedIds)
+    if (error) {
+      Swal.fire({ icon: 'error', title: 'ลบคำถามไม่สำเร็จ', text: error.message })
+      saving.value = false
+      return
+    }
+  }
 
   if (questions.value.length > 0) {
     const qRows = questions.value.map((q, idx) => ({
+      ...(q.id ? { id: q.id } : {}),
       form_id:           id,
       sort_order:        idx,
       question_text:     q.question_text.trim() || '(ไม่มีชื่อคำถาม)',
@@ -406,7 +482,11 @@ async function save() {
       evidence_required: q.evidence_required || false,
       image_url:         q.image_url || '',
     }))
-    const { error } = await supabase.from('supervision_questions').insert(qRows)
+    const existingRows = qRows.filter(r => r.id)
+    const newRows      = qRows.filter(r => !r.id)
+    let error = null
+    if (existingRows.length) ({ error } = await supabase.from('supervision_questions').upsert(existingRows))
+    if (!error && newRows.length) ({ error } = await supabase.from('supervision_questions').insert(newRows))
     if (error) {
       Swal.fire({ icon: 'error', title: 'บันทึกคำถามไม่สำเร็จ', text: error.message })
       saving.value = false
@@ -417,11 +497,9 @@ async function save() {
   saving.value = false
   await Swal.fire({ icon: 'success', title: 'บันทึกแล้ว', showConfirmButton: false, timer: 1000 })
 
-  if (isNew.value) {
-    router.replace(`/dashboard/supervision/${id}/edit`)
-  } else {
-    load()
-  }
+  // โหลดใหม่ทุกครั้งเพื่อให้ข้อที่เพิ่งเพิ่มได้ id จริง — ไม่งั้นกดบันทึกซ้ำจะ insert ข้อเดิมซ้ำ
+  if (isNew.value) await router.replace(`/dashboard/supervision/${id}/edit`)
+  load()
 }
 
 onMounted(async () => {
@@ -475,9 +553,25 @@ onMounted(async () => {
       </div>
     </div>
 
+    <!-- Tabs: แก้ไข / ดูตัวอย่าง -->
+    <div v-if="!loading" class="flex gap-1 p-1 bg-slate-100 rounded-2xl w-fit">
+      <button @click="activeTab = 'edit'" type="button"
+        :class="['px-4 py-2 text-sm font-bold rounded-xl transition-all',
+          activeTab === 'edit' ? 'bg-white text-primary shadow-sm' : 'text-slate-500 hover:text-slate-700']">
+        ✏️ แก้ไข
+      </button>
+      <button @click="openPreview" type="button"
+        :class="['px-4 py-2 text-sm font-bold rounded-xl transition-all',
+          activeTab === 'preview' ? 'bg-white text-primary shadow-sm' : 'text-slate-500 hover:text-slate-700']">
+        👁 ดูตัวอย่าง
+      </button>
+    </div>
+
     <div v-if="loading" class="flex justify-center py-16">
       <div class="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin"/>
     </div>
+
+    <SupervisionFillView v-else-if="activeTab === 'preview'" :preview="previewData"/>
 
     <template v-else>
       <!-- Meta section -->
@@ -493,6 +587,16 @@ onMounted(async () => {
             <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">ชื่อแบบนิเทศ <span class="text-red-500">*</span></label>
             <input v-model="meta.title" type="text" placeholder="เช่น แบบนิเทศการเรียนการสอน ภาคเรียนที่ 1/2567"
               class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-primary"/>
+            <div class="flex items-center gap-2 mt-2">
+              <span class="text-xs text-slate-500">ตำแหน่งชื่อแบบในหน้าปก:</span>
+              <button v-for="opt in [{ value: 'left', label: 'ชิดซ้าย' }, { value: 'center', label: 'กึ่งกลาง' }]" :key="opt.value"
+                @click="meta.title_align = opt.value" type="button"
+                :class="['px-3 py-1 text-xs font-bold rounded-lg border-2 transition-all',
+                  meta.title_align === opt.value ? 'border-primary bg-primary/5 text-primary' : 'border-slate-200 text-slate-500']">
+                {{ opt.label }}
+              </button>
+              <span class="text-[11px] text-slate-400">ชื่อยาวหลายบรรทัด แนะนำชิดซ้าย</span>
+            </div>
           </div>
 
           <!-- Description -->
@@ -955,6 +1059,12 @@ onMounted(async () => {
                       q.required ? 'bg-red-100 text-red-600' : 'bg-slate-100 text-slate-400']">
                     {{ q.required ? 'จำเป็น' : 'ไม่บังคับ' }}
                   </button>
+                  <button @click="duplicateQuestion(i)" type="button" title="ทำสำเนาคำถามนี้"
+                    class="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-primary hover:bg-primary/10 rounded-lg transition-colors">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 011.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 00-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 01-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 00-3.375-3.375h-1.5a1.125 1.125 0 01-1.125-1.125v-1.5a3.375 3.375 0 00-3.375-3.375H9.75"/>
+                    </svg>
+                  </button>
                   <button @click="removeQuestion(i)" type="button"
                     class="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
@@ -1054,6 +1164,13 @@ onMounted(async () => {
             class="text-sm text-primary/70 hover:text-primary font-medium transition-colors">
             + เพิ่มคำถามอีกข้อ
           </button>
+          <template v-if="lastQuestionIndex >= 0">
+            <span class="text-slate-200">|</span>
+            <button @click="duplicateLastQuestion"
+              class="text-sm text-emerald-600 hover:text-emerald-700 font-medium transition-colors">
+              + ทำสำเนาข้อก่อนหน้า
+            </button>
+          </template>
         </div>
       </div>
     </template>

@@ -8,6 +8,11 @@ import Swal from 'sweetalert2'
 import { useFormDraft } from '../composables/useFormDraft'
 import { useAreaConfig } from '../composables/useAreaConfig'
 
+// preview = { form, questions } จากหน้าแก้ไขแบบนิเทศ (แท็บ "ดูตัวอย่าง")
+// โหมดนี้ไม่เรียก RPC ไม่เก็บแบบร่าง ไม่อัปโหลดหลักฐาน และไม่ส่งคำตอบจริง
+const props = defineProps({ preview: { type: Object, default: null } })
+const isPreview = computed(() => !!props.preview)
+
 const route = useRoute()
 const token = computed(() => route.params.token)
 
@@ -94,8 +99,9 @@ const stencilProps = computed(() =>
 // ─── Load form ────────────────────────────────────────────────────────────────
 async function loadForm() {
   loading.value = true
-  const { data, error: rpcErr } = await supabase
-    .rpc('get_supervision_form_public', { p_token: token.value })
+  const { data, error: rpcErr } = isPreview.value
+    ? { data: { ...props.preview.form, questions: props.preview.questions }, error: null }
+    : await supabase.rpc('get_supervision_form_public', { p_token: token.value })
 
   if (rpcErr || !data) {
     error.value = 'ไม่พบแบบนิเทศ หรือยังไม่ได้เผยแพร่'
@@ -120,6 +126,7 @@ async function loadForm() {
     responsiblePeople.value = pp || []
   }
   loading.value = false
+  if (isPreview.value) return
 
   // กู้คืนคำตอบที่กรอกค้างไว้ (ถ้ามี) แล้วเริ่ม autosave
   const restored = restoreDraft()
@@ -198,6 +205,10 @@ function resizeCanvas(src, maxPx = 1200) {
 
 
 async function uploadBlob(questionId, blob, ext = 'jpg') {
+  if (isPreview.value) {
+    evidenceFileUrls.value[questionId] = URL.createObjectURL(blob)
+    return
+  }
   uploadingEvidence.value[questionId] = true
   try {
     // หน้านี้เข้าได้โดยไม่ต้องล็อกอิน (ใช้ token) จึงอัปผ่าน PHP host ไม่ได้อีกแล้ว —
@@ -386,6 +397,11 @@ async function submit() {
     return
   }
 
+  if (isPreview.value) {
+    Swal.fire({ icon: 'success', title: 'ผ่านการตรวจครบทุกข้อ', text: 'นี่คือโหมดตัวอย่าง — ไม่ได้ส่งคำตอบจริง', confirmButtonText: 'ตกลง' })
+    return
+  }
+
   submitting.value = true
   const school = isIndividual.value
     ? schools.value.find(s => s.id === respondentSchoolId.value)
@@ -420,8 +436,12 @@ onMounted(() => { fetchConfig(); loadForm() })
 </script>
 
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 font-sarabun">
+  <div :class="['bg-gradient-to-br from-slate-50 to-blue-50 font-sarabun', isPreview ? 'rounded-2xl' : 'min-h-screen']">
     <div class="max-w-2xl mx-auto px-4 py-8">
+
+      <div v-if="isPreview" class="mb-4 px-4 py-2.5 rounded-xl bg-amber-100 text-amber-800 text-sm font-bold text-center">
+        👁 โหมดตัวอย่าง — ลองกรอกได้ แต่ไม่ได้บันทึกหรือส่งจริง
+      </div>
 
       <!-- Loading -->
       <div v-if="loading" class="flex flex-col items-center justify-center py-24 gap-4">
@@ -465,7 +485,7 @@ onMounted(() => { fetchConfig(); loadForm() })
       <!-- Cover page (ก่อนเริ่มทำแบบสอบถาม) -->
       <div v-else-if="form && !started" class="glass-card overflow-hidden">
         <img v-if="form.cover_image_url" :src="form.cover_image_url" class="w-full h-auto block"/>
-        <div class="p-8 text-center">
+        <div :class="['p-8', form.title_align === 'left' ? 'text-left' : 'text-center']">
           <span class="text-xs bg-primary/10 text-primary font-bold px-3 py-1 rounded-full">แบบนิเทศ</span>
           <h1 class="text-2xl font-extrabold text-slate-800 mt-3">{{ form.title }}</h1>
           <p v-if="form.description" class="text-slate-500 text-sm mt-2 whitespace-pre-line">{{ form.description }}</p>
@@ -473,7 +493,7 @@ onMounted(() => { fetchConfig(); loadForm() })
             กำหนดส่ง: {{ new Date(form.deadline).toLocaleDateString('th-TH', { year:'numeric', month:'short', day:'numeric' }) }}
           </p>
           <div v-if="form.show_responsible && (form.responsible_group || responsiblePeople.length)"
-            class="flex flex-wrap items-center justify-center gap-2 mt-4">
+            :class="['flex flex-wrap items-center gap-2 mt-4', form.title_align === 'left' ? 'justify-start' : 'justify-center']">
             <span class="text-xs text-slate-400">ผู้รับผิดชอบ:</span>
             <span v-if="form.responsible_group" class="text-xs bg-slate-100 text-slate-600 font-bold px-2.5 py-1 rounded-full">
               {{ groupLabel(form.responsible_group) }}

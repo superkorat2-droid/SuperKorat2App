@@ -488,13 +488,13 @@ onMounted(() => { fetchConfig(); loadForm() })
     <!-- Cover page (ก่อนเริ่มทำแบบสอบถาม) -->
     <div v-else-if="form && !started" class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
       <img v-if="form.cover_image_url" :src="form.cover_image_url" class="w-full h-auto block"/>
-      <div class="p-8 text-center">
+      <div :class="['p-8', form.title_align === 'left' ? 'text-left' : 'text-center']">
         <span class="text-xs bg-primary/10 text-primary font-bold px-3 py-1 rounded-full">แบบนิเทศ</span>
         <h1 class="text-2xl font-extrabold text-slate-800 mt-3">{{ form.title }}</h1>
         <p v-if="form.description" class="text-slate-500 text-sm mt-2 whitespace-pre-line">{{ form.description }}</p>
         <p v-if="form.deadline" class="text-xs text-slate-400 mt-3">กำหนดส่ง: {{ formatDate(form.deadline) }}</p>
         <div v-if="form.show_responsible && (form.responsible_group || responsiblePeople.length)"
-          class="flex flex-wrap items-center justify-center gap-2 mt-4">
+          :class="['flex flex-wrap items-center gap-2 mt-4', form.title_align === 'left' ? 'justify-start' : 'justify-center']">
           <span class="text-xs text-slate-400">ผู้รับผิดชอบ:</span>
           <span v-if="form.responsible_group" class="text-xs bg-slate-100 text-slate-600 font-bold px-2.5 py-1 rounded-full">
             {{ groupLabel(form.responsible_group) }}
