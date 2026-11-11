@@ -5,8 +5,10 @@ import { supabase } from '../supabase'
 import { Cropper } from 'vue-advanced-cropper'
 import 'vue-advanced-cropper/dist/style.css'
 import Swal from 'sweetalert2'
+import EvidenceItemsPicker from '../components/supervision/EvidenceItemsPicker.vue'
 import { useFormDraft } from '../composables/useFormDraft'
 import { useAreaConfig } from '../composables/useAreaConfig'
+import { themeStyle, findSize } from '../composables/useSupervisionTheme'
 
 // preview = { form, questions } จากหน้าแก้ไขแบบนิเทศ (แท็บ "ดูตัวอย่าง")
 // โหมดนี้ไม่เรียก RPC ไม่เก็บแบบร่าง ไม่อัปโหลดหลักฐาน และไม่ส่งคำตอบจริง
@@ -43,6 +45,7 @@ const otherText         = ref({})
 const evidenceFileUrls  = ref({})
 const evidencePreviews  = ref({})
 const evidenceLinks     = ref({})
+const evidenceItems     = ref({})  // รายการเอกสารที่ติ๊ก/พิมพ์เอง (q.settings.evidence_items)
 const uploadingEvidence = ref({})
 
 // Individual mode respondent state
@@ -113,6 +116,7 @@ async function loadForm() {
   questions.value = data.questions || []
   questions.value.forEach(q => {
     answers.value[q.id] = q.type === 'multi_choice' ? [] : q.type === 'rating' ? null : ''
+    evidenceItems.value[q.id] = []
   })
 
   const { data: sc } = await supabase
@@ -144,7 +148,7 @@ const { restoreDraft, clearDraft, watchAndSave } = useFormDraft(
     started: started.value, selectedSchool: selectedSchool.value,
     currentPageIndex: currentPageIndex.value,
     answers: answers.value, otherText: otherText.value,
-    evidenceFileUrls: evidenceFileUrls.value, evidenceLinks: evidenceLinks.value,
+    evidenceFileUrls: evidenceFileUrls.value, evidenceLinks: evidenceLinks.value, evidenceItems: evidenceItems.value,
     respondentName: respondentName.value, respondentPosition: respondentPosition.value,
     respondentSchoolId: respondentSchoolId.value, respondentGender: respondentGender.value,
     respondentAgeRange: respondentAgeRange.value, respondentPhone: respondentPhone.value,
@@ -161,6 +165,7 @@ const { restoreDraft, clearDraft, watchAndSave } = useFormDraft(
       Object.assign(evidencePreviews.value, saved.evidenceFileUrls)
     }
     if (saved.evidenceLinks) Object.assign(evidenceLinks.value, saved.evidenceLinks)
+    if (saved.evidenceItems) Object.assign(evidenceItems.value, saved.evidenceItems)
     respondentName.value     = saved.respondentName || ''
     respondentPosition.value = saved.respondentPosition || ''
     respondentSchoolId.value = saved.respondentSchoolId || null
@@ -189,6 +194,10 @@ function resolveAnswerForSubmit(q) {
 }
 
 // ─── Evidence helpers ────────────────────────────────────────────────────────
+// ส่วนหลักฐานขึ้นเมื่อต้องการไฟล์/ลิงก์ หรือผู้สร้างใส่รายการเอกสารไว้
+function hasEvidence(q) {
+  return (q.evidence_type && q.evidence_type !== 'none') || q.settings?.evidence_items?.length > 0 || !!q.settings?.evidence_allow_custom
+}
 function isImageMime(type) {
   return type?.startsWith('image/')
 }
@@ -412,6 +421,7 @@ async function submit() {
     answer:            resolveAnswerForSubmit(q),
     evidence_file_url: evidenceFileUrls.value[q.id] || null,
     evidence_link_url: evidenceLinks.value[q.id]?.trim() || null,
+    evidence_items:    evidenceItems.value[q.id] || [],
   }))
 
   const { data, error: rpcErr } = await supabase.rpc('submit_supervision_public', {
@@ -436,8 +446,9 @@ onMounted(() => { fetchConfig(); loadForm() })
 </script>
 
 <template>
-  <div :class="['bg-gradient-to-br from-slate-50 to-blue-50 font-sarabun', isPreview ? 'rounded-2xl' : 'min-h-screen']">
-    <div class="max-w-2xl mx-auto px-4 py-8">
+  <div :class="['font-sarabun', isPreview ? 'rounded-2xl' : 'min-h-screen']"
+    :style="{ ...themeStyle(form?.theme), background: 'linear-gradient(to bottom right, var(--sv-bg-from), var(--sv-bg-to))' }">
+    <div :class="[findSize(form?.display_size).maxW, 'mx-auto px-4 py-8']" :style="{ zoom: findSize(form?.display_size).zoom }">
 
       <div v-if="isPreview" class="mb-4 px-4 py-2.5 rounded-xl bg-amber-100 text-amber-800 text-sm font-bold text-center">
         👁 โหมดตัวอย่าง — ลองกรอกได้ แต่ไม่ได้บันทึกหรือส่งจริง
@@ -542,7 +553,7 @@ onMounted(() => { fetchConfig(); loadForm() })
           </div>
           <div class="mt-4">
             <div class="flex justify-between text-xs text-slate-400 mb-1">
-              <span>ตอบแล้ว {{ answered }} / {{ questions.length }} ข้อ</span>
+              <span>ตอบแล้ว {{ answered }} / {{ nonSectionQs.length }} ข้อ</span>
               <span>{{ progress }}%</span>
             </div>
             <div class="h-1.5 bg-slate-100 rounded-full overflow-hidden">
@@ -633,14 +644,14 @@ onMounted(() => { fetchConfig(); loadForm() })
 
           <!-- Section header -->
           <div v-if="q.type === 'section'"
-            class="bg-indigo-600 rounded-2xl px-5 py-4 text-white shadow-sm">
+            class="rounded-2xl px-5 py-4 text-white shadow-sm" style="background: var(--sv-section)">
             <div class="flex items-center gap-2">
-              <svg class="w-5 h-5 text-indigo-200 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+              <svg class="w-5 h-5 text-white/70 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 010 3.75H5.625a1.875 1.875 0 010-3.75z"/>
               </svg>
               <h3 class="font-extrabold text-base">{{ q.question_text }}</h3>
             </div>
-            <p v-if="q.description" class="text-indigo-200 text-sm mt-1 ml-7">{{ q.description }}</p>
+            <p v-if="q.description" class="text-white/80 text-sm mt-1 ml-7">{{ q.description }}</p>
           </div>
 
           <!-- Question card -->
@@ -742,7 +753,7 @@ onMounted(() => { fetchConfig(); loadForm() })
             </div>
 
             <!-- ─── หลักฐานอ้างอิง ────────────────────────────────────────── -->
-            <div v-if="q.evidence_type && q.evidence_type !== 'none'"
+            <div v-if="hasEvidence(q)"
               class="mt-4 pt-3 border-t border-slate-100 space-y-3">
 
               <p class="text-xs font-bold text-slate-500 flex items-center gap-1.5">
@@ -750,9 +761,16 @@ onMounted(() => { fetchConfig(); loadForm() })
                   <path stroke-linecap="round" stroke-linejoin="round" d="M18.375 12.739l-7.693 7.693a4.5 4.5 0 01-6.364-6.364l10.94-10.94A3 3 0 1119.5 7.372L8.552 18.32m.009-.01l-.01.01m5.699-9.941l-7.81 7.81a1.5 1.5 0 002.112 2.13"/>
                 </svg>
                 หลักฐานอ้างอิง
-                <span v-if="q.evidence_required" class="text-red-500">*</span>
+                <span v-if="q.evidence_required && q.evidence_type !== 'none'" class="text-red-500">*</span>
                 <span v-else class="text-slate-400 font-normal">(ไม่บังคับ)</span>
               </p>
+
+              <!-- รายการเอกสารหลักฐาน (ไม่บังคับ) -->
+              <div v-if="q.settings?.evidence_items?.length || q.settings?.evidence_allow_custom">
+                <p class="text-xs text-slate-500 mb-1.5">เอกสารที่มี (เลือกได้หลายรายการ)</p>
+                <EvidenceItemsPicker v-model="evidenceItems[q.id]"
+                  :items="q.settings?.evidence_items || []" :allow-custom="!!q.settings?.evidence_allow_custom"/>
+              </div>
 
               <!-- อัปโหลดภาพ/ไฟล์ -->
               <div v-if="['upload','both'].includes(q.evidence_type)">

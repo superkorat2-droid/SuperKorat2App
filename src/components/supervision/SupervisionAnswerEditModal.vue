@@ -11,6 +11,7 @@
 import { ref, computed, watch, onBeforeUnmount } from 'vue'
 import { supabase } from '../../supabase'
 import Swal from 'sweetalert2'
+import EvidenceItemsPicker from './EvidenceItemsPicker.vue'
 
 const props = defineProps({
   response:  { type: Object, default: null },   // null = ปิด
@@ -32,7 +33,8 @@ function stripOther(v) { return v.replace(/^อื่นๆ:?\s*/, '') }
 // คำตอบที่เก็บไว้ → ค่าที่ผูกกับช่องกรอก (แยกข้อความ "อื่นๆ" ออกมา)
 function toDraft(q, row) {
   const a = row?.answer
-  const d = { answer: a ?? null, other: '', file: row?.evidence_file_url || null, link: row?.evidence_link_url || '' }
+  const d = { answer: a ?? null, other: '', file: row?.evidence_file_url || null, link: row?.evidence_link_url || '',
+              items: [...(row?.evidence_items || [])] }
   const oth = otherOption(q)
   if (q.type === 'choice' && oth && isOtherString(a)) { d.answer = oth.value; d.other = stripOther(a) }
   if (q.type === 'multi_choice') {
@@ -69,16 +71,18 @@ async function save() {
       answer:            fromDraft(q, d),
       evidence_file_url: d.file || null,
       evidence_link_url: d.link?.trim() || null,
+      evidence_items:    d.items.length ? d.items : null,
     }
     const prev = {
       answer:            row?.answer ?? null,
       evidence_file_url: row?.evidence_file_url || null,
       evidence_link_url: row?.evidence_link_url || null,
+      evidence_items:    row?.evidence_items?.length ? row.evidence_items : null,
     }
     // '' / null / [] = ไม่ได้ตอบ เหมือนกัน — ไม่งั้นข้อที่ผู้ตอบข้ามจะถูกนับว่า "แก้" ทุกครั้ง
     const norm = o => JSON.stringify({ ...o, answer: isEmpty(o.answer) ? null : o.answer })
     if (norm(next) === norm(prev)) continue
-    if (!row && isEmpty(next.answer) && !next.evidence_file_url && !next.evidence_link_url) continue
+    if (!row && isEmpty(next.answer) && !next.evidence_file_url && !next.evidence_link_url && !next.evidence_items) continue
     if (row) updates.push({ id: row.id, ...next })
     else inserts.push({ response_id: props.response.id, question_id: q.id, ...next })
   }
@@ -129,6 +133,8 @@ onBeforeUnmount(() => {
   document.body.style.overflow = ''
   window.removeEventListener('keydown', onKey)
 })
+
+function hasEvidenceItems(q) { return q.settings?.evidence_items?.length > 0 || !!q.settings?.evidence_allow_custom }
 
 function qNumber(q) { return answerable.value.indexOf(q) + 1 }
 </script>
@@ -209,8 +215,12 @@ function qNumber(q) { return answerable.value.indexOf(q) + 1 }
               </div>
 
               <!-- หลักฐาน -->
-              <div v-if="q.evidence_type !== 'none' || draft[q.id].file || draft[q.id].link"
+              <div v-if="q.evidence_type !== 'none' || draft[q.id].file || draft[q.id].link || hasEvidenceItems(q) || draft[q.id].items.length"
                 class="pt-2 border-t border-slate-100 space-y-1.5">
+                <div v-if="hasEvidenceItems(q) || draft[q.id].items.length">
+                  <p class="text-xs text-slate-500 mb-1">เอกสารหลักฐาน:</p>
+                  <EvidenceItemsPicker v-model="draft[q.id].items" :items="q.settings?.evidence_items || []" allow-custom/>
+                </div>
                 <div v-if="draft[q.id].file" class="flex items-center gap-2 text-xs">
                   <span class="text-slate-500">ไฟล์หลักฐาน:</span>
                   <a :href="draft[q.id].file" target="_blank" rel="noopener" class="text-primary font-bold hover:underline">เปิดดู</a>

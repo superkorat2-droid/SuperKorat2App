@@ -8,6 +8,7 @@ import { useAreaConfig } from '../../composables/useAreaConfig'
 import QRCode from 'qrcode'
 import Swal from 'sweetalert2'
 import SupervisionFillView from '../SupervisionFillView.vue'
+import { SUPERVISION_THEMES, DISPLAY_SIZES } from '../../composables/useSupervisionTheme'
 
 const { config: areaConfig, fetchConfig } = useAreaConfig()
 const personnelGroups = computed(() => areaConfig.value?.personnel_groups || [])
@@ -70,6 +71,8 @@ function normalizeRespondentFields(saved) {
 const meta = ref({
   title:             '',
   title_align:       'center',
+  theme:             'site',
+  display_size:      'normal',
   description:       '',
   status:            'draft',
   target:            'all',
@@ -202,6 +205,20 @@ function duplicateLastQuestion() {
   reorder()
 }
 
+// ─── รายการเอกสารหลักฐานให้ผู้ตอบเลือก (q.settings.evidence_items / evidence_allow_custom) ───
+const evidenceDraft = ref({})  // _key คำถาม → ข้อความที่กำลังพิมพ์
+function addEvidenceItem(q) {
+  const v = (evidenceDraft.value[q._key] || '').trim()
+  evidenceDraft.value[q._key] = ''
+  if (!v) return
+  const list = q.settings?.evidence_items || []
+  if (list.includes(v)) return
+  q.settings = { ...q.settings, evidence_items: [...list, v] }
+}
+function removeEvidenceItem(q, item) {
+  q.settings = { ...q.settings, evidence_items: (q.settings?.evidence_items || []).filter(x => x !== item) }
+}
+
 function removeQuestion(i) {
   questions.value.splice(i, 1)
   reorder()
@@ -239,7 +256,8 @@ function onTypeChange(q) {
     q.options = [{ value: 'a', label: 'ตัวเลือกที่ 1', score: '' }, { value: 'b', label: 'ตัวเลือกที่ 2', score: '' }]
   }
   if (q.type === 'rating') {
-    q.settings = { max: 5 }
+    // merge — settings เก็บรายการเอกสารหลักฐานด้วย (evidence_items) ห้ามเขียนทับทั้งก้อน
+    q.settings = { ...q.settings, max: 5 }
     q.options = []
   }
   if (['text', 'textarea', 'number', 'yes_no'].includes(q.type)) {
@@ -344,6 +362,8 @@ async function load() {
   meta.value = {
     title:             form.title,
     title_align:       form.title_align || 'center',
+    theme:             form.theme || 'site',
+    display_size:      form.display_size || 'normal',
     description:       form.description || '',
     status:            form.status,
     target:            form.target,
@@ -410,6 +430,8 @@ async function save() {
   const payload = {
     title:             meta.value.title.trim(),
     title_align:       meta.value.title_align,
+    theme:             meta.value.theme,
+    display_size:      meta.value.display_size,
     description:       meta.value.description.trim() || null,
     status:            meta.value.status,
     target:            meta.value.target,
@@ -596,6 +618,37 @@ onMounted(async () => {
                 {{ opt.label }}
               </button>
               <span class="text-[11px] text-slate-400">ชื่อยาวหลายบรรทัด แนะนำชิดซ้าย</span>
+            </div>
+          </div>
+
+          <!-- ธีมสี + ขนาดการแสดงผล (หน้ากรอกของผู้ตอบ) -->
+          <div class="sm:col-span-2 flex flex-wrap items-start gap-x-8 gap-y-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">ธีมสี</label>
+              <div class="flex flex-wrap gap-2">
+                <button v-for="t in SUPERVISION_THEMES" :key="t.key" type="button"
+                  @click="meta.theme = t.key" :title="t.label"
+                  :class="['w-8 h-8 rounded-full border-2 transition-all flex items-center justify-center',
+                    meta.theme === t.key ? 'border-slate-800 scale-110 shadow' : 'border-white shadow-sm hover:scale-105']"
+                  :style="{ background: `linear-gradient(135deg, ${t.primary || 'var(--color-primary)'} 50%, ${t.section} 50%)` }">
+                  <svg v-if="meta.theme === t.key" class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/>
+                  </svg>
+                </button>
+              </div>
+              <p class="text-[11px] text-slate-400 mt-1">{{ SUPERVISION_THEMES.find(t => t.key === meta.theme)?.label }}</p>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">ขนาดการแสดงผล</label>
+              <div class="flex gap-2">
+                <button v-for="z in DISPLAY_SIZES" :key="z.key" type="button" @click="meta.display_size = z.key"
+                  :class="['px-3 py-1.5 font-bold rounded-lg border-2 transition-all',
+                    meta.display_size === z.key ? 'border-primary bg-primary/5 text-primary' : 'border-slate-200 text-slate-500']"
+                  :style="{ fontSize: `${0.75 * z.zoom}rem` }">
+                  {{ z.label }}
+                </button>
+              </div>
+              <p class="text-[11px] text-slate-400 mt-1">ดูผลได้ที่แท็บ 👁 ดูตัวอย่าง</p>
             </div>
           </div>
 
@@ -1147,6 +1200,36 @@ onMounted(async () => {
                     class="w-3.5 h-3.5 rounded accent-primary cursor-pointer"/>
                   <span class="text-xs text-slate-600">บังคับ</span>
                 </label>
+              </div>
+
+              <!-- รายการเอกสารหลักฐานให้ผู้ตอบติ๊ก (ไม่บังคับ — ใช้ได้แม้ตั้ง "ไม่ต้องการ" ไฟล์/ลิงก์) -->
+              <div class="ml-16 space-y-2">
+                <p class="text-xs text-slate-500">รายการเอกสารให้ผู้ตอบเลือก <span class="text-slate-400">(ผู้ตอบเลือกได้หลายรายการ · ไม่บังคับ)</span></p>
+                <div v-if="q.settings?.evidence_items?.length" class="flex flex-wrap gap-1.5">
+                  <span v-for="item in q.settings.evidence_items" :key="item"
+                    class="flex items-center gap-1 pl-2.5 pr-1 py-1 rounded-lg bg-slate-100 text-slate-700 text-xs font-medium">
+                    {{ item }}
+                    <button type="button" @click="removeEvidenceItem(q, item)" aria-label="ลบรายการ"
+                      class="w-4 h-4 flex items-center justify-center rounded text-slate-400 hover:text-red-500 hover:bg-white">
+                      <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                      </svg>
+                    </button>
+                  </span>
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                  <input v-model="evidenceDraft[q._key]" type="text" placeholder="เช่น แผนปฏิบัติการ แล้วกด Enter"
+                    @keydown.enter.prevent="addEvidenceItem(q)"
+                    class="flex-1 min-w-[180px] px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-primary"/>
+                  <button type="button" @click="addEvidenceItem(q)"
+                    class="px-2.5 py-1.5 text-xs font-bold bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200">+ เพิ่มรายการ</button>
+                  <label class="flex items-center gap-1.5 cursor-pointer">
+                    <input type="checkbox" :checked="!!q.settings?.evidence_allow_custom"
+                      @change="q.settings = { ...q.settings, evidence_allow_custom: $event.target.checked }"
+                      class="w-3.5 h-3.5 rounded accent-primary cursor-pointer"/>
+                    <span class="text-xs text-slate-600">ให้ผู้ตอบพิมพ์เพิ่มเองได้</span>
+                  </label>
+                </div>
               </div>
             </div>
 

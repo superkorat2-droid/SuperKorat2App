@@ -5,9 +5,11 @@ import { supabase } from '../../supabase'
 import { Cropper } from 'vue-advanced-cropper'
 import 'vue-advanced-cropper/dist/style.css'
 import Swal from 'sweetalert2'
+import EvidenceItemsPicker from '../../components/supervision/EvidenceItemsPicker.vue'
 import { useFormDraft } from '../../composables/useFormDraft'
 import { useExternalUpload, externalUploadEnabled } from '../../composables/useExternalUpload'
 import { useAreaConfig } from '../../composables/useAreaConfig'
+import { themeStyle, findSize } from '../../composables/useSupervisionTheme'
 
 const route  = useRoute()
 const router = useRouter()
@@ -46,6 +48,7 @@ const otherText         = ref({})
 const evidenceFileUrls  = ref({})
 const evidencePreviews  = ref({})
 const evidenceLinks     = ref({})
+const evidenceItems     = ref({})  // รายการเอกสารที่ติ๊ก/พิมพ์เอง (q.settings.evidence_items)
 const uploadingEvidence = ref({})
 
 // Individual mode respondent state
@@ -123,6 +126,7 @@ async function loadForm() {
   questions.value = qs || []
   questions.value.filter(q => q.type !== 'section').forEach(q => {
     answers.value[q.id] = q.type === 'multi_choice' ? [] : q.type === 'rating' ? null : ''
+    evidenceItems.value[q.id] = []
   })
 
   // ตรวจส่งซ้ำ (school mode)
@@ -165,7 +169,7 @@ const { restoreDraft, clearDraft, watchAndSave } = useFormDraft(
     started: started.value,
     currentPageIndex: currentPageIndex.value,
     answers: answers.value, otherText: otherText.value,
-    evidenceFileUrls: evidenceFileUrls.value, evidenceLinks: evidenceLinks.value,
+    evidenceFileUrls: evidenceFileUrls.value, evidenceLinks: evidenceLinks.value, evidenceItems: evidenceItems.value,
     respondentName: respondentName.value, respondentPosition: respondentPosition.value,
     respondentSchoolId: respondentSchoolId.value, respondentGender: respondentGender.value,
     respondentAgeRange: respondentAgeRange.value, respondentPhone: respondentPhone.value,
@@ -181,6 +185,7 @@ const { restoreDraft, clearDraft, watchAndSave } = useFormDraft(
       Object.assign(evidencePreviews.value, saved.evidenceFileUrls)
     }
     if (saved.evidenceLinks) Object.assign(evidenceLinks.value, saved.evidenceLinks)
+    if (saved.evidenceItems) Object.assign(evidenceItems.value, saved.evidenceItems)
     respondentName.value     = saved.respondentName || ''
     respondentPosition.value = saved.respondentPosition || ''
     respondentSchoolId.value = saved.respondentSchoolId || null
@@ -231,6 +236,10 @@ function formatDate(d) {
 }
 
 // ─── Evidence upload (same as public fill) ────────────────────────────────────
+// ส่วนหลักฐานขึ้นเมื่อต้องการไฟล์/ลิงก์ หรือผู้สร้างใส่รายการเอกสารไว้
+function hasEvidence(q) {
+  return (q.evidence_type && q.evidence_type !== 'none') || q.settings?.evidence_items?.length > 0 || !!q.settings?.evidence_allow_custom
+}
 function isImageMime(type) { return type?.startsWith('image/') }
 
 function resizeCanvas(src, maxPx = 1200) {
@@ -390,6 +399,7 @@ async function submit() {
     answer:            resolveAnswerForSubmit(q),
     evidence_file_url: evidenceFileUrls.value[q.id] || null,
     evidence_link_url: evidenceLinks.value[q.id]?.trim() || null,
+    evidence_items:    evidenceItems.value[q.id] || [],
   }))
 
   if (isIndividual.value) {
@@ -423,7 +433,9 @@ onMounted(() => { fetchConfig(); loadForm() })
 </script>
 
 <template>
-  <div class="max-w-2xl mx-auto space-y-4 pb-10">
+  <!-- หน้านี้อยู่ใน layout ของโรงเรียน: ใช้สีหลัก/หัวข้อส่วนของธีม + ขนาด แต่ไม่เปลี่ยนพื้นหลังของ layout -->
+  <div :class="[findSize(form?.display_size).maxW, 'mx-auto space-y-4 pb-10']"
+    :style="{ ...themeStyle(form?.theme), zoom: findSize(form?.display_size).zoom }">
 
     <!-- Loading -->
     <div v-if="loading" class="flex flex-col items-center justify-center py-24 gap-4">
@@ -639,14 +651,14 @@ onMounted(() => { fetchConfig(); loadForm() })
 
           <!-- Section header -->
           <div v-if="q.type === 'section'"
-            class="bg-indigo-600 rounded-2xl px-5 py-4 text-white shadow-sm">
+            class="rounded-2xl px-5 py-4 text-white shadow-sm" style="background: var(--sv-section)">
             <div class="flex items-center gap-2">
-              <svg class="w-5 h-5 text-indigo-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+              <svg class="w-5 h-5 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 010 3.75H5.625a1.875 1.875 0 010-3.75z"/>
               </svg>
               <h3 class="font-extrabold text-base">{{ q.question_text }}</h3>
             </div>
-            <p v-if="q.description" class="text-indigo-200 text-sm mt-1 ml-7">{{ q.description }}</p>
+            <p v-if="q.description" class="text-white/80 text-sm mt-1 ml-7">{{ q.description }}</p>
           </div>
 
           <!-- Question card -->
@@ -729,15 +741,22 @@ onMounted(() => { fetchConfig(); loadForm() })
             </div>
 
             <!-- Evidence -->
-            <div v-if="q.evidence_type && q.evidence_type !== 'none'" class="mt-4 pt-3 border-t border-slate-100 space-y-3">
+            <div v-if="hasEvidence(q)" class="mt-4 pt-3 border-t border-slate-100 space-y-3">
               <p class="text-xs font-bold text-slate-500 flex items-center gap-1.5">
                 <svg class="w-3.5 h-3.5 text-primary/60" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M18.375 12.739l-7.693 7.693a4.5 4.5 0 01-6.364-6.364l10.94-10.94A3 3 0 1119.5 7.372L8.552 18.32"/>
                 </svg>
                 หลักฐานอ้างอิง
-                <span v-if="q.evidence_required" class="text-red-500">*</span>
+                <span v-if="q.evidence_required && q.evidence_type !== 'none'" class="text-red-500">*</span>
                 <span v-else class="text-slate-400 font-normal">(ไม่บังคับ)</span>
               </p>
+
+              <!-- รายการเอกสารหลักฐาน (ไม่บังคับ) -->
+              <div v-if="q.settings?.evidence_items?.length || q.settings?.evidence_allow_custom">
+                <p class="text-xs text-slate-500 mb-1.5">เอกสารที่มี (เลือกได้หลายรายการ)</p>
+                <EvidenceItemsPicker v-model="evidenceItems[q.id]"
+                  :items="q.settings?.evidence_items || []" :allow-custom="!!q.settings?.evidence_allow_custom"/>
+              </div>
               <div v-if="['upload','both'].includes(q.evidence_type)">
                 <input type="file" :id="`sfile_${q.id}`"
                   accept="image/jpeg,image/png,image/webp,image/heic,image/gif,application/pdf"

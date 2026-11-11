@@ -132,13 +132,13 @@ function hexToRgb(hex) {
   return r ? [parseInt(r[1],16), parseInt(r[2],16), parseInt(r[3],16)] : [30,58,95]
 }
 
-function darken(hex, pct) {
+export function darken(hex, pct) {
   const [r,g,b] = hexToRgb(hex)
   const f = 1 - pct/100
   return `rgb(${Math.round(r*f)},${Math.round(g*f)},${Math.round(b*f)})`
 }
 
-function alphaOf(hex, alpha) {
+export function alphaOf(hex, alpha) {
   const [r,g,b] = hexToRgb(hex)
   return `rgba(${r},${g},${b},${alpha})`
 }

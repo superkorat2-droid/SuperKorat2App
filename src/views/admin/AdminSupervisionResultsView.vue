@@ -121,8 +121,34 @@ function getAnswers(q) {
   return getAnswerObjects(q).map(a => a.answer)
 }
 
-function evidenceCount(q) {
+function fileLinkCount(q) {
   return getAnswerObjects(q).filter(a => a.evidence_file_url || a.evidence_link_url).length
+}
+
+// นับคนที่มีหลักฐานอย่างใดอย่างหนึ่ง (ไฟล์ / ลิงก์ / ติ๊กรายการเอกสาร)
+function evidenceCount(q) {
+  return getAnswerObjects(q).filter(a => a.evidence_file_url || a.evidence_link_url || a.evidence_items?.length).length
+}
+
+// ─── รายการเอกสารหลักฐาน (q.settings.evidence_items + ที่ผู้ตอบพิมพ์เอง) ──────────
+function hasEvidenceItems(q) {
+  return q.settings?.evidence_items?.length > 0 || !!q.settings?.evidence_allow_custom
+}
+function hasAnyEvidence(q) {
+  return (q.evidence_type && q.evidence_type !== 'none') || hasEvidenceItems(q)
+}
+// [{ label, count, custom }] — รายการของผู้สร้างเรียงตามที่ตั้งไว้ (แสดงแม้ได้ 0) แล้วตามด้วยที่ผู้ตอบพิมพ์เอง
+function evidenceItemTally(q) {
+  const defined = q.settings?.evidence_items || []
+  const counts = {}
+  for (const a of getAnswerObjects(q)) {
+    for (const v of (a.evidence_items || [])) counts[v] = (counts[v] || 0) + 1
+  }
+  const customs = Object.keys(counts).filter(k => !defined.includes(k)).sort((a, b) => counts[b] - counts[a])
+  return [
+    ...defined.map(label => ({ label, count: counts[label] || 0, custom: false })),
+    ...customs.map(label => ({ label, count: counts[label], custom: true })),
+  ]
 }
 
 // ─── Section grouping ─────────────────────────────────────────────────────────
@@ -322,20 +348,25 @@ function exportExcel() {
     const label = qSectionMap[q.id] ? `[${qSectionMap[q.id]}] ${q.question_text}` : q.question_text
     const isChoiceScored = q.type === 'choice' && q.options?.some(o => o.score !== '' && o.score !== null && o.score !== undefined)
     const hasScoreCol = q.type === 'yes_no' || isChoiceScored
+    const hasItemsCol = hasEvidenceItems(q)
     headers.push(label)
     if (hasScoreCol) headers.push(`${label} (คะแนน)`)
-    colPlan.push({ q, hasScoreCol })
+    if (hasItemsCol) headers.push(`${label} (เอกสารหลักฐาน)`)
+    colPlan.push({ q, hasScoreCol, hasItemsCol })
   }
 
   const rows = responses.value.map(r => {
     const school = allSchools.value.find(s => s.id === r.school_id)
     const date = new Date(r.submitted_at).toLocaleDateString('th-TH')
     const cells = [school?.name || r.school_name || '—', school?.district || '', school?.school_group || '', date]
-    for (const { q, hasScoreCol } of colPlan) {
-      const a = (r.supervision_answers || []).find(x => x.question_id === q.id)?.answer
+    for (const { q, hasScoreCol, hasItemsCol } of colPlan) {
+      const ansObj = (r.supervision_answers || []).find(x => x.question_id === q.id)
+      const a = ansObj?.answer
+      const itemsCell = (ansObj?.evidence_items || []).join(', ')
       if (a === null || a === undefined) {
         cells.push('')
         if (hasScoreCol) cells.push('')
+        if (hasItemsCol) cells.push(itemsCell)
         continue
       }
       if (q.type === 'rating' || q.type === 'number') {
@@ -350,6 +381,7 @@ function exportExcel() {
         cells.push(String(a))
       }
       if (hasScoreCol) cells.push(scoreForAnswer(q, a))
+      if (hasItemsCol) cells.push(itemsCell)
     }
     return cells
   })
@@ -498,9 +530,9 @@ function formatDate(d) {
                 {{ { text:'ข้อความสั้น', textarea:'ข้อความยาว', choice:'เลือกคำตอบเดียว',
                      multi_choice:'เลือกได้หลายข้อ', rating:'ระดับคะแนน', yes_no:'ใช่/ไม่ใช่', number:'ตัวเลข' }[q.type] }}
               </span>
-              <span v-if="q.evidence_type && q.evidence_type !== 'none'"
+              <span v-if="hasAnyEvidence(q)"
                 class="text-xs bg-amber-100 text-amber-700 font-bold px-2 py-0.5 rounded-full">
-                {{ { upload:'📎 อัปโหลด', url:'🔗 ลิงก์', both:'📎🔗 ทั้งสอง' }[q.evidence_type] }}
+                {{ { none:'📋 รายการเอกสาร', upload:'📎 อัปโหลด', url:'🔗 ลิงก์', both:'📎🔗 ทั้งสอง' }[q.evidence_type || 'none'] }}
                 {{ evidenceCount(q) > 0 ? `(${evidenceCount(q)})` : '' }}
               </span>
             </div>
@@ -631,9 +663,9 @@ function formatDate(d) {
           </template>
 
           <!-- หลักฐานอ้างอิง (สำหรับทุกประเภทคำถาม ยกเว้น text/textarea ที่แสดงแล้ว) -->
-          <div v-if="q.evidence_type && q.evidence_type !== 'none' && !['text','textarea'].includes(q.type) && evidenceCount(q) > 0"
+          <div v-if="q.evidence_type && q.evidence_type !== 'none' && !['text','textarea'].includes(q.type) && fileLinkCount(q) > 0"
             class="mt-4 pt-3 border-t border-slate-100">
-            <p class="text-xs font-bold text-slate-500 mb-2">หลักฐานอ้างอิง ({{ evidenceCount(q) }} รายการ)</p>
+            <p class="text-xs font-bold text-slate-500 mb-2">หลักฐานอ้างอิง ({{ fileLinkCount(q) }} รายการ)</p>
             <div class="space-y-2 max-h-48 overflow-y-auto">
               <div v-for="(r, ri) in responses" :key="r.id">
                 <template v-for="ansObj in (r.supervision_answers||[]).filter(a => a.question_id === q.id && (a.evidence_file_url || a.evidence_link_url))" :key="ansObj.id">
@@ -649,6 +681,22 @@ function formatDate(d) {
                     </div>
                   </div>
                 </template>
+              </div>
+            </div>
+          </div>
+
+          <!-- รายการเอกสารหลักฐานที่ผู้ตอบติ๊ก -->
+          <div v-if="hasEvidenceItems(q) && responseCount > 0" class="mt-4 pt-3 border-t border-slate-100">
+            <p class="text-xs font-bold text-slate-500 mb-2">เอกสารหลักฐานที่ผู้ตอบมี (จาก {{ responseCount }} ผู้ตอบ)</p>
+            <div class="space-y-1.5">
+              <div v-for="t in evidenceItemTally(q)" :key="t.label" class="flex items-center gap-2 text-xs">
+                <span class="w-40 sm:w-56 truncate text-slate-600" :title="t.label">
+                  {{ t.label }}<span v-if="t.custom" class="text-[10px] text-slate-400"> (พิมพ์เอง)</span>
+                </span>
+                <div class="flex-1 h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                  <div class="h-full rounded-full bg-amber-400" :style="{ width: `${Math.round(t.count / responseCount * 100)}%` }"/>
+                </div>
+                <span class="w-16 text-right text-slate-500 tabular-nums">{{ t.count }} ({{ Math.round(t.count / responseCount * 100) }}%)</span>
               </div>
             </div>
           </div>

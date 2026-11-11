@@ -59,8 +59,10 @@ import AdminNtResultsView         from '../views/admin/AdminNtResultsView.vue'
 import AdminNtTrendView           from '../views/admin/AdminNtTrendView.vue'
 import PublicStudentStatsView     from '../views/PublicStudentStatsView.vue'
 import PublicNtScoresView         from '../views/PublicNtScoresView.vue'
-import AdminSupervisionFormView from '../views/admin/AdminSupervisionFormView.vue'
-import AdminSupervisionResultsView from '../views/admin/AdminSupervisionResultsView.vue'
+// โหลดแยกไฟล์ (เฉพาะผู้ดูแลใช้) — ตัวแก้ไขฝังหน้ากรอกทั้งหน้า (แท็บดูตัวอย่าง) และหน้าผลลัพธ์ใช้ xlsx
+// ถ้ารวมใน index.js จะเกินเพดาน precache 2 MiB ของ vite-plugin-pwa แล้ว build พัง
+const AdminSupervisionFormView    = () => import('../views/admin/AdminSupervisionFormView.vue')
+const AdminSupervisionResultsView = () => import('../views/admin/AdminSupervisionResultsView.vue')
 import AdminNitetCalendarView from '../views/admin/AdminNitetCalendarView.vue'
 import AdminNitetVisitsView       from '../views/admin/AdminNitetVisitsView.vue'
 import AdminNitetVisitEditorView from '../views/admin/AdminNitetVisitEditorView.vue'
