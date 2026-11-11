@@ -2,7 +2,8 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { supabase } from '../../supabase'
-import { utils as xlsxUtils, writeFile as xlsxWriteFile } from 'xlsx'
+import { buildSections, groupPct, responseScore, isScoredQuestion, summarizeByGroup, scoreColor } from '../../composables/useSupervisionScore'
+import { exportSupervisionWorkbook } from '../../composables/useSupervisionExport'
 import SupervisionAnswerEditModal from '../../components/supervision/SupervisionAnswerEditModal.vue'
 import Swal from 'sweetalert2'
 
@@ -14,8 +15,25 @@ const formId = computed(() => route.params.id)
 const loading   = ref(true)
 const form      = ref(null)
 const questions = ref([])
-const responses = ref([])
+const allResponses = ref([])   // ชุดคำตอบที่ส่งครบทั้งหมด (ไม่กรอง)
 const allSchools = ref([])
+const schoolsById = computed(() => Object.fromEntries(allSchools.value.map(s => [s.id, s])))
+
+// ─── ตัวกรอง อำเภอ / ศูนย์เครือข่าย ──────────────────────────────────────────
+// responses = ชุดที่กรองแล้ว → การ์ด กราฟ ตาราง และ Excel คิดตามตัวกรองทั้งหมด
+// แบบบุคคล: กรองด้วยโรงเรียนที่ผู้ตอบเลือก (ผู้ตอบที่ไม่เลือกโรงเรียนจะถูกซ่อนเมื่อเปิดตัวกรอง)
+const filterDistrict = ref('')
+const filterGroup    = ref('')
+const isFiltered = computed(() => !!(filterDistrict.value || filterGroup.value))
+function matchSchool(s) {
+  if (!s) return !isFiltered.value
+  return (!filterDistrict.value || s.district === filterDistrict.value)
+      && (!filterGroup.value || s.school_group === filterGroup.value)
+}
+const responses = computed(() => allResponses.value.filter(r => matchSchool(schoolsById.value[r.school_id])))
+const hiddenByFilter = computed(() => allResponses.value.length - responses.value.length)
+const filterLabel = computed(() => [filterDistrict.value && `อ.${filterDistrict.value}`, filterGroup.value].filter(Boolean).join(' · '))
+function clearFilters() { filterDistrict.value = ''; filterGroup.value = '' }
 let realtimeChannel = null
 
 // ─── แก้คำตอบ (เฉพาะแอดมิน / ผู้สร้างแบบ / ผู้รับผิดชอบรายบุคคล — RLS ตรวจซ้ำอีกชั้น) ─────
@@ -59,7 +77,7 @@ async function unlockResponse(r) {
 }
 // โรงเรียนส่งใหม่แล้ว → ห้ามคืนสถานะแถวเก่า ไม่งั้นนับซ้ำ
 function hasResubmitted(r) {
-  return !!r.school_id && responses.value.some(x => x.school_id === r.school_id)
+  return !!r.school_id && allResponses.value.some(x => x.school_id === r.school_id)
 }
 async function restoreResponse(r) {
   if (hasResubmitted(r)) return
@@ -94,10 +112,10 @@ async function load() {
 
   form.value      = formData
   questions.value = qs || []
-  responses.value = rsp || []
+  allResponses.value = rsp || []
   allSchools.value = sc || []
 
-  const editorIds = [...new Set([...responses.value, ...unlockedResponses.value].map(r => r.edited_by).filter(Boolean))]
+  const editorIds = [...new Set([...allResponses.value, ...unlockedResponses.value].map(r => r.edited_by).filter(Boolean))]
   if (editorIds.length) {
     const { data: eds } = await supabase.from('profiles')
       .select('id, title, first_name, last_name, full_name').in('id', editorIds)
@@ -134,13 +152,20 @@ onUnmounted(() => {
 
 // ─── Stats ────────────────────────────────────────────────────────────────────
 // โรงที่ปิด/ยุบแล้วไม่นับเป็นเป้าหมาย ยกเว้นตอบไว้ก่อนปิด (ไม่ให้ร้อยละเกิน 100)
-const targetSchools = computed(() => {
+// ตัวเลือกในตัวกรองมาจากโรงเรียนเป้าหมายทั้งหมด (ไม่กรอง)
+const allTargetSchools = computed(() => {
   if (!form.value) return []
   const list = form.value.target === 'all'
     ? allSchools.value
     : allSchools.value.filter(s => form.value.target_schools?.includes(s.id))
-  return list.filter(s => s.is_active !== false || respondedIds.value.has(s.id))
+  const everResponded = new Set(allResponses.value.map(r => r.school_id))
+  return list.filter(s => s.is_active !== false || everResponded.has(s.id))
 })
+const targetSchools = computed(() => allTargetSchools.value.filter(matchSchool))
+const districtOptions = computed(() => [...new Set(allTargetSchools.value.map(s => s.district).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'th')))
+const groupOptions = computed(() => [...new Set(allTargetSchools.value
+  .filter(s => !filterDistrict.value || s.district === filterDistrict.value)
+  .map(s => s.school_group).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'th')))
 
 const totalSchools = computed(() => targetSchools.value.length)
 
@@ -194,70 +219,97 @@ function evidenceItemTally(q) {
   ]
 }
 
-// ─── Section grouping ─────────────────────────────────────────────────────────
-const sectionsData = computed(() => {
-  const sorted = [...questions.value].sort((a, b) => a.sort_order - b.sort_order)
-  const result = []
-  let current = { id: null, title: null, description: null, questions: [] }
-  for (const q of sorted) {
-    if (q.type === 'section') {
-      if (current.questions.length > 0) result.push({ ...current })
-      current = { id: q.id, title: q.question_text, description: q.description, questions: [] }
-    } else {
-      current.questions.push(q)
-    }
-  }
-  if (current.questions.length > 0) result.push({ ...current })
-  return result
-})
-
-// ─── Scoring ──────────────────────────────────────────────────────────────────
-function scoreQuestion(q) {
-  const vals = getAnswers(q)
-  if (vals.length === 0) return null
-
-  if (q.type === 'rating') {
-    const max = q.settings?.max || 5
-    const avg = vals.reduce((s, a) => s + Number(a), 0) / vals.length
-    return { score: avg, max }
-  }
-  if (q.type === 'yes_no') {
-    const yes = vals.filter(a => a === 'yes').length
-    return { score: (yes / vals.length) * 100, max: 100 }
-  }
-  if (q.type === 'choice') {
-    const hasScores = q.options?.some(o => o.score !== '' && o.score !== null && o.score !== undefined)
-    if (!hasScores) return null
-    const maxOpt = Math.max(...q.options.map(o => Number(o.score || 0)))
-    if (maxOpt <= 0) return null
-    const map = Object.fromEntries(q.options.map(o => [o.value, Number(o.score || 0)]))
-    const avg = vals.reduce((s, a) => s + (map[a] || 0), 0) / vals.length
-    return { score: avg, max: maxOpt }
-  }
-  return null
-}
+// ─── Sections + คะแนน (สูตรอยู่ใน useSupervisionScore.js ใช้ร่วมกับ Excel) ──────────
+const sectionsData = computed(() => buildSections(questions.value))
+const hasScored = computed(() => questions.value.some(isScoredQuestion))
 
 function getSectionScore(sec) {
-  let totalScore = 0, totalMax = 0
-  for (const q of sec.questions) {
-    const s = scoreQuestion(q)
-    if (s) { totalScore += s.score; totalMax += s.max }
-  }
-  if (totalMax === 0) return null
-  const pct = Math.round((totalScore / totalMax) * 100)
-  return { pct, color: pct >= 80 ? 'emerald' : pct >= 60 ? 'amber' : 'red' }
+  if (!sec.questions.some(isScoredQuestion)) return null
+  const pct = groupPct(sec.questions, responses.value)
+  return pct === null ? null : { pct, color: scoreColor(pct) }
 }
 
 const overallScore = computed(() => {
   if (responseCount.value === 0) return null
-  let totalScore = 0, totalMax = 0
-  for (const q of questions.value.filter(q => q.type !== 'section')) {
-    const s = scoreQuestion(q)
-    if (s) { totalScore += s.score; totalMax += s.max }
+  const pct = groupPct(questions.value.filter(q => q.type !== 'section'), responses.value)
+  return pct === null ? null : { pct, color: scoreColor(pct) }
+})
+
+// กราฟเปรียบเทียบรายหมวด (แสดงเมื่อมีหมวดนับคะแนน ≥ 2)
+const sectionChart = computed(() => {
+  const rows = sectionsData.value
+    .map(sec => ({ title: sec.title || '(ไม่มีหัวข้อ)', s: getSectionScore(sec) }))
+    .filter(x => x.s)
+  if (rows.length < 2) return null
+  const hex = { emerald: '#10B981', amber: '#F59E0B', red: '#EF4444' }
+  return {
+    series: [{ name: 'คะแนน (%)', data: rows.map(x => x.s.pct) }],
+    options: {
+      chart: { type: 'bar', toolbar: { show: false }, fontFamily: 'Sarabun, sans-serif' },
+      plotOptions: { bar: { horizontal: true, borderRadius: 6, distributed: true, barHeight: '60%' } },
+      colors: rows.map(x => hex[x.s.color]),
+      xaxis: { categories: rows.map(x => x.title), max: 100, labels: { formatter: v => `${v}%` } },
+      dataLabels: { enabled: true, formatter: v => `${v}%` },
+      legend: { show: false },
+      tooltip: { y: { formatter: v => `${v}%` } },
+    },
+    height: 70 + rows.length * 44,
   }
-  if (totalMax === 0) return null
-  const pct = Math.round((totalScore / totalMax) * 100)
-  return { pct, color: pct >= 80 ? 'emerald' : pct >= 60 ? 'amber' : 'red' }
+})
+
+// ─── สรุปรายศูนย์เครือข่าย (โหมดโรงเรียน) ─────────────────────────────────────
+const groupSort = ref('name')   // 'name' | 'pct'
+const groupSummary = computed(() => {
+  const rows = summarizeByGroup(targetSchools.value, responses.value, sectionsData.value, schoolsById.value)
+  return groupSort.value === 'pct' ? [...rows].sort((a, b) => (a.pct ?? 0) - (b.pct ?? 0)) : rows
+})
+
+// ─── คะแนนรายโรงเรียน/รายผู้ตอบ ──────────────────────────────────────────────
+const scoredSections = computed(() => sectionsData.value.filter(sec => sec.questions.some(isScoredQuestion)))
+const scoreSort = ref({ key: 'pct', dir: -1 })   // key: 'pct' | 'name' | sectionKey
+function sortScoresBy(key) {
+  scoreSort.value = scoreSort.value.key === key ? { key, dir: -scoreSort.value.dir } : { key, dir: key === 'name' ? 1 : -1 }
+}
+const schoolScores = computed(() => {
+  const rows = responses.value.map(r => ({
+    r, name: respondentLabel(r),
+    group: schoolsById.value[r.school_id]?.school_group || '',
+    ...responseScore(r, sectionsData.value),
+  }))
+  const { key, dir } = scoreSort.value
+  const val = x => key === 'name' ? x.name : key === 'pct' ? x.pct : x.sections[key]
+  return rows.sort((a, b) => {
+    const va = val(a), vb = val(b)
+    if (va === null || va === undefined) return 1
+    if (vb === null || vb === undefined) return -1
+    return key === 'name' ? dir * va.localeCompare(vb, 'th') : dir * (va - vb)
+  })
+})
+
+// ─── ข้อมูลผู้ตอบ (โหมดบุคคล) ───────────────────────────────────────────────
+const isIndividual = computed(() => form.value?.respondent_type === 'individual')
+const todayCount = computed(() => {
+  const d = new Date().toDateString()
+  return responses.value.filter(r => new Date(r.submitted_at).toDateString() === d).length
+})
+function tallyInfo(key, limit = 10) {
+  const c = {}
+  responses.value.forEach(r => { const v = r.respondent_info?.[key]; if (v) c[v] = (c[v] || 0) + 1 })
+  return Object.entries(c).sort((a, b) => b[1] - a[1]).slice(0, limit)
+}
+const respondentCharts = computed(() => {
+  if (!isIndividual.value) return []
+  const shown = new Set((form.value?.respondent_fields || []).filter(f => f.show).map(f => f.key))
+  const defs = [
+    { key: 'gender',    label: 'เพศ',             kind: 'donut' },
+    { key: 'age_range', label: 'ช่วงอายุ',         kind: 'donut' },
+    { key: 'position',  label: 'ตำแหน่ง/วิทยฐานะ', kind: 'bar' },
+    { key: 'school',    label: 'โรงเรียน',          kind: 'bar' },
+  ]
+  return defs.filter(d => shown.has(d.key)).map(d => {
+    const t = tallyInfo(d.key)
+    return { ...d, labels: t.map(x => x[0]), counts: t.map(x => x[1]) }
+  }).filter(d => d.counts.length)
 })
 
 const hasSections = computed(() => questions.value.some(q => q.type === 'section'))
@@ -355,84 +407,13 @@ function barOpts(categories, horizontal = false) {
   }
 }
 
-// ─── Export Excel (.xlsx) ───────────────────────────────────────────────────
-// คอลัมน์คำถามที่มีคะแนน (rating/yes_no/choice ที่ตั้งคะแนนไว้) จะมีคอลัมน์ตัวเลข
-// แยกให้คำนวณต่อได้ทันที (SUM/AVERAGE) โดยไม่ต้องแปลงข้อความเป็นตัวเลขเอง
-function labelForAnswer(q, val) {
-  if (val === null || val === undefined) return ''
-  const opt = q.options?.find(o => o.value === val)
-  return opt ? opt.label : String(val)
-}
-
-function scoreForAnswer(q, val) {
-  if (q.type === 'yes_no') return val === 'yes' ? 100 : (val === 'no' ? 0 : '')
-  if (q.type === 'choice') {
-    const opt = q.options?.find(o => o.value === val)
-    const s = opt?.score
-    return (s !== '' && s !== null && s !== undefined) ? Number(s) : ''
-  }
-  return ''
-}
-
+// ─── Export Excel (.xlsx) — หลายชีต ดู useSupervisionExport.js ─────────────────
 function exportExcel() {
-  // map question_id → section title
-  const qSectionMap = {}
-  for (const sec of sectionsData.value) {
-    sec.questions.forEach(q => { qSectionMap[q.id] = sec.title || '' })
-  }
-
-  const nonSectionQs = questions.value
-    .filter(q => q.type !== 'section')
-    .sort((a, b) => a.sort_order - b.sort_order)
-
-  const headers = ['โรงเรียน', 'อำเภอ', 'ศูนย์เครือข่าย', 'วันที่ส่ง']
-  const colPlan = []
-  for (const q of nonSectionQs) {
-    const label = qSectionMap[q.id] ? `[${qSectionMap[q.id]}] ${q.question_text}` : q.question_text
-    const isChoiceScored = q.type === 'choice' && q.options?.some(o => o.score !== '' && o.score !== null && o.score !== undefined)
-    const hasScoreCol = q.type === 'yes_no' || isChoiceScored
-    const hasItemsCol = hasEvidenceItems(q)
-    headers.push(label)
-    if (hasScoreCol) headers.push(`${label} (คะแนน)`)
-    if (hasItemsCol) headers.push(`${label} (เอกสารหลักฐาน)`)
-    colPlan.push({ q, hasScoreCol, hasItemsCol })
-  }
-
-  const rows = responses.value.map(r => {
-    const school = allSchools.value.find(s => s.id === r.school_id)
-    const date = new Date(r.submitted_at).toLocaleDateString('th-TH')
-    const cells = [school?.name || r.school_name || '—', school?.district || '', school?.school_group || '', date]
-    for (const { q, hasScoreCol, hasItemsCol } of colPlan) {
-      const ansObj = (r.supervision_answers || []).find(x => x.question_id === q.id)
-      const a = ansObj?.answer
-      const itemsCell = (ansObj?.evidence_items || []).join(', ')
-      if (a === null || a === undefined) {
-        cells.push('')
-        if (hasScoreCol) cells.push('')
-        if (hasItemsCol) cells.push(itemsCell)
-        continue
-      }
-      if (q.type === 'rating' || q.type === 'number') {
-        cells.push(Number(a))
-      } else if (Array.isArray(a)) {
-        cells.push(a.map(v => labelForAnswer(q, v)).join(', '))
-      } else if (q.type === 'yes_no') {
-        cells.push(a === 'yes' ? 'ใช่' : a === 'no' ? 'ไม่ใช่' : String(a))
-      } else if (q.type === 'choice') {
-        cells.push(labelForAnswer(q, a))
-      } else {
-        cells.push(String(a))
-      }
-      if (hasScoreCol) cells.push(scoreForAnswer(q, a))
-      if (hasItemsCol) cells.push(itemsCell)
-    }
-    return cells
+  exportSupervisionWorkbook({
+    form: form.value, questions: questions.value, responses: responses.value,
+    schools: allSchools.value, targets: targetSchools.value, pending: pendingSchools.value,
+    filterLabel: filterLabel.value, editorNames: editorNames.value,
   })
-
-  const ws = xlsxUtils.aoa_to_sheet([headers, ...rows])
-  const wb = xlsxUtils.book_new()
-  xlsxUtils.book_append_sheet(wb, ws, 'ผลลัพธ์')
-  xlsxWriteFile(wb, `supervision_${form.value?.title || 'results'}_${new Date().toISOString().slice(0,10)}.xlsx`)
 }
 
 function formatDate(d) {
@@ -478,8 +459,56 @@ function formatDate(d) {
     </div>
 
     <template v-else>
-      <!-- Summary stats -->
-      <div :class="['grid gap-4', overallScore ? 'grid-cols-2 sm:grid-cols-5' : 'grid-cols-2 sm:grid-cols-4']">
+      <!-- ตัวกรอง อำเภอ / ศูนย์เครือข่าย -->
+      <div class="glass-card px-4 py-3 flex flex-wrap items-center gap-2">
+        <span class="text-xs font-bold text-slate-500">กรองผล:</span>
+        <select v-model="filterDistrict" @change="filterGroup = ''"
+          class="px-3 py-1.5 border border-slate-200 rounded-xl text-sm bg-white/70 focus:outline-none focus:border-primary">
+          <option value="">ทุกอำเภอ</option>
+          <option v-for="d in districtOptions" :key="d" :value="d">อ.{{ d }}</option>
+        </select>
+        <select v-model="filterGroup"
+          class="px-3 py-1.5 border border-slate-200 rounded-xl text-sm bg-white/70 focus:outline-none focus:border-primary">
+          <option value="">ทุกศูนย์เครือข่าย</option>
+          <option v-for="g in groupOptions" :key="g" :value="g">{{ g }}</option>
+        </select>
+        <button v-if="isFiltered" @click="clearFilters" type="button"
+          class="text-xs font-bold text-slate-400 hover:text-slate-600">✕ ล้างตัวกรอง</button>
+        <span v-if="isFiltered" class="text-xs text-primary font-bold ml-auto">
+          แสดงเฉพาะ {{ filterLabel }} · Excel ส่งออกตามตัวกรองนี้
+        </span>
+        <span v-if="isFiltered && isIndividual && hiddenByFilter" class="w-full text-[11px] text-slate-400">
+          ซ่อน {{ hiddenByFilter }} ผู้ตอบที่ไม่อยู่ในตัวกรอง (รวมผู้ที่ไม่ได้ระบุโรงเรียน)
+        </span>
+      </div>
+
+      <!-- Summary stats: โหมดบุคคล -->
+      <div v-if="isIndividual" :class="['grid gap-4', overallScore ? 'grid-cols-3' : 'grid-cols-2']">
+        <div class="glass-card p-4 text-center">
+          <p class="text-3xl font-extrabold text-primary">{{ responseCount }}</p>
+          <p class="text-xs text-slate-500 mt-1">ผู้ตอบทั้งหมด</p>
+          <div class="flex items-center justify-center gap-1 mt-1">
+            <div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"/>
+            <span class="text-[10px] text-emerald-600 font-medium">Realtime</span>
+          </div>
+        </div>
+        <div class="glass-card p-4 text-center">
+          <p class="text-3xl font-extrabold text-emerald-600">{{ todayCount }}</p>
+          <p class="text-xs text-slate-500 mt-1">ผู้ตอบวันนี้</p>
+        </div>
+        <div v-if="overallScore"
+          :class="['rounded-2xl border shadow-sm p-4 text-center',
+            overallScore.color === 'emerald' ? 'bg-emerald-50 border-emerald-200' :
+            overallScore.color === 'amber'   ? 'bg-amber-50 border-amber-200' : 'bg-red-50 border-red-200']">
+          <p :class="['text-3xl font-extrabold',
+            overallScore.color === 'emerald' ? 'text-emerald-600' :
+            overallScore.color === 'amber'   ? 'text-amber-600' : 'text-red-500']">{{ overallScore.pct }}%</p>
+          <p class="text-xs text-slate-500 mt-1">คะแนนรวม</p>
+        </div>
+      </div>
+
+      <!-- Summary stats: โหมดโรงเรียน -->
+      <div v-else :class="['grid gap-4', overallScore ? 'grid-cols-2 sm:grid-cols-5' : 'grid-cols-2 sm:grid-cols-4']">
         <div class="glass-card p-4 text-center">
           <p class="text-3xl font-extrabold text-primary">{{ responseCount }}</p>
           <p class="text-xs text-slate-500 mt-1">ส่งแล้ว</p>
@@ -515,8 +544,8 @@ function formatDate(d) {
         </div>
       </div>
 
-      <!-- Progress bar -->
-      <div class="glass-card p-4">
+      <!-- Progress bar (โหมดโรงเรียน) -->
+      <div v-if="!isIndividual" class="glass-card p-4">
         <div class="flex justify-between text-sm font-medium text-slate-600 mb-2">
           <span>ความคืบหน้า</span>
           <span>{{ responseCount }} / {{ totalSchools }} โรงเรียน</span>
@@ -526,6 +555,127 @@ function formatDate(d) {
             :style="`width:${pct}%`"/>
         </div>
       </div>
+
+      <!-- ภาพรวมรายศูนย์เครือข่าย (โหมดโรงเรียน) -->
+      <div v-if="!isIndividual && !filterGroup && groupSummary.length > 1" class="glass-card p-5">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+          <h3 class="font-bold text-slate-700">ภาพรวมรายศูนย์เครือข่าย</h3>
+          <div class="flex gap-1 text-xs">
+            <button v-for="o in [{ k: 'name', l: 'เรียงตามชื่อ' }, { k: 'pct', l: 'ค้างส่งมากก่อน' }]" :key="o.k"
+              @click="groupSort = o.k" type="button"
+              :class="['px-2.5 py-1 rounded-lg font-bold', groupSort === o.k ? 'bg-primary text-white' : 'bg-slate-100 text-slate-500']">{{ o.l }}</button>
+          </div>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-xs">
+            <thead>
+              <tr class="text-slate-400 text-left border-b border-slate-100">
+                <th class="pb-2 font-medium pr-3">ศูนย์เครือข่าย</th>
+                <th class="pb-2 font-medium pr-3 text-right">เป้าหมาย</th>
+                <th class="pb-2 font-medium pr-3 text-right">ส่งแล้ว</th>
+                <th class="pb-2 font-medium pr-3 w-1/3">ร้อยละที่ส่ง</th>
+                <th v-if="hasScored" class="pb-2 font-medium text-right">คะแนนเฉลี่ย</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="g in groupSummary" :key="g.group" @click="filterGroup = g.group"
+                class="border-b border-slate-50 hover:bg-slate-50 cursor-pointer" title="คลิกเพื่อกรองเฉพาะศูนย์นี้">
+                <td class="py-2 pr-3 font-medium text-slate-700">{{ g.group }}</td>
+                <td class="py-2 pr-3 text-right tabular-nums text-slate-500">{{ g.targets }}</td>
+                <td class="py-2 pr-3 text-right tabular-nums text-slate-700 font-bold">{{ g.responded }}</td>
+                <td class="py-2 pr-3">
+                  <div class="flex items-center gap-2">
+                    <div class="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+                      <div :class="['h-full rounded-full', (g.pct ?? 0) >= 80 ? 'bg-emerald-500' : (g.pct ?? 0) >= 50 ? 'bg-amber-400' : 'bg-red-400']"
+                        :style="{ width: `${g.pct ?? 0}%` }"/>
+                    </div>
+                    <span class="w-10 text-right tabular-nums text-slate-600">{{ g.pct ?? '-' }}%</span>
+                  </div>
+                </td>
+                <td v-if="hasScored" class="py-2 text-right">
+                  <span v-if="g.avgScore !== null"
+                    :class="['px-2 py-0.5 rounded-full font-bold', { emerald: 'bg-emerald-100 text-emerald-700', amber: 'bg-amber-100 text-amber-700', red: 'bg-red-100 text-red-600' }[scoreColor(g.avgScore)]]">
+                    {{ g.avgScore }}%
+                  </span>
+                  <span v-else class="text-slate-300">-</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ข้อมูลผู้ตอบ (โหมดบุคคล) -->
+      <div v-if="isIndividual && respondentCharts.length && responseCount > 0" class="glass-card p-5">
+        <h3 class="font-bold text-slate-700 mb-3">ข้อมูลผู้ตอบ</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div v-for="c in respondentCharts" :key="c.key">
+            <p class="text-xs font-bold text-slate-500 mb-1">{{ c.label }}</p>
+            <apexchart v-if="c.kind === 'donut'" type="donut" :height="220"
+              :options="{ ...donutOpts(c.labels, c.counts), tooltip: { y: { formatter: v => v + ' คน' } } }" :series="c.counts"/>
+            <apexchart v-else type="bar" :height="60 + c.counts.length * 32"
+              :options="{ ...barOpts(c.labels, true), tooltip: { y: { formatter: v => v + ' คน' } } }"
+              :series="[{ name: 'จำนวน', data: c.counts }]"/>
+          </div>
+        </div>
+      </div>
+
+      <!-- คะแนนรายหมวด (กราฟ) + คะแนนรายโรงเรียน -->
+      <template v-if="hasScored && responseCount > 0">
+        <div v-if="sectionChart" class="glass-card p-5">
+          <h3 class="font-bold text-slate-700 mb-1">เปรียบเทียบคะแนนรายหมวด</h3>
+          <apexchart type="bar" :height="sectionChart.height" :options="sectionChart.options" :series="sectionChart.series"/>
+        </div>
+
+        <div class="glass-card p-5">
+          <h3 class="font-bold text-slate-700 mb-3">
+            คะแนนราย{{ isIndividual ? 'ผู้ตอบ' : 'โรงเรียน' }}
+            <span class="text-xs font-normal text-slate-400 ml-1">คลิกหัวคอลัมน์เพื่อเรียง{{ canEditAnswers ? ' · คลิกแถวเพื่อดูคำตอบ' : '' }}</span>
+          </h3>
+          <div class="overflow-x-auto max-h-[28rem] overflow-y-auto">
+            <table class="w-full text-xs">
+              <thead class="sticky top-0 bg-white/95 backdrop-blur">
+                <tr class="text-slate-400 text-left border-b border-slate-100">
+                  <th class="pb-2 font-medium pr-3 w-10">#</th>
+                  <th class="pb-2 font-medium pr-3 cursor-pointer hover:text-slate-600" @click="sortScoresBy('name')">
+                    {{ isIndividual ? 'ผู้ตอบ' : 'โรงเรียน' }} {{ scoreSort.key === 'name' ? (scoreSort.dir > 0 ? '▲' : '▼') : '' }}
+                  </th>
+                  <th v-if="!isIndividual" class="pb-2 font-medium pr-3">ศูนย์</th>
+                  <th class="pb-2 font-medium pr-3 text-right cursor-pointer hover:text-slate-600 whitespace-nowrap" @click="sortScoresBy('pct')">
+                    คะแนนรวม {{ scoreSort.key === 'pct' ? (scoreSort.dir > 0 ? '▲' : '▼') : '' }}
+                  </th>
+                  <th v-for="sec in (scoredSections.length > 1 ? scoredSections : [])" :key="sec.id ?? '_'"
+                    class="pb-2 font-medium pr-3 text-right cursor-pointer hover:text-slate-600 max-w-[9rem] truncate"
+                    :title="sec.title || '(ไม่มีหัวข้อ)'" @click="sortScoresBy(sec.id ?? '_')">
+                    {{ sec.title || '(ไม่มีหัวข้อ)' }} {{ scoreSort.key === (sec.id ?? '_') ? (scoreSort.dir > 0 ? '▲' : '▼') : '' }}
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="(x, i) in schoolScores" :key="x.r.id"
+                  @click="canEditAnswers && (editingResponse = x.r)"
+                  :class="['border-b border-slate-50', canEditAnswers ? 'hover:bg-slate-50 cursor-pointer' : '']">
+                  <td class="py-2 pr-3 text-slate-400">{{ i + 1 }}</td>
+                  <td class="py-2 pr-3 font-medium text-slate-700">{{ x.name }}</td>
+                  <td v-if="!isIndividual" class="py-2 pr-3 text-slate-500">{{ x.group }}</td>
+                  <td class="py-2 pr-3 text-right">
+                    <span v-if="x.pct !== null"
+                      :class="['px-2 py-0.5 rounded-full font-bold', { emerald: 'bg-emerald-100 text-emerald-700', amber: 'bg-amber-100 text-amber-700', red: 'bg-red-100 text-red-600' }[scoreColor(x.pct)]]">
+                      {{ x.pct }}%
+                    </span>
+                    <span v-else class="text-slate-300">-</span>
+                  </td>
+                  <td v-for="sec in (scoredSections.length > 1 ? scoredSections : [])" :key="sec.id ?? '_'"
+                    :class="['py-2 pr-3 text-right tabular-nums font-bold',
+                      { emerald: 'text-emerald-600', amber: 'text-amber-600', red: 'text-red-500', slate: 'text-slate-300' }[scoreColor(x.sections[sec.id ?? '_'])]]">
+                    {{ x.sections[sec.id ?? '_'] ?? '-' }}{{ x.sections[sec.id ?? '_'] !== null ? '%' : '' }}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </template>
 
       <!-- No responses yet -->
       <div v-if="responseCount === 0"
@@ -748,8 +898,8 @@ function formatDate(d) {
         </template>
       </template>
 
-      <!-- Pending schools table -->
-      <div v-if="pendingSchools.length > 0" class="glass-card p-5">
+      <!-- Pending schools table (โหมดโรงเรียน) -->
+      <div v-if="!isIndividual && pendingSchools.length > 0" class="glass-card p-5">
         <h3 class="font-bold text-slate-700 mb-3 flex items-center gap-2">
           <SvgIcon name="school" class="w-4 h-4 text-amber-500"/>
           โรงเรียนที่ยังไม่ส่ง ({{ pendingSchools.length }})
