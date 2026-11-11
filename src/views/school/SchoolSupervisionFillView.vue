@@ -238,6 +238,13 @@ function formatDate(d) {
 
 // ─── Evidence upload (same as public fill) ────────────────────────────────────
 // ส่วนหลักฐานขึ้นเมื่อต้องการไฟล์/ลิงก์ หรือผู้สร้างใส่รายการเอกสารไว้
+function itemsEnabled(q) {
+  return q.settings?.evidence_items?.length > 0 || !!q.settings?.evidence_allow_custom
+}
+// มีส่วนใดของหลักฐานที่จำเป็น (ไฟล์/ลิงก์ หรือรายการเอกสาร) → หัว "หลักฐานอ้างอิง" แสดง *
+function evidenceRequired(q) {
+  return (q.evidence_required && q.evidence_type !== 'none') || (!!q.settings?.evidence_items_required && itemsEnabled(q))
+}
 function hasEvidence(q) {
   return (q.evidence_type && q.evidence_type !== 'none') || q.settings?.evidence_items?.length > 0 || !!q.settings?.evidence_allow_custom
 }
@@ -349,6 +356,10 @@ function validateQuestions(qList) {
       const selectedValues = q.type === 'multi_choice' ? (a || []) : (a ? [a] : [])
       const hasOtherSelected = selectedValues.some(v => q.options?.find(o => o.value === v)?.is_other)
       if (hasOtherSelected && !(otherText.value[q.id] || '').trim()) return `กรุณาพิมพ์ข้อความ "อื่นๆ" ในคำถาม "${q.question_text}"`
+    }
+    // รายการเอกสารหลักฐาน "จำเป็น" = ติ๊กหรือพิมพ์เองอย่างน้อย 1 รายการ
+    if (q.settings?.evidence_items_required && itemsEnabled(q) && !(evidenceItems.value[q.id] || []).length) {
+      return `กรุณาเลือกเอกสารหลักฐานอย่างน้อย 1 รายการ ในคำถาม "${q.question_text}"`
     }
     if (q.evidence_required && q.evidence_type !== 'none') {
       if (['upload','both'].includes(q.evidence_type) && !evidenceFileUrls.value[q.id]) return `กรุณาอัปโหลดหลักฐานคำถาม "${q.question_text}"`
@@ -753,13 +764,14 @@ onMounted(() => { fetchConfig(); loadForm() })
                   <path stroke-linecap="round" stroke-linejoin="round" d="M18.375 12.739l-7.693 7.693a4.5 4.5 0 01-6.364-6.364l10.94-10.94A3 3 0 1119.5 7.372L8.552 18.32"/>
                 </svg>
                 หลักฐานอ้างอิง
-                <span v-if="q.evidence_required && q.evidence_type !== 'none'" class="text-red-500">*</span>
+                <span v-if="evidenceRequired(q)" class="text-red-500">*</span>
                 <span v-else class="text-slate-400 font-normal">(ไม่บังคับ)</span>
               </p>
 
-              <!-- รายการเอกสารหลักฐาน (ไม่บังคับ) -->
-              <div v-if="q.settings?.evidence_items?.length || q.settings?.evidence_allow_custom">
-                <p class="text-xs text-slate-500 mb-1.5">เอกสารที่มี (เลือกได้หลายรายการ)</p>
+              <!-- รายการเอกสารหลักฐาน (จำเป็นได้ตาม settings.evidence_items_required) -->
+              <div v-if="itemsEnabled(q)">
+                <p class="text-xs text-slate-500 mb-1.5">เอกสารที่มี (เลือกได้หลายรายการ)
+                  <span v-if="q.settings?.evidence_items_required" class="text-red-500">*</span></p>
                 <EvidenceItemsPicker v-model="evidenceItems[q.id]"
                   :items="q.settings?.evidence_items || []" :allow-custom="!!q.settings?.evidence_allow_custom"/>
               </div>

@@ -1195,16 +1195,23 @@ onMounted(async () => {
                   <option value="url">ลิงก์ URL</option>
                   <option value="both">ทั้งสองอย่าง</option>
                 </select>
-                <label v-if="q.evidence_type !== 'none'" class="flex items-center gap-1.5 cursor-pointer">
-                  <input type="checkbox" v-model="q.evidence_required"
-                    class="w-3.5 h-3.5 rounded accent-primary cursor-pointer"/>
-                  <span class="text-xs text-slate-600">บังคับ</span>
-                </label>
+                <button v-if="q.evidence_type !== 'none'" @click="q.evidence_required = !q.evidence_required" type="button"
+                  :class="['text-xs font-bold px-2.5 py-1 rounded-xl transition-colors', q.evidence_required ? 'bg-red-100 text-red-600' : 'bg-slate-100 text-slate-400']">
+                  {{ q.evidence_required ? 'จำเป็น' : 'ไม่บังคับ' }}
+                </button>
               </div>
 
-              <!-- รายการเอกสารหลักฐานให้ผู้ตอบติ๊ก (ไม่บังคับ — ใช้ได้แม้ตั้ง "ไม่ต้องการ" ไฟล์/ลิงก์) -->
+              <!-- รายการเอกสารหลักฐานให้ผู้ตอบติ๊ก (ใช้ได้แม้ตั้ง "ไม่ต้องการ" ไฟล์/ลิงก์)
+                   จำเป็น = ต้องติ๊ก/พิมพ์เองอย่างน้อย 1 รายการ (settings.evidence_items_required) -->
               <div class="ml-16 space-y-2">
-                <p class="text-xs text-slate-500">รายการเอกสารให้ผู้ตอบเลือก <span class="text-slate-400">(ผู้ตอบเลือกได้หลายรายการ · ไม่บังคับ)</span></p>
+                <div class="flex flex-wrap items-center gap-2">
+                  <p class="text-xs text-slate-500">รายการเอกสารให้ผู้ตอบเลือก <span class="text-slate-400">(ผู้ตอบเลือกได้หลายรายการ)</span></p>
+                  <button v-if="q.settings?.evidence_items?.length || q.settings?.evidence_allow_custom" type="button"
+                    @click="q.settings = { ...q.settings, evidence_items_required: !q.settings?.evidence_items_required }"
+                    :class="['text-xs font-bold px-2.5 py-1 rounded-xl transition-colors', q.settings?.evidence_items_required ? 'bg-red-100 text-red-600' : 'bg-slate-100 text-slate-400']">
+                    {{ q.settings?.evidence_items_required ? 'จำเป็น' : 'ไม่บังคับ' }}
+                  </button>
+                </div>
                 <div v-if="q.settings?.evidence_items?.length" class="flex flex-wrap gap-1.5">
                   <span v-for="item in q.settings.evidence_items" :key="item"
                     class="flex items-center gap-1 pl-2.5 pr-1 py-1 rounded-lg bg-slate-100 text-slate-700 text-xs font-medium">
