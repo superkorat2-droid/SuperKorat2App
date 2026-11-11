@@ -129,6 +129,14 @@ async function loadForm() {
     evidenceItems.value[q.id] = []
   })
 
+  // โหลดก่อนเช็กส่งซ้ำ — หน้า "ส่งไปแล้ว" ใช้บอกว่าให้ติดต่อใคร
+  if (formData.show_responsible && formData.responsible_ids?.length) {
+    const { data: pp } = await supabase.from('profiles')
+      .select('id, title, first_name, last_name, full_name, avatar_url')
+      .in('id', formData.responsible_ids)
+    responsiblePeople.value = pp || []
+  }
+
   // ตรวจส่งซ้ำ (school mode)
   if (formData.respondent_type === 'school' && props.school?.id) {
     const { data: existing } = await supabase
@@ -142,13 +150,6 @@ async function loadForm() {
   if (formData.respondent_type === 'individual') {
     const { data: sc } = await supabase.from('schools').select('id, name, district').eq('is_active', true).order('district').order('name')
     schools.value = sc || []
-  }
-
-  if (formData.show_responsible && formData.responsible_ids?.length) {
-    const { data: pp } = await supabase.from('profiles')
-      .select('id, title, first_name, last_name, full_name, avatar_url')
-      .in('id', formData.responsible_ids)
-    responsiblePeople.value = pp || []
   }
 
   loading.value = false
@@ -477,6 +478,11 @@ onMounted(() => { fetchConfig(); loadForm() })
       </div>
       <h2 class="text-lg font-bold text-emerald-700 mb-1">ส่งแบบนิเทศไปแล้ว</h2>
       <p class="text-sm text-slate-400">โรงเรียนของคุณได้ส่งแบบนิเทศนี้เรียบร้อยแล้ว</p>
+      <!-- ส่งไปแล้ว: บอกทางแก้ (ผู้จัดการกด "ปลดล็อกให้ส่งใหม่" ในหน้าผลลัพธ์) -->
+      <p class="text-sm text-slate-500 mt-4">ต้องการแก้ไขหรือส่งใหม่ โปรดติดต่อผู้รับผิดชอบแบบนิเทศนี้ให้ <b>ปลดล็อก</b> ก่อน</p>
+      <p v-if="form?.show_responsible && (form.responsible_group || responsiblePeople.length)" class="text-sm font-bold text-slate-600 mt-1">
+        ผู้รับผิดชอบ: {{ [form.responsible_group ? groupLabel(form.responsible_group) : '', ...responsiblePeople.map(displayName)].filter(Boolean).join(', ') }}
+      </p>
       <button @click="router.push('/school')" class="mt-4 text-sm text-primary font-bold hover:underline">
         กลับหน้าหลัก
       </button>

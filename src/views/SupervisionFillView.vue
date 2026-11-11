@@ -480,6 +480,15 @@ onMounted(() => { fetchConfig(); loadForm() })
         </div>
         <h2 class="text-lg font-bold text-slate-700 mb-1">ส่งแบบนิเทศไปแล้ว</h2>
         <p class="text-sm text-slate-400">โรงเรียนของคุณได้ส่งแบบนิเทศนี้เรียบร้อยแล้ว</p>
+        <!-- ส่งไปแล้ว: บอกทางแก้ (ผู้จัดการกด "ปลดล็อกให้ส่งใหม่" ในหน้าผลลัพธ์) -->
+        <p class="text-sm text-slate-500 mt-4">ต้องการแก้ไขหรือส่งใหม่ โปรดติดต่อผู้รับผิดชอบแบบนิเทศนี้ให้ <b>ปลดล็อก</b> ก่อน</p>
+        <p v-if="form?.show_responsible && (form.responsible_group || responsiblePeople.length)" class="text-sm font-bold text-slate-600 mt-1">
+          ผู้รับผิดชอบ: {{ [form.responsible_group ? groupLabel(form.responsible_group) : '', ...responsiblePeople.map(displayName)].filter(Boolean).join(', ') }}
+        </p>
+        <p class="text-xs text-slate-400 mt-3">คำตอบที่กรอกไว้ยังเก็บอยู่ในเครื่องนี้ — ปลดล็อกแล้วเปิดลิงก์เดิมกดส่งได้เลย</p>
+        <button @click="alreadyDone = false" type="button" class="mt-4 text-sm text-primary font-bold hover:underline">
+          ← กลับไปที่แบบฟอร์ม (เช่น เลือกโรงเรียนผิด)
+        </button>
       </div>
 
       <!-- Submitted success -->

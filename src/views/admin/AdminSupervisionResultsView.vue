@@ -4,6 +4,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { supabase } from '../../supabase'
 import { utils as xlsxUtils, writeFile as xlsxWriteFile } from 'xlsx'
 import SupervisionAnswerEditModal from '../../components/supervision/SupervisionAnswerEditModal.vue'
+import Swal from 'sweetalert2'
 
 const router = useRouter()
 const route  = useRoute()
@@ -30,6 +31,41 @@ async function onAnswersSaved() {
   await load()
 }
 
+// ─── ปลดล็อกให้ส่งใหม่ (โหมดโรงเรียน) ─────────────────────────────────────────
+// ทุกจุดนับ "ส่งแล้ว" จาก is_complete = true (RPC กันส่งซ้ำ, หน้าสถานะ, หน้าหลักโรงเรียน, หน้านี้)
+// ปลดล็อก = ตั้ง false → โรงเรียนกลับเป็น "ยังไม่ส่ง" และส่งใหม่ได้ · ไม่ลบคำตอบ คืนสถานะได้
+// RPC insert ด้วย is_complete = true เสมอ → แถว false มีแค่ตัวที่ถูกปลดล็อก
+const unlockedResponses = ref([])
+async function setComplete(r, value) {
+  const { data: { user } } = await supabase.auth.getUser()
+  const { error } = await supabase.from('supervision_responses')
+    .update({ is_complete: value, edited_by: user?.id, edited_at: new Date().toISOString() })
+    .eq('id', r.id)
+  if (error) { Swal.fire({ icon: 'error', title: 'ไม่สำเร็จ', text: error.message }); return false }
+  return true
+}
+async function unlockResponse(r) {
+  const ok = await Swal.fire({
+    icon: 'question',
+    title: `ปลดล็อกให้ ${respondentLabel(r)} ส่งใหม่?`,
+    html: 'โรงเรียนจะกลับเป็น <b>ยังไม่ส่ง</b> และกรอกแบบนี้ใหม่ได้<br>คำตอบเดิมไม่ถูกลบ เก็บไว้ในกล่อง "ปลดล็อกแล้ว" และคืนสถานะได้',
+    showCancelButton: true, confirmButtonText: 'ปลดล็อก', cancelButtonText: 'ยกเลิก',
+  })
+  if (!ok.isConfirmed) return
+  if (await setComplete(r, false)) {
+    Swal.fire({ icon: 'success', title: 'ปลดล็อกแล้ว', showConfirmButton: false, timer: 1200 })
+    await load()
+  }
+}
+// โรงเรียนส่งใหม่แล้ว → ห้ามคืนสถานะแถวเก่า ไม่งั้นนับซ้ำ
+function hasResubmitted(r) {
+  return !!r.school_id && responses.value.some(x => x.school_id === r.school_id)
+}
+async function restoreResponse(r) {
+  if (hasResubmitted(r)) return
+  if (await setComplete(r, true)) await load()
+}
+
 // ─── Load data ────────────────────────────────────────────────────────────────
 async function load() {
   loading.value = true
@@ -49,12 +85,19 @@ async function load() {
     supabase.from('schools').select('id, name, district, school_group, is_active').order('district').order('name'),
   ])
 
+  const { data: unl } = await supabase.from('supervision_responses')
+    .select('*, supervision_answers(*)')
+    .eq('form_id', formId.value)
+    .eq('is_complete', false)
+    .order('edited_at', { ascending: false })
+  unlockedResponses.value = unl || []
+
   form.value      = formData
   questions.value = qs || []
   responses.value = rsp || []
   allSchools.value = sc || []
 
-  const editorIds = [...new Set(responses.value.map(r => r.edited_by).filter(Boolean))]
+  const editorIds = [...new Set([...responses.value, ...unlockedResponses.value].map(r => r.edited_by).filter(Boolean))]
   if (editorIds.length) {
     const { data: eds } = await supabase.from('profiles')
       .select('id, title, first_name, last_name, full_name').in('id', editorIds)
@@ -767,14 +810,45 @@ function formatDate(d) {
                   </span>
                 </td>
                 <td v-if="canEditAnswers" class="py-2 text-right">
-                  <button @click="editingResponse = r" type="button"
-                    class="px-2.5 py-1 text-[11px] font-bold bg-primary/10 text-primary rounded-lg hover:bg-primary/20 whitespace-nowrap">
-                    ดู / แก้คำตอบ
-                  </button>
+                  <div class="flex justify-end gap-1.5">
+                    <button @click="editingResponse = r" type="button"
+                      class="px-2.5 py-1 text-[11px] font-bold bg-primary/10 text-primary rounded-lg hover:bg-primary/20 whitespace-nowrap">
+                      ดู / แก้คำตอบ
+                    </button>
+                    <button v-if="form?.respondent_type !== 'individual'" @click="unlockResponse(r)" type="button"
+                      class="px-2.5 py-1 text-[11px] font-bold bg-amber-50 text-amber-700 rounded-lg hover:bg-amber-100 whitespace-nowrap">
+                      ปลดล็อกให้ส่งใหม่
+                    </button>
+                  </div>
                 </td>
               </tr>
             </tbody>
           </table>
+        </div>
+      </div>
+
+      <!-- ปลดล็อกแล้ว รอส่งใหม่ (ไม่นับในสถิติ/Excel) -->
+      <div v-if="unlockedResponses.length" class="glass-card p-5">
+        <h3 class="font-bold text-slate-700 mb-1 flex items-center gap-2">
+          <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 10.5V6.75a4.5 4.5 0 119 0v3.75M3.75 21.75h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H3.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/>
+          </svg>
+          ปลดล็อกแล้ว รอส่งใหม่ ({{ unlockedResponses.length }})
+        </h3>
+        <p class="text-xs text-slate-400 mb-3">คำตอบชุดเดิมเก็บไว้เป็นประวัติ ไม่นับในสถิติและ Excel</p>
+        <div class="divide-y divide-slate-100">
+          <div v-for="r in unlockedResponses" :key="r.id" class="flex flex-wrap items-center gap-2 py-2 text-xs">
+            <span class="font-medium text-slate-700 flex-1 min-w-[140px]">{{ respondentLabel(r) }}</span>
+            <span class="text-slate-400">
+              ส่งเดิม {{ formatDate(r.submitted_at) }}
+              <template v-if="r.edited_at"> · ปลดล็อก {{ formatDate(r.edited_at) }}{{ editorNames[r.edited_by] ? ` โดย ${editorNames[r.edited_by]}` : '' }}</template>
+            </span>
+            <button @click="editingResponse = r" type="button"
+              class="px-2.5 py-1 text-[11px] font-bold bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200">ดูคำตอบเดิม</button>
+            <span v-if="hasResubmitted(r)" class="px-2.5 py-1 text-[11px] font-bold bg-emerald-50 text-emerald-700 rounded-lg">✓ ส่งใหม่แล้ว</span>
+            <button v-else-if="canEditAnswers" @click="restoreResponse(r)" type="button"
+              class="px-2.5 py-1 text-[11px] font-bold bg-primary/10 text-primary rounded-lg hover:bg-primary/20">คืนสถานะส่งแล้ว</button>
+          </div>
         </div>
       </div>
     </template>
