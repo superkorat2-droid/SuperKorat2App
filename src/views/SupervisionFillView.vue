@@ -9,11 +9,22 @@ import EvidenceItemsPicker from '../components/supervision/EvidenceItemsPicker.v
 import { useFormDraft } from '../composables/useFormDraft'
 import { useAreaConfig } from '../composables/useAreaConfig'
 import { themeStyle, findSize } from '../composables/useSupervisionTheme'
+import { formWindow, windowText, windowErrorText, fmtThaiDateTime } from '../composables/useSupervisionWindow'
 
 // preview = { form, questions } จากหน้าแก้ไขแบบนิเทศ (แท็บ "ดูตัวอย่าง")
 // โหมดนี้ไม่เรียก RPC ไม่เก็บแบบร่าง ไม่อัปโหลดหลักฐาน และไม่ส่งคำตอบจริง
 const props = defineProps({ preview: { type: Object, default: null } })
 const isPreview = computed(() => !!props.preview)
+// ช่วงเวลารับคำตอบ — โหมดตัวอย่างไม่ถูกบล็อก (ผู้สร้างต้องลองได้เสมอ)
+const windowState = computed(() => isPreview.value ? 'open' : formWindow(form.value))
+
+// ชื่อสำนักงานใต้ปุ่มส่ง — สูตรเดียวกับชื่อใต้โลโก้เว็บ (areaShort ใน App.vue)
+const officeName = computed(() => {
+  const c = areaConfig.value || {}
+  if (c.tagline) return c.tagline
+  const parts = [c.area_type, c.province, c.area_number].filter(Boolean)
+  return parts.length ? parts.join(' ') : 'สำนักงานเขตพื้นที่การศึกษา'
+})
 
 const route = useRoute()
 const token = computed(() => route.params.token)
@@ -449,6 +460,11 @@ async function submit() {
     return
   }
   if (data?.error === 'already_submitted') { alreadyDone.value = true; return }
+  // ช่วงเวลา: ไม่ลบแบบร่าง — ขยายเวลาแล้วกดส่งได้เลย
+  if (data?.error === 'not_open' || data?.error === 'closed') {
+    Swal.fire({ icon: 'warning', title: data.error === 'closed' ? 'หมดเขตส่งแล้ว' : 'ยังไม่เปิดรับ', text: windowErrorText(data) })
+    return
+  }
   clearDraft()
   submitted.value = true
 }
@@ -480,6 +496,21 @@ onMounted(() => { fetchConfig(); loadForm() })
         </div>
         <h2 class="text-lg font-bold text-slate-700 mb-1">ไม่พบแบบนิเทศ</h2>
         <p class="text-sm text-slate-400">{{ error }}</p>
+      </div>
+
+      <!-- นอกช่วงเวลารับคำตอบ (open_at / deadline — migration 102) -->
+      <div v-else-if="form && windowState !== 'open' && !submitted" class="text-center py-24">
+        <div :class="['w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4', windowState === 'not_open' ? 'bg-slate-100' : 'bg-red-100']">
+          <svg :class="['w-8 h-8', windowState === 'not_open' ? 'text-slate-400' : 'text-red-400']" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+        </div>
+        <h2 class="text-lg font-bold text-slate-700 mb-1">{{ windowState === 'not_open' ? 'ยังไม่เปิดรับ' : 'หมดเขตส่งแล้ว' }}</h2>
+        <p class="text-sm text-slate-500 px-4">{{ form.title }}</p>
+        <p class="text-sm text-slate-600 font-bold mt-3">
+          {{ windowState === 'not_open' ? `เริ่มทำได้ ${fmtThaiDateTime(form.open_at)}` : (form.deadline && form.status !== 'closed' ? `หมดเขตเมื่อ ${fmtThaiDateTime(form.deadline)}` : 'ผู้ดูแลปิดรับแบบนี้แล้ว') }}
+        </p>
+        <p v-if="windowState === 'closed'" class="text-xs text-slate-400 mt-2">ต้องการส่งเพิ่ม โปรดติดต่อผู้รับผิดชอบแบบนิเทศนี้เพื่อขยายเวลา</p>
       </div>
 
       <!-- Already submitted -->
@@ -520,9 +551,7 @@ onMounted(() => { fetchConfig(); loadForm() })
           <span class="text-xs bg-primary/10 text-primary font-bold px-3 py-1 rounded-full">แบบนิเทศ</span>
           <h1 class="text-2xl font-extrabold text-slate-800 mt-3">{{ form.title }}</h1>
           <p v-if="form.description" class="text-slate-500 text-sm mt-2 whitespace-pre-line">{{ form.description }}</p>
-          <p v-if="form.deadline" class="text-xs text-slate-400 mt-3">
-            กำหนดส่ง: {{ new Date(form.deadline).toLocaleDateString('th-TH', { year:'numeric', month:'short', day:'numeric' }) }}
-          </p>
+          <p v-if="windowText(form)" class="text-xs text-slate-400 mt-3">{{ windowText(form) }}</p>
           <div v-if="form.show_responsible && (form.responsible_group || responsiblePeople.length)"
             :class="['flex flex-wrap items-center gap-2 mt-4', form.title_align === 'left' ? 'justify-start' : 'justify-center']">
             <span class="text-xs text-slate-400">ผู้รับผิดชอบ:</span>
@@ -551,9 +580,7 @@ onMounted(() => { fetchConfig(); loadForm() })
         <div class="glass-card p-6 mb-6">
           <div class="flex items-center gap-2 mb-1">
             <span class="text-xs bg-primary/10 text-primary font-bold px-3 py-1 rounded-full">แบบนิเทศ</span>
-            <span v-if="form.deadline" class="text-xs text-slate-400">
-              กำหนดส่ง: {{ new Date(form.deadline).toLocaleDateString('th-TH', { year:'numeric', month:'short', day:'numeric' }) }}
-            </span>
+            <span v-if="windowText(form)" class="text-xs text-slate-400">{{ windowText(form) }}</span>
           </div>
           <h1 class="text-2xl font-extrabold text-slate-800 mt-2">{{ form.title }}</h1>
           <p v-if="form.description" class="text-slate-500 text-sm mt-2">{{ form.description }}</p>
@@ -877,7 +904,7 @@ onMounted(() => { fetchConfig(); loadForm() })
             {{ submitting ? 'กำลังส่ง...' : 'ส่งแบบนิเทศ' }}
           </button>
           <p v-if="!isPaginated || isLastPage" class="text-center text-xs text-slate-400 mt-3">
-            ข้อมูลจะถูกส่งให้กับ สพป. เพื่อประมวลผลต่อไป
+            ข้อมูลจะถูกส่งให้กับ {{ officeName }} เพื่อประมวลผลต่อไป
           </p>
           <p v-if="isPaginated" class="text-center text-xs text-slate-400 mt-3">
             หน้า {{ currentPageIndex + 1 }} / {{ pages.length }}

@@ -9,6 +9,7 @@ import QRCode from 'qrcode'
 import Swal from 'sweetalert2'
 import SupervisionFillView from '../SupervisionFillView.vue'
 import { SUPERVISION_THEMES, DISPLAY_SIZES } from '../../composables/useSupervisionTheme'
+import { toLocalInput, fromLocalInput } from '../../composables/useSupervisionWindow'
 
 const { config: areaConfig, fetchConfig } = useAreaConfig()
 const personnelGroups = computed(() => areaConfig.value?.personnel_groups || [])
@@ -77,7 +78,8 @@ const meta = ref({
   status:            'draft',
   target:            'all',
   target_schools:    [],
-  deadline:          '',
+  open_at:           '',   // วันที่เริ่มทำได้ (ค่าในช่อง datetime-local — แปลงผ่าน useSupervisionWindow)
+  deadline:          '',   // วันหมดเขตส่ง
   allow_public:      false,
   respondent_type:   'school',
   respondent_fields: normalizeRespondentFields([]),
@@ -368,7 +370,8 @@ async function load() {
     status:            form.status,
     target:            form.target,
     target_schools:    form.target_schools || [],
-    deadline:          form.deadline ? form.deadline.slice(0, 16) : '',
+    open_at:           toLocalInput(form.open_at),
+    deadline:          toLocalInput(form.deadline),
     allow_public:      form.allow_public,
     respondent_type:   form.respondent_type || 'school',
     respondent_fields: normalizeRespondentFields(form.respondent_fields || []),
@@ -405,6 +408,10 @@ async function save() {
     Swal.fire({ icon: 'warning', title: 'กรุณาใส่ชื่อแบบนิเทศ' })
     return
   }
+  if (meta.value.open_at && meta.value.deadline && new Date(meta.value.open_at) >= new Date(meta.value.deadline)) {
+    Swal.fire({ icon: 'warning', title: 'วันที่เริ่มทำได้ต้องก่อนวันหมดเขตส่ง' })
+    return
+  }
 
   // ข้อที่ถูกลบออก + มีคนตอบไปแล้ว → คำตอบของข้อนั้นจะหายไปด้วย (FK CASCADE) ต้องถามก่อน
   const keptIds    = new Set(questions.value.filter(q => q.id).map(q => q.id))
@@ -436,7 +443,9 @@ async function save() {
     status:            meta.value.status,
     target:            meta.value.target,
     target_schools:    meta.value.target_schools,
-    deadline:          meta.value.deadline || null,
+    // ต้องแปลงเป็นเวลาพร้อมโซน — ส่ง "YYYY-MM-DDTHH:mm" ตรง ๆ ฐานข้อมูลจะตีความเป็น UTC (คลาด 7 ชม.)
+    open_at:           fromLocalInput(meta.value.open_at),
+    deadline:          fromLocalInput(meta.value.deadline),
     allow_public:      meta.value.allow_public,
     respondent_type:   meta.value.respondent_type,
     respondent_fields: meta.value.respondent_fields,
@@ -751,11 +760,20 @@ onMounted(async () => {
             </p>
           </div>
 
-          <!-- Deadline -->
-          <div>
-            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">กำหนดส่ง</label>
-            <input v-model="meta.deadline" type="datetime-local"
-              class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-primary"/>
+          <!-- ช่วงเวลารับคำตอบ: ก่อนวันเริ่ม = "ยังไม่เปิดรับ" · เลยหมดเขต = ปิดรับอัตโนมัติ (ฐานข้อมูลตรวจซ้ำ) -->
+          <div class="sm:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">วันที่เริ่มทำได้</label>
+              <input v-model="meta.open_at" type="datetime-local"
+                class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-primary"/>
+              <p class="text-[11px] text-slate-400 mt-1">ว่าง = เปิดรับทันทีเมื่อเผยแพร่</p>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">วันหมดเขตส่ง</label>
+              <input v-model="meta.deadline" type="datetime-local"
+                class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-primary"/>
+              <p class="text-[11px] text-slate-400 mt-1">เลยเวลานี้ระบบปิดรับอัตโนมัติ · ว่าง = ไม่มีหมดเขต</p>
+            </div>
           </div>
 
           <!-- Respondent type -->

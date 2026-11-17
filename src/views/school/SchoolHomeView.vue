@@ -18,7 +18,7 @@ async function loadForms() {
   loadingForms.value = true
   const { data } = await supabase
     .from('supervision_forms')
-    .select('id, title, description, deadline, status, target, target_schools, public_token, allow_public')
+    .select('id, title, description, open_at, deadline, status, target, target_schools, public_token, allow_public')
     .eq('status', 'published')
     .order('created_at', { ascending: false })
 
@@ -69,6 +69,10 @@ function formatDeadline(d) {
   return new Date(d).toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' })
 }
 
+// ยังไม่ถึงวันที่เริ่มทำได้ (open_at — migration 102)
+function isNotOpen(f) {
+  return f.open_at && new Date(f.open_at) > new Date()
+}
 function isPastDeadline(d) {
   return d && new Date(d) < new Date()
 }
@@ -165,17 +169,22 @@ const INFO_ITEMS = computed(() => [
           <div class="flex-1 min-w-0">
             <div class="flex items-center gap-2 mb-0.5">
               <span v-if="submittedMap[f.id]" class="text-xs bg-emerald-100 text-emerald-700 font-bold px-2 py-0.5 rounded-full">ส่งแล้ว ✓</span>
+              <span v-else-if="isNotOpen(f)" class="text-xs bg-slate-100 text-slate-500 font-bold px-2 py-0.5 rounded-full">ยังไม่เปิดรับ</span>
               <span v-else-if="isPastDeadline(f.deadline)" class="text-xs bg-red-100 text-red-600 font-bold px-2 py-0.5 rounded-full">หมดเวลา</span>
               <span v-else class="text-xs bg-amber-100 text-amber-700 font-bold px-2 py-0.5 rounded-full">รอกรอก</span>
             </div>
             <p class="font-semibold text-slate-800 text-sm">{{ f.title }}</p>
             <p v-if="f.description" class="text-xs text-slate-400 truncate mt-0.5">{{ f.description }}</p>
-            <p v-if="f.deadline" class="text-xs text-slate-400 mt-0.5">กำหนดส่ง: {{ formatDeadline(f.deadline) }}</p>
+            <p v-if="f.open_at && isNotOpen(f)" class="text-xs text-slate-400 mt-0.5">เริ่มทำได้: {{ formatDeadline(f.open_at) }}</p>
+            <p v-if="f.deadline" class="text-xs text-slate-400 mt-0.5">หมดเขตส่ง: {{ formatDeadline(f.deadline) }}</p>
           </div>
           <div class="flex-shrink-0">
             <!-- ส่งแล้ว -->
             <span v-if="submittedMap[f.id]"
               class="text-xs text-emerald-600 font-medium px-3">ส่งแล้ว ✓</span>
+            <!-- ยังไม่เปิดรับ -->
+            <span v-else-if="isNotOpen(f)"
+              class="text-xs text-slate-400 px-3">ยังไม่เปิดรับ</span>
             <!-- หมดเวลา -->
             <span v-else-if="isPastDeadline(f.deadline)"
               class="text-xs text-slate-400 px-3">หมดเวลา</span>

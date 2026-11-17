@@ -5,6 +5,7 @@ import { supabase } from '../../supabase'
 import { useAreaConfig } from '../../composables/useAreaConfig'
 import QRCode from 'qrcode'
 import Swal from 'sweetalert2'
+import { toLocalInput, fromLocalInput, formWindow, windowText, WINDOW_LABEL, WINDOW_COLOR } from '../../composables/useSupervisionWindow'
 
 const router = useRouter()
 const { config: areaConfig, fetchConfig } = useAreaConfig()
@@ -190,6 +191,37 @@ async function resetHomeOrder() {
   homeList.value = homeList.value.map(f => ({ ...f, home_order: null })).sort(homeSort)
 }
 
+// ─── ปรับวันเริ่ม/หมดเขตด่วน (แอดมิน หรือผู้สร้างแบบ — ตรงกับ policy update ของ supervision_forms) ───
+const dateEdit   = ref(null)   // { form, open_at, deadline } ค่าในช่อง datetime-local
+const dateSaving = ref(false)
+function canEditDates(form) { return isAdmin.value || form.created_by === currentUserId.value }
+function openDateEdit(form) {
+  dateEdit.value = { form, open_at: toLocalInput(form.open_at), deadline: toLocalInput(form.deadline) }
+}
+// ขยายหมดเขต n วัน: ต่อจากหมดเขตเดิมถ้ายังไม่ถึง ไม่งั้นนับจากตอนนี้
+function extendDays(n) {
+  const cur = dateEdit.value.deadline ? new Date(dateEdit.value.deadline) : null
+  const base = cur && cur > new Date() ? cur : new Date()
+  base.setDate(base.getDate() + n)
+  dateEdit.value.deadline = toLocalInput(base.toISOString())
+}
+async function saveDateEdit() {
+  const { form, open_at, deadline } = dateEdit.value
+  if (open_at && deadline && new Date(open_at) >= new Date(deadline)) {
+    Swal.fire({ icon: 'warning', title: 'วันที่เริ่มทำได้ต้องก่อนวันหมดเขตส่ง' })
+    return
+  }
+  dateSaving.value = true
+  const { error } = await supabase.from('supervision_forms')
+    .update({ open_at: fromLocalInput(open_at), deadline: fromLocalInput(deadline), updated_at: new Date().toISOString() })
+    .eq('id', form.id)
+  dateSaving.value = false
+  if (error) { Swal.fire({ icon: 'error', title: 'บันทึกไม่สำเร็จ', text: error.message }); return }
+  dateEdit.value = null
+  Swal.fire({ icon: 'success', title: 'ปรับวันแล้ว', showConfirmButton: false, timer: 1000 })
+  load()
+}
+
 onMounted(async () => {
   await fetchConfig()
   const { data: { user } } = await supabase.auth.getUser()
@@ -283,16 +315,16 @@ onMounted(async () => {
               <span v-if="form.allow_public" class="text-xs bg-blue-100 text-blue-700 font-bold px-2.5 py-0.5 rounded-full">
                 🔗 ลิงก์สาธารณะ
               </span>
-              <span v-if="form.deadline && new Date(form.deadline) < new Date()"
-                class="text-xs bg-amber-100 text-amber-700 font-bold px-2.5 py-0.5 rounded-full">
-                หมดเวลา
+              <span v-if="form.status === 'published'"
+                :class="['text-xs font-bold px-2.5 py-0.5 rounded-full', WINDOW_COLOR[formWindow(form)]]">
+                {{ WINDOW_LABEL[formWindow(form)] }}
               </span>
             </div>
             <h2 class="font-bold text-slate-800 text-lg leading-snug">{{ form.title }}</h2>
             <p v-if="form.description" class="text-sm text-slate-500 mt-0.5 line-clamp-2">{{ form.description }}</p>
             <div class="flex flex-wrap gap-4 mt-2 text-xs text-slate-400">
               <span>สร้างเมื่อ: {{ formatDate(form.created_at) }}</span>
-              <span v-if="form.deadline">กำหนดส่ง: {{ formatDate(form.deadline) }}</span>
+              <span v-if="windowText(form)">{{ windowText(form) }}</span>
               <span>เป้าหมาย: {{ form.target === 'all' ? 'ทุกโรงเรียน' : `${form.target_schools?.length || 0} โรงเรียน` }}</span>
             </div>
             <div v-if="form.responsible_group || responsibleFor(form).length" class="flex items-center gap-1.5 mt-2">
@@ -332,6 +364,12 @@ onMounted(async () => {
               <SvgIcon name="qrcode" class="w-3.5 h-3.5"/>
               QR
             </button>
+            <!-- ปรับวันด่วน -->
+            <button v-if="canEditDates(form)" @click="openDateEdit(form)" type="button"
+              class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-slate-100 text-slate-600 rounded-xl hover:bg-slate-200 transition-colors">
+              📅 ปรับวัน
+            </button>
+
             <!-- Edit -->
             <button @click="router.push(`/dashboard/supervision/${form.id}/edit`)"
               class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-slate-100 text-slate-600 rounded-xl hover:bg-slate-200 transition-colors">
@@ -370,6 +408,46 @@ onMounted(async () => {
         </div>
       </div>
     </div>
+
+    <!-- หน้าต่างปรับวันเริ่ม/หมดเขตด่วน -->
+    <Teleport to="body">
+      <div v-if="dateEdit"
+        class="fixed inset-0 z-[110] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm font-sarabun"
+        @click.self="!dateSaving && (dateEdit = null)">
+        <div class="bg-white rounded-t-3xl sm:rounded-3xl w-full sm:max-w-md shadow-2xl p-5 space-y-4">
+          <div>
+            <p class="text-sm font-bold text-slate-800">ปรับวันรับคำตอบ</p>
+            <p class="text-xs text-slate-400 truncate">{{ dateEdit.form.title }}</p>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-500 mb-1">วันที่เริ่มทำได้</label>
+            <input v-model="dateEdit.open_at" type="datetime-local"
+              class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-primary"/>
+            <p class="text-[11px] text-slate-400 mt-1">ว่าง = เปิดรับทันที</p>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-500 mb-1">วันหมดเขตส่ง</label>
+            <input v-model="dateEdit.deadline" type="datetime-local"
+              class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-primary"/>
+            <div class="flex flex-wrap items-center gap-1.5 mt-2">
+              <span class="text-[11px] text-slate-400">ขยายเวลา:</span>
+              <button v-for="n in [1, 3, 7]" :key="n" @click="extendDays(n)" type="button"
+                class="px-2.5 py-1 text-xs font-bold bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200">+{{ n }} วัน</button>
+              <button @click="dateEdit.deadline = ''" type="button"
+                class="px-2.5 py-1 text-xs font-bold text-slate-400 hover:text-slate-600">ไม่มีหมดเขต</button>
+            </div>
+          </div>
+          <div class="flex justify-end gap-2 pt-1">
+            <button @click="dateEdit = null" :disabled="dateSaving"
+              class="px-4 py-2 text-sm font-bold bg-slate-100 text-slate-600 rounded-xl hover:bg-slate-200">ยกเลิก</button>
+            <button @click="saveDateEdit" :disabled="dateSaving"
+              class="px-5 py-2 text-sm font-bold bg-primary text-white rounded-xl shadow disabled:opacity-50">
+              {{ dateSaving ? 'กำลังบันทึก...' : 'บันทึก' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
 
     <!-- หน้าต่างจัดลำดับแบบนิเทศในหน้าแรก -->
     <Teleport to="body">

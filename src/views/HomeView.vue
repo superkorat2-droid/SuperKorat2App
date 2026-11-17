@@ -482,13 +482,25 @@ async function loadFormStatus(form) {
   expandedStatus.value = form.id
 }
 
+// ช่วงเวลารับคำตอบแบบนิเทศ (open_at / deadline — migration 102) ฐานข้อมูลตรวจซ้ำตอนส่ง
+function formWindowState(f) {
+  const now = new Date()
+  if (f.open_at && new Date(f.open_at) > now) return 'not_open'
+  if (f.deadline && new Date(f.deadline) < now) return 'closed'
+  return 'open'
+}
+function formatOpenAt(d) {
+  return new Date(d).toLocaleDateString('th-TH', { month: 'short', day: 'numeric' })
+}
+
 function formatDeadline(d) {
   if (!d) return null
   const date = new Date(d)
   const now  = new Date()
   const diff = Math.ceil((date - now) / 86400000)
   const label = date.toLocaleDateString('th-TH', { month: 'short', day: 'numeric' })
-  if (diff < 0)  return { label: `หมดเขต ${label}`, color: 'text-red-500 bg-red-50' }
+  // เทียบเวลาจริง — Math.ceil ของ "เลยมาไม่ถึงวัน" ได้ -0 ทำให้ขึ้น "อีก 0 วัน" ทั้งที่หมดเขตแล้ว
+  if (date < now) return { label: `หมดเขต ${label}`, color: 'text-red-500 bg-red-50' }
   if (diff <= 7) return { label: `อีก ${diff} วัน (${label})`, color: 'text-amber-600 bg-amber-50' }
   return { label: `ถึง ${label}`, color: 'text-slate-500 bg-slate-100' }
 }
@@ -948,6 +960,9 @@ const stats = [
                           <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0012 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18"/></svg>
                           แบบนิเทศ
                         </span>
+                        <span v-if="formWindowState(form) === 'not_open'" class="text-xs font-medium px-2 py-0.5 rounded-full text-slate-500 bg-slate-100">
+                          เปิดรับ {{ formatOpenAt(form.open_at) }}
+                        </span>
                         <span v-if="form.deadline" :class="['text-xs font-medium px-2 py-0.5 rounded-full', formatDeadline(form.deadline)?.color]">
                           {{ formatDeadline(form.deadline)?.label }}
                         </span>
@@ -974,8 +989,13 @@ const stats = [
 
                     <!-- Fill button -->
                     <div class="flex-shrink-0 w-full sm:w-auto">
+                      <!-- นอกช่วงเวลารับคำตอบ -->
+                      <span v-if="formWindowState(form) !== 'open'"
+                        class="flex items-center justify-center px-4 py-2 text-sm font-bold bg-slate-100 text-slate-400 rounded-xl whitespace-nowrap w-full sm:w-auto cursor-not-allowed">
+                        {{ formWindowState(form) === 'not_open' ? 'ยังไม่เปิดรับ' : 'หมดเขตแล้ว' }}
+                      </span>
                       <!-- สาธารณะ: กรอกได้เลย -->
-                      <a v-if="form.allow_public && form.public_token"
+                      <a v-else-if="form.allow_public && form.public_token"
                         :href="`#/supervision/${form.public_token}`"
                         class="flex items-center justify-center gap-1.5 px-4 py-2 text-sm font-bold bg-primary text-white rounded-xl hover:-translate-y-0.5 shadow-sm transition-all whitespace-nowrap w-full sm:w-auto">
                         {{ form.respondent_type === 'individual' ? 'ร่วมตอบ' : 'ดำเนินการ' }}

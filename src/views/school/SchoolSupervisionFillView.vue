@@ -10,6 +10,7 @@ import { useFormDraft } from '../../composables/useFormDraft'
 import { useExternalUpload, externalUploadEnabled } from '../../composables/useExternalUpload'
 import { useAreaConfig } from '../../composables/useAreaConfig'
 import { themeStyle, findSize } from '../../composables/useSupervisionTheme'
+import { formWindow, windowText, windowErrorText, fmtThaiDateTime } from '../../composables/useSupervisionWindow'
 
 const route  = useRoute()
 const router = useRouter()
@@ -27,6 +28,8 @@ const submitting  = ref(false)
 const submitted   = ref(false)
 const error       = ref(null)
 const alreadyDone = ref(false)
+// ช่วงเวลารับคำตอบ (open_at / deadline — migration 102)
+const windowState = computed(() => formWindow(form.value))
 const notAssigned = ref(false)
 const started     = ref(false)
 
@@ -433,6 +436,10 @@ async function submit() {
     submitting.value = false
     if (rpcErr) { Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: rpcErr.message }); return }
     if (data?.error === 'already_submitted') { alreadyDone.value = true; return }
+    if (data?.error === 'not_open' || data?.error === 'closed') {
+      Swal.fire({ icon: 'warning', title: data.error === 'closed' ? 'หมดเขตส่งแล้ว' : 'ยังไม่เปิดรับ', text: windowErrorText(data) })
+      return
+    }
     if (data?.error === 'not_assigned') { notAssigned.value = true; return }
     if (data?.error) { Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: data.error }); return }
   }
@@ -480,6 +487,21 @@ onMounted(() => { fetchConfig(); loadForm() })
       <p class="text-sm text-slate-400">{{ error }}</p>
     </div>
 
+    <!-- นอกช่วงเวลารับคำตอบ (open_at / deadline — migration 102) -->
+    <div v-else-if="form && windowState !== 'open' && !submitted" class="text-center py-20 bg-white rounded-2xl border border-slate-100 shadow-sm">
+      <div :class="['w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4', windowState === 'not_open' ? 'bg-slate-100' : 'bg-red-100']">
+        <svg :class="['w-8 h-8', windowState === 'not_open' ? 'text-slate-400' : 'text-red-400']" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+      </div>
+      <h2 class="text-lg font-bold text-slate-700 mb-1">{{ windowState === 'not_open' ? 'ยังไม่เปิดรับ' : 'หมดเขตส่งแล้ว' }}</h2>
+      <p class="text-sm text-slate-500 px-4">{{ form.title }}</p>
+      <p class="text-sm text-slate-600 font-bold mt-3">
+        {{ windowState === 'not_open' ? `เริ่มทำได้ ${fmtThaiDateTime(form.open_at)}` : (form.deadline && form.status !== 'closed' ? `หมดเขตเมื่อ ${fmtThaiDateTime(form.deadline)}` : 'ผู้ดูแลปิดรับแบบนี้แล้ว') }}
+      </p>
+      <p v-if="windowState === 'closed'" class="text-xs text-slate-400 mt-2">ต้องการส่งเพิ่ม โปรดติดต่อผู้รับผิดชอบแบบนิเทศนี้เพื่อขยายเวลา</p>
+    </div>
+
     <!-- Already submitted -->
     <div v-else-if="alreadyDone" class="text-center py-20 bg-white rounded-2xl border border-slate-100 shadow-sm">
       <div class="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -521,7 +543,7 @@ onMounted(() => { fetchConfig(); loadForm() })
         <span class="text-xs bg-primary/10 text-primary font-bold px-3 py-1 rounded-full">แบบนิเทศ</span>
         <h1 class="text-2xl font-extrabold text-slate-800 mt-3">{{ form.title }}</h1>
         <p v-if="form.description" class="text-slate-500 text-sm mt-2 whitespace-pre-line">{{ form.description }}</p>
-        <p v-if="form.deadline" class="text-xs text-slate-400 mt-3">กำหนดส่ง: {{ formatDate(form.deadline) }}</p>
+        <p v-if="windowText(form)" class="text-xs text-slate-400 mt-3">{{ windowText(form) }}</p>
         <div v-if="form.show_responsible && (form.responsible_group || responsiblePeople.length)"
           :class="['flex flex-wrap items-center gap-2 mt-4', form.title_align === 'left' ? 'justify-start' : 'justify-center']">
           <span class="text-xs text-slate-400">ผู้รับผิดชอบ:</span>
@@ -553,9 +575,7 @@ onMounted(() => { fetchConfig(); loadForm() })
           <span v-if="!form.allow_public" class="text-xs bg-slate-100 text-slate-600 font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
             🔒 ต้อง Login
           </span>
-          <span v-if="form.deadline" class="text-xs text-slate-400">
-            กำหนดส่ง: {{ formatDate(form.deadline) }}
-          </span>
+          <span v-if="windowText(form)" class="text-xs text-slate-400">{{ windowText(form) }}</span>
         </div>
         <h1 class="text-xl font-extrabold text-slate-800 mt-2">{{ form.title }}</h1>
         <p v-if="form.description" class="text-slate-500 text-sm mt-1">{{ form.description }}</p>
