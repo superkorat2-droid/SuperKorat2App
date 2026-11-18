@@ -225,6 +225,14 @@ async function saveDateEdit() {
   load()
 }
 
+// ─── เมนู "จัดการ" บนมือถือ — ปุ่มเครื่องมือ 7 ปุ่มล้นจอ และเมนูสถานะเดิมเปิดด้วย hover ซึ่งแตะบนมือถือไม่ได้ ───
+const actionForm = ref(null)
+function runAction(fn) {
+  const f = actionForm.value
+  actionForm.value = null
+  fn(f)
+}
+
 onMounted(async () => {
   await fetchConfig()
   const { data: { user } } = await supabase.auth.getUser()
@@ -330,7 +338,7 @@ onMounted(async () => {
               <span v-if="windowText(form)">{{ windowText(form) }}</span>
               <span>เป้าหมาย: {{ form.target === 'all' ? 'ทุกโรงเรียน' : `${form.target_schools?.length || 0} โรงเรียน` }}</span>
             </div>
-            <div v-if="form.responsible_group || responsibleFor(form).length" class="flex items-center gap-1.5 mt-2">
+            <div v-if="form.responsible_group || responsibleFor(form).length" class="flex flex-wrap items-center gap-1.5 mt-2">
               <span class="text-xs text-slate-400">ผู้รับผิดชอบ:</span>
               <span v-if="form.responsible_group" class="text-xs bg-slate-100 text-slate-600 font-bold px-2 py-0.5 rounded-full">
                 {{ groupLabel(form.responsible_group) }}
@@ -345,8 +353,22 @@ onMounted(async () => {
             </div>
           </div>
 
-          <!-- Actions -->
-          <div class="flex flex-wrap gap-2 flex-shrink-0">
+          <!-- Actions (มือถือ): ดูผล + เมนูจัดการ -->
+          <div class="flex sm:hidden gap-2 w-full">
+            <button @click="router.push(`/dashboard/supervision/${form.id}/results`)"
+              class="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-bold bg-primary/10 text-primary rounded-xl">
+              <SvgIcon name="chart-bar" class="w-3.5 h-3.5"/>
+              ดูผล
+            </button>
+            <button @click="actionForm = form" type="button"
+              class="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-bold bg-slate-100 text-slate-600 rounded-xl">
+              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
+              จัดการ
+            </button>
+          </div>
+
+          <!-- Actions (จอใหญ่) -->
+          <div class="hidden sm:flex flex-wrap gap-2 flex-shrink-0">
             <!-- View results -->
             <button @click="router.push(`/dashboard/supervision/${form.id}/results`)"
               class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-primary/10 text-primary rounded-xl hover:bg-primary/20 transition-colors">
@@ -411,6 +433,58 @@ onMounted(async () => {
         </div>
       </div>
     </div>
+
+    <!-- เมนูจัดการ (มือถือ) — เด้งจากขอบล่าง -->
+    <Teleport to="body">
+      <div v-if="actionForm" class="fixed inset-0 z-[110] flex items-end bg-black/50 font-sarabun sm:hidden"
+        @click.self="actionForm = null">
+        <div class="bg-white rounded-t-3xl w-full p-4 pb-6 space-y-3 max-h-[85dvh] overflow-y-auto">
+          <div class="w-10 h-1 rounded-full bg-slate-200 mx-auto"/>
+          <p class="text-sm font-bold text-slate-800 line-clamp-2 px-1">{{ actionForm.title }}</p>
+          <div class="grid grid-cols-3 gap-2">
+            <button @click="runAction(f => router.push(`/dashboard/supervision/${f.id}/results`))" type="button"
+              class="flex flex-col items-center gap-1 py-3 rounded-2xl bg-primary/10 text-primary text-xs font-bold">
+              <SvgIcon name="chart-bar" class="w-5 h-5"/>ดูผล
+            </button>
+            <button @click="runAction(copyPublicLink)" type="button"
+              :class="['flex flex-col items-center gap-1 py-3 rounded-2xl text-xs font-bold', actionForm.allow_public ? 'bg-blue-50 text-blue-700' : 'bg-slate-50 text-slate-400']">
+              <SvgIcon name="link" class="w-5 h-5"/>คัดลอกลิงก์
+            </button>
+            <button @click="runAction(downloadQR)" type="button"
+              :class="['flex flex-col items-center gap-1 py-3 rounded-2xl text-xs font-bold', actionForm.allow_public ? 'bg-blue-50 text-blue-700' : 'bg-slate-50 text-slate-400']">
+              <SvgIcon name="qrcode" class="w-5 h-5"/>QR
+            </button>
+            <button v-if="canEditDates(actionForm)" @click="runAction(openDateEdit)" type="button"
+              class="flex flex-col items-center gap-1 py-3 rounded-2xl bg-slate-100 text-slate-600 text-xs font-bold">
+              <span class="text-lg leading-5">📅</span>ปรับวัน
+            </button>
+            <button @click="runAction(f => router.push(`/dashboard/supervision/${f.id}/edit`))" type="button"
+              class="flex flex-col items-center gap-1 py-3 rounded-2xl bg-slate-100 text-slate-600 text-xs font-bold">
+              <SvgIcon name="wrench" class="w-5 h-5"/>แก้ไข
+            </button>
+            <button @click="runAction(deleteForm)" type="button"
+              class="flex flex-col items-center gap-1 py-3 rounded-2xl bg-red-50 text-red-500 text-xs font-bold">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+              </svg>ลบ
+            </button>
+          </div>
+          <div>
+            <p class="text-xs font-bold text-slate-500 mb-1.5 px-1">สถานะ</p>
+            <div class="grid grid-cols-3 gap-2">
+              <button v-for="st in ['draft','published','closed']" :key="st" type="button"
+                @click="runAction(f => changeStatus(f, st))"
+                :class="['py-2.5 rounded-xl text-xs font-bold border-2',
+                  actionForm.status === st ? 'border-primary text-primary bg-primary/5' : 'border-slate-200 text-slate-500']">
+                {{ STATUS_LABEL[st] }}
+              </button>
+            </div>
+          </div>
+          <button @click="actionForm = null" type="button"
+            class="w-full py-3 rounded-2xl bg-slate-100 text-slate-600 text-sm font-bold">ปิด</button>
+        </div>
+      </div>
+    </Teleport>
 
     <!-- หน้าต่างปรับวันเริ่ม/หมดเขตด่วน -->
     <Teleport to="body">

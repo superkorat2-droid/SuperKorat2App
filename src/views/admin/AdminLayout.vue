@@ -332,11 +332,12 @@ function iconKey(to) {
       class="fixed inset-0 bg-black/60 z-20 lg:hidden backdrop-blur-sm"></div>
 
     <!-- ── Main area ──────────────────────────────────────────────── -->
-    <div :class="['flex-1 flex flex-col transition-all duration-300', sidebarOpen ? 'lg:ml-64' : 'lg:ml-16']">
+    <!-- min-w-0: ไม่งั้นตาราง/แถวปุ่มกว้าง ๆ ดันกรอบนี้ให้กว้างกว่าจอมือถือ (หน้าข่าว 564px, ผู้ใช้ 539px บนจอ 375px) ทั้งหน้าเลื่อนข้างได้ -->
+    <div :class="['flex-1 min-w-0 flex flex-col transition-all duration-300', sidebarOpen ? 'lg:ml-64' : 'lg:ml-16']">
 
       <!-- Top bar -->
       <header class="sticky top-0 z-20 h-[calc(4rem+env(safe-area-inset-top))] pt-[env(safe-area-inset-top)] glass-nav flex items-center justify-between px-4 gap-4">
-        <div class="flex items-center gap-3">
+        <div class="flex items-center gap-3 min-w-0">  <!-- min-w-0: ให้ชื่อหน้ายาว ๆ ตัด … แทนดันหัวให้กว้างเกินจอมือถือ -->
           <!-- Mobile hamburger -->
           <button @click="mobileOpen = !mobileOpen"
             class="lg:hidden w-9 h-9 flex items-center justify-center rounded-xl hover:bg-slate-100 text-slate-500 transition-colors">
@@ -352,15 +353,15 @@ function iconKey(to) {
             </svg>
           </button>
           <!-- Breadcrumb -->
-          <div class="flex items-center gap-1.5 text-xs text-slate-400">
-            <RouterLink to="/" class="hover:text-primary transition-colors flex items-center gap-1">
+          <div class="flex items-center gap-1.5 text-xs text-slate-400 min-w-0">
+            <RouterLink to="/" class="hover:text-primary transition-colors flex items-center gap-1 whitespace-nowrap flex-shrink-0">
               <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25"/>
               </svg>
               หน้าเว็บ
             </RouterLink>
             <span class="text-slate-200">/</span>
-            <span class="font-semibold text-slate-700">{{ $route.meta.title || 'แดชบอร์ด' }}</span>
+            <span class="font-semibold text-slate-700 truncate">{{ $route.meta.title || 'แดชบอร์ด' }}</span>
           </div>
         </div>
 
