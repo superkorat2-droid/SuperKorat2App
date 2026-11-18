@@ -28,7 +28,10 @@ function responsibleFor(form) {
   return (form.responsible_ids || []).map(id => profilesById.value[id]).filter(Boolean)
 }
 
+// แอดมิน หรือผู้ดูแลแบบนิเทศทั้งหมด (profiles.can_manage_all_supervision — migration 103)
+// หน้านี้เป็นเรื่องแบบนิเทศล้วน ทุกจุดที่เคยเช็กแอดมินจึงใช้สิทธิ์นี้แทน · ฐานข้อมูลตรวจซ้ำด้วย is_supervision_manager()
 const isAdmin = computed(() =>
+  currentProfile.value?.can_manage_all_supervision === true ||
   ['super_admin','admin'].includes(currentProfile.value?.role)
 )
 const canPublish = computed(() =>
@@ -228,7 +231,7 @@ onMounted(async () => {
   currentUserId.value = user?.id
   if (user?.id) {
     const { data: p } = await supabase
-      .from('profiles').select('role, can_publish_supervision').eq('id', user.id).single()
+      .from('profiles').select('role, can_publish_supervision, can_manage_all_supervision').eq('id', user.id).single()
     currentProfile.value = p
   }
   const { data: pp } = await supabase.from('profiles')

@@ -6,6 +6,7 @@ import { Cropper } from 'vue-advanced-cropper'
 import 'vue-advanced-cropper/dist/style.css'
 import Swal from 'sweetalert2'
 import EvidenceItemsPicker from '../../components/supervision/EvidenceItemsPicker.vue'
+import SchoolPicker from '../../components/supervision/SchoolPicker.vue'
 import { useFormDraft } from '../../composables/useFormDraft'
 import { useExternalUpload, externalUploadEnabled } from '../../composables/useExternalUpload'
 import { useAreaConfig } from '../../composables/useAreaConfig'
@@ -151,7 +152,7 @@ async function loadForm() {
 
   // individual mode: โหลด school list สำหรับ dropdown
   if (formData.respondent_type === 'individual') {
-    const { data: sc } = await supabase.from('schools').select('id, name, district').eq('is_active', true).order('district').order('name')
+    const { data: sc } = await supabase.from('schools').select('id, name, district, school_group').eq('is_active', true).order('district').order('name')
     schools.value = sc || []
   }
 
@@ -661,13 +662,7 @@ onMounted(() => { fetchConfig(); loadForm() })
           </div>
           <div v-if="showField('school')" class="sm:col-span-2">
             <label class="block text-xs font-bold text-slate-500 mb-1">โรงเรียน<span v-if="fieldRequired('school')" class="text-red-500 ml-0.5">*</span><span v-else class="text-slate-400 font-normal ml-1">(ไม่บังคับ)</span></label>
-            <select v-model="respondentSchoolId"
-              class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:border-primary">
-              <option :value="null">— ไม่ระบุ —</option>
-              <optgroup v-for="dist in [...new Set(schools.map(s=>s.district))].sort()" :key="dist" :label="`อ.${dist}`">
-                <option v-for="s in schools.filter(x=>x.district===dist)" :key="s.id" :value="s.id">{{ s.name }}</option>
-              </optgroup>
-            </select>
+            <SchoolPicker v-model="respondentSchoolId" :schools="schools" allow-none compact/>
           </div>
           <div v-if="showField('phone')">
             <label class="block text-xs font-bold text-slate-500 mb-1">เบอร์โทรศัพท์<span v-if="fieldRequired('phone')" class="text-red-500 ml-0.5">*</span></label>

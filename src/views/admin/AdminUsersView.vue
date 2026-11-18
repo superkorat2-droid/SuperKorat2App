@@ -31,7 +31,7 @@ async function fetchUsers() {
   loading.value = true
   const { data } = await supabase
     .from('profiles')
-    .select('id, full_name, email, role, position, phone, school_name, is_approved, is_active, can_publish_supervision, can_manage_documents, can_manage_awards, can_manage_videos, can_manage_nithet_plan, can_approve_nithet, created_at, last_login_at')
+    .select('id, full_name, email, role, position, phone, school_name, is_approved, is_active, can_publish_supervision, can_manage_all_supervision, can_manage_documents, can_manage_awards, can_manage_videos, can_manage_nithet_plan, can_approve_nithet, created_at, last_login_at')
     .order('created_at', { ascending: false })
   users.value  = data || []
   loading.value = false
@@ -70,6 +70,7 @@ async function saveUser() {
       is_approved:              editUser.value.is_approved,
       is_active:                editUser.value.is_active,
       can_publish_supervision:  editUser.value.can_publish_supervision || false,
+      can_manage_all_supervision: editUser.value.can_manage_all_supervision || false,
       can_manage_documents:     editUser.value.can_manage_documents || false,
       can_manage_awards:        editUser.value.can_manage_awards || false,
       can_manage_videos:        editUser.value.can_manage_videos || false,
@@ -302,6 +303,14 @@ function formatDate(iso) {
                 <div>
                   <p class="text-sm font-medium text-slate-700">อนุญาตสร้างและเผยแพร่แบบนิเทศ</p>
                   <p class="text-xs text-slate-400">เปิดให้ staff สามารถเผยแพร่แบบนิเทศได้เอง</p>
+                </div>
+              </label>
+              <!-- ผู้ดูแลแบบนิเทศทั้งหมด (migration 103) — เฉพาะงานแบบนิเทศ ไม่ได้เป็นแอดมินทั้งระบบ -->
+              <label class="flex items-center gap-2 cursor-pointer mt-3">
+                <input v-model="editUser.can_manage_all_supervision" type="checkbox" class="w-4 h-4 accent-indigo-600"/>
+                <div>
+                  <p class="text-sm font-medium text-slate-700">ผู้ดูแลแบบนิเทศทั้งหมด</p>
+                  <p class="text-xs text-slate-400">เห็นและแก้ไขแบบนิเทศของทุกคนได้เหมือนแอดมิน (เฉพาะเมนูแบบนิเทศ)</p>
                 </div>
               </label>
             </div>

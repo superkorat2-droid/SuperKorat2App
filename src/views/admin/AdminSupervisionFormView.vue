@@ -84,7 +84,7 @@ const meta = ref({
   respondent_type:   'school',
   respondent_fields: normalizeRespondentFields([]),
   show_on_home:      false,
-  status_visibility: 'hidden',
+  status_visibility: 'public',   // แบบใหม่เปิดปุ่ม "ดูสถานะโรงเรียน" (ค่าเริ่มต้นฐานข้อมูลก็ public ตั้งแต่ migration 103)
   cover_image_url:   '',
   responsible_ids:   [],
   responsible_group: '',
@@ -96,6 +96,7 @@ const meta = ref({
 const currentProfile = ref(null)
 const currentUserId  = ref(null)
 const isAdminUser = computed(() =>
+  currentProfile.value?.can_manage_all_supervision === true ||
   ['super_admin','admin'].includes(currentProfile.value?.role)
 )
 const canPublish = computed(() =>
@@ -476,12 +477,16 @@ async function save() {
     publicToken.value = data.public_token
     formId.value = id
   } else {
-    const { error } = await supabase
+    // RLS ไม่ให้แก้ = ได้ 0 แถวโดยไม่มี error — เดิมหน้าเว็บบอก "บันทึกแล้ว" ทั้งที่ไม่ได้บันทึก
+    // ต้องเช็กจำนวนแถว และหยุดก่อนแตะคำถาม
+    const { data: updated, error } = await supabase
       .from('supervision_forms')
       .update(payload)
       .eq('id', id)
-    if (error) {
-      Swal.fire({ icon: 'error', title: 'บันทึกไม่สำเร็จ', text: error.message })
+      .select('id')
+    if (error || !updated?.length) {
+      Swal.fire({ icon: 'error', title: 'บันทึกไม่สำเร็จ',
+        text: error?.message || 'คุณไม่มีสิทธิ์แก้ไขแบบนี้ — แก้ได้เฉพาะผู้สร้างแบบ แอดมิน หรือผู้ดูแลแบบนิเทศ' })
       saving.value = false
       return
     }
@@ -539,7 +544,7 @@ onMounted(async () => {
   currentUserId.value = user?.id
   if (user?.id) {
     const { data: p } = await supabase
-      .from('profiles').select('role, can_publish_supervision').eq('id', user.id).single()
+      .from('profiles').select('role, can_publish_supervision, can_manage_all_supervision').eq('id', user.id).single()
     currentProfile.value = p
   }
   const { data: sc } = await supabase.from('schools').select('id, name, district, school_group, is_active').order('district').order('name')
@@ -934,9 +939,10 @@ onMounted(async () => {
           </div>
         </div>
 
-        <!-- Status access visibility: only show when show_on_home -->
-        <div v-if="meta.show_on_home" class="bg-indigo-50 rounded-xl p-4 space-y-2">
-          <p class="text-xs font-bold text-indigo-700">สถานะโรงเรียนในหน้าแรก</p>
+        <!-- ปุ่ม "ดูสถานะโรงเรียน" (ใครส่งแล้ว/ยังไม่ส่ง) — เดิมซ่อนใต้ "แสดงในหน้าแรก" ผู้สร้างเลยไม่เห็นว่าตั้งเป็น "ซ่อน" อยู่ -->
+        <div class="bg-indigo-50 rounded-xl p-4 space-y-2">
+          <p class="text-xs font-bold text-indigo-700">ปุ่ม "ดูสถานะโรงเรียน" (รายชื่อโรงที่ส่งแล้ว/ยังไม่ส่ง)</p>
+          <p class="text-[11px] text-indigo-500">แสดงในการ์ดแบบนี้ที่หน้าแรก{{ meta.show_on_home ? '' : ' — มีผลเมื่อเปิด "แสดงในหน้าแรก"' }}</p>
           <div class="flex flex-wrap gap-2">
             <label v-for="opt in [
               { value:'hidden',        label:'ซ่อน',          desc:'ไม่แสดงปุ่มดูสถานะ' },
