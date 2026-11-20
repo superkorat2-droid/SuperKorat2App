@@ -230,8 +230,8 @@ const selCls = 'px-3 py-2 border border-white/80 bg-white/70 backdrop-blur round
   <div class="space-y-4 font-sarabun">
     <div class="flex flex-wrap items-center gap-3">
       <div class="flex-1 min-w-0">
-        <h1 class="text-xl font-extrabold text-slate-800">ทำเนียบครู · เครือข่ายวิชาชีพ</h1>
-        <p class="text-xs text-slate-500">ข้อมูลจากแบบสำรวจ · ทั้งหมด {{ rows.length.toLocaleString() }} คน</p>
+        <div role="heading" aria-level="1" class="text-xl font-extrabold text-slate-800">ทำเนียบครู · เครือข่ายวิชาชีพ</div>
+        <div class="text-xs text-slate-500">ข้อมูลจากแบบสำรวจ · ทั้งหมด {{ rows.length.toLocaleString() }} คน</div>
       </div>
       <a href="#/teacher-survey" target="_blank" class="px-3 py-2 rounded-xl bg-white/70 border border-slate-200 text-sm text-primary font-bold">🔗 ลิงก์แบบสำรวจ</a>
       <router-link v-if="isAdmin" to="/dashboard/teachers/settings" class="px-3 py-2 rounded-xl bg-white/70 border border-slate-200 text-sm font-bold text-slate-600">⚙️ ตั้งค่าแบบสำรวจ</router-link>
@@ -303,9 +303,9 @@ const selCls = 'px-3 py-2 border border-white/80 bg-white/70 backdrop-blur round
             <span v-else class="text-sm font-bold text-primary">{{ initialsOf(t) }}</span>
           </div>
           <div class="flex-1 min-w-0">
-            <p class="font-bold text-sm text-slate-800 truncate">{{ fullName(t) }} <span v-if="t.is_hidden" class="text-[10px] text-red-500">(ซ่อน)</span></p>
-            <p class="text-[11px] text-slate-500 truncate">{{ t.school.name }} · {{ t.school.school_group }}</p>
-            <p class="text-[11px] text-slate-500">{{ labelOf(cfg, 'ranks', t.academic_rank) }}</p>
+            <div class="font-bold text-sm text-slate-800 truncate">{{ fullName(t) }} <span v-if="t.is_hidden" class="text-[10px] text-red-500">(ซ่อน)</span></div>
+            <div class="text-[11px] text-slate-500 truncate">{{ t.school.name }} · {{ t.school.school_group }}</div>
+            <div class="text-[11px] text-slate-500">{{ labelOf(cfg, 'ranks', t.academic_rank) }}</div>
             <div class="flex flex-wrap gap-1 mt-1">
               <span v-for="n in t.networks" :key="n" class="text-[10px] bg-indigo-50 text-indigo-700 font-bold px-2 py-0.5 rounded-full">
                 {{ labelOf(cfg, 'networks', n).replace('เครือข่ายครู', '') }}
@@ -320,10 +320,10 @@ const selCls = 'px-3 py-2 border border-white/80 bg-white/70 backdrop-blur round
     <!-- ═══ ภาพรวม ═══ -->
     <template v-else>
       <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div class="glass-tile p-4 text-center"><p class="text-2xl font-extrabold text-primary">{{ filtered.length.toLocaleString() }}</p><p class="text-xs text-slate-500">ครูที่ตอบ</p></div>
-        <div class="glass-tile p-4 text-center"><p class="text-2xl font-extrabold text-emerald-600">{{ coverage.length - schoolsZero.length }}</p><p class="text-xs text-slate-500">โรงเรียนที่มีครูตอบ</p></div>
-        <div class="glass-tile p-4 text-center"><p class="text-2xl font-extrabold text-red-500">{{ schoolsZero.length }}</p><p class="text-xs text-slate-500">โรงเรียนยังไม่มีครูตอบ</p></div>
-        <div class="glass-tile p-4 text-center"><p class="text-2xl font-extrabold text-amber-600">{{ stats.major.find(m => m.key === 'mismatch')?.pct ?? 0 }}%</p><p class="text-xs text-slate-500">สอนไม่ตรงเอก</p></div>
+        <div class="glass-tile p-4 text-center"><div class="text-2xl font-extrabold text-primary">{{ filtered.length.toLocaleString() }}</div><div class="text-xs text-slate-500">ครูที่ตอบ</div></div>
+        <div class="glass-tile p-4 text-center"><div class="text-2xl font-extrabold text-emerald-600">{{ coverage.length - schoolsZero.length }}</div><div class="text-xs text-slate-500">โรงเรียนที่มีครูตอบ</div></div>
+        <div class="glass-tile p-4 text-center"><div class="text-2xl font-extrabold text-red-500">{{ schoolsZero.length }}</div><div class="text-xs text-slate-500">โรงเรียนยังไม่มีครูตอบ</div></div>
+        <div class="glass-tile p-4 text-center"><div class="text-2xl font-extrabold text-amber-600">{{ stats.major.find(m => m.key === 'mismatch')?.pct ?? 0 }}%</div><div class="text-xs text-slate-500">สอนไม่ตรงเอก</div></div>
       </div>
 
       <div class="grid grid-cols-[minmax(0,1fr)] lg:grid-cols-2 gap-4">
@@ -335,7 +335,7 @@ const selCls = 'px-3 py-2 border border-white/80 bg-white/70 backdrop-blur round
                { k: 'major',       t: 'ลักษณะการสอนเทียบกับวิชาเอก',     c: 'bg-rose-500' },
                { k: 'grades',      t: 'ระดับชั้นที่สอน',                  c: 'bg-violet-500' },
              ]" :key="blk.k" class="glass-card p-4">
-          <h3 class="font-bold text-slate-700 mb-3">{{ blk.t }}</h3>
+          <div role="heading" aria-level="3" class="font-bold text-slate-700 mb-3">{{ blk.t }}</div>
           <div class="space-y-2">
             <div v-for="s in stats[blk.k]" :key="s.key" class="text-xs">
               <div class="flex justify-between gap-2 mb-0.5">
@@ -351,11 +351,11 @@ const selCls = 'px-3 py-2 border border-white/80 bg-white/70 backdrop-blur round
       </div>
 
       <div class="glass-card p-4">
-        <h3 class="font-bold text-slate-700 mb-1">โรงเรียนที่ยังไม่มีครูตอบ ({{ schoolsZero.length }})</h3>
-        <p class="text-xs text-slate-500 mb-3">ใช้ติดตามให้ครบทุกโรงเรียน · กรองตามอำเภอ/ศูนย์ด้านบนได้</p>
+        <div role="heading" aria-level="3" class="font-bold text-slate-700 mb-1">โรงเรียนที่ยังไม่มีครูตอบ ({{ schoolsZero.length }})</div>
+        <div class="text-xs text-slate-500 mb-3">ใช้ติดตามให้ครบทุกโรงเรียน · กรองตามอำเภอ/ศูนย์ด้านบนได้</div>
         <div v-if="!schoolsZero.length" class="text-sm text-emerald-600 font-bold">✓ ครบทุกโรงเรียนแล้ว</div>
         <div v-else class="grid grid-cols-[minmax(0,1fr)] sm:grid-cols-2 xl:grid-cols-3 gap-x-4 gap-y-1 text-sm">
-          <p v-for="s in schoolsZero" :key="s.id" class="truncate text-slate-600">• {{ s.name }} <span class="text-[11px] text-slate-400">({{ s.school_group }})</span></p>
+          <div v-for="s in schoolsZero" :key="s.id" class="truncate text-slate-600">• {{ s.name }} <span class="text-[11px] text-slate-400">({{ s.school_group }})</span></div>
         </div>
       </div>
     </template>
@@ -369,9 +369,9 @@ const selCls = 'px-3 py-2 border border-white/80 bg-white/70 backdrop-blur round
             <span v-else class="text-xl font-bold text-primary">{{ initialsOf(detail) }}</span>
           </div>
           <div class="flex-1 min-w-0">
-            <h2 class="text-lg font-extrabold text-slate-800">{{ fullName(detail) }}</h2>
-            <p class="text-sm text-slate-500">{{ detail.school.name }}</p>
-            <p class="text-xs text-slate-400">อ.{{ detail.school.district }} · {{ detail.school.school_group }}</p>
+            <div role="heading" aria-level="2" class="text-lg font-extrabold text-slate-800">{{ fullName(detail) }}</div>
+            <div class="text-sm text-slate-500">{{ detail.school.name }}</div>
+            <div class="text-xs text-slate-400">อ.{{ detail.school.district }} · {{ detail.school.school_group }}</div>
           </div>
           <button @click="detail = null" class="text-2xl text-slate-400 self-start">×</button>
         </div>
@@ -405,7 +405,7 @@ const selCls = 'px-3 py-2 border border-white/80 bg-white/70 backdrop-blur round
 
         <div class="border-t pt-4 space-y-3">
           <div v-if="newLink" class="bg-amber-50 border border-amber-200 rounded-xl p-3 space-y-2">
-            <p class="text-xs font-bold text-amber-800">ลิงก์แก้ไขใหม่ — ส่งให้ครูทาง LINE (ลิงก์เดิมใช้ไม่ได้แล้ว)</p>
+            <div class="text-xs font-bold text-amber-800">ลิงก์แก้ไขใหม่ — ส่งให้ครูทาง LINE (ลิงก์เดิมใช้ไม่ได้แล้ว)</div>
             <div class="flex gap-2">
               <input :value="newLink" readonly class="flex-1 min-w-0 px-2 py-1.5 text-xs border rounded-lg" @focus="$event.target.select()"/>
               <button @click="copyNewLink" class="px-3 py-1.5 text-xs font-bold rounded-lg bg-amber-500 text-white">{{ copiedLink ? '✓' : 'คัดลอก' }}</button>
@@ -420,7 +420,7 @@ const selCls = 'px-3 py-2 border border-white/80 bg-white/70 backdrop-blur round
               <button @click="remove" :disabled="busy" class="px-3 py-2 rounded-lg text-red-600 hover:bg-red-50 text-sm font-bold disabled:opacity-50">ลบ</button>
             </template>
           </div>
-          <p class="text-[11px] text-slate-400">ต้องการแก้คำตอบแทนครู: ออกลิงก์ใหม่แล้วเปิดลิงก์นั้นเอง (จากนั้นส่งลิงก์ให้ครูเก็บไว้)</p>
+          <div class="text-[11px] text-slate-400">ต้องการแก้คำตอบแทนครู: ออกลิงก์ใหม่แล้วเปิดลิงก์นั้นเอง (จากนั้นส่งลิงก์ให้ครูเก็บไว้)</div>
         </div>
       </div>
     </div>

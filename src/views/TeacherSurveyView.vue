@@ -59,6 +59,14 @@ const open   = computed(() => isSurveyOpen(cfg.value))
 
 const selectedSchool = computed(() => schools.value.find(s => s.id === form.value.school_id))
 
+// ชื่อสำนักงานเต็ม — สูตรเดียวกับหน้ากรอกแบบนิเทศ (area_name คือชื่อกลุ่มนิเทศ ไม่ใช่ชื่อเขต)
+const officeName = computed(() => {
+  const a = area.value || {}
+  if (a.tagline?.trim()) return a.tagline.trim()
+  if (a.province) return `${a.area_type || 'สพป.'}${a.province}${a.area_number ? ` เขต ${a.area_number}` : ''}`
+  return a.area_name || ''
+})
+
 onMounted(async () => {
   try {
     const [, , sch] = await Promise.all([
@@ -187,7 +195,13 @@ async function submit() {
     } else {
       rememberToken(data.token)
       savedToken.value = data.token
-      done.value = { token: data.token }
+      // ข้อมูลบันทึกแล้ว — รูปอัปไม่ผ่านก็ไม่ล้มทั้งหมด แจ้งให้เพิ่มทีหลังในหน้าแก้ไข
+      let photoFailed = ''
+      if (pendingPhoto.value) {
+        try { await savePhoto(pendingPhoto.value.blob, data.token); pendingPhoto.value = null }
+        catch (e) { photoFailed = e.message || 'อัปโหลดรูปไม่สำเร็จ' }
+      }
+      done.value = { token: data.token, photoFailed }
       window.scrollTo({ top: 0, behavior: 'smooth' })
     }
   } catch (e) {
@@ -224,16 +238,25 @@ function goSavedEdit() { router.push(`/teacher-survey/edit/${savedToken.value}`)
 const showCropper = ref(false)
 const photoBusy   = ref(false)
 const photoErr    = ref('')
-async function onCropped({ blob }) {
+// ส่งครั้งแรกยังไม่มี token → เก็บรูปที่ครอปไว้ก่อน แล้วอัปทันทีหลังส่งสำเร็จ
+const pendingPhoto = ref(null)    // { blob, dataUrl }
+const photoPreview = computed(() => pendingPhoto.value?.dataUrl || photoUrl.value)
+
+async function savePhoto(blob, tok) {
+  const url = await uploadTeacherPhoto(blob, tok)
+  const { data, error } = await supabase.rpc('teacher_survey_set_photo', { p_token: tok, p_url: url })
+  if (error) throw error
+  if (!data?.ok) throw new Error(ERR_TEXT[data?.error] || 'บันทึกรูปไม่สำเร็จ')
+  return url
+}
+
+async function onCropped({ blob, dataUrl }) {
   showCropper.value = false
-  photoBusy.value = true
   photoErr.value = ''
+  if (!isEdit.value) { pendingPhoto.value = { blob, dataUrl }; return }
+  photoBusy.value = true
   try {
-    const url = await uploadTeacherPhoto(blob, token.value)
-    const { data, error } = await supabase.rpc('teacher_survey_set_photo', { p_token: token.value, p_url: url })
-    if (error) throw error
-    if (!data?.ok) throw new Error(ERR_TEXT[data?.error] || 'บันทึกรูปไม่สำเร็จ')
-    photoUrl.value = url
+    photoUrl.value = await savePhoto(blob, token.value)
   } catch (e) {
     photoErr.value = e.message || 'อัปโหลดรูปไม่สำเร็จ'
   } finally {
@@ -241,6 +264,7 @@ async function onCropped({ blob }) {
   }
 }
 async function removePhoto() {
+  if (!isEdit.value) { pendingPhoto.value = null; return }
   if (!window.confirm('ลบรูปโปรไฟล์?')) return
   const { data } = await supabase.rpc('teacher_survey_set_photo', { p_token: token.value, p_url: null })
   if (data?.ok) photoUrl.value = ''
@@ -255,29 +279,29 @@ const inputCls = 'w-full px-4 py-3 border border-white/80 bg-white/70 backdrop-b
 
       <!-- ── หัวแบบสำรวจ ─────────────────────────────────────────────── -->
       <div class="glass-card p-5 sm:p-6 text-center space-y-1">
-        <h1 class="text-xl sm:text-2xl font-extrabold text-primary leading-snug">
+        <div role="heading" aria-level="1" class="text-xl sm:text-2xl font-extrabold text-primary leading-snug">
           {{ cfg?.title || 'การขับเคลื่อนระบบฐานข้อมูลพัฒนาเครือข่ายวิชาชีพครู' }}
-        </h1>
-        <p class="text-sm font-bold text-slate-600">{{ area?.area_name }}</p>
-        <p v-if="isEdit && !loadErr" class="inline-block mt-2 text-xs font-bold bg-amber-100 text-amber-700 px-3 py-1 rounded-full">
+        </div>
+        <div class="text-sm font-bold text-slate-600">{{ officeName }}</div>
+        <div v-if="isEdit && !loadErr" class="inline-block mt-2 text-xs font-bold bg-amber-100 text-amber-700 px-3 py-1 rounded-full">
           โหมดแก้ไขข้อมูลของ {{ fullName(form) || 'ท่าน' }}
-        </p>
+        </div>
       </div>
 
       <div v-if="loading" class="glass-card p-10 text-center text-slate-400 animate-pulse">กำลังโหลด...</div>
 
       <div v-else-if="loadErr" class="glass-card p-6 text-center space-y-3">
-        <p class="text-red-600 font-bold">{{ loadErr }}</p>
+        <div class="text-red-600 font-bold">{{ loadErr }}</div>
         <router-link to="/teacher-survey" class="text-sm text-primary hover:underline">ไปหน้าแบบสำรวจ</router-link>
       </div>
 
       <!-- ── ส่งสำเร็จ: ลิงก์แก้ไขส่วนตัว ─────────────────────────────── -->
       <div v-else-if="done" class="glass-card p-6 space-y-4 text-center">
         <div class="text-5xl">🎉</div>
-        <h2 class="text-lg font-extrabold text-emerald-700">ส่งแบบสำรวจเรียบร้อยแล้ว ขอบคุณครับ/ค่ะ</h2>
+        <div role="heading" aria-level="2" class="text-lg font-extrabold text-emerald-700">ส่งแบบสำรวจเรียบร้อยแล้ว ขอบคุณครับ/ค่ะ</div>
         <div class="text-left bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-2">
-          <p class="text-sm font-bold text-amber-800">🔑 ลิงก์แก้ไขข้อมูลส่วนตัวของท่าน — กรุณาเก็บไว้</p>
-          <p class="text-xs text-amber-700">ใช้ลิงก์นี้กลับมาแก้ไขข้อมูลหรือเพิ่มรูปโปรไฟล์ได้ตลอด (เครื่องนี้จำไว้ให้แล้ว แต่ถ้าเปลี่ยนเครื่องต้องใช้ลิงก์นี้)</p>
+          <div class="text-sm font-bold text-amber-800">🔑 ลิงก์แก้ไขข้อมูลส่วนตัวของท่าน — กรุณาเก็บไว้</div>
+          <div class="text-xs text-amber-700">ใช้ลิงก์นี้กลับมาแก้ไขข้อมูลหรือเพิ่มรูปโปรไฟล์ได้ตลอด (เครื่องนี้จำไว้ให้แล้ว แต่ถ้าเปลี่ยนเครื่องต้องใช้ลิงก์นี้)</div>
           <div class="flex flex-col sm:flex-row gap-2">
             <input :value="doneLink" readonly class="flex-1 min-w-0 px-3 py-2 text-xs border border-amber-200 rounded-lg bg-white" @focus="$event.target.select()"/>
             <button @click="copyLink(doneLink)" class="px-4 py-2 text-sm font-bold rounded-lg bg-amber-500 text-white hover:bg-amber-600">
@@ -285,59 +309,64 @@ const inputCls = 'w-full px-4 py-3 border border-white/80 bg-white/70 backdrop-b
             </button>
           </div>
         </div>
+        <div v-if="done.photoFailed" class="text-sm text-red-600 bg-red-50 rounded-xl p-3">
+          ข้อมูลบันทึกแล้ว แต่อัปโหลดรูปไม่สำเร็จ ({{ done.photoFailed }}) — กดปุ่มด้านล่างเพื่อเพิ่มรูปอีกครั้ง
+        </div>
         <button @click="goEdit" class="w-full sm:w-auto px-6 py-3 rounded-xl bg-primary text-white font-bold hover:opacity-90">
-          📷 เพิ่มรูปโปรไฟล์ / ตรวจทานข้อมูล
+          ✏️ ตรวจทาน / แก้ไขข้อมูลและรูป
         </button>
-        <p><router-link to="/teachers" class="text-sm text-primary hover:underline">ดูทำเนียบครู</router-link></p>
+        <div><router-link to="/teachers" class="text-sm text-primary hover:underline">ดูทำเนียบครู</router-link></div>
       </div>
 
       <template v-else>
         <!-- เคยส่งจากเครื่องนี้แล้ว -->
-        <div v-if="!isEdit && savedToken" class="glass-card p-4 flex flex-col sm:flex-row items-center gap-3 border-l-4 border-amber-400">
-          <p class="flex-1 text-sm text-slate-700">เครื่องนี้เคยส่งแบบสำรวจไว้แล้ว ต้องการแก้ไขข้อมูลเดิมแทนการส่งใหม่หรือไม่?</p>
+        <div v-if="!isEdit && savedToken" class="glass-card p-4 flex flex-col sm:flex-row items-center gap-3 border-l-4 border-l-amber-400">
+          <div class="flex-1 text-sm text-slate-700">เครื่องนี้เคยส่งแบบสำรวจไว้แล้ว ต้องการแก้ไขข้อมูลเดิมแทนการส่งใหม่หรือไม่?</div>
           <button @click="goSavedEdit" class="px-4 py-2 rounded-lg bg-amber-500 text-white text-sm font-bold whitespace-nowrap">แก้ไขข้อมูลเดิม</button>
         </div>
 
         <div v-if="!isEdit && !open" class="glass-card p-6 text-center">
-          <p class="font-bold text-slate-600">ขณะนี้ปิดรับแบบสำรวจ</p>
-          <p v-if="cfg?.open_at && new Date(cfg.open_at) > new Date()" class="text-sm text-slate-500 mt-1">
+          <div class="font-bold text-slate-600">ขณะนี้ปิดรับแบบสำรวจ</div>
+          <div v-if="cfg?.open_at && new Date(cfg.open_at) > new Date()" class="text-sm text-slate-500 mt-1">
             เปิดรับวันที่ {{ new Date(cfg.open_at).toLocaleString('th-TH', { dateStyle: 'long', timeStyle: 'short' }) }}
-          </p>
+          </div>
         </div>
 
         <template v-else>
-          <div v-if="savedOk" class="glass-card p-4 text-center text-emerald-700 font-bold border-l-4 border-emerald-500">
+          <div v-if="savedOk" class="glass-card p-4 text-center text-emerald-700 font-bold border-l-4 border-l-emerald-500">
             ✓ บันทึกการแก้ไขเรียบร้อยแล้ว
           </div>
 
-          <!-- รูปโปรไฟล์ (เฉพาะโหมดแก้ไข เพราะต้องมีลิงก์ส่วนตัวก่อน) -->
-          <div v-if="isEdit" class="glass-card p-5 flex flex-col sm:flex-row items-center gap-4">
-            <div class="w-24 h-24 rounded-full overflow-hidden bg-slate-100 flex items-center justify-center shrink-0 shadow">
-              <img v-if="photoUrl" :src="photoUrl" alt="รูปโปรไฟล์" class="w-full h-full object-cover"/>
-              <span v-else class="text-2xl font-bold text-primary">{{ initialsOf(form) }}</span>
-            </div>
-            <div class="flex-1 text-center sm:text-left space-y-2">
-              <p class="font-bold text-slate-700">รูปโปรไฟล์ในทำเนียบครู</p>
-              <p class="text-xs text-slate-500">รูปหน้าตรง ครอปเป็นสี่เหลี่ยม ระบบย่อให้อัตโนมัติ</p>
-              <div class="flex flex-wrap gap-2 justify-center sm:justify-start">
-                <button @click="showCropper = true" :disabled="photoBusy"
-                  class="px-4 py-2 rounded-lg bg-primary text-white text-sm font-bold disabled:opacity-50">
-                  {{ photoBusy ? 'กำลังอัปโหลด...' : (photoUrl ? 'เปลี่ยนรูป' : 'เพิ่มรูป') }}
-                </button>
-                <button v-if="photoUrl" @click="removePhoto" class="px-4 py-2 rounded-lg text-sm text-red-500 hover:bg-red-50">ลบรูป</button>
-              </div>
-              <p v-if="photoErr" class="text-xs text-red-600">{{ photoErr }}</p>
-            </div>
-          </div>
-
-          <div v-if="!isEdit && cfg?.intro" class="glass-card p-5 border-l-4 border-primary">
-            <p class="text-sm text-slate-700 leading-relaxed"><b>คำชี้แจง :</b> {{ cfg.intro }}</p>
+          <div v-if="!isEdit && cfg?.intro" class="glass-card p-5 border-l-4 border-l-primary">
+            <div class="text-sm text-slate-700 leading-relaxed"><b>คำชี้แจง :</b> {{ cfg.intro }}</div>
           </div>
 
           <!-- ═══ ส่วนที่ 1 ═══ -->
           <section class="glass-card overflow-hidden">
-            <h2 class="bg-primary text-white font-bold px-5 py-3">ส่วนที่ 1: ข้อมูลพื้นฐาน บริบทการปฏิบัติงาน และช่องทางการติดต่อ</h2>
+            <div role="heading" aria-level="2" class="bg-primary text-white font-bold px-5 py-3">ส่วนที่ 1: ข้อมูลพื้นฐาน บริบทการปฏิบัติงาน และช่องทางการติดต่อ</div>
             <div class="p-5 space-y-6">
+
+              <!-- รูปโปรไฟล์: ส่งใหม่ = เก็บไว้ก่อนแล้วอัปหลังส่งสำเร็จ · แก้ไข = อัปทันที -->
+              <div class="flex flex-col sm:flex-row items-center gap-4 p-4 rounded-2xl bg-slate-50 border border-dashed border-slate-300">
+                <button type="button" @click="showCropper = true" :disabled="photoBusy"
+                  class="w-24 h-24 rounded-full overflow-hidden bg-white flex items-center justify-center shrink-0 shadow ring-2 ring-white hover:ring-primary transition">
+                  <img v-if="photoPreview" :src="photoPreview" alt="รูปโปรไฟล์" class="w-full h-full object-cover"/>
+                  <span v-else class="text-3xl">📷</span>
+                </button>
+                <div class="flex-1 text-center sm:text-left space-y-1.5">
+                  <div class="font-bold text-slate-700">รูปโปรไฟล์ในทำเนียบครู <span class="text-xs font-normal text-slate-400">(ไม่บังคับ)</span></div>
+                  <div class="text-xs text-slate-500">เลือกรูปหน้าตรงจากเครื่องหรือถ่ายจากมือถือ แล้วลากกรอบครอบให้พอดีหน้า ระบบย่อให้อัตโนมัติ</div>
+                  <div class="flex flex-wrap gap-2 justify-center sm:justify-start pt-1">
+                    <button type="button" @click="showCropper = true" :disabled="photoBusy"
+                      class="px-4 py-2 rounded-lg bg-primary text-white text-sm font-bold disabled:opacity-50">
+                      {{ photoBusy ? 'กำลังอัปโหลด...' : (photoPreview ? 'เปลี่ยนรูป' : '📷 เลือกรูป / ถ่ายรูป') }}
+                    </button>
+                    <button v-if="photoPreview" type="button" @click="removePhoto" class="px-4 py-2 rounded-lg text-sm text-red-500 hover:bg-red-50">ลบรูป</button>
+                  </div>
+                  <div v-if="pendingPhoto" class="text-[11px] text-amber-600">รูปจะถูกอัปโหลดเมื่อกด "ส่งแบบสำรวจ"</div>
+                  <div v-if="photoErr" class="text-xs text-red-600">{{ photoErr }}</div>
+                </div>
+              </div>
 
               <div class="space-y-2">
                 <label class="block font-bold text-slate-700">1. คำนำหน้า ชื่อ - นามสกุล <span class="text-red-500">*</span></label>
@@ -358,9 +387,9 @@ const inputCls = 'w-full px-4 py-3 border border-white/80 bg-white/70 backdrop-b
               <div class="space-y-2">
                 <label class="block font-bold text-slate-700">2. โรงเรียน <span class="text-red-500">*</span></label>
                 <SchoolPicker v-model="form.school_id" :schools="schools"/>
-                <p v-if="selectedSchool" class="text-xs text-slate-500">
+                <div v-if="selectedSchool" class="text-xs text-slate-500">
                   อ.{{ selectedSchool.district }} · ศูนย์เครือข่ายพัฒนาคุณภาพการศึกษา {{ selectedSchool.school_group }}
-                </p>
+                </div>
               </div>
 
               <div class="space-y-2">
@@ -370,7 +399,7 @@ const inputCls = 'w-full px-4 py-3 border border-white/80 bg-white/70 backdrop-b
                   <input v-model="form.line_id" maxlength="100" placeholder="ID Line" :class="inputCls"/>
                   <input v-model="form.email" type="email" maxlength="200" placeholder="E-mail address" :class="[inputCls, 'sm:col-span-2']"/>
                 </div>
-                <p class="text-xs text-slate-500">🔒 เบอร์โทร Line และอีเมล ไม่แสดงในทำเนียบสาธารณะ — เห็นเฉพาะศึกษานิเทศก์และเจ้าหน้าที่เขต · เบอร์โทรใช้ยืนยันตัวตน 1 เบอร์ต่อ 1 คน</p>
+                <div class="text-xs text-slate-500">🔒 เบอร์โทร Line และอีเมล ไม่แสดงในทำเนียบสาธารณะ — เห็นเฉพาะศึกษานิเทศก์และเจ้าหน้าที่เขต · เบอร์โทรใช้ยืนยันตัวตน 1 เบอร์ต่อ 1 คน</div>
               </div>
 
               <div class="space-y-2">
@@ -417,9 +446,9 @@ const inputCls = 'w-full px-4 py-3 border border-white/80 bg-white/70 backdrop-b
                   8. เครือข่ายวิชาชีพครูที่ท่านสนใจเข้าร่วม <span class="text-red-500">*</span>
                   <span class="text-xs font-normal text-slate-500">(เลือกได้ไม่เกิน {{ limits.networks || '–' }} เครือข่าย ตามรายวิชาที่สอนหรือสนใจ)</span>
                 </label>
-                <p class="text-xs" :class="atLimit('networks') ? 'text-amber-600 font-bold' : 'text-slate-400'">
+                <div class="text-xs" :class="atLimit('networks') ? 'text-amber-600 font-bold' : 'text-slate-400'">
                   เลือกแล้ว {{ form.networks.length }}{{ limits.networks ? ` / ${limits.networks}` : '' }}
-                </p>
+                </div>
                 <div class="space-y-1">
                   <template v-for="o in opts.networks" :key="o.key">
                     <div v-if="o.children?.length" class="px-3 pt-2 text-sm font-bold text-slate-600">{{ o.label }}</div>
@@ -441,7 +470,7 @@ const inputCls = 'w-full px-4 py-3 border border-white/80 bg-white/70 backdrop-b
 
           <!-- ═══ ส่วนที่ 2 ═══ -->
           <section class="glass-card overflow-hidden">
-            <h2 class="bg-primary text-white font-bold px-5 py-3">ส่วนที่ 2: สภาพปัญหา บริบทโรงเรียน และความต้องการจำเป็นในการพัฒนา</h2>
+            <div role="heading" aria-level="2" class="bg-primary text-white font-bold px-5 py-3">ส่วนที่ 2: สภาพปัญหา บริบทโรงเรียน และความต้องการจำเป็นในการพัฒนา</div>
             <div class="p-5 space-y-6">
               <div v-for="(q, qi) in [
                      { field: 'constraints', no: 9,  title: 'สภาพความพร้อมและข้อจำกัดของสถานศึกษาในการจัดกิจกรรมการเรียนรู้' },
@@ -453,9 +482,9 @@ const inputCls = 'w-full px-4 py-3 border border-white/80 bg-white/70 backdrop-b
                     ({{ limits[q.field] ? `เลือกได้สูงสุด ${limits[q.field]} ข้อ` : 'เลือกได้มากกว่า 1 ข้อ' }})
                   </span>
                 </label>
-                <p v-if="limits[q.field]" class="text-xs" :class="atLimit(q.field) ? 'text-amber-600 font-bold' : 'text-slate-400'">
+                <div v-if="limits[q.field]" class="text-xs" :class="atLimit(q.field) ? 'text-amber-600 font-bold' : 'text-slate-400'">
                   เลือกแล้ว {{ form[q.field].length }} / {{ limits[q.field] }}
-                </p>
+                </div>
                 <div class="space-y-1">
                   <label v-for="o in leafOptions(opts[q.field])" :key="o.key"
                     :class="['flex items-start gap-2 px-3 py-2 rounded-lg text-sm',
@@ -498,7 +527,7 @@ const inputCls = 'w-full px-4 py-3 border border-white/80 bg-white/70 backdrop-b
             </div>
           </section>
 
-          <div v-if="errMsg" id="survey-error" class="glass-card p-4 text-sm text-red-600 font-bold border-l-4 border-red-500">
+          <div v-if="errMsg" id="survey-error" class="glass-card p-4 text-sm text-red-600 font-bold border-l-4 border-l-red-500">
             {{ errMsg }}
           </div>
 
@@ -507,9 +536,9 @@ const inputCls = 'w-full px-4 py-3 border border-white/80 bg-white/70 backdrop-b
             {{ saving ? 'กำลังบันทึก...' : (isEdit ? 'บันทึกการแก้ไข' : 'ส่งแบบสำรวจ') }}
           </button>
 
-          <p class="text-center text-xs text-slate-400 italic pb-6">
-            ขอขอบพระคุณคณะครูทุกท่านที่ร่วมให้ข้อมูลเพื่อการพัฒนาเครือข่ายวิชาชีพครู {{ area?.area_name }}
-          </p>
+          <div class="text-center text-xs text-slate-400 italic pb-6">
+            ขอขอบพระคุณคณะครูทุกท่านที่ร่วมให้ข้อมูลเพื่อการพัฒนาเครือข่ายวิชาชีพครู {{ officeName }}
+          </div>
         </template>
       </template>
     </div>

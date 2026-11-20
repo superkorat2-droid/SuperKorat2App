@@ -91,7 +91,7 @@ const selCls = 'px-3 py-2.5 border border-white/80 bg-white/70 backdrop-blur rou
   <div class="font-sarabun min-h-screen">
     <PageHero v-if="!header.hidden"
       :title="header.title"
-      :subtitle="header.subtitle || `เครือข่ายวิชาชีพครู ${area?.area_name || ''}`"
+      :subtitle="header.subtitle || `เครือข่ายวิชาชีพครู ${area?.tagline || area?.area_name || ''}`"
       :mode="header.mode" :icon="header.icon"
       :media-url="header.mediaUrl" :media-type="header.mediaType" :aspect-ratio="header.aspectRatio"
       :align="header.align" max-width="5xl"/>
@@ -142,7 +142,7 @@ const selCls = 'px-3 py-2.5 border border-white/80 bg-white/70 backdrop-blur rou
       </div>
 
       <div v-else-if="!rows.length" class="text-center py-16 text-slate-400">
-        <p class="font-bold">ไม่พบข้อมูลครู</p>
+        <div class="font-bold">ไม่พบข้อมูลครู</div>
         <button v-if="isFiltered" @click="reset" class="mt-2 text-sm text-primary hover:underline">ล้างตัวกรอง</button>
       </div>
 
@@ -154,16 +154,16 @@ const selCls = 'px-3 py-2.5 border border-white/80 bg-white/70 backdrop-blur rou
               <span v-else class="text-sm font-bold text-primary">{{ initialsOf(t) }}</span>
             </div>
             <div class="flex-1 min-w-0">
-              <p class="font-bold text-slate-800 text-sm leading-snug">{{ fullName(t) }}</p>
-              <p class="text-[11px] text-slate-500 truncate">{{ t.school?.name }}</p>
-              <p class="text-[10px] text-slate-400 truncate">อ.{{ t.school?.district }} · {{ t.school?.school_group }}</p>
+              <div class="font-bold text-slate-800 text-sm leading-snug">{{ fullName(t) }}</div>
+              <div class="text-[11px] text-slate-500 truncate">{{ t.school?.name }}</div>
+              <div class="text-[10px] text-slate-400 truncate">อ.{{ t.school?.district }} · {{ t.school?.school_group }}</div>
               <div class="flex flex-wrap gap-1 mt-1">
                 <span v-for="n in t.networks" :key="n"
                   class="text-[10px] bg-indigo-50 text-indigo-700 font-bold px-2 py-0.5 rounded-full">
                   {{ labelOf(cfg, 'networks', n).replace('เครือข่ายครู', '') }}
                 </span>
               </div>
-              <p v-if="t.grades?.length" class="text-[10px] text-slate-400 mt-1">สอน {{ gradeText(t.grades) }}</p>
+              <div v-if="t.grades?.length" class="text-[10px] text-slate-400 mt-1">สอน {{ gradeText(t.grades) }}</div>
             </div>
           </div>
         </div>

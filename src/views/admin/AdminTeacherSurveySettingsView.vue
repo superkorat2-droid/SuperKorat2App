@@ -144,14 +144,14 @@ const surveyLink = computed(() => `${window.location.origin}${window.location.pa
   <div class="space-y-4 font-sarabun max-w-4xl">
     <div class="flex flex-wrap items-center gap-3">
       <router-link to="/dashboard/teachers" class="text-sm text-slate-500">← ทำเนียบครู</router-link>
-      <h1 class="flex-1 text-xl font-extrabold text-slate-800">ตั้งค่าแบบสำรวจเครือข่ายวิชาชีพครู</h1>
+      <div role="heading" aria-level="1" class="flex-1 text-xl font-extrabold text-slate-800">ตั้งค่าแบบสำรวจเครือข่ายวิชาชีพครู</div>
     </div>
 
     <div v-if="loading" class="glass-card p-10 text-center text-slate-400 animate-pulse">กำลังโหลด...</div>
 
     <template v-else-if="c">
       <section class="glass-card p-4 space-y-3">
-        <h2 class="font-bold text-slate-700">การเปิดรับ</h2>
+        <div role="heading" aria-level="2" class="font-bold text-slate-700">การเปิดรับ</div>
         <label class="flex items-center gap-2 text-sm font-bold">
           <input type="checkbox" v-model="c.is_open" class="w-4 h-4"/> เปิดรับแบบสำรวจ
         </label>
@@ -159,19 +159,19 @@ const surveyLink = computed(() => `${window.location.origin}${window.location.pa
           <label class="text-sm">วันเริ่ม (ว่าง = ทันที)<input type="datetime-local" v-model="openAt" :class="inputCls"/></label>
           <label class="text-sm">วันหมดเขต (ว่าง = ไม่มีกำหนด)<input type="datetime-local" v-model="deadline" :class="inputCls"/></label>
         </div>
-        <p class="text-xs text-slate-500">ปิดรับแล้วครูยังแก้ข้อมูลเดิมผ่านลิงก์ส่วนตัวได้ตลอด (ทำเนียบเป็นข้อมูลถาวร) · ลิงก์แบบสำรวจ:
-          <a :href="surveyLink" target="_blank" class="text-primary break-all">{{ surveyLink }}</a></p>
+        <div class="text-xs text-slate-500">ปิดรับแล้วครูยังแก้ข้อมูลเดิมผ่านลิงก์ส่วนตัวได้ตลอด (ทำเนียบเป็นข้อมูลถาวร) · ลิงก์แบบสำรวจ:
+          <a :href="surveyLink" target="_blank" class="text-primary break-all">{{ surveyLink }}</a></div>
       </section>
 
       <section class="glass-card p-4 space-y-3">
-        <h2 class="font-bold text-slate-700">หัวเรื่องและคำชี้แจง</h2>
+        <div role="heading" aria-level="2" class="font-bold text-slate-700">หัวเรื่องและคำชี้แจง</div>
         <input v-model="c.title" :class="inputCls" placeholder="ชื่อแบบสำรวจ"/>
         <textarea v-model="c.intro" rows="5" :class="inputCls" placeholder="คำชี้แจง"/>
       </section>
 
       <section v-for="f in OPTION_FIELDS" :key="f.key" class="glass-card p-4 space-y-2">
         <div class="flex flex-wrap items-center gap-3">
-          <h2 class="flex-1 font-bold text-slate-700">{{ f.label }} <span class="text-xs font-normal text-slate-400">({{ f.multi ? 'เลือกหลายข้อ' : 'เลือกข้อเดียว' }})</span></h2>
+          <div role="heading" aria-level="2" class="flex-1 font-bold text-slate-700">{{ f.label }} <span class="text-xs font-normal text-slate-400">({{ f.multi ? 'เลือกหลายข้อ' : 'เลือกข้อเดียว' }})</span></div>
           <label v-if="hasLimit(f.key)" class="text-xs text-slate-600 flex items-center gap-1">
             เลือกได้สูงสุด
             <input type="number" min="0" :value="c.limits[f.key] || ''" @input="setLimit(f.key, $event.target.value)" class="w-16 px-2 py-1 border rounded"/>
@@ -208,10 +208,10 @@ const surveyLink = computed(() => `${window.location.origin}${window.location.pa
 
       <section class="glass-card p-4 space-y-3">
         <div class="flex items-center">
-          <h2 class="flex-1 font-bold text-slate-700">คำถามเสริม <span class="text-xs font-normal text-slate-400">(แสดงต่อท้ายส่วนที่ 2 ก่อนข้อเสนอแนะ)</span></h2>
+          <div role="heading" aria-level="2" class="flex-1 font-bold text-slate-700">คำถามเสริม <span class="text-xs font-normal text-slate-400">(แสดงต่อท้ายส่วนที่ 2 ก่อนข้อเสนอแนะ)</span></div>
           <button @click="addExtra" class="text-sm text-primary font-bold">+ เพิ่มคำถาม</button>
         </div>
-        <p v-if="!c.extra_questions.length" class="text-sm text-slate-400">ยังไม่มีคำถามเสริม</p>
+        <div v-if="!c.extra_questions.length" class="text-sm text-slate-400">ยังไม่มีคำถามเสริม</div>
         <div v-for="(q, i) in c.extra_questions" :key="q.key" class="border border-slate-200 rounded-xl p-3 space-y-2">
           <div class="flex flex-wrap gap-2 items-center">
             <input v-model="q.label" :class="[inputCls, 'flex-1 !w-auto min-w-[12rem]']" placeholder="คำถาม"/>
@@ -241,7 +241,7 @@ const surveyLink = computed(() => `${window.location.origin}${window.location.pa
         <span v-if="err" class="text-sm text-red-600 font-bold">{{ err }}</span>
       </div>
     </template>
-    <p v-else class="text-red-600">{{ err }}</p>
+    <div v-else class="text-red-600">{{ err }}</div>
   </div>
 </template>
 
