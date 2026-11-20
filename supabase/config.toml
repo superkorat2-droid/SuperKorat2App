@@ -387,6 +387,12 @@ verify_jwt = false
 [functions.drive-list]
 verify_jwt = false
 
+# ครูที่ตอบแบบสำรวจเครือข่ายวิชาชีพไม่มีบัญชี → ต้องเรียกได้โดยไม่มี JWT
+# ปลอดภัยเพราะในฟังก์ชันตรวจเองทุกทาง: requireApprovedUser() สำหรับผู้ใช้ทั่วไป
+# และ teacher_token_valid() สำหรับครู (ได้แค่ตั๋ว upload หมวด teachers)
+[functions.media-upload]
+verify_jwt = false
+
 # drive-check ตั้งใจไม่ใส่ไว้ที่นี่ — ให้ตรวจ JWT ตามค่าเริ่มต้น
 # เรียกจากฟอร์มหลังบ้านที่ล็อกอินแล้วเท่านั้น ถ้าเปิดสาธารณะจะกลายเป็นเครื่องมือ
 # ให้คนนอกไล่เดาว่าไฟล์ Drive id ไหนมีอยู่จริง

@@ -140,6 +140,8 @@ const routes = [
       { path: 'principals',    name: 'adminPrincipals',  component: AdminPrincipalsView,  meta: { title: 'ผู้บริหารโรงเรียน' } },
       // ไม่อยู่ใน ADMIN_ONLY_PATHS — ศน./เจ้าหน้าที่ ต้องเข้าได้ (RLS ของ school_principals คุมสิทธิ์อ่านเบอร์)
       { path: 'phonebook',     name: 'adminPhonebook',   component: AdminPhonebookView,   meta: { title: 'สมุดโทรศัพท์ผู้บริหาร' } },
+      { path: 'teachers',          name: 'adminTeachers',      component: () => import('../views/admin/AdminTeachersView.vue'),             meta: { title: 'ทำเนียบครู · เครือข่ายวิชาชีพ' } },
+      { path: 'teachers/settings', name: 'adminTeacherSurvey', component: () => import('../views/admin/AdminTeacherSurveySettingsView.vue'), meta: { title: 'ตั้งค่าแบบสำรวจครู' } },
       { path: 'newsletters',   name: 'adminNewsletters',    component: AdminNewslettersView,    meta: { title: 'จดหมายข่าว' } },
       // ไม่อยู่ใน ADMIN_ONLY_PATHS — ศน./เจ้าหน้าที่ ต้องเข้าได้ (RLS คุมว่าแก้ของใครได้)
       { path: 'library',       name: 'adminLibrary',        component: AdminLibraryView,        meta: { title: 'คลังหนังสือและคู่มือ' } },
@@ -257,6 +259,11 @@ const routes = [
   // ผลคะแนน RT/NT/O-NET เห็นได้เฉพาะ ศน./เจ้าหน้าที่ที่ล็อกอิน (ผู้รับผิดชอบไม่ยินยอมให้เปิดสาธารณะ) — migration 0096 ล็อกฝั่งฐานข้อมูลอีกชั้น
   { path: '/nt-scores',     name: 'ntScores',     component: PublicNtScoresView,     meta: { title: 'ผลคะแนน NT', requiresAuth: true } },
 
+  // ── เครือข่ายวิชาชีพครู (migration 0104) — ครูตอบโดยไม่ล็อกอิน แก้ทีหลังด้วยลิงก์ส่วนตัว ──
+  { path: '/teacher-survey',             name: 'teacherSurvey',     component: () => import('../views/TeacherSurveyView.vue'), meta: { title: 'แบบสำรวจเครือข่ายวิชาชีพครู' } },
+  { path: '/teacher-survey/edit/:token', name: 'teacherSurveyEdit', component: () => import('../views/TeacherSurveyView.vue'), meta: { title: 'แก้ไขข้อมูลเครือข่ายวิชาชีพครู' } },
+  { path: '/teachers',                   name: 'teachers',          component: () => import('../views/PublicTeachersView.vue'), meta: { title: 'ทำเนียบครู' } },
+
   // ── Dynamic CMS pages ────────────────────────────────────────────────
   // /page/org แทนที่ด้วยผังโครงสร้างที่ดึงข้อมูลจริง (ต้องมาก่อน /page/:slug ทั่วไป)
   { path: '/page/org', name: 'orgChart', component: OrgChartView, meta: { title: 'โครงสร้างการบริหาร' } },
@@ -301,6 +308,7 @@ const ADMIN_ONLY_PATHS = [
   '/dashboard/home-sections',
   '/dashboard/banners',
   '/dashboard/image-library',
+  '/dashboard/teachers/settings',
 ]
 
 router.beforeEach(async (to, from, next) => {

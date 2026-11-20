@@ -97,6 +97,7 @@ const allGroups = [
       { to: '/dashboard/schools',    label: 'ทำเนียบโรงเรียน',  roles: ['super_admin','admin'] },
       { to: '/dashboard/principals',  label: 'ผู้บริหารโรงเรียน', roles: ['super_admin','admin'] },
       { to: '/dashboard/phonebook',    label: 'สมุดโทรศัพท์ผู้บริหาร', roles: ['super_admin','admin','supervisor','staff'] },
+      { to: '/dashboard/teachers',     label: 'ทำเนียบครู · เครือข่ายวิชาชีพ', roles: ['super_admin','admin','supervisor','staff'] },
       { to: '/dashboard/newsletters', label: 'จดหมายข่าว',         roles: ['super_admin','admin','supervisor','staff'] },
       { to: '/dashboard/library',     label: 'คลังหนังสือ/คู่มือ',   roles: ['super_admin','admin','supervisor','staff'] },
       { to: '/dashboard/certificates', label: 'คลังเกียรติบัตร',    roles: ['super_admin','admin','supervisor','staff'] },

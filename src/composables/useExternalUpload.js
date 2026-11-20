@@ -43,6 +43,29 @@ async function getTicket(purpose, category = 'misc') {
 
 export const externalUploadEnabled = !!API_URL
 
+/**
+ * ครูที่ตอบแบบสำรวจเครือข่ายวิชาชีพ (ไม่มีบัญชี) อัปรูปโปรไฟล์ด้วย "ลิงก์แก้ไขส่วนตัว"
+ * Edge Function ออกตั๋วให้เฉพาะหมวด teachers · คืน URL ของรูปบนโฮสต์
+ */
+export async function uploadTeacherPhoto(blob, teacherToken) {
+  const res = await fetch(FN_URL, {
+    method: 'POST',
+    headers: { apikey: ANON_KEY, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ purpose: 'teacher-photo', teacher_token: teacherToken }),
+  })
+  const t = await res.json().catch(() => ({}))
+  if (!res.ok || !t.ticket) {
+    throw new Error(t.error === 'invalid_token' ? 'ลิงก์แก้ไขไม่ถูกต้องหรือหมดอายุ' : (t.message || 'ขอสิทธิ์อัปโหลดไม่สำเร็จ'))
+  }
+  const fd = new FormData()
+  fd.append('file', blob, 'teacher.jpg')
+  fd.append('category', 'teachers')
+  const up = await fetch(t.endpoint, { method: 'POST', headers: { 'X-Upload-Ticket': t.ticket }, body: fd })
+  const data = await up.json().catch(() => ({}))
+  if (!up.ok || !data.url) throw new Error(data.error || 'อัปโหลดรูปไม่สำเร็จ')
+  return data.url
+}
+
 // ลบไฟล์ที่เคยอัปโหลด — รองรับทั้ง URL จาก host ภายนอกและ Supabase storage
 // ใช้ตอนลบ/แทนที่ banner หรือข่าว เพื่อไม่ให้ไฟล์ค้างสะสม
 export async function deleteUploadedFile(url) {

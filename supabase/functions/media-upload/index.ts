@@ -79,15 +79,29 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: CORS_HEADERS })
   if (req.method !== 'POST')    return json({ error: 'method not allowed' }, 405)
 
-  const auth = await requireApprovedUser(req)
-  if (auth.error) return auth.error
+  const body = await req.json().catch(() => ({}))
 
   if (!UPLOAD_API_URL || !UPLOAD_SECRET) {
     return json({ error: 'not_configured', message: 'ยังไม่ได้ตั้งค่า UPLOAD_API_URL / UPLOAD_API_SECRET บนเซิร์ฟเวอร์' }, 500)
   }
 
+  // ── ครูที่ตอบแบบสำรวจเครือข่ายวิชาชีพ (ไม่มีบัญชี) อัปรูปโปรไฟล์ ──
+  // ใช้ "ลิงก์แก้ไขส่วนตัว" แทน JWT · ได้เฉพาะตั๋ว upload หมวด teachers เท่านั้น
+  // ไม่ออกตั๋ว delete ให้ — delete.php ไม่ผูกตั๋วกับไฟล์ ครูคนหนึ่งจะลบรูปคนอื่นได้
+  // (รูปเก่าที่ถูกแทนค้างไว้ ~20 KB/ไฟล์ แอดมินล้างทีหลังได้)
+  if (body.purpose === 'teacher-photo') {
+    const token = String(body.teacher_token || '')
+    if (!/^[0-9a-f]{48}$/.test(token)) return json({ error: 'invalid_token' }, 401)
+    const { data: ok, error } = await admin.rpc('teacher_token_valid', { p_token: token })
+    if (error || !ok) return json({ error: 'invalid_token' }, 401)
+    const { ticket, exp } = await issueTicket('upload', 'teachers')
+    return json({ ticket, exp, endpoint: UPLOAD_API_URL, category: 'teachers' })
+  }
+
+  const auth = await requireApprovedUser(req)
+  if (auth.error) return auth.error
+
   try {
-    const body = await req.json().catch(() => ({}))
     const purpose = body.purpose === 'delete' ? 'delete' : 'upload'
     const category = String(body.category || 'misc').replace(/[^a-z0-9_-]/gi, '') || 'misc'
 
