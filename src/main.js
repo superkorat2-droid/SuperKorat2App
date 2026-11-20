@@ -26,3 +26,10 @@ window.addEventListener('compositionstart', (e) => {
 }, true)
 
 app.mount('#app')
+
+// ── PWA: มีเวอร์ชันใหม่ → สลับหน้าเป็นเวอร์ชันใหม่ทันที ──
+// เดิมใช้สคริปต์ลงทะเบียนอัตโนมัติ: SW ใหม่ติดตั้งเงียบ ๆ แต่หน้ายังรันโค้ดเก่าจนกว่าผู้ใช้จะรีเฟรชเอง
+// → คนที่เคยเข้าเว็บก่อนมีหน้าใหม่ เปิดลิงก์หน้าใหม่ (เช่น /teacher-survey) ครั้งแรก
+//   โค้ดเก่าไม่รู้จัก route จึงโดนเด้งไปหน้าแรก (20 พ.ย. 69)
+// registerSW + registerType 'autoUpdate' จะ reload ให้เองเมื่อ SW ใหม่เข้าคุมหน้า (มักภายในไม่กี่วินาที)
+import('virtual:pwa-register').then(({ registerSW }) => registerSW({ immediate: true })).catch(() => {})

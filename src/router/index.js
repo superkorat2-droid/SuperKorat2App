@@ -288,8 +288,33 @@ const routes = [
   { path: '/contact',   name: 'contact',   component: ContactView, meta: { title: 'ติดต่อเรา' }   },
 
   // ── 404 fallback ──────────────────────────────────────────────────────
-  { path: '/:pathMatch(.*)*', redirect: '/' },
+  // หน้าที่ไม่รู้จัก — อาจเป็นเพราะโค้ดเก่าค้างใน PWA cache (ลิงก์หน้าใหม่ที่เพิ่ง deploy)
+  // ขอ SW เวอร์ชันใหม่ก่อน ถ้ามีจริงให้โหลดซ้ำ 1 ครั้ง ไม่มีค่อยเด้งหน้าแรกเหมือนเดิม
+  { path: '/:pathMatch(.*)*', name: 'notFound', component: { render: () => null }, beforeEnter: recoverUnknownRoute },
 ]
+
+async function recoverUnknownRoute(to) {
+  const KEY = 'unknownRouteReloaded'
+  try {
+    if ('serviceWorker' in navigator && sessionStorage.getItem(KEY) !== to.fullPath) {
+      const reg = await navigator.serviceWorker.getRegistration()
+      if (reg) {
+        await reg.update().catch(() => {})
+        const incoming = reg.installing || reg.waiting
+        if (incoming) {
+          sessionStorage.setItem(KEY, to.fullPath)        // กันวนโหลดไม่รู้จบ
+          await new Promise(res => {
+            navigator.serviceWorker.addEventListener('controllerchange', res, { once: true })
+            setTimeout(res, 5000)
+          })
+          window.location.reload()
+          return false
+        }
+      }
+    }
+  } catch { /* sessionStorage ถูกปิด ฯลฯ — เด้งหน้าแรกตามเดิม */ }
+  return '/'
+}
 
 const router = createRouter({
   history: createWebHashHistory(),

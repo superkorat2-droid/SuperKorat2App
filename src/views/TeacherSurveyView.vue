@@ -270,20 +270,45 @@ async function removePhoto() {
   if (data?.ok) photoUrl.value = ''
 }
 
-const inputCls = 'w-full px-4 py-3 border border-white/80 bg-white/70 backdrop-blur rounded-xl text-sm focus:outline-none focus:border-primary'
+const inputCls = 'w-full px-4 py-3 border-2 border-slate-200 bg-white rounded-xl text-sm focus:outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 transition'
+
+// ── สีประจำแต่ละข้อ (เขียนคลาสเต็มทุกตัว — Tailwind ตัดคลาสที่ประกอบสตริงทิ้งตอน build) ──
+const CHIP = {
+  indigo:  { on: 'bg-indigo-100 border-indigo-400 text-indigo-900',   hover: 'hover:border-indigo-300 hover:bg-indigo-50',   acc: 'accent-indigo-600',  badge: 'bg-indigo-500'  },
+  sky:     { on: 'bg-sky-100 border-sky-400 text-sky-900',            hover: 'hover:border-sky-300 hover:bg-sky-50',         acc: 'accent-sky-600',     badge: 'bg-sky-500'     },
+  violet:  { on: 'bg-violet-100 border-violet-400 text-violet-900',   hover: 'hover:border-violet-300 hover:bg-violet-50',   acc: 'accent-violet-600',  badge: 'bg-violet-500'  },
+  teal:    { on: 'bg-teal-100 border-teal-400 text-teal-900',         hover: 'hover:border-teal-300 hover:bg-teal-50',       acc: 'accent-teal-600',    badge: 'bg-teal-500'    },
+  emerald: { on: 'bg-emerald-100 border-emerald-400 text-emerald-900', hover: 'hover:border-emerald-300 hover:bg-emerald-50', acc: 'accent-emerald-600', badge: 'bg-emerald-500' },
+  amber:   { on: 'bg-amber-100 border-amber-400 text-amber-900',      hover: 'hover:border-amber-300 hover:bg-amber-50',     acc: 'accent-amber-600',   badge: 'bg-amber-500'   },
+  pink:    { on: 'bg-pink-100 border-pink-400 text-pink-900',         hover: 'hover:border-pink-300 hover:bg-pink-50',       acc: 'accent-pink-600',    badge: 'bg-pink-500'    },
+  rose:    { on: 'bg-rose-100 border-rose-400 text-rose-900',         hover: 'hover:border-rose-300 hover:bg-rose-50',       acc: 'accent-rose-600',    badge: 'bg-rose-500'    },
+}
+function chip(color, on, disabled = false) {
+  const c = CHIP[color]
+  return ['flex items-start gap-2.5 px-3.5 py-2.5 rounded-xl border-2 text-sm transition select-none',
+    on ? `${c.on} font-semibold shadow-sm` : 'bg-white border-slate-200 text-slate-700',
+    disabled ? 'opacity-40 cursor-not-allowed' : `cursor-pointer ${c.hover}`]
+}
+const PART2 = [
+  { field: 'constraints', no: 9,  color: 'amber', title: 'สภาพความพร้อมและข้อจำกัดของสถานศึกษาในการจัดกิจกรรมการเรียนรู้' },
+  { field: 'topics',      no: 10, color: 'pink',  title: 'ประเด็นที่ท่านต้องการพัฒนาหรือแลกเปลี่ยนเรียนรู้ในเครือข่ายมากที่สุด' },
+]
 </script>
 
 <template>
-  <div class="font-sarabun min-h-screen">
+  <div class="font-sarabun min-h-screen bg-gradient-to-br from-indigo-50 via-sky-50 to-emerald-50">
     <div class="max-w-3xl mx-auto px-4 py-6 space-y-5">
 
       <!-- ── หัวแบบสำรวจ ─────────────────────────────────────────────── -->
-      <div class="glass-card p-5 sm:p-6 text-center space-y-1">
-        <div role="heading" aria-level="1" class="text-xl sm:text-2xl font-extrabold text-primary leading-snug">
+      <div class="relative overflow-hidden rounded-3xl p-6 sm:p-8 text-center text-white shadow-xl bg-gradient-to-br from-indigo-600 via-sky-500 to-emerald-400">
+        <div class="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-white/15"></div>
+        <div class="absolute -bottom-12 -left-8 w-36 h-36 rounded-full bg-white/10"></div>
+        <div class="relative text-4xl mb-2">👩‍🏫🤝👨‍🏫</div>
+        <div role="heading" aria-level="1" class="relative text-xl sm:text-2xl font-extrabold leading-snug drop-shadow">
           {{ cfg?.title || 'การขับเคลื่อนระบบฐานข้อมูลพัฒนาเครือข่ายวิชาชีพครู' }}
         </div>
-        <div class="text-sm font-bold text-slate-600">{{ officeName }}</div>
-        <div v-if="isEdit && !loadErr" class="inline-block mt-2 text-xs font-bold bg-amber-100 text-amber-700 px-3 py-1 rounded-full">
+        <div class="relative text-sm font-bold text-white/90 mt-1">{{ officeName }}</div>
+        <div v-if="isEdit && !loadErr" class="relative inline-block mt-3 text-xs font-bold bg-white text-indigo-700 px-3 py-1 rounded-full shadow">
           โหมดแก้ไขข้อมูลของ {{ fullName(form) || 'ท่าน' }}
         </div>
       </div>
@@ -296,7 +321,7 @@ const inputCls = 'w-full px-4 py-3 border border-white/80 bg-white/70 backdrop-b
       </div>
 
       <!-- ── ส่งสำเร็จ: ลิงก์แก้ไขส่วนตัว ─────────────────────────────── -->
-      <div v-else-if="done" class="glass-card p-6 space-y-4 text-center">
+      <div v-else-if="done" class="rounded-3xl bg-white shadow-xl p-6 space-y-4 text-center border-t-8 border-emerald-400">
         <div class="text-5xl">🎉</div>
         <div role="heading" aria-level="2" class="text-lg font-extrabold text-emerald-700">ส่งแบบสำรวจเรียบร้อยแล้ว ขอบคุณครับ/ค่ะ</div>
         <div class="text-left bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-2">
@@ -312,7 +337,7 @@ const inputCls = 'w-full px-4 py-3 border border-white/80 bg-white/70 backdrop-b
         <div v-if="done.photoFailed" class="text-sm text-red-600 bg-red-50 rounded-xl p-3">
           ข้อมูลบันทึกแล้ว แต่อัปโหลดรูปไม่สำเร็จ ({{ done.photoFailed }}) — กดปุ่มด้านล่างเพื่อเพิ่มรูปอีกครั้ง
         </div>
-        <button @click="goEdit" class="w-full sm:w-auto px-6 py-3 rounded-xl bg-primary text-white font-bold hover:opacity-90">
+        <button @click="goEdit" class="w-full sm:w-auto px-6 py-3 rounded-xl bg-gradient-to-r from-indigo-500 to-sky-500 text-white font-bold shadow hover:opacity-90">
           ✏️ ตรวจทาน / แก้ไขข้อมูลและรูป
         </button>
         <div><router-link to="/teachers" class="text-sm text-primary hover:underline">ดูทำเนียบครู</router-link></div>
@@ -337,19 +362,23 @@ const inputCls = 'w-full px-4 py-3 border border-white/80 bg-white/70 backdrop-b
             ✓ บันทึกการแก้ไขเรียบร้อยแล้ว
           </div>
 
-          <div v-if="!isEdit && cfg?.intro" class="glass-card p-5 border-l-4 border-l-primary">
-            <div class="text-sm text-slate-700 leading-relaxed"><b>คำชี้แจง :</b> {{ cfg.intro }}</div>
+          <div v-if="!isEdit && cfg?.intro" class="rounded-2xl p-5 bg-white shadow-sm border-2 border-sky-100 flex gap-3">
+            <div class="text-2xl shrink-0">💡</div>
+            <div class="text-sm text-slate-700 leading-relaxed"><b class="text-sky-700">คำชี้แจง :</b> {{ cfg.intro }}</div>
           </div>
 
           <!-- ═══ ส่วนที่ 1 ═══ -->
-          <section class="glass-card overflow-hidden">
-            <div role="heading" aria-level="2" class="bg-primary text-white font-bold px-5 py-3">ส่วนที่ 1: ข้อมูลพื้นฐาน บริบทการปฏิบัติงาน และช่องทางการติดต่อ</div>
+          <section class="rounded-3xl overflow-hidden bg-white shadow-lg">
+            <div role="heading" aria-level="2" class="bg-gradient-to-r from-indigo-600 to-violet-500 text-white font-bold px-5 py-4 flex items-center gap-3">
+              <span class="w-9 h-9 rounded-full bg-white/25 flex items-center justify-center text-lg shrink-0">👤</span>
+              ส่วนที่ 1: ข้อมูลพื้นฐาน บริบทการปฏิบัติงาน และช่องทางการติดต่อ
+            </div>
             <div class="p-5 space-y-6">
 
               <!-- รูปโปรไฟล์: ส่งใหม่ = เก็บไว้ก่อนแล้วอัปหลังส่งสำเร็จ · แก้ไข = อัปทันที -->
-              <div class="flex flex-col sm:flex-row items-center gap-4 p-4 rounded-2xl bg-slate-50 border border-dashed border-slate-300">
+              <div class="flex flex-col sm:flex-row items-center gap-4 p-4 rounded-2xl bg-gradient-to-r from-violet-50 to-sky-50 border-2 border-dashed border-violet-300">
                 <button type="button" @click="showCropper = true" :disabled="photoBusy"
-                  class="w-24 h-24 rounded-full overflow-hidden bg-white flex items-center justify-center shrink-0 shadow ring-2 ring-white hover:ring-primary transition">
+                  class="w-24 h-24 rounded-full overflow-hidden bg-white flex items-center justify-center shrink-0 shadow-md ring-4 ring-violet-200 hover:ring-violet-400 transition">
                   <img v-if="photoPreview" :src="photoPreview" alt="รูปโปรไฟล์" class="w-full h-full object-cover"/>
                   <span v-else class="text-3xl">📷</span>
                 </button>
@@ -358,7 +387,7 @@ const inputCls = 'w-full px-4 py-3 border border-white/80 bg-white/70 backdrop-b
                   <div class="text-xs text-slate-500">เลือกรูปหน้าตรงจากเครื่องหรือถ่ายจากมือถือ แล้วลากกรอบครอบให้พอดีหน้า ระบบย่อให้อัตโนมัติ</div>
                   <div class="flex flex-wrap gap-2 justify-center sm:justify-start pt-1">
                     <button type="button" @click="showCropper = true" :disabled="photoBusy"
-                      class="px-4 py-2 rounded-lg bg-primary text-white text-sm font-bold disabled:opacity-50">
+                      class="px-4 py-2 rounded-lg bg-gradient-to-r from-violet-500 to-indigo-500 text-white text-sm font-bold shadow disabled:opacity-50">
                       {{ photoBusy ? 'กำลังอัปโหลด...' : (photoPreview ? 'เปลี่ยนรูป' : '📷 เลือกรูป / ถ่ายรูป') }}
                     </button>
                     <button v-if="photoPreview" type="button" @click="removePhoto" class="px-4 py-2 rounded-lg text-sm text-red-500 hover:bg-red-50">ลบรูป</button>
@@ -369,7 +398,7 @@ const inputCls = 'w-full px-4 py-3 border border-white/80 bg-white/70 backdrop-b
               </div>
 
               <div class="space-y-2">
-                <label class="block font-bold text-slate-700">1. คำนำหน้า ชื่อ - นามสกุล <span class="text-red-500">*</span></label>
+                <label class="block font-bold text-slate-800"><span class="qno" :class="CHIP.indigo.badge">1</span>คำนำหน้า ชื่อ - นามสกุล <span class="text-red-500">*</span></label>
                 <div class="grid grid-cols-1 sm:grid-cols-[10rem_1fr_1fr] gap-2">
                   <div class="space-y-2">
                     <select :value="customPrefix ? '__other' : form.prefix" @change="onPrefixSelect" :class="inputCls">
@@ -385,7 +414,7 @@ const inputCls = 'w-full px-4 py-3 border border-white/80 bg-white/70 backdrop-b
               </div>
 
               <div class="space-y-2">
-                <label class="block font-bold text-slate-700">2. โรงเรียน <span class="text-red-500">*</span></label>
+                <label class="block font-bold text-slate-800"><span class="qno" :class="CHIP.sky.badge">2</span>โรงเรียน <span class="text-red-500">*</span></label>
                 <SchoolPicker v-model="form.school_id" :schools="schools"/>
                 <div v-if="selectedSchool" class="text-xs text-slate-500">
                   อ.{{ selectedSchool.district }} · ศูนย์เครือข่ายพัฒนาคุณภาพการศึกษา {{ selectedSchool.school_group }}
@@ -393,7 +422,7 @@ const inputCls = 'w-full px-4 py-3 border border-white/80 bg-white/70 backdrop-b
               </div>
 
               <div class="space-y-2">
-                <label class="block font-bold text-slate-700">3. ช่องทางการติดต่อ <span class="text-xs font-normal text-slate-500">(เพื่อใช้ประสานงานและเชิญเข้ากลุ่มเครือข่ายรายวิชา)</span></label>
+                <label class="block font-bold text-slate-800"><span class="qno" :class="CHIP.teal.badge">3</span>ช่องทางการติดต่อ <span class="text-xs font-normal text-slate-500">(เพื่อใช้ประสานงานและเชิญเข้ากลุ่มเครือข่ายรายวิชา)</span></label>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <input v-model="form.phone" type="tel" inputmode="numeric" maxlength="12" placeholder="เบอร์โทรศัพท์ *" :class="inputCls"/>
                   <input v-model="form.line_id" maxlength="100" placeholder="ID Line" :class="inputCls"/>
@@ -403,17 +432,17 @@ const inputCls = 'w-full px-4 py-3 border border-white/80 bg-white/70 backdrop-b
               </div>
 
               <div class="space-y-2">
-                <label class="block font-bold text-slate-700">4. ระดับชั้นที่รับผิดชอบการสอน <span class="text-red-500">*</span> <span class="text-xs font-normal text-slate-500">(เลือกได้มากกว่า 1 ข้อ)</span></label>
-                <div class="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
-                  <label v-for="o in opts.grades" :key="o.key" class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-white/60 cursor-pointer text-sm">
-                    <input type="checkbox" :checked="isChecked('grades', o.key)" @change="toggle('grades', o.key)" class="w-4 h-4 accent-primary"/>
+                <label class="block font-bold text-slate-800"><span class="qno" :class="CHIP.sky.badge">4</span>ระดับชั้นที่รับผิดชอบการสอน <span class="text-red-500">*</span> <span class="text-xs font-normal text-slate-500">(เลือกได้มากกว่า 1 ข้อ)</span></label>
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  <label v-for="o in opts.grades" :key="o.key" :class="chip('sky', isChecked('grades', o.key))">
+                    <input type="checkbox" :checked="isChecked('grades', o.key)" @change="toggle('grades', o.key)" :class="['w-4 h-4 mt-0.5 shrink-0', CHIP.sky.acc]"/>
                     {{ o.label }}
                   </label>
                 </div>
               </div>
 
               <div class="space-y-2">
-                <label class="block font-bold text-slate-700">5. วุฒิการศึกษาและสาขาวิชาเอกที่สำเร็จการศึกษา <span class="text-xs font-normal text-slate-500">(เช่น ค.บ. คณิตศาสตร์ / วท.บ. วิทยาการคอมพิวเตอร์)</span></label>
+                <label class="block font-bold text-slate-800"><span class="qno" :class="CHIP.indigo.badge">5</span>วุฒิการศึกษาและสาขาวิชาเอกที่สำเร็จการศึกษา <span class="text-xs font-normal text-slate-500">(เช่น ค.บ. คณิตศาสตร์ / วท.บ. วิทยาการคอมพิวเตอร์)</span></label>
                 <div class="space-y-2">
                   <input v-model="form.degree_ba"  maxlength="200" placeholder="ปริญญาตรี" :class="inputCls"/>
                   <input v-model="form.degree_ma"  maxlength="200" placeholder="ปริญญาโท (ถ้ามี)" :class="inputCls"/>
@@ -422,76 +451,73 @@ const inputCls = 'w-full px-4 py-3 border border-white/80 bg-white/70 backdrop-b
               </div>
 
               <div class="space-y-2">
-                <label class="block font-bold text-slate-700">6. วิทยฐานะปัจจุบัน <span class="text-red-500">*</span></label>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-                  <label v-for="o in opts.ranks" :key="o.key" class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-white/60 cursor-pointer text-sm">
-                    <input type="radio" v-model="form.academic_rank" :value="o.key" class="w-4 h-4 accent-primary"/>
+                <label class="block font-bold text-slate-800"><span class="qno" :class="CHIP.violet.badge">6</span>วิทยฐานะปัจจุบัน <span class="text-red-500">*</span></label>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <label v-for="o in opts.ranks" :key="o.key" :class="chip('violet', form.academic_rank === o.key)">
+                    <input type="radio" v-model="form.academic_rank" :value="o.key" :class="['w-4 h-4 mt-0.5 shrink-0', CHIP.violet.acc]"/>
                     {{ o.label }}
                   </label>
                 </div>
               </div>
 
               <div class="space-y-2">
-                <label class="block font-bold text-slate-700">7. ลักษณะการจัดการเรียนการสอนในปัจจุบัน</label>
-                <div class="space-y-1.5">
-                  <label v-for="o in opts.major_match" :key="o.key" class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-white/60 cursor-pointer text-sm">
-                    <input type="radio" v-model="form.major_match" :value="o.key" class="w-4 h-4 accent-primary"/>
+                <label class="block font-bold text-slate-800"><span class="qno" :class="CHIP.teal.badge">7</span>ลักษณะการจัดการเรียนการสอนในปัจจุบัน</label>
+                <div class="space-y-2">
+                  <label v-for="o in opts.major_match" :key="o.key" :class="chip('teal', form.major_match === o.key)">
+                    <input type="radio" v-model="form.major_match" :value="o.key" :class="['w-4 h-4 mt-0.5 shrink-0', CHIP.teal.acc]"/>
                     {{ o.label }}
                   </label>
                 </div>
               </div>
 
               <div class="space-y-2">
-                <label class="block font-bold text-slate-700">
-                  8. เครือข่ายวิชาชีพครูที่ท่านสนใจเข้าร่วม <span class="text-red-500">*</span>
+                <label class="block font-bold text-slate-800">
+                  <span class="qno" :class="CHIP.emerald.badge">8</span>เครือข่ายวิชาชีพครูที่ท่านสนใจเข้าร่วม <span class="text-red-500">*</span>
                   <span class="text-xs font-normal text-slate-500">(เลือกได้ไม่เกิน {{ limits.networks || '–' }} เครือข่าย ตามรายวิชาที่สอนหรือสนใจ)</span>
                 </label>
-                <div class="text-xs" :class="atLimit('networks') ? 'text-amber-600 font-bold' : 'text-slate-400'">
+                <div class="text-xs" :class="['inline-block px-2.5 py-0.5 rounded-full font-bold', atLimit('networks') ? 'bg-amber-100 text-amber-700' : 'bg-emerald-50 text-emerald-700']">
                   เลือกแล้ว {{ form.networks.length }}{{ limits.networks ? ` / ${limits.networks}` : '' }}
                 </div>
-                <div class="space-y-1">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <template v-for="o in opts.networks" :key="o.key">
-                    <div v-if="o.children?.length" class="px-3 pt-2 text-sm font-bold text-slate-600">{{ o.label }}</div>
+                    <div v-if="o.children?.length" class="sm:col-span-2 px-1 pt-2 text-sm font-bold text-emerald-700">🌏 {{ o.label }}</div>
                     <label v-for="c in (o.children?.length ? o.children : [o])" :key="c.key"
-                      :class="['flex items-center gap-2 px-3 py-2 rounded-lg text-sm',
-                               o.children?.length ? 'ml-6' : '',
-                               !isChecked('networks', c.key) && atLimit('networks') ? 'opacity-40 cursor-not-allowed' : 'hover:bg-white/60 cursor-pointer']">
+                      :class="[chip('emerald', isChecked('networks', c.key), !isChecked('networks', c.key) && atLimit('networks')), o.children?.length ? 'sm:ml-4' : '']">
                       <input type="checkbox" :checked="isChecked('networks', c.key)"
                         :disabled="!isChecked('networks', c.key) && atLimit('networks')"
-                        @change="toggle('networks', c.key)" class="w-4 h-4 accent-primary"/>
+                        @change="toggle('networks', c.key)" :class="['w-4 h-4 mt-0.5 shrink-0', CHIP.emerald.acc]"/>
                       {{ c.label }}
                     </label>
                   </template>
                 </div>
-                <input v-if="hasOther('networks')" v-model="form.networks_other" maxlength="200" placeholder="โปรดระบุ" :class="[inputCls, 'ml-6 !w-[calc(100%-1.5rem)]']"/>
+                <input v-if="hasOther('networks')" v-model="form.networks_other" maxlength="200" placeholder="โปรดระบุ" :class="inputCls"/>
               </div>
             </div>
           </section>
 
           <!-- ═══ ส่วนที่ 2 ═══ -->
-          <section class="glass-card overflow-hidden">
-            <div role="heading" aria-level="2" class="bg-primary text-white font-bold px-5 py-3">ส่วนที่ 2: สภาพปัญหา บริบทโรงเรียน และความต้องการจำเป็นในการพัฒนา</div>
+          <section class="rounded-3xl overflow-hidden bg-white shadow-lg">
+            <div role="heading" aria-level="2" class="bg-gradient-to-r from-orange-500 to-pink-500 text-white font-bold px-5 py-4 flex items-center gap-3">
+              <span class="w-9 h-9 rounded-full bg-white/25 flex items-center justify-center text-lg shrink-0">🎯</span>
+              ส่วนที่ 2: สภาพปัญหา บริบทโรงเรียน และความต้องการจำเป็นในการพัฒนา
+            </div>
             <div class="p-5 space-y-6">
-              <div v-for="(q, qi) in [
-                     { field: 'constraints', no: 9,  title: 'สภาพความพร้อมและข้อจำกัดของสถานศึกษาในการจัดกิจกรรมการเรียนรู้' },
-                     { field: 'topics',      no: 10, title: 'ประเด็นที่ท่านต้องการพัฒนาหรือแลกเปลี่ยนเรียนรู้ในเครือข่ายมากที่สุด' },
-                   ]" :key="qi" class="space-y-2">
-                <label class="block font-bold text-slate-700">
-                  {{ q.no }}. {{ q.title }}
+              <div v-for="q in PART2" :key="q.field" class="space-y-2">
+                <label class="block font-bold text-slate-800">
+                  <span class="qno" :class="CHIP[q.color].badge">{{ q.no }}</span>{{ q.title }}
                   <span class="text-xs font-normal text-slate-500">
                     ({{ limits[q.field] ? `เลือกได้สูงสุด ${limits[q.field]} ข้อ` : 'เลือกได้มากกว่า 1 ข้อ' }})
                   </span>
                 </label>
-                <div v-if="limits[q.field]" class="text-xs" :class="atLimit(q.field) ? 'text-amber-600 font-bold' : 'text-slate-400'">
+                <div v-if="limits[q.field]" class="text-xs" :class="['inline-block px-2.5 py-0.5 rounded-full font-bold', atLimit(q.field) ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600']">
                   เลือกแล้ว {{ form[q.field].length }} / {{ limits[q.field] }}
                 </div>
-                <div class="space-y-1">
+                <div class="space-y-2">
                   <label v-for="o in leafOptions(opts[q.field])" :key="o.key"
-                    :class="['flex items-start gap-2 px-3 py-2 rounded-lg text-sm',
-                             !isChecked(q.field, o.key) && atLimit(q.field) ? 'opacity-40 cursor-not-allowed' : 'hover:bg-white/60 cursor-pointer']">
+                    :class="chip(q.color, isChecked(q.field, o.key), !isChecked(q.field, o.key) && atLimit(q.field))">
                     <input type="checkbox" :checked="isChecked(q.field, o.key)"
                       :disabled="!isChecked(q.field, o.key) && atLimit(q.field)"
-                      @change="toggle(q.field, o.key)" class="w-4 h-4 mt-0.5 accent-primary shrink-0"/>
+                      @change="toggle(q.field, o.key)" :class="['w-4 h-4 mt-0.5 shrink-0', CHIP[q.color].acc]"/>
                     {{ o.label }}
                   </label>
                 </div>
@@ -500,28 +526,28 @@ const inputCls = 'w-full px-4 py-3 border border-white/80 bg-white/70 backdrop-b
 
               <!-- คำถามเสริมที่แอดมินเพิ่ม -->
               <div v-for="(q, i) in extras" :key="q.key" class="space-y-2">
-                <label class="block font-bold text-slate-700">
-                  {{ 11 + i }}. {{ q.label }} <span v-if="q.required" class="text-red-500">*</span>
+                <label class="block font-bold text-slate-800">
+                  <span class="qno" :class="CHIP.indigo.badge">{{ 11 + i }}</span>{{ q.label }} <span v-if="q.required" class="text-red-500">*</span>
                   <span v-if="q.type === 'multi' && q.max" class="text-xs font-normal text-slate-500">(เลือกได้สูงสุด {{ q.max }} ข้อ)</span>
                 </label>
                 <input v-if="q.type === 'text'" :value="form.extra[q.key] || ''" @input="setExtra(q.key, $event.target.value)" maxlength="1000" :class="inputCls"/>
                 <textarea v-else-if="q.type === 'textarea'" :value="form.extra[q.key] || ''" @input="setExtra(q.key, $event.target.value)" rows="3" maxlength="1000" :class="inputCls"/>
                 <div v-else-if="q.type === 'choice'" class="space-y-1">
-                  <label v-for="op in q.options || []" :key="op" class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-white/60 cursor-pointer text-sm">
-                    <input type="radio" :name="`x-${q.key}`" :checked="form.extra[q.key] === op" @change="setExtra(q.key, op)" class="w-4 h-4 accent-primary"/>
+                  <label v-for="op in q.options || []" :key="op" :class="chip('indigo', form.extra[q.key] === op)">
+                    <input type="radio" :name="`x-${q.key}`" :checked="form.extra[q.key] === op" @change="setExtra(q.key, op)" :class="['w-4 h-4 mt-0.5 shrink-0', CHIP.indigo.acc]"/>
                     {{ op }}
                   </label>
                 </div>
                 <div v-else-if="q.type === 'multi'" class="space-y-1">
-                  <label v-for="op in q.options || []" :key="op" class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-white/60 cursor-pointer text-sm">
-                    <input type="checkbox" :checked="extraChecked(q, op)" @change="extraToggle(q, op)" class="w-4 h-4 accent-primary"/>
+                  <label v-for="op in q.options || []" :key="op" :class="chip('indigo', extraChecked(q, op))">
+                    <input type="checkbox" :checked="extraChecked(q, op)" @change="extraToggle(q, op)" :class="['w-4 h-4 mt-0.5 shrink-0', CHIP.indigo.acc]"/>
                     {{ op }}
                   </label>
                 </div>
               </div>
 
               <div class="space-y-2">
-                <label class="block font-bold text-slate-700">{{ 11 + extras.length }}. ข้อเสนอแนะอื่น ๆ</label>
+                <label class="block font-bold text-slate-800"><span class="qno" :class="CHIP.rose.badge">{{ 11 + extras.length }}</span>ข้อเสนอแนะอื่น ๆ</label>
                 <textarea v-model="form.suggestion" rows="3" maxlength="2000" :class="inputCls"/>
               </div>
             </div>
@@ -532,8 +558,8 @@ const inputCls = 'w-full px-4 py-3 border border-white/80 bg-white/70 backdrop-b
           </div>
 
           <button @click="submit" :disabled="saving"
-            class="w-full py-4 rounded-2xl bg-primary text-white font-extrabold text-lg shadow-lg hover:opacity-90 disabled:opacity-50">
-            {{ saving ? 'กำลังบันทึก...' : (isEdit ? 'บันทึกการแก้ไข' : 'ส่งแบบสำรวจ') }}
+            class="w-full py-4 rounded-2xl bg-gradient-to-r from-indigo-600 via-sky-500 to-emerald-500 text-white font-extrabold text-lg shadow-xl hover:shadow-2xl hover:-translate-y-0.5 transition disabled:opacity-50">
+            {{ saving ? 'กำลังบันทึก...' : (isEdit ? '💾 บันทึกการแก้ไข' : '🚀 ส่งแบบสำรวจ') }}
           </button>
 
           <div class="text-center text-xs text-slate-400 italic pb-6">
@@ -551,4 +577,11 @@ const inputCls = 'w-full px-4 py-3 border border-white/80 bg-white/70 backdrop-b
 
 <style scoped>
 .font-sarabun { font-family: 'Sarabun', sans-serif; }
+/* วงกลมเลขข้อ (สีพื้นมาจาก CHIP[...].badge) */
+.qno {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 1.75rem; height: 1.75rem; margin-right: .5rem; border-radius: 9999px;
+  color: #fff; font-size: .8rem; font-weight: 800; vertical-align: middle;
+  box-shadow: 0 2px 6px rgba(15,23,42,.15);
+}
 </style>
