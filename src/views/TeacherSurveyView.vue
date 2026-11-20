@@ -16,6 +16,7 @@ import {
   rememberToken, recallToken, forgetToken, editLinkOf,
 } from '../composables/useTeacherSurvey'
 import SchoolPicker from '../components/supervision/SchoolPicker.vue'
+import TsIcon from '../components/teachers/TsIcon.vue'
 
 const ImageCropperModal = defineAsyncComponent(() => import('../components/ImageCropperModal.vue'))
 
@@ -303,7 +304,7 @@ const PART2 = [
       <div class="relative overflow-hidden rounded-3xl p-6 sm:p-8 text-center text-white shadow-xl bg-gradient-to-br from-indigo-600 via-sky-500 to-emerald-400">
         <div class="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-white/15"></div>
         <div class="absolute -bottom-12 -left-8 w-36 h-36 rounded-full bg-white/10"></div>
-        <div class="relative text-4xl mb-2">👩‍🏫🤝👨‍🏫</div>
+        <div class="relative mx-auto mb-3 w-14 h-14 rounded-2xl bg-white/20 ring-1 ring-white/40 flex items-center justify-center"><TsIcon name="users" class="w-8 h-8 text-white"/></div>
         <div role="heading" aria-level="1" class="relative text-xl sm:text-2xl font-extrabold leading-snug drop-shadow">
           {{ cfg?.title || 'การขับเคลื่อนระบบฐานข้อมูลพัฒนาเครือข่ายวิชาชีพครู' }}
         </div>
@@ -322,10 +323,10 @@ const PART2 = [
 
       <!-- ── ส่งสำเร็จ: ลิงก์แก้ไขส่วนตัว ─────────────────────────────── -->
       <div v-else-if="done" class="rounded-3xl bg-white shadow-xl p-6 space-y-4 text-center border-t-8 border-emerald-400">
-        <div class="text-5xl">🎉</div>
+        <div class="mx-auto w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center"><TsIcon name="check" class="w-10 h-10 text-emerald-600"/></div>
         <div role="heading" aria-level="2" class="text-lg font-extrabold text-emerald-700">ส่งแบบสำรวจเรียบร้อยแล้ว ขอบคุณครับ/ค่ะ</div>
         <div class="text-left bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-2">
-          <div class="text-sm font-bold text-amber-800">🔑 ลิงก์แก้ไขข้อมูลส่วนตัวของท่าน — กรุณาเก็บไว้</div>
+          <div class="text-sm font-bold text-amber-800 flex items-center gap-1.5"><TsIcon name="key" class="w-4 h-4 shrink-0"/>ลิงก์แก้ไขข้อมูลส่วนตัวของท่าน — กรุณาเก็บไว้</div>
           <div class="text-xs text-amber-700">ใช้ลิงก์นี้กลับมาแก้ไขข้อมูลหรือเพิ่มรูปโปรไฟล์ได้ตลอด (เครื่องนี้จำไว้ให้แล้ว แต่ถ้าเปลี่ยนเครื่องต้องใช้ลิงก์นี้)</div>
           <div class="flex flex-col sm:flex-row gap-2">
             <input :value="doneLink" readonly class="flex-1 min-w-0 px-3 py-2 text-xs border border-amber-200 rounded-lg bg-white" @focus="$event.target.select()"/>
@@ -338,7 +339,7 @@ const PART2 = [
           ข้อมูลบันทึกแล้ว แต่อัปโหลดรูปไม่สำเร็จ ({{ done.photoFailed }}) — กดปุ่มด้านล่างเพื่อเพิ่มรูปอีกครั้ง
         </div>
         <button @click="goEdit" class="w-full sm:w-auto px-6 py-3 rounded-xl bg-gradient-to-r from-indigo-500 to-sky-500 text-white font-bold shadow hover:opacity-90">
-          ✏️ ตรวจทาน / แก้ไขข้อมูลและรูป
+          <span class="inline-flex items-center gap-2"><TsIcon name="pencil" class="w-5 h-5"/>ตรวจทาน / แก้ไขข้อมูลและรูป</span>
         </button>
         <div><router-link to="/teachers" class="text-sm text-primary hover:underline">ดูทำเนียบครู</router-link></div>
       </div>
@@ -363,24 +364,24 @@ const PART2 = [
           </div>
 
           <div v-if="!isEdit && cfg?.intro" class="rounded-2xl p-5 bg-white shadow-sm border-2 border-sky-100 flex gap-3">
-            <div class="text-2xl shrink-0">💡</div>
+            <div class="w-9 h-9 rounded-full bg-sky-100 flex items-center justify-center shrink-0"><TsIcon name="info" class="w-5 h-5 text-sky-600"/></div>
             <div class="text-sm text-slate-700 leading-relaxed"><b class="text-sky-700">คำชี้แจง :</b> {{ cfg.intro }}</div>
           </div>
 
           <!-- ═══ ส่วนที่ 1 ═══ -->
           <section class="rounded-3xl overflow-hidden bg-white shadow-lg">
             <div role="heading" aria-level="2" class="bg-gradient-to-r from-indigo-600 to-violet-500 text-white font-bold px-5 py-4 flex items-center gap-3">
-              <span class="w-9 h-9 rounded-full bg-white/25 flex items-center justify-center text-lg shrink-0">👤</span>
+              <span class="w-9 h-9 rounded-full bg-white/20 ring-1 ring-white/40 flex items-center justify-center shrink-0"><TsIcon name="user" class="w-5 h-5"/></span>
               ส่วนที่ 1: ข้อมูลพื้นฐาน บริบทการปฏิบัติงาน และช่องทางการติดต่อ
             </div>
-            <div class="p-5 space-y-6">
+            <div class="px-5 sm:px-7 py-2 q-list">
 
               <!-- รูปโปรไฟล์: ส่งใหม่ = เก็บไว้ก่อนแล้วอัปหลังส่งสำเร็จ · แก้ไข = อัปทันที -->
               <div class="flex flex-col sm:flex-row items-center gap-4 p-4 rounded-2xl bg-gradient-to-r from-violet-50 to-sky-50 border-2 border-dashed border-violet-300">
                 <button type="button" @click="showCropper = true" :disabled="photoBusy"
                   class="w-24 h-24 rounded-full overflow-hidden bg-white flex items-center justify-center shrink-0 shadow-md ring-4 ring-violet-200 hover:ring-violet-400 transition">
                   <img v-if="photoPreview" :src="photoPreview" alt="รูปโปรไฟล์" class="w-full h-full object-cover"/>
-                  <span v-else class="text-3xl">📷</span>
+                  <TsIcon v-else name="camera" class="w-10 h-10 text-violet-400"/>
                 </button>
                 <div class="flex-1 text-center sm:text-left space-y-1.5">
                   <div class="font-bold text-slate-700">รูปโปรไฟล์ในทำเนียบครู <span class="text-xs font-normal text-slate-400">(ไม่บังคับ)</span></div>
@@ -388,7 +389,7 @@ const PART2 = [
                   <div class="flex flex-wrap gap-2 justify-center sm:justify-start pt-1">
                     <button type="button" @click="showCropper = true" :disabled="photoBusy"
                       class="px-4 py-2 rounded-lg bg-gradient-to-r from-violet-500 to-indigo-500 text-white text-sm font-bold shadow disabled:opacity-50">
-                      {{ photoBusy ? 'กำลังอัปโหลด...' : (photoPreview ? 'เปลี่ยนรูป' : '📷 เลือกรูป / ถ่ายรูป') }}
+                      <span class="inline-flex items-center gap-1.5"><TsIcon name="camera" class="w-4 h-4"/>{{ photoBusy ? 'กำลังอัปโหลด...' : (photoPreview ? 'เปลี่ยนรูป' : 'เลือกรูป / ถ่ายรูป') }}</span>
                     </button>
                     <button v-if="photoPreview" type="button" @click="removePhoto" class="px-4 py-2 rounded-lg text-sm text-red-500 hover:bg-red-50">ลบรูป</button>
                   </div>
@@ -428,7 +429,7 @@ const PART2 = [
                   <input v-model="form.line_id" maxlength="100" placeholder="ID Line" :class="inputCls"/>
                   <input v-model="form.email" type="email" maxlength="200" placeholder="E-mail address" :class="[inputCls, 'sm:col-span-2']"/>
                 </div>
-                <div class="text-xs text-slate-500">🔒 เบอร์โทร Line และอีเมล ไม่แสดงในทำเนียบสาธารณะ — เห็นเฉพาะศึกษานิเทศก์และเจ้าหน้าที่เขต · เบอร์โทรใช้ยืนยันตัวตน 1 เบอร์ต่อ 1 คน</div>
+                <div class="text-xs text-slate-500 flex items-start gap-1.5"><TsIcon name="lock" class="w-4 h-4 shrink-0 text-teal-600"/><span>เบอร์โทร Line และอีเมล ไม่แสดงในทำเนียบสาธารณะ — เห็นเฉพาะศึกษานิเทศก์และเจ้าหน้าที่เขต · เบอร์โทรใช้ยืนยันตัวตน 1 เบอร์ต่อ 1 คน</span></div>
               </div>
 
               <div class="space-y-2">
@@ -480,7 +481,7 @@ const PART2 = [
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <template v-for="o in opts.networks" :key="o.key">
-                    <div v-if="o.children?.length" class="sm:col-span-2 px-1 pt-2 text-sm font-bold text-emerald-700">🌏 {{ o.label }}</div>
+                    <div v-if="o.children?.length" class="sm:col-span-2 px-1 pt-2 text-sm font-bold text-emerald-700 flex items-center gap-1.5"><TsIcon name="language" class="w-4 h-4"/>{{ o.label }}</div>
                     <label v-for="c in (o.children?.length ? o.children : [o])" :key="c.key"
                       :class="[chip('emerald', isChecked('networks', c.key), !isChecked('networks', c.key) && atLimit('networks')), o.children?.length ? 'sm:ml-4' : '']">
                       <input type="checkbox" :checked="isChecked('networks', c.key)"
@@ -498,10 +499,10 @@ const PART2 = [
           <!-- ═══ ส่วนที่ 2 ═══ -->
           <section class="rounded-3xl overflow-hidden bg-white shadow-lg">
             <div role="heading" aria-level="2" class="bg-gradient-to-r from-orange-500 to-pink-500 text-white font-bold px-5 py-4 flex items-center gap-3">
-              <span class="w-9 h-9 rounded-full bg-white/25 flex items-center justify-center text-lg shrink-0">🎯</span>
+              <span class="w-9 h-9 rounded-full bg-white/20 ring-1 ring-white/40 flex items-center justify-center shrink-0"><TsIcon name="clipboard" class="w-5 h-5"/></span>
               ส่วนที่ 2: สภาพปัญหา บริบทโรงเรียน และความต้องการจำเป็นในการพัฒนา
             </div>
-            <div class="p-5 space-y-6">
+            <div class="px-5 sm:px-7 py-2 q-list">
               <div v-for="q in PART2" :key="q.field" class="space-y-2">
                 <label class="block font-bold text-slate-800">
                   <span class="qno" :class="CHIP[q.color].badge">{{ q.no }}</span>{{ q.title }}
@@ -559,7 +560,7 @@ const PART2 = [
 
           <button @click="submit" :disabled="saving"
             class="w-full py-4 rounded-2xl bg-gradient-to-r from-indigo-600 via-sky-500 to-emerald-500 text-white font-extrabold text-lg shadow-xl hover:shadow-2xl hover:-translate-y-0.5 transition disabled:opacity-50">
-            {{ saving ? 'กำลังบันทึก...' : (isEdit ? '💾 บันทึกการแก้ไข' : '🚀 ส่งแบบสำรวจ') }}
+            <span class="inline-flex items-center justify-center gap-2"><TsIcon :name="isEdit ? 'save' : 'send'" class="w-6 h-6"/>{{ saving ? 'กำลังบันทึก...' : (isEdit ? 'บันทึกการแก้ไข' : 'ส่งแบบสำรวจ') }}</span>
           </button>
 
           <div class="text-center text-xs text-slate-400 italic pb-6">
@@ -577,6 +578,10 @@ const PART2 = [
 
 <style scoped>
 .font-sarabun { font-family: 'Sarabun', sans-serif; }
+/* แต่ละข้อแยกด้วยเส้นชัดเจน + เว้นระยะเท่ากัน */
+.q-list > * { padding-top: 1.5rem; padding-bottom: 1.5rem; }
+.q-list > * + * { border-top: 1.5px solid #cbd5e1; }
+.q-list > * > label:first-child { display: block; margin-bottom: .75rem; }
 /* วงกลมเลขข้อ (สีพื้นมาจาก CHIP[...].badge) */
 .qno {
   display: inline-flex; align-items: center; justify-content: center;

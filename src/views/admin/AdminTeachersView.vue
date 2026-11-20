@@ -9,6 +9,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { supabase } from '../../supabase'
 import { telHref } from '../../composables/useMapLink'
+import TsIcon from '../../components/teachers/TsIcon.vue'
 import {
   useTeacherSurveyConfig, leafOptions, labelOf, labelsOf, fullName, initialsOf, editLinkOf,
 } from '../../composables/useTeacherSurvey'
@@ -233,11 +234,11 @@ const selCls = 'px-3 py-2 border border-white/80 bg-white/70 backdrop-blur round
         <div role="heading" aria-level="1" class="text-xl font-extrabold text-slate-800">ทำเนียบครู · เครือข่ายวิชาชีพ</div>
         <div class="text-xs text-slate-500">ข้อมูลจากแบบสำรวจ · ทั้งหมด {{ rows.length.toLocaleString() }} คน</div>
       </div>
-      <a href="#/teacher-survey" target="_blank" class="px-3 py-2 rounded-xl bg-white/70 border border-slate-200 text-sm text-primary font-bold">🔗 ลิงก์แบบสำรวจ</a>
-      <router-link v-if="isAdmin" to="/dashboard/teachers/settings" class="px-3 py-2 rounded-xl bg-white/70 border border-slate-200 text-sm font-bold text-slate-600">⚙️ ตั้งค่าแบบสำรวจ</router-link>
+      <a href="#/teacher-survey" target="_blank" class="px-3 py-2 rounded-xl bg-white/70 border border-slate-200 text-sm text-primary font-bold inline-flex items-center gap-1.5"><TsIcon name="link" class="w-4 h-4"/>ลิงก์แบบสำรวจ</a>
+      <router-link v-if="isAdmin" to="/dashboard/teachers/settings" class="px-3 py-2 rounded-xl bg-white/70 border border-slate-200 text-sm font-bold text-slate-600 inline-flex items-center gap-1.5"><TsIcon name="cog" class="w-4 h-4"/>ตั้งค่าแบบสำรวจ</router-link>
       <button @click="exportExcel" :disabled="exporting || !filtered.length"
         class="px-3 py-2 rounded-xl bg-emerald-600 text-white text-sm font-bold disabled:opacity-50">
-        {{ exporting ? 'กำลังสร้าง...' : `⬇ Excel (${filtered.length})` }}
+        <span class="inline-flex items-center gap-1.5"><TsIcon name="download" class="w-4 h-4"/>{{ exporting ? 'กำลังสร้าง...' : `Excel (${filtered.length})` }}</span>
       </button>
     </div>
 
@@ -312,7 +313,7 @@ const selCls = 'px-3 py-2 border border-white/80 bg-white/70 backdrop-blur round
               </span>
             </div>
           </div>
-          <a :href="`tel:${telHref(t.phone)}`" @click.stop class="text-xs text-primary font-bold whitespace-nowrap">📞 {{ t.phone }}</a>
+          <a :href="`tel:${telHref(t.phone)}`" @click.stop class="text-xs text-primary font-bold whitespace-nowrap inline-flex items-center gap-1"><TsIcon name="phone" class="w-3.5 h-3.5"/>{{ t.phone }}</a>
         </button>
       </div>
     </template>
@@ -377,9 +378,9 @@ const selCls = 'px-3 py-2 border border-white/80 bg-white/70 backdrop-blur round
         </div>
 
         <div class="flex flex-wrap gap-2 text-sm">
-          <a :href="`tel:${telHref(detail.phone)}`" class="px-3 py-1.5 rounded-lg bg-primary text-white font-bold">📞 {{ detail.phone }}</a>
+          <a :href="`tel:${telHref(detail.phone)}`" class="px-3 py-1.5 rounded-lg bg-primary text-white font-bold inline-flex items-center gap-1.5"><TsIcon name="phone" class="w-4 h-4"/>{{ detail.phone }}</a>
           <span v-if="detail.line_id" class="px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 font-bold">LINE: {{ detail.line_id }}</span>
-          <a v-if="detail.email" :href="`mailto:${detail.email}`" class="px-3 py-1.5 rounded-lg bg-slate-100 text-slate-700">✉️ {{ detail.email }}</a>
+          <a v-if="detail.email" :href="`mailto:${detail.email}`" class="px-3 py-1.5 rounded-lg bg-slate-100 text-slate-700 inline-flex items-center gap-1.5"><TsIcon name="mail" class="w-4 h-4"/>{{ detail.email }}</a>
         </div>
 
         <dl class="grid grid-cols-[8rem_1fr] gap-x-3 gap-y-2 text-sm">
@@ -412,10 +413,10 @@ const selCls = 'px-3 py-2 border border-white/80 bg-white/70 backdrop-blur round
             </div>
           </div>
           <div class="flex flex-wrap gap-2">
-            <button @click="reissue" :disabled="busy" class="px-3 py-2 rounded-lg bg-amber-100 text-amber-800 text-sm font-bold disabled:opacity-50">🔑 ออกลิงก์แก้ไขใหม่</button>
+            <button @click="reissue" :disabled="busy" class="px-3 py-2 rounded-lg bg-amber-100 text-amber-800 text-sm font-bold disabled:opacity-50 inline-flex items-center gap-1.5"><TsIcon name="key" class="w-4 h-4"/>ออกลิงก์แก้ไขใหม่</button>
             <template v-if="isAdmin">
               <button @click="toggleHidden" :disabled="busy" class="px-3 py-2 rounded-lg bg-slate-100 text-slate-700 text-sm font-bold disabled:opacity-50">
-                {{ detail.is_hidden ? '👁 แสดงในทำเนียบสาธารณะ' : '🙈 ซ่อนจากทำเนียบสาธารณะ' }}
+                <span class="inline-flex items-center gap-1.5"><TsIcon :name="detail.is_hidden ? 'eye' : 'eyeOff'" class="w-4 h-4"/>{{ detail.is_hidden ? 'แสดงในทำเนียบสาธารณะ' : 'ซ่อนจากทำเนียบสาธารณะ' }}</span>
               </button>
               <button @click="remove" :disabled="busy" class="px-3 py-2 rounded-lg text-red-600 hover:bg-red-50 text-sm font-bold disabled:opacity-50">ลบ</button>
             </template>

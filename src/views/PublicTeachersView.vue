@@ -11,6 +11,7 @@ import { useAreaConfig } from '../composables/useAreaConfig'
 import { usePageHeader } from '../composables/usePageHeader'
 import { useTeacherSurveyConfig, leafOptions, labelOf, fullName, initialsOf } from '../composables/useTeacherSurvey'
 import PageHero from '../components/PageHero.vue'
+import TsIcon from '../components/teachers/TsIcon.vue'
 
 const PAGE = 60
 const { config: area, fetchConfig: fetchArea } = useAreaConfig()
@@ -102,7 +103,7 @@ const selCls = 'px-3 py-2.5 border border-white/80 bg-white/70 backdrop-blur rou
           class="flex-1 px-4 py-3 rounded-2xl border border-slate-200 bg-white/70 backdrop-blur text-sm focus:outline-none focus:border-primary"/>
         <router-link to="/teacher-survey"
           class="text-center px-5 py-3 rounded-2xl bg-primary text-white text-sm font-bold hover:opacity-90 whitespace-nowrap">
-          ✍️ ลงทะเบียน / ตอบแบบสำรวจ
+          <span class="inline-flex items-center gap-2"><TsIcon name="pencil" class="w-4 h-4"/>ลงทะเบียน / ตอบแบบสำรวจ</span>
         </router-link>
       </div>
 
